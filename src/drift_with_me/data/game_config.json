@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "spec_version": "0.1.0",
+  "status": "prototype_tuning_defaults_not_measured",
+  "units": {
+    "position": "world_unit",
+    "duration": "second",
+    "angle": "degree",
+    "ui_reference": "512x236 logical pixels"
+  },
+  "display": {
+    "default_profile": "medium",
+    "profiles": {
+      "low": [
+        426,
+        196
+      ],
+      "medium": [
+        512,
+        236
+      ],
+      "high": [
+        640,
+        294
+      ]
+    },
+    "target_render_fps": 60,
+    "comparison_render_fps": 30,
+    "desktop_scale": 2,
+    "world_viewport": "full_logical_screen",
+    "orientation": "landscape",
+    "reference_ui_height": 236,
+    "minimum_touch_target_css_px": 44
+  },
+  "simulation": {
+    "fixed_hz": 60,
+    "max_elapsed_sec": 0.1,
+    "max_steps_per_callback": 6,
+    "pause_on_hidden": true,
+    "day_phase": "day",
+    "realtime_day_night": false
+  },
+  "player": {
+    "move_speed": 96.0,
+    "collider_half_x": 8.0,
+    "collider_half_z": 8.0,
+    "cube_size": 16.0,
+    "visual_hover_base": 2.0,
+    "visual_hover_amplitude": 1.5,
+    "visual_hover_period_sec": 1.6,
+    "contact_knockback": 16.0,
+    "contact_stun_sec": 0.2,
+    "invulnerable_sec": 1.0,
+    "has_hp": false
+  },
+  "buddy": {
+    "cube_size": 6.0,
+    "offset_screen_right_world": -20.0,
+    "offset_behind_player_world": 12.0,
+    "height": 26.0,
+    "bob_amplitude": 2.0,
+    "bob_period_sec": 2.0,
+    "follow_tau_sec": 0.18,
+    "hard_follow_limit": 80.0,
+    "physical_collision": false
+  },
+  "input": {
+    "hold_sec": 0.22,
+    "drag_threshold_ref_px": 8.0,
+    "stick_deadzone_ref_px": 8.0,
+    "stick_radius_ref_px": 48.0,
+    "ui_tap_slop_ref_px": 8.0,
+    "one_active_pointer": true,
+    "action_lock_sec": 0.15,
+    "keyboard": {
+      "move": [
+        "ARROWS",
+        "WASD"
+      ],
+      "barrier": "SPACE",
+      "action": "X",
+      "interact": "E",
+      "confirm": "RETURN",
+      "pause": "ESCAPE",
+      "mute": "M",
+      "debug": "F1"
+    }
+  },
+  "camera": {
+    "yaw_deg": 20.0,
+    "pitch_deg": 25.0,
+    "horizontal_fov_deg": 38.0,
+    "base_distance": 480.0,
+    "near": 8.0,
+    "far": 1800.0,
+    "zoom_min": 0.65,
+    "zoom_max": 1.35,
+    "screen_anchor": [
+      0.5,
+      0.58
+    ],
+    "focus_screen_anchor": [
+      0.5,
+      0.4
+    ],
+    "deadzone_size_fraction": [
+      0.18,
+      0.12
+    ],
+    "follow_tau_sec": 0.12,
+    "lookahead_enabled": false,
+    "lookahead_sec": 0.15,
+    "lookahead_limit": 18.0,
+    "zone_exit_margin": 32.0,
+    "default_blend_sec": 0.6,
+    "focus_blend_sec": 0.35,
+    "return_blend_sec": 0.5
+  },
+  "resources": {
+    "water_max": 100.0,
+    "water_start": 100.0,
+    "barrier_water_per_sec": 10.0,
+    "bubble_water_cost": 12.0,
+    "energy_max": 60.0,
+    "energy_start": 60.0,
+    "discharge_energy_cost": 20.0,
+    "refill_duration_sec": 0.8,
+    "solar_charge_duration_sec": 1.2,
+    "passive_regeneration": false,
+    "walking_consumes_resources": false
+  },
+  "barrier": {
+    "radius": 30.0,
+    "normal_push_distance": 40.0,
+    "abnormal_push_distance": 24.0,
+    "push_duration_sec": 0.22,
+    "normal_rest_sec": 2.0,
+    "abnormal_rest_sec": 0.8
+  },
+  "bubble": {
+    "speed": 240.0,
+    "radius": 10.0,
+    "max_range": 128.0,
+    "target_select_range": 112.0,
+    "cooldown_sec": 0.35,
+    "capture_duration_sec": 4.0,
+    "max_projectiles": 1,
+    "max_captured_targets": 1,
+    "homing": false,
+    "release_grace_sec": 0.5
+  },
+  "discharge": {
+    "range_from_player": 144.0,
+    "max_buddy_player_distance": 80.0,
+    "visual_duration_sec": 0.16,
+    "instant_gameplay_resolution": true,
+    "enabled_at_night": false
+  },
+  "enemy": {
+    "normal": {
+      "radius": 10.0,
+      "move_speed": 6.0,
+      "aggro_radius": 80.0,
+      "home_leash_radius": 128.0
+    },
+    "abnormal": {
+      "radius": 10.0,
+      "approach_speed": 32.0,
+      "dash_speed": 180.0,
+      "aggro_radius": 128.0,
+      "windup_range": 112.0,
+      "windup_sec": 0.75,
+      "dash_duration_sec": 0.45,
+      "recover_sec": 1.2,
+      "home_leash_radius": 160.0,
+      "dash_homing": false
+    }
+  },
+  "interaction": {
+    "range": 48.0,
+    "danger_block_radius": 96.0,
+    "one_candidate_only": true,
+    "world_pause_during_modal": true
+  },
+  "culling": {
+    "chunk_size": 128.0,
+    "active_enter_radius": 256.0,
+    "active_exit_radius": 320.0,
+    "screen_margin_ref_px": 24.0,
+    "static_visual_max_height": 96.0,
+    "visual_detail_per_chunk": 1,
+    "stress_extra_counts": [
+      128,
+      512
+    ]
+  },
+  "effects": {
+    "max_particles": 64,
+    "max_emotes": 8,
+    "max_screen_effects": 1,
+    "max_particles_per_event": 8,
+    "concentration_line_count": 12,
+    "onomatopoeia_enabled": false,
+    "hitstop_enabled": false,
+    "flash_enabled": false,
+    "shake_enabled": false
+  },
+  "audio": {
+    "enabled_by_default": true,
+    "bgm_enabled": false,
+    "loop_sfx_enabled": false,
+    "denied_min_interval_sec": 0.25,
+    "repel_min_interval_sec": 0.1,
+    "max_simultaneous_channels": 3,
+    "channel_roles": {
+      "0": "launch",
+      "1": "success_and_hit",
+      "2": "denied",
+      "3": "reserved_unused"
+    },
+    "event_priority": {
+      "bubble_fired": 10,
+      "barrier_repelled": 30,
+      "enemy_captured": 60,
+      "discharge_succeeded": 80,
+      "action_denied": 5
+    }
+  }
+}

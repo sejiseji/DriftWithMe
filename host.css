@@ -1,0 +1,44 @@
+:root {
+  --drift-visible-width: 100vw;
+  --drift-visible-height: 100svh;
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  width: var(--drift-visible-width);
+  height: var(--drift-visible-height);
+  overflow: hidden;
+  background: #071016;
+  overscroll-behavior: none;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#orientation-message {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  box-sizing: border-box;
+  background: #071016;
+  color: #f3f1df;
+  font: 600 18px/1.4 system-ui, sans-serif;
+  text-align: center;
+}
+
+body.drift-portrait #orientation-message {
+  display: flex;
+}

@@ -17,10 +17,13 @@ def main() -> int:
     root = Path(__file__).resolve().parents[1]
     python = sys.executable
     steps = [
+        ("spec data", [python, "docs/prototype_spec/tools/validate_spec_data.py", "--self-test"]),
         ("pytest", [python, "-m", "pytest"]),
         ("ruff check", [python, "-m", "ruff", "check", "."]),
         ("ruff format check", [python, "-m", "ruff", "format", "--check", "."]),
         ("compileall", [python, "-m", "compileall", "src", "main.py", "scripts", "tests"]),
+        ("web build", [python, "scripts/build_web.py"]),
+        ("git diff check", ["git", "diff", "--check"]),
     ]
 
     failures = 0

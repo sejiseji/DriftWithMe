@@ -1,0 +1,542 @@
+{
+  "schema_version": 1,
+  "spec_version": "0.1.0",
+  "map_id": "prototype_square_01",
+  "status": "implementation_start_layout_not_final_level_design",
+  "coordinate_system": {
+    "x": "ground_axis_1",
+    "y": "height_up",
+    "z": "ground_axis_2",
+    "grid_index": "cell_x_cell_z",
+    "positions": "object roots; x/y/z in world units"
+  },
+  "ground": {
+    "width_cells": 32,
+    "depth_cells": 32,
+    "cell_size": 32.0,
+    "origin": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "height": 0.0,
+    "default_walkable": true,
+    "bounds_xz": [
+      0.0,
+      0.0,
+      1024.0,
+      1024.0
+    ],
+    "cell_overrides": []
+  },
+  "spawn": {
+    "player": [
+      160.0,
+      0.0,
+      160.0
+    ],
+    "buddy_offset_camera_relative": true
+  },
+  "safe_zones": [
+    {
+      "id": "safe_start",
+      "center_xz": [
+        160.0,
+        160.0
+      ],
+      "radius": 80.0
+    },
+    {
+      "id": "safe_east",
+      "center_xz": [
+        832.0,
+        256.0
+      ],
+      "radius": 72.0
+    }
+  ],
+  "objects": [
+    {
+      "id": "tap_start",
+      "kind": "water_station",
+      "position": [
+        128.0,
+        0.0,
+        192.0
+      ],
+      "visual": "tap_placeholder",
+      "supply": "working",
+      "solid": false,
+      "inspectable": true,
+      "text_key": "tap_start"
+    },
+    {
+      "id": "solar_start",
+      "kind": "solar_station",
+      "position": [
+        192.0,
+        0.0,
+        128.0
+      ],
+      "visual": "solar_marker",
+      "supply": "daylight",
+      "solid": false,
+      "inspectable": true,
+      "text_key": "solar_start"
+    },
+    {
+      "id": "sign_start",
+      "kind": "inspectable",
+      "position": [
+        192.0,
+        0.0,
+        192.0
+      ],
+      "visual": "sign_placeholder",
+      "solid": false,
+      "inspectable": true,
+      "text_key": "sign_start"
+    },
+    {
+      "id": "tap_stopped",
+      "kind": "water_station",
+      "position": [
+        400.0,
+        0.0,
+        256.0
+      ],
+      "visual": "tap_placeholder",
+      "supply": "stopped",
+      "solid": false,
+      "inspectable": true,
+      "text_key": "tap_stopped"
+    },
+    {
+      "id": "tap_east",
+      "kind": "water_station",
+      "position": [
+        816.0,
+        0.0,
+        256.0
+      ],
+      "visual": "tap_placeholder",
+      "supply": "working",
+      "solid": false,
+      "inspectable": true,
+      "text_key": "tap_east"
+    },
+    {
+      "id": "solar_east",
+      "kind": "solar_station",
+      "position": [
+        848.0,
+        0.0,
+        256.0
+      ],
+      "visual": "solar_marker",
+      "supply": "daylight",
+      "solid": false,
+      "inspectable": true,
+      "text_key": "solar_east"
+    },
+    {
+      "id": "maintenance_unit",
+      "kind": "ambient_maintenance",
+      "position": [
+        576.0,
+        0.0,
+        768.0
+      ],
+      "visual": "maintenance_placeholder",
+      "solid": false,
+      "inspectable": true,
+      "text_key": "maintenance_unit",
+      "animation": "idle_2_frames"
+    },
+    {
+      "id": "observation_post",
+      "kind": "inspectable",
+      "position": [
+        768.0,
+        0.0,
+        800.0
+      ],
+      "visual": "post_placeholder",
+      "solid": false,
+      "inspectable": true,
+      "text_key": "observation_post"
+    },
+    {
+      "id": "wall_01",
+      "kind": "obstacle",
+      "position": [
+        320.0,
+        0.0,
+        320.0
+      ],
+      "visual": "small_block",
+      "solid": true,
+      "half_extents_xz": [
+        16.0,
+        48.0
+      ],
+      "height": 32.0
+    },
+    {
+      "id": "wall_02",
+      "kind": "obstacle",
+      "position": [
+        448.0,
+        0.0,
+        448.0
+      ],
+      "visual": "small_block",
+      "solid": true,
+      "half_extents_xz": [
+        48.0,
+        16.0
+      ],
+      "height": 32.0
+    },
+    {
+      "id": "wall_03",
+      "kind": "obstacle",
+      "position": [
+        640.0,
+        0.0,
+        352.0
+      ],
+      "visual": "small_block",
+      "solid": true,
+      "half_extents_xz": [
+        16.0,
+        48.0
+      ],
+      "height": 32.0
+    },
+    {
+      "id": "rock_01",
+      "kind": "obstacle",
+      "position": [
+        256.0,
+        0.0,
+        576.0
+      ],
+      "visual": "small_block",
+      "solid": true,
+      "half_extents_xz": [
+        16.0,
+        16.0
+      ],
+      "height": 24.0
+    },
+    {
+      "id": "rock_02",
+      "kind": "obstacle",
+      "position": [
+        704.0,
+        0.0,
+        512.0
+      ],
+      "visual": "small_block",
+      "solid": true,
+      "half_extents_xz": [
+        20.0,
+        20.0
+      ],
+      "height": 32.0
+    },
+    {
+      "id": "tree_01",
+      "kind": "sprite_prop",
+      "position": [
+        384.0,
+        0.0,
+        576.0
+      ],
+      "visual": "tree_placeholder",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_02",
+      "kind": "sprite_prop",
+      "position": [
+        448.0,
+        0.0,
+        608.0
+      ],
+      "visual": "tree_placeholder",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_03",
+      "kind": "sprite_prop",
+      "position": [
+        800.0,
+        0.0,
+        640.0
+      ],
+      "visual": "tree_placeholder",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "grass_01",
+      "kind": "reactive_prop",
+      "position": [
+        224.0,
+        0.0,
+        352.0
+      ],
+      "visual": "grass_placeholder",
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_02",
+      "kind": "reactive_prop",
+      "position": [
+        256.0,
+        0.0,
+        368.0
+      ],
+      "visual": "grass_placeholder",
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    }
+  ],
+  "enemies": [
+    {
+      "id": "urchin_normal_01",
+      "kind": "normal",
+      "position": [
+        320.0,
+        0.0,
+        192.0
+      ],
+      "home": [
+        320.0,
+        0.0,
+        192.0
+      ]
+    },
+    {
+      "id": "urchin_normal_02",
+      "kind": "normal",
+      "position": [
+        512.0,
+        0.0,
+        352.0
+      ],
+      "home": [
+        512.0,
+        0.0,
+        352.0
+      ]
+    },
+    {
+      "id": "urchin_abnormal_01",
+      "kind": "abnormal",
+      "position": [
+        736.0,
+        0.0,
+        384.0
+      ],
+      "home": [
+        736.0,
+        0.0,
+        384.0
+      ]
+    }
+  ],
+  "camera_zones": [
+    {
+      "id": "overview_north",
+      "trigger_rect_xz": [
+        640.0,
+        640.0,
+        896.0,
+        896.0
+      ],
+      "priority": 20,
+      "mode": "overview",
+      "target": [
+        768.0,
+        0.0,
+        768.0
+      ],
+      "zoom": 0.7,
+      "yaw_deg": 35.0,
+      "pitch_deg": 25.0,
+      "enter_sec": 0.8,
+      "leave_sec": 0.6,
+      "exit_margin": 32.0,
+      "once": false,
+      "freeze_world": false
+    }
+  ],
+  "camera_sequences": [
+    {
+      "id": "pan_demo",
+      "activation": "debug_only",
+      "freeze_world": true,
+      "cues": [
+        {
+          "target_object": "maintenance_unit",
+          "zoom": 0.9,
+          "blend_sec": 0.7,
+          "hold_sec": 0.5
+        },
+        {
+          "target_object": "observation_post",
+          "zoom": 0.7,
+          "blend_sec": 0.8,
+          "hold_sec": 0.5
+        },
+        {
+          "target": "resolve_current_base",
+          "blend_sec": 0.5,
+          "hold_sec": 0.0
+        }
+      ]
+    }
+  ],
+  "detail_seed": 41723,
+  "presentation_only_paths": [
+    {
+      "id": "guide_route",
+      "points_xz": [
+        [
+          160.0,
+          160.0
+        ],
+        [
+          320.0,
+          192.0
+        ],
+        [
+          400.0,
+          256.0
+        ],
+        [
+          512.0,
+          352.0
+        ],
+        [
+          608.0,
+          256.0
+        ],
+        [
+          832.0,
+          256.0
+        ],
+        [
+          736.0,
+          384.0
+        ],
+        [
+          768.0,
+          768.0
+        ]
+      ],
+      "show_in_debug_only": true
+    }
+  ],
+  "texts": {
+    "tap_start": {
+      "ja": [
+        "水が出る蛇口。ジャックの水を補給できる。"
+      ],
+      "ascii": [
+        "A working tap. Refill water."
+      ]
+    },
+    "solar_start": {
+      "ja": [
+        "日なたの休憩場所。ヒューズの行動用電力を充電できる。"
+      ],
+      "ascii": [
+        "Sunlight. Recharge buddy energy."
+      ]
+    },
+    "sign_start": {
+      "ja": [
+        "試験区画。歩く、調べる、補給する。"
+      ],
+      "ascii": [
+        "Test field: move, inspect, refill."
+      ]
+    },
+    "tap_stopped": {
+      "ja": [
+        "供給は止まっている。蛇口だけを直しても、水は来ない。"
+      ],
+      "ascii": [
+        "Supply stopped. No water here."
+      ]
+    },
+    "tap_east": {
+      "ja": [
+        "ここでは、まだ水が使える。"
+      ],
+      "ascii": [
+        "Water is still available here."
+      ]
+    },
+    "solar_east": {
+      "ja": [
+        "遮るものの少ない日なた。"
+      ],
+      "ascii": [
+        "An open patch of sunlight."
+      ]
+    },
+    "maintenance_unit": {
+      "ja": [
+        "同じ箇所の保守を繰り返している。"
+      ],
+      "ascii": [
+        "Repeating the same maintenance work."
+      ]
+    },
+    "observation_post": {
+      "ja": [
+        "遠くまで見通せる場所。観察記録を残した。"
+      ],
+      "ascii": [
+        "A clear view. Observation recorded."
+      ]
+    }
+  }
+}

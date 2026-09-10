@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "status": "proposed_sound_shapes_not_listening_tested",
+  "events": [
+    {
+      "event": "bubble_fired",
+      "sound_key": "bubble_launch",
+      "channel": 0,
+      "priority": 10,
+      "duration_target_sec": 0.06,
+      "character": "短く軽い。成功音と混同しない。"
+    },
+    {
+      "event": "enemy_captured",
+      "sound_key": "capture_success",
+      "channel": 1,
+      "priority": 60,
+      "duration_target_sec": 0.1,
+      "character": "発射より明瞭な上向きの音。"
+    },
+    {
+      "event": "barrier_repelled",
+      "sound_key": "barrier_repel",
+      "channel": 1,
+      "priority": 30,
+      "duration_target_sec": 0.1,
+      "character": "弾力のある短い音。接触し続けても連打しない。"
+    },
+    {
+      "event": "discharge_succeeded",
+      "sound_key": "discharge_success",
+      "channel": 1,
+      "priority": 80,
+      "duration_target_sec": 0.14,
+      "character": "短い電気的な音。撃退成立を明確にする。"
+    },
+    {
+      "event": "action_denied",
+      "sound_key": "action_denied",
+      "channel": 2,
+      "priority": 5,
+      "duration_target_sec": 0.05,
+      "character": "小さく控えめ。成功音とは異なる。"
+    }
+  ]
+}
