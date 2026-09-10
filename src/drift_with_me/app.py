@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import math
 import time
+from dataclasses import dataclass
 from enum import Enum, auto
 
 from drift_with_me import config
@@ -8,6 +10,7 @@ from drift_with_me.audio import AudioEngine
 from drift_with_me.input import PointerInput, Rect
 from drift_with_me.math3d import CameraState, Vec3, normalize2
 from drift_with_me.model import GameModel, InputIntent, merge_intents
+from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
 
@@ -16,6 +19,14 @@ class AppScreen(Enum):
     START = auto()
     PLAY = auto()
     PAUSE = auto()
+
+
+@dataclass(frozen=True)
+class PointerSnapshot:
+    down: bool
+    pressed: bool
+    x: float
+    y: float
 
 
 class DriftWithMeApp:
@@ -52,6 +63,8 @@ class DriftWithMeApp:
         )
         self.pending_action_pressed = False
         self.last_denied_reason = ""
+        self.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
+        self.browser_pointer_sequence_seen = 0
 
         pyxel.init(
             self.runtime.screen_width,
@@ -81,6 +94,7 @@ class DriftWithMeApp:
         elapsed = self.consume_elapsed()
         self.presentation_time += elapsed
         self.frame += 1
+        self.pointer_snapshot = self.read_pointer_snapshot()
 
         f1_key = getattr(pyxel, "KEY_F1", None)
         if f1_key is not None and pyxel.btnp(f1_key):
@@ -153,7 +167,7 @@ class DriftWithMeApp:
             self.previous_time = None
         if pyxel.btnp(pyxel.KEY_Q):
             pyxel.quit()
-        if self.mouse_pressed_in(self.start_button_rect()):
+        if self.mouse_pressed_in(self.resume_button_rect()):
             self.screen = AppScreen.PLAY
             self.previous_time = None
         if self.mouse_pressed_in(self.sound_button_rect()):
@@ -165,6 +179,12 @@ class DriftWithMeApp:
             self.screen = AppScreen.PAUSE
             self.pointer.cancel()
             return
+        if self.mouse_pressed_in(self.pause_button_rect()):
+            self.screen = AppScreen.PAUSE
+            self.pointer.cancel()
+            return
+        if self.mouse_pressed_in(self.sound_button_rect()):
+            self.audio.toggle_mute()
 
         keyboard_intent = self.keyboard_intent()
         pointer_intent = self.pointer_intent(elapsed)
@@ -222,13 +242,62 @@ class DriftWithMeApp:
             interact_pressed=pyxel.btnp(pyxel.KEY_E),
         )
 
-    def pointer_intent(self, elapsed: float) -> InputIntent:
+    def read_pointer_snapshot(self) -> PointerSnapshot:
+        browser_pointer = self.read_browser_pointer_snapshot()
+        if browser_pointer is not None:
+            return browser_pointer
+
         pyxel = self.pyxel
         mouse_button = getattr(pyxel, "MOUSE_BUTTON_LEFT", 0)
-        return self.pointer.update(
+        x, y = self.clamp_pointer_position(float(pyxel.mouse_x), float(pyxel.mouse_y))
+        return PointerSnapshot(
             down=pyxel.btn(mouse_button),
-            x=float(pyxel.mouse_x),
-            y=float(pyxel.mouse_y),
+            pressed=pyxel.btnp(mouse_button),
+            x=x,
+            y=y,
+        )
+
+    def read_browser_pointer_snapshot(self) -> PointerSnapshot | None:
+        try:
+            import js  # type: ignore[import-not-found]
+        except ImportError:
+            return None
+
+        try:
+            bridge = getattr(js.window, "__driftWithMePointer", None)
+        except Exception:
+            return None
+        if bridge is None:
+            return None
+
+        try:
+            down = bool(bridge.down)
+            pressed_flag = bool(bridge.pressed)
+            sequence = int(bridge.sequence)
+            x = float(bridge.x)
+            y = float(bridge.y)
+        except Exception:
+            return None
+        if not math.isfinite(x) or not math.isfinite(y):
+            return None
+
+        pressed = pressed_flag and sequence != self.browser_pointer_sequence_seen
+        if pressed:
+            self.browser_pointer_sequence_seen = sequence
+        x, y = self.clamp_pointer_position(x, y)
+        return PointerSnapshot(down=down, pressed=pressed, x=x, y=y)
+
+    def clamp_pointer_position(self, x: float, y: float) -> tuple[float, float]:
+        max_x = float(self.runtime.screen_width - 1)
+        max_y = float(self.runtime.screen_height - 1)
+        return max(0.0, min(max_x, x)), max(0.0, min(max_y, y))
+
+    def pointer_intent(self, elapsed: float) -> InputIntent:
+        pointer = self.pointer_snapshot
+        return self.pointer.update(
+            down=pointer.down,
+            x=pointer.x,
+            y=pointer.y,
             dt=elapsed,
             ui_rects=self.active_ui_rects(),
         )
@@ -237,33 +306,33 @@ class DriftWithMeApp:
         return InputIntent(action_pressed=self.mouse_pressed_in(self.action_button_rect()))
 
     def mouse_pressed_in(self, rect: Rect) -> bool:
-        pyxel = self.pyxel
-        mouse_button = getattr(pyxel, "MOUSE_BUTTON_LEFT", 0)
-        return pyxel.btnp(mouse_button) and rect.contains(
-            float(pyxel.mouse_x), float(pyxel.mouse_y)
-        )
+        pointer = self.pointer_snapshot
+        return pointer.pressed and rect.contains(pointer.x, pointer.y)
 
     def active_ui_rects(self) -> tuple[Rect, ...]:
         return (self.action_button_rect(), self.pause_button_rect(), self.sound_button_rect())
 
     def action_button_rect(self) -> Rect:
-        return Rect(self.runtime.screen_width - 62, self.runtime.screen_height - 56, 52, 46)
+        return Rect(self.runtime.screen_width - 102, self.runtime.screen_height - 72, 90, 60)
 
     def pause_button_rect(self) -> Rect:
-        return Rect(self.runtime.screen_width - 54, 6, 48, 34)
+        return Rect(self.runtime.screen_width - 86, 8, 74, 44)
 
     def sound_button_rect(self) -> Rect:
-        return Rect(8, self.runtime.screen_height - 36, 58, 28)
+        return Rect(10, self.runtime.screen_height - 50, 90, 40)
 
     def start_button_rect(self) -> Rect:
-        return Rect(self.runtime.screen_width / 2 - 48, 96, 96, 32)
+        return Rect(self.runtime.screen_width / 2 - 70, 88, 140, 46)
+
+    def resume_button_rect(self) -> Rect:
+        return Rect(self.runtime.screen_width / 2 - 70, 140, 140, 38)
 
     def preview_button_rects(self) -> tuple[tuple[str, Rect], ...]:
         names = self.audio.preview_events
-        start_x = self.runtime.screen_width / 2 - 117
-        y = 146
+        start_x = self.runtime.screen_width / 2 - 132
+        y = 150
         return tuple(
-            (name, Rect(start_x + index * 48, y, 40, 30)) for index, name in enumerate(names)
+            (name, Rect(start_x + index * 54, y, 48, 36)) for index, name in enumerate(names)
         )
 
     def draw(self) -> None:
@@ -278,20 +347,27 @@ class DriftWithMeApp:
     def draw_start(self) -> None:
         pyxel = self.pyxel
         pyxel.cls(1)
-        self.draw_text_center(self.runtime.screen_width // 2, 46, "DriftWithMe", 7)
-        self.draw_text_center(self.runtime.screen_width // 2, 62, "Jack World P0 E0", 10)
+        self.draw_text_center(self.runtime.screen_width // 2, 28, "DriftWithMe", 7, scale=3)
+        self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 E0", 10)
         self.draw_button(self.start_button_rect(), "START", 11)
         self.draw_button(
             self.sound_button_rect(), "SOUND OFF" if self.audio.muted else "SOUND ON", 12
         )
-        self.draw_text_center(self.runtime.screen_width // 2, 136, "SE PREVIEW 1-5", 7)
+        self.draw_text_center(self.runtime.screen_width // 2, 132, "SE PREVIEW 1-5", 7)
         for index, (event_name, rect) in enumerate(self.preview_button_rects(), start=1):
             self.draw_button(rect, str(index), 5)
-            self.pyxel.text(int(rect.x - 2), int(rect.y + rect.height + 4), event_name[:7], 7)
+            label = event_name.split("_", maxsplit=1)[0][:6]
+            self.draw_text_center(
+                int(rect.x + rect.width / 2),
+                int(rect.y + rect.height + 5),
+                label,
+                7,
+                scale=1,
+            )
         self.draw_text_center(
             self.runtime.screen_width // 2,
             self.runtime.screen_height - 18,
-            "ENTER or TAP START",
+            "ENTER/TAP START",
             13,
         )
 
@@ -304,31 +380,31 @@ class DriftWithMeApp:
 
     def draw_pause(self) -> None:
         pyxel = self.pyxel
-        x = self.runtime.screen_width // 2 - 86
-        y = 58
-        pyxel.rect(x, y, 172, 84, 0)
-        pyxel.rectb(x, y, 172, 84, 7)
-        self.draw_text_center(self.runtime.screen_width // 2, y + 14, "PAUSE", 7)
-        self.draw_text_center(self.runtime.screen_width // 2, y + 34, "ENTER/ESC RESUME", 13)
-        self.draw_text_center(self.runtime.screen_width // 2, y + 48, "R RESET SCENE", 13)
-        self.draw_text_center(self.runtime.screen_width // 2, y + 62, "Q QUIT", 13)
-        self.draw_button(self.start_button_rect(), "RESUME", 11)
+        x = self.runtime.screen_width // 2 - 128
+        y = 38
+        pyxel.rect(x, y, 256, 154, 0)
+        pyxel.rectb(x, y, 256, 154, 7)
+        self.draw_text_center(self.runtime.screen_width // 2, y + 14, "PAUSE", 7, scale=3)
+        self.draw_text_center(self.runtime.screen_width // 2, y + 48, "ENTER/ESC RESUME", 13)
+        self.draw_text_center(self.runtime.screen_width // 2, y + 68, "R RESET SCENE", 13)
+        self.draw_text_center(self.runtime.screen_width // 2, y + 88, "Q QUIT", 13)
+        self.draw_button(self.resume_button_rect(), "RESUME", 11)
 
     def draw_hud(self) -> None:
         pyxel = self.pyxel
-        pyxel.rect(6, 6, 132, 36, 0)
-        pyxel.rectb(6, 6, 132, 36, 7)
+        pyxel.rect(6, 6, 164, 48, 0)
+        pyxel.rectb(6, 6, 164, 48, 7)
         water = int(self.model.water)
         energy = int(self.model.energy)
-        pyxel.text(12, 12, f"WATER {water:03d}", 12)
-        pyxel.text(12, 24, f"ENERGY {energy:03d}", 10)
+        draw_pixel_text(pyxel, 14, 14, f"WATER {water:03d}", 12)
+        draw_pixel_text(pyxel, 14, 32, f"ENERGY {energy:03d}", 10)
         self.draw_button(self.action_button_rect(), "ACTION", 8)
         self.draw_button(self.pause_button_rect(), "PAUSE", 5)
         self.draw_button(self.sound_button_rect(), "MUTE" if self.audio.muted else "SOUND", 12)
         if self.model.player.barrier_active:
-            pyxel.text(148, 12, "BARRIER HOLD", 12)
+            draw_pixel_text(pyxel, 184, 12, "BARRIER HOLD", 12)
         if self.last_denied_reason:
-            pyxel.text(148, 24, f"DENIED:{self.last_denied_reason}", 8)
+            draw_pixel_text(pyxel, 184, 30, f"DENIED:{self.last_denied_reason}", 8)
         if self.debug_enabled:
             pyxel.text(8, 48, f"pos={self.model.player.x:.1f},{self.model.player.z:.1f}", 7)
             pyxel.text(8, 58, f"steps={self.model.debug.fixed_steps_last_callback}", 7)
@@ -339,12 +415,22 @@ class DriftWithMeApp:
         pyxel = self.pyxel
         pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), color)
         pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
-        text_x = int(rect.x + rect.width / 2 - len(label) * 2)
-        text_y = int(rect.y + rect.height / 2 - 3)
-        pyxel.text(text_x, text_y, label, 0)
+        text = label.upper()
+        scale = 2
+        text_width, text_height = pixel_text_size(text, scale)
+        while scale > 1 and (
+            text_width > int(rect.width) - 8 or text_height > int(rect.height) - 8
+        ):
+            scale -= 1
+            text_width, text_height = pixel_text_size(text, scale)
+        text_x = int(rect.x + rect.width / 2 - text_width / 2)
+        text_y = int(rect.y + rect.height / 2 - text_height / 2)
+        draw_pixel_text(pyxel, text_x, text_y, text, 0, scale=scale)
 
-    def draw_text_center(self, x: int, y: int, text: str, color: int) -> None:
-        self.pyxel.text(x - len(text) * 2, y, text, color)
+    def draw_text_center(self, x: int, y: int, text: str, color: int, scale: int = 2) -> None:
+        text = text.upper()
+        text_width, _ = pixel_text_size(text, scale)
+        draw_pixel_text(self.pyxel, x - text_width // 2, y, text, color, scale=scale)
 
 
 def main() -> None:

@@ -69,6 +69,17 @@ body.drift-portrait #orientation-message {
 HOST_JS = """(() => {
   const root = document.documentElement;
   const body = document.body;
+  const pointer = {
+    down: false,
+    pressed: false,
+    released: false,
+    x: 0,
+    y: 0,
+    inside: false,
+    sequence: 0,
+  };
+  window.__driftWithMePointer = pointer;
+  let activePointerId = null;
 
   const updateViewport = () => {
     const viewport = window.visualViewport;
@@ -79,10 +90,135 @@ HOST_JS = """(() => {
     body.classList.toggle("drift-portrait", height > width);
   };
 
+  const findCanvas = () => document.querySelector("canvas");
+
+  const logicalSize = () => {
+    const configured = window.__driftWithMeLogicalSize || {};
+    const canvas = findCanvas();
+    return {
+      width: Number(configured.width) || (canvas ? canvas.width : 512),
+      height: Number(configured.height) || (canvas ? canvas.height : 236),
+    };
+  };
+
+  const eventToLogical = (event) => {
+    const canvas = findCanvas();
+    const size = logicalSize();
+    if (!canvas) {
+      return { x: pointer.x, y: pointer.y, inside: false };
+    }
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      return { x: pointer.x, y: pointer.y, inside: false };
+    }
+    const rawX = ((event.clientX - rect.left) * size.width) / rect.width;
+    const rawY = ((event.clientY - rect.top) * size.height) / rect.height;
+    const inside = rawX >= 0 && rawX <= size.width && rawY >= 0 && rawY <= size.height;
+    return {
+      x: Math.max(0, Math.min(size.width - 1, rawX)),
+      y: Math.max(0, Math.min(size.height - 1, rawY)),
+      inside,
+    };
+  };
+
+  const preventCanvasGesture = (event) => {
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+  };
+
+  const capturePointer = (pointerId) => {
+    const canvas = findCanvas();
+    if (!canvas || !canvas.setPointerCapture) {
+      return;
+    }
+    try {
+      canvas.setPointerCapture(pointerId);
+    } catch {
+      // The browser may already have released capture during fast orientation changes.
+    }
+  };
+
+  const releasePointer = (pointerId) => {
+    const canvas = findCanvas();
+    if (!canvas || !canvas.releasePointerCapture) {
+      return;
+    }
+    try {
+      canvas.releasePointerCapture(pointerId);
+    } catch {
+      // Ignore stale pointer ids.
+    }
+  };
+
+  const onPointerDown = (event) => {
+    const position = eventToLogical(event);
+    if (!position.inside || activePointerId !== null) {
+      return;
+    }
+    activePointerId = event.pointerId;
+    capturePointer(event.pointerId);
+    pointer.down = true;
+    pointer.pressed = true;
+    pointer.released = false;
+    pointer.x = position.x;
+    pointer.y = position.y;
+    pointer.inside = true;
+    pointer.sequence += 1;
+    preventCanvasGesture(event);
+  };
+
+  const onPointerMove = (event) => {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+    const position = eventToLogical(event);
+    pointer.down = true;
+    pointer.x = position.x;
+    pointer.y = position.y;
+    pointer.inside = position.inside;
+    preventCanvasGesture(event);
+  };
+
+  const onPointerFinish = (event) => {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+    const position = eventToLogical(event);
+    pointer.down = false;
+    pointer.released = true;
+    pointer.x = position.x;
+    pointer.y = position.y;
+    pointer.inside = position.inside;
+    activePointerId = null;
+    releasePointer(event.pointerId);
+    preventCanvasGesture(event);
+  };
+
+  const cancelPointer = () => {
+    activePointerId = null;
+    pointer.down = false;
+    pointer.released = true;
+    pointer.inside = false;
+  };
+
   updateViewport();
   window.addEventListener("resize", updateViewport, { passive: true });
-  window.addEventListener("orientationchange", updateViewport, { passive: true });
+  window.addEventListener("orientationchange", () => {
+    updateViewport();
+    cancelPointer();
+  }, { passive: true });
+  window.addEventListener("blur", cancelPointer, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      cancelPointer();
+    }
+  }, { passive: true });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
+  document.addEventListener("pointerdown", onPointerDown, { passive: false });
+  document.addEventListener("pointermove", onPointerMove, { passive: false });
+  document.addEventListener("pointerup", onPointerFinish, { passive: false });
+  document.addEventListener("pointercancel", onPointerFinish, { passive: false });
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", updateViewport, { passive: true });
@@ -133,6 +269,14 @@ def cache_busted_name(pyxapp: Path) -> str:
     return f"{APP_NAME}-{digest}.pyxapp"
 
 
+def default_screen_size(root: Path) -> tuple[int, int]:
+    config_path = root / "src" / "drift_with_me" / "data" / "game_config.json"
+    runtime = json.loads(config_path.read_text(encoding="utf-8"))
+    default_profile = runtime["display"]["default_profile"]
+    width, height = runtime["display"]["profiles"][default_profile]
+    return int(width), int(height)
+
+
 def write_host_assets(output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "host.css").write_text(HOST_CSS, encoding="utf-8")
@@ -161,6 +305,8 @@ def write_host_assets(output_dir: Path) -> None:
 def write_html(root: Path, pyxapp: Path, output: Path) -> None:
     base64_string = base64.b64encode(pyxapp.read_bytes()).decode("ascii")
     pyxapp_name = json.dumps(cache_busted_name(pyxapp), ensure_ascii=True)
+    screen_width, screen_height = default_screen_size(root)
+    logical_size = json.dumps({"width": screen_width, "height": screen_height})
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         "<!doctype html>\n"
@@ -181,6 +327,7 @@ def write_html(root: Path, pyxapp: Path, output: Path) -> None:
         '<div id="orientation-message">'
         "横向き推奨です。画面ロックを解除して端末を横にしてください。"
         "</div>\n"
+        f"<script>window.__driftWithMeLogicalSize = {logical_size};</script>\n"
         '<script src="./host.js"></script>\n'
         "<script>\n"
         f'launchPyxel({{ command: "play", name: {pyxapp_name}, '

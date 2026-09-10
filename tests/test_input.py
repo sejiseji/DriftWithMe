@@ -39,3 +39,19 @@ def test_ui_capture_does_not_leak_into_world_drag() -> None:
     assert pointer.state is PointerState.UI_CAPTURE
     assert intent.strength == 0.0
     assert not intent.barrier
+
+
+def test_cancel_waits_for_release_before_world_input() -> None:
+    pointer = make_pointer()
+
+    pointer.cancel()
+    held = pointer.update(True, 40.0, 40.0, 0.3)
+    released = pointer.update(False, 40.0, 40.0, 0.0)
+    pointer.update(True, 40.0, 40.0, 0.0)
+    moved = pointer.update(True, 80.0, 40.0, 0.05)
+
+    assert held.strength == 0.0
+    assert not held.barrier
+    assert released.strength == 0.0
+    assert pointer.state is PointerState.MOVE
+    assert moved.strength > 0.0

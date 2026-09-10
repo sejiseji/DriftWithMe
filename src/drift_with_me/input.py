@@ -65,6 +65,10 @@ class PointerInput:
             self.state = PointerState.IDLE
             return InputIntent()
 
+        if self.state == PointerState.WAIT_ALL_RELEASE:
+            self.was_down = True
+            return InputIntent()
+
         if not self.was_down:
             self.start_x = x
             self.start_y = y
