@@ -45,21 +45,23 @@ body {
 #orientation-message {
   display: none;
   position: fixed;
-  inset: 0;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
   z-index: 10;
-  align-items: center;
-  justify-content: center;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: 8px 10px;
   box-sizing: border-box;
-  background: #071016;
+  border: 1px solid rgba(243, 241, 223, 0.35);
+  border-radius: 8px;
+  background: rgba(7, 16, 22, 0.88);
   color: #f3f1df;
-  font: 600 18px/1.4 system-ui, sans-serif;
+  font: 600 13px/1.35 system-ui, sans-serif;
   text-align: center;
+  pointer-events: none;
 }
 
 body.drift-portrait #orientation-message {
-  display: flex;
+  display: block;
 }
 """
 
@@ -172,7 +174,9 @@ def write_html(root: Path, pyxapp: Path, output: Path) -> None:
         f'<script src="https://cdn.jsdelivr.net/gh/kitao/pyxel@{pyxel.VERSION}/wasm/pyxel.js"></script>\n'
         "</head>\n"
         "<body>\n"
-        '<div id="orientation-message">Rotate to landscape to play DriftWithMe.</div>\n'
+        '<div id="orientation-message">'
+        "横向き推奨です。画面ロックを解除して端末を横にしてください。"
+        "</div>\n"
         '<script src="./host.js"></script>\n'
         "<script>\n"
         f'launchPyxel({{ command: "play", name: {pyxapp_name}, '

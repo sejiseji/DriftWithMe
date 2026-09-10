@@ -26,19 +26,21 @@ body {
 #orientation-message {
   display: none;
   position: fixed;
-  inset: 0;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
   z-index: 10;
-  align-items: center;
-  justify-content: center;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: 8px 10px;
   box-sizing: border-box;
-  background: #071016;
+  border: 1px solid rgba(243, 241, 223, 0.35);
+  border-radius: 8px;
+  background: rgba(7, 16, 22, 0.88);
   color: #f3f1df;
-  font: 600 18px/1.4 system-ui, sans-serif;
+  font: 600 13px/1.35 system-ui, sans-serif;
   text-align: center;
+  pointer-events: none;
 }
 
 body.drift-portrait #orientation-message {
-  display: flex;
+  display: block;
 }
