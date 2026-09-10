@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from drift_with_me.config import load_data_json
+from drift_with_me.math3d import Vec3
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,10 @@ class StaticObject:
     inspectable: bool = False
     text_key: str | None = None
     supply: str | None = None
+    occludes_player: bool = False
+    sprite_world_width: float = 0.0
+    sprite_world_height: float = 0.0
+    reaction_radius: float = 0.0
 
     @property
     def min_x(self) -> float:
@@ -55,6 +60,55 @@ class SafeZone:
     radius: float
 
 
+@dataclass(frozen=True)
+class CameraZone:
+    id: str
+    min_x: float
+    min_z: float
+    max_x: float
+    max_z: float
+    priority: int
+    mode: str
+    target: Vec3
+    zoom: float
+    yaw_deg: float | None
+    pitch_deg: float | None
+    enter_sec: float
+    leave_sec: float
+    exit_margin: float
+    once: bool
+    freeze_world: bool
+
+    def contains(self, x: float, z: float) -> bool:
+        return self.min_x <= x <= self.max_x and self.min_z <= z <= self.max_z
+
+    def contains_with_margin(self, x: float, z: float) -> bool:
+        return (
+            self.min_x - self.exit_margin <= x <= self.max_x + self.exit_margin
+            and self.min_z - self.exit_margin <= z <= self.max_z + self.exit_margin
+        )
+
+
+@dataclass(frozen=True)
+class CameraCue:
+    target: Vec3 | None = None
+    target_object: str | None = None
+    resolve_current_base: bool = False
+    zoom: float | None = None
+    yaw_deg: float | None = None
+    pitch_deg: float | None = None
+    blend_sec: float = 0.0
+    hold_sec: float = 0.0
+
+
+@dataclass(frozen=True)
+class CameraSequence:
+    id: str
+    activation: str
+    freeze_world: bool
+    cues: tuple[CameraCue, ...]
+
+
 class WorldData:
     def __init__(self, raw: dict[str, Any], chunk_size: float = 128.0) -> None:
         self.raw = raw
@@ -84,12 +138,20 @@ class WorldData:
             )
             for item in raw["safe_zones"]
         )
+        self.camera_zones = {
+            zone.id: zone for zone in (self._load_camera_zone(item) for item in raw["camera_zones"])
+        }
+        self.camera_sequences = {
+            sequence.id: sequence
+            for sequence in (self._load_camera_sequence(item) for item in raw["camera_sequences"])
+        }
         self.texts = raw["texts"]
         self._solid_index = self._build_solid_index()
 
     def _load_object(self, item: dict[str, Any]) -> StaticObject:
         position = item["position"]
         half_x, half_z = item.get("half_extents_xz", [0.0, 0.0])
+        sprite_width, sprite_height = item.get("sprite_world_size", [0.0, 0.0])
         return StaticObject(
             id=str(item["id"]),
             kind=str(item["kind"]),
@@ -103,7 +165,67 @@ class WorldData:
             inspectable=bool(item.get("inspectable", False)),
             text_key=item.get("text_key"),
             supply=item.get("supply"),
+            occludes_player=bool(item.get("occludes_player", False)),
+            sprite_world_width=float(sprite_width),
+            sprite_world_height=float(sprite_height),
+            reaction_radius=float(item.get("reaction_radius", 0.0)),
         )
+
+    def _load_camera_zone(self, item: dict[str, Any]) -> CameraZone:
+        min_x, min_z, max_x, max_z = item["trigger_rect_xz"]
+        target = item["target"]
+        return CameraZone(
+            id=str(item["id"]),
+            min_x=float(min_x),
+            min_z=float(min_z),
+            max_x=float(max_x),
+            max_z=float(max_z),
+            priority=int(item["priority"]),
+            mode=str(item["mode"]),
+            target=Vec3(float(target[0]), float(target[1]), float(target[2])),
+            zoom=float(item["zoom"]),
+            yaw_deg=float(item["yaw_deg"]) if "yaw_deg" in item else None,
+            pitch_deg=float(item["pitch_deg"]) if "pitch_deg" in item else None,
+            enter_sec=float(item["enter_sec"]),
+            leave_sec=float(item["leave_sec"]),
+            exit_margin=float(item["exit_margin"]),
+            once=bool(item.get("once", False)),
+            freeze_world=bool(item.get("freeze_world", False)),
+        )
+
+    def _load_camera_sequence(self, item: dict[str, Any]) -> CameraSequence:
+        return CameraSequence(
+            id=str(item["id"]),
+            activation=str(item["activation"]),
+            freeze_world=bool(item.get("freeze_world", False)),
+            cues=tuple(self._load_camera_cue(cue) for cue in item["cues"]),
+        )
+
+    def _load_camera_cue(self, item: dict[str, Any]) -> CameraCue:
+        target: Vec3 | None = None
+        resolve_current_base = False
+        raw_target = item.get("target")
+        if isinstance(raw_target, str):
+            resolve_current_base = raw_target == "resolve_current_base"
+        elif raw_target is not None:
+            target = Vec3(float(raw_target[0]), float(raw_target[1]), float(raw_target[2]))
+
+        return CameraCue(
+            target=target,
+            target_object=item.get("target_object"),
+            resolve_current_base=resolve_current_base,
+            zoom=float(item["zoom"]) if "zoom" in item else None,
+            yaw_deg=float(item["yaw_deg"]) if "yaw_deg" in item else None,
+            pitch_deg=float(item["pitch_deg"]) if "pitch_deg" in item else None,
+            blend_sec=float(item.get("blend_sec", 0.0)),
+            hold_sec=float(item.get("hold_sec", 0.0)),
+        )
+
+    def object_by_id(self, object_id: str) -> StaticObject | None:
+        for obj in self.objects:
+            if obj.id == object_id:
+                return obj
+        return None
 
     @property
     def solid_objects(self) -> tuple[StaticObject, ...]:

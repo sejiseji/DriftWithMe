@@ -41,6 +41,8 @@ def test_world_data_uses_square_map_and_expected_counts() -> None:
     assert len(world.objects) == 18
     assert len(world.solid_objects) == 8
     assert len(world.enemies) == 3
+    assert set(world.camera_zones) == {"overview_north"}
+    assert set(world.camera_sequences) == {"pan_demo"}
 
 
 def test_audio_event_set_is_the_required_five_events() -> None:

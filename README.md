@@ -1,9 +1,10 @@
 # DriftWithMe
 
-DriftWithMe is a Pyxel prototype project for the Jack World P0 E0 slice. The
-current build implements JWP000-JWP002 only: a 1024 x 1024 square world, a cube
-placeholder for Jack, fixed-step movement, obstacle sliding, pointer ownership
-for drag-vs-hold, a start screen, and five explicit SE preview hooks.
+DriftWithMe is a Pyxel prototype project for the Jack World P0 slice. The
+current build implements JWP000-JWP003: a 1024 x 1024 square world, cube
+placeholders for Jack and buddy, fixed-step movement, obstacle sliding, pointer
+ownership for drag-vs-hold, a start screen, five explicit SE preview hooks,
+basic depth-sorted world drawing, and camera demos for overview/focus/pan.
 
 The prototype specification pack is stored in `docs/prototype_spec/`. The game
 loads the copied JSON data from `src/drift_with_me/data/`; tests compare both
@@ -46,8 +47,14 @@ drift-with-me
 - R while paused: reset scene
 - Q while paused: quit desktop app
 
+Debug-only camera checks:
+
+- F: focus nearest inspectable object, then return
+- P: play the pan_demo camera sequence
+- Walk into the north overview zone around X/Z 640-896 to trigger AreaCamera
+
 The action button and SE preview do not claim bubble capture or discharge
-success in E0. Those systems start in later waves.
+success yet. Those systems start in later waves.
 
 ## Web Build
 
@@ -59,7 +66,7 @@ python -m http.server 8000
 Then open `http://127.0.0.1:8000/`. The generated host uses Pyxel
 `2.9.9`, disables Pyxel's virtual gamepad, preserves the landscape aspect ratio,
 and includes a portrait orientation overlay. iPhone Safari behavior still needs
-real-device confirmation.
+real-device confirmation for each new wave.
 
 GitHub Pages entry point:
 

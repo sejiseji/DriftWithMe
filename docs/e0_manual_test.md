@@ -1,8 +1,8 @@
 # E0 Manual Test Notes
 
-Use this for JWP002 manual checks. Automated tests cover only model and input
-contracts; device display, touch feel, and audible output still need human
-confirmation.
+Use this for JWP002-JWP003 manual checks. Automated tests cover model, input,
+and camera contracts; device display, touch feel, audible output, and camera
+composition still need human confirmation.
 
 ## Desktop Native
 
@@ -19,7 +19,11 @@ python main.py
 6. Press Space and confirm the barrier ring appears while movement stops.
 7. Press X or ACTION and confirm only the denied feedback/denied SE is used.
 8. Press M and confirm sound toggles.
-9. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
+9. Press F1 to show debug HUD.
+10. Press F and confirm the camera focuses the nearest inspectable object, then returns.
+11. Press P and confirm the pan_demo visits the maintenance unit and observation post.
+12. Walk into the north overview zone around X/Z 640-896 and confirm yaw/zoom blend smoothly.
+13. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
 
 ## Web Local
 
@@ -36,10 +40,12 @@ Open `http://127.0.0.1:8000/web/`.
 3. Confirm the portrait overlay appears when the viewport is taller than wide.
 4. Confirm drag movement and stationary hold barrier with a mouse or touch-capable browser.
 5. Confirm the five SE preview buttons are separate from game success events.
+6. Confirm buddy remains near Jack and participates in world depth ordering.
+7. Confirm tree placeholders can pass in front of Jack and show a temporary outline.
 
 ## iPhone
 
-Status: NOT_RUN.
+Status: JWP002 smoke passed by user; JWP003 needs another pass.
 
 Expected checks:
 
@@ -48,4 +54,4 @@ Expected checks:
 - Canvas aspect ratio and Safe Area in both landscape orientations.
 - Touch drag, long hold, UI capture, and rotation/cancel behavior.
 - Actual audible output after a user start action.
-
+- Buddy readability, overview blend, focus demo, pan_demo, and tree occlusion outline.

@@ -7,6 +7,7 @@ from enum import Enum, auto
 
 from drift_with_me import config
 from drift_with_me.audio import AudioEngine
+from drift_with_me.camera import CameraController
 from drift_with_me.input import PointerInput, Rect
 from drift_with_me.math3d import CameraState, Vec3, normalize2
 from drift_with_me.model import GameModel, InputIntent, merge_intents
@@ -43,6 +44,14 @@ class DriftWithMeApp:
         self.world = load_world_data()
         self.model = GameModel(self.runtime.raw, self.world)
         self.audio = AudioEngine(self.runtime.raw)
+        self.camera_controller = CameraController(
+            self.runtime.raw,
+            self.world,
+            self.runtime.screen_width,
+            self.runtime.screen_height,
+            Vec3(self.model.player.x, 0.0, self.model.player.z),
+        )
+        self.model.snap_buddy(self.camera_controller.current)
         self.renderer: Renderer | None = None
         self.screen = AppScreen.START
         self.debug_enabled = False
@@ -81,13 +90,7 @@ class DriftWithMeApp:
         pyxel.run(self.update, self.draw)
 
     def camera(self) -> CameraState:
-        return CameraState.from_config(
-            self.runtime.raw,
-            target=Vec3(self.model.player.x, 0.0, self.model.player.z),
-            viewport_width=self.runtime.screen_width,
-            viewport_height=self.runtime.screen_height,
-            zoom=1.0,
-        )
+        return self.camera_controller.current
 
     def update(self) -> None:
         pyxel = self.pyxel
@@ -164,6 +167,8 @@ class DriftWithMeApp:
             return
         if pyxel.btnp(pyxel.KEY_R):
             self.model.reset_scene()
+            self.camera_controller.reset(Vec3(self.model.player.x, 0.0, self.model.player.z))
+            self.model.snap_buddy(self.camera())
             self.previous_time = None
         if pyxel.btnp(pyxel.KEY_Q):
             pyxel.quit()
@@ -186,6 +191,13 @@ class DriftWithMeApp:
         if self.mouse_pressed_in(self.sound_button_rect()):
             self.audio.toggle_mute()
 
+        self.handle_debug_camera_shortcuts()
+        input_camera = self.camera()
+        if self.camera_controller.freezes_world:
+            self.pointer.cancel()
+            self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+            return
+
         keyboard_intent = self.keyboard_intent()
         pointer_intent = self.pointer_intent(elapsed)
         ui_action_intent = self.ui_action_intent()
@@ -197,7 +209,6 @@ class DriftWithMeApp:
         fixed_dt = self.runtime.fixed_dt
         max_steps = int(self.runtime.raw["simulation"]["max_steps_per_callback"])
         steps = 0
-        step_camera = self.camera()
         all_events = []
         while self.accumulator >= fixed_dt and steps < max_steps:
             step_intent = InputIntent(
@@ -209,11 +220,12 @@ class DriftWithMeApp:
                 interact_pressed=base_intent.interact_pressed,
             )
             self.pending_action_pressed = False
-            events = self.model.step(step_intent, step_camera, fixed_dt)
+            events = self.model.step(step_intent, input_camera, fixed_dt)
             all_events.extend(events)
-            step_camera = self.camera()
             self.accumulator -= fixed_dt
             steps += 1
+
+        self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
 
         if steps >= max_steps and self.accumulator >= fixed_dt:
             self.accumulator = 0.0
@@ -224,6 +236,29 @@ class DriftWithMeApp:
                 if event.kind == "action_denied":
                     self.last_denied_reason = str(event.payload.get("reason", "denied"))
             self.audio.play_events(all_events)
+
+    def handle_debug_camera_shortcuts(self) -> None:
+        pyxel = self.pyxel
+        focus_key = getattr(pyxel, "KEY_F", None)
+        pan_key = getattr(pyxel, "KEY_P", None)
+        if focus_key is not None and pyxel.btnp(focus_key):
+            focus_target = self.nearest_focus_object()
+            if focus_target is not None:
+                self.camera_controller.start_focus_demo(focus_target)
+        if pan_key is not None and pyxel.btnp(pan_key):
+            self.camera_controller.start_pan_demo()
+
+    def nearest_focus_object(self):
+        inspectables = [obj for obj in self.world.objects if obj.inspectable]
+        if not inspectables:
+            return None
+        return min(
+            inspectables,
+            key=lambda obj: (
+                (obj.x - self.model.player.x) ** 2 + (obj.z - self.model.player.z) ** 2,
+                obj.id,
+            ),
+        )
 
     def keyboard_intent(self) -> InputIntent:
         pyxel = self.pyxel
@@ -410,6 +445,8 @@ class DriftWithMeApp:
             pyxel.text(8, 58, f"steps={self.model.debug.fixed_steps_last_callback}", 7)
             pyxel.text(8, 68, f"input={self.pointer.state.name}", 7)
             pyxel.text(8, 78, f"discard={self.model.debug.discarded_elapsed_count}", 7)
+            pyxel.text(8, 88, f"camera={self.camera_controller.mode_name}", 7)
+            pyxel.text(8, 98, "F focus / P pan", 7)
 
     def draw_button(self, rect: Rect, label: str, color: int) -> None:
         pyxel = self.pyxel

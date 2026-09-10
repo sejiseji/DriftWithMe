@@ -12,8 +12,33 @@ from drift_with_me.world import EnemySpawn, StaticObject, WorldData
 @dataclass(frozen=True)
 class DrawCommand:
     depth: float
+    layer_bias: int
     stable_id: str
     draw: Callable[[], None]
+
+
+@dataclass(frozen=True)
+class ScreenRect:
+    x: int
+    y: int
+    width: int
+    height: int
+
+    @property
+    def max_x(self) -> int:
+        return self.x + self.width
+
+    @property
+    def max_y(self) -> int:
+        return self.y + self.height
+
+    def overlaps(self, other: ScreenRect) -> bool:
+        return (
+            self.x < other.max_x
+            and self.max_x > other.x
+            and self.y < other.max_y
+            and self.max_y > other.y
+        )
 
 
 class Renderer:
@@ -28,9 +53,13 @@ class Renderer:
         self.draw_ground(model.world, camera)
         self.draw_safe_zones(model.world, camera)
         commands = self.world_commands(model, camera, presentation_time)
-        for command in sorted(commands, key=lambda item: (-item.depth, item.stable_id)):
+        for command in sorted(
+            commands, key=lambda item: (-item.depth, item.layer_bias, item.stable_id)
+        ):
             command.draw()
         self.draw_barrier(model, camera)
+        if self.player_is_occluded(model, camera):
+            self.draw_player_outline(model, camera)
         if debug:
             self.draw_debug_world(model, camera)
 
@@ -77,6 +106,7 @@ class Renderer:
             commands.append(
                 DrawCommand(
                     depth=anchor.depth,
+                    layer_bias=0,
                     stable_id=obj.id,
                     draw=lambda obj=obj: self.draw_object(obj, camera),
                 )
@@ -88,8 +118,19 @@ class Renderer:
             commands.append(
                 DrawCommand(
                     depth=anchor.depth,
+                    layer_bias=0,
                     stable_id=enemy.id,
                     draw=lambda enemy=enemy: self.draw_enemy(enemy, camera),
+                )
+            )
+        buddy_anchor = camera.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
+        if buddy_anchor is not None:
+            commands.append(
+                DrawCommand(
+                    depth=buddy_anchor.depth,
+                    layer_bias=0,
+                    stable_id="buddy",
+                    draw=lambda: self.draw_buddy(model, camera, presentation_time),
                 )
             )
         player_anchor = camera.project(Vec3(model.player.x, 0.0, model.player.z))
@@ -97,6 +138,7 @@ class Renderer:
             commands.append(
                 DrawCommand(
                     depth=player_anchor.depth,
+                    layer_bias=0,
                     stable_id="player",
                     draw=lambda: self.draw_player(model, camera, presentation_time),
                 )
@@ -104,6 +146,9 @@ class Renderer:
         return commands
 
     def draw_object(self, obj: StaticObject, camera: CameraState) -> None:
+        if obj.kind == "sprite_prop":
+            self.draw_sprite_prop(obj, camera)
+            return
         if obj.solid:
             height = obj.height if obj.height > 0 else 24.0
             color = 5 if obj.kind == "obstacle" else 4
@@ -121,11 +166,39 @@ class Renderer:
             pyxel.line(x - 6, y - 10, x + 6, y - 10, 7)
         elif obj.kind == "solar_station":
             pyxel.tri(x, y - 14, x - 7, y - 2, x + 7, y - 2, 10)
+        elif obj.kind == "ambient_maintenance":
+            pyxel.rect(x - 5, y - 12, 10, 12, 13)
+            pyxel.rectb(x - 5, y - 12, 10, 12, 7)
+            pyxel.pset(x - 2, y - 7, 10)
+            pyxel.pset(x + 2, y - 7, 10)
         elif obj.inspectable:
             pyxel.rectb(x - 5, y - 13, 10, 12, 7)
             pyxel.pset(x, y - 7, 10)
+        elif obj.kind == "reactive_prop":
+            phase = (int(obj.x + obj.z) // 16) % 2
+            pyxel.line(x - 4, y, x - 1, y - 5 - phase, 11)
+            pyxel.line(x, y, x + 1, y - 6 + phase, 3)
+            pyxel.line(x + 4, y, x + 2, y - 4 - phase, 11)
         else:
             pyxel.pset(x, y, 7)
+
+    def draw_sprite_prop(self, obj: StaticObject, camera: CameraState) -> None:
+        bounds = self.sprite_prop_bounds(obj, camera)
+        if bounds is None:
+            return
+        pyxel = self.pyxel
+        trunk_w = max(3, bounds.width // 5)
+        trunk_h = max(8, bounds.height // 3)
+        trunk_x = bounds.x + bounds.width // 2 - trunk_w // 2
+        trunk_y = bounds.max_y - trunk_h
+        crown_w = max(12, bounds.width)
+        crown_h = max(12, bounds.height - trunk_h // 2)
+        pyxel.rect(trunk_x, trunk_y, trunk_w, trunk_h, 4)
+        pyxel.rectb(trunk_x, trunk_y, trunk_w, trunk_h, 0)
+        pyxel.circ(bounds.x + bounds.width // 2, bounds.y + crown_h // 3, crown_w // 3, 11)
+        pyxel.circ(bounds.x + bounds.width // 3, bounds.y + crown_h // 2, crown_w // 4, 3)
+        pyxel.circ(bounds.x + bounds.width * 2 // 3, bounds.y + crown_h // 2, crown_w // 4, 3)
+        pyxel.line(bounds.x + 2, bounds.max_y - 1, bounds.max_x - 2, bounds.max_y - 1, 0)
 
     def draw_enemy(self, enemy: EnemySpawn, camera: CameraState) -> None:
         point = camera.project(Vec3(enemy.x, 4.0, enemy.z))
@@ -166,6 +239,31 @@ class Renderer:
         half = model.player_cube_size / 2.0
         self.draw_box(
             camera, model.player.x, model.player.z, half, half, model.player_cube_size, hover, 11
+        )
+
+    def draw_buddy(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:
+        buddy = model.buddy
+        shadow = camera.project(Vec3(buddy.x, 0.0, buddy.z))
+        if shadow is not None:
+            radius = max(2, int(700 / max(shadow.depth, 1.0)))
+            self.pyxel.elli(
+                int(shadow.x - radius),
+                int(shadow.y - max(1, radius // 4)),
+                radius * 2,
+                max(1, radius // 2),
+                0,
+            )
+        bob = math.sin(presentation_time * math.tau / 1.3) * 2.0
+        half = model.buddy_cube_size / 2.0
+        self.draw_box(
+            camera,
+            buddy.x,
+            buddy.z,
+            half,
+            half,
+            model.buddy_cube_size,
+            buddy.y + bob,
+            10,
         )
 
     def draw_barrier(self, model: GameModel, camera: CameraState) -> None:
@@ -249,3 +347,89 @@ class Renderer:
         if point is None:
             return
         self.pyxel.circb(int(point.x), int(point.y), 5, 7)
+        buddy = camera.project(Vec3(model.buddy.goal_x, model.buddy.goal_y, model.buddy.goal_z))
+        if buddy is not None:
+            self.pyxel.circb(int(buddy.x), int(buddy.y), 4, 10)
+
+    def sprite_prop_bounds(self, obj: StaticObject, camera: CameraState) -> ScreenRect | None:
+        root = camera.project(Vec3(obj.x, 0.0, obj.z))
+        top = camera.project(Vec3(obj.x, obj.sprite_world_height or obj.height or 48.0, obj.z))
+        if root is None or top is None:
+            return None
+        height = max(16, int(abs(root.y - top.y)))
+        width = max(
+            14,
+            int(
+                height
+                * (
+                    (obj.sprite_world_width or 36.0)
+                    / max(obj.sprite_world_height or obj.height or 48.0, 1.0)
+                )
+            ),
+        )
+        return ScreenRect(int(root.x - width / 2), int(root.y - height), width, height)
+
+    def project_box_bounds(
+        self,
+        camera: CameraState,
+        x: float,
+        z: float,
+        half_x: float,
+        half_z: float,
+        height: float,
+        y_offset: float,
+    ) -> ScreenRect | None:
+        vertices = [
+            Vec3(x - half_x, y_offset, z - half_z),
+            Vec3(x + half_x, y_offset, z - half_z),
+            Vec3(x + half_x, y_offset, z + half_z),
+            Vec3(x - half_x, y_offset, z + half_z),
+            Vec3(x - half_x, y_offset + height, z - half_z),
+            Vec3(x + half_x, y_offset + height, z - half_z),
+            Vec3(x + half_x, y_offset + height, z + half_z),
+            Vec3(x - half_x, y_offset + height, z + half_z),
+        ]
+        projected = [camera.project(vertex) for vertex in vertices]
+        points = [point for point in projected if point is not None]
+        if not points:
+            return None
+        min_x = int(min(point.x for point in points))
+        min_y = int(min(point.y for point in points))
+        max_x = int(max(point.x for point in points))
+        max_y = int(max(point.y for point in points))
+        return ScreenRect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
+
+    def player_screen_bounds(self, model: GameModel, camera: CameraState) -> ScreenRect | None:
+        half = model.player_cube_size / 2.0
+        return self.project_box_bounds(
+            camera,
+            model.player.x,
+            model.player.z,
+            half,
+            half,
+            model.player_cube_size,
+            float(model.config["player"]["visual_hover_base"]),
+        )
+
+    def player_is_occluded(self, model: GameModel, camera: CameraState) -> bool:
+        player_anchor = camera.project(Vec3(model.player.x, 0.0, model.player.z))
+        player_bounds = self.player_screen_bounds(model, camera)
+        if player_anchor is None or player_bounds is None:
+            return False
+        for obj in model.world.objects:
+            if not obj.occludes_player:
+                continue
+            obj_anchor = camera.project(Vec3(obj.x, 0.0, obj.z))
+            if obj_anchor is None or obj_anchor.depth >= player_anchor.depth:
+                continue
+            obj_bounds = self.sprite_prop_bounds(obj, camera)
+            if obj_bounds is not None and obj_bounds.overlaps(player_bounds):
+                return True
+        return False
+
+    def draw_player_outline(self, model: GameModel, camera: CameraState) -> None:
+        bounds = self.player_screen_bounds(model, camera)
+        if bounds is None:
+            return
+        self.pyxel.rectb(bounds.x - 2, bounds.y - 2, bounds.width + 4, bounds.height + 4, 7)
+        self.pyxel.rectb(bounds.x - 1, bounds.y - 1, bounds.width + 2, bounds.height + 2, 12)
