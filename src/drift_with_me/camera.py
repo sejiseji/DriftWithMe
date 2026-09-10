@@ -120,6 +120,9 @@ class CameraController:
         self.focus = FocusRuntime(target_object=target_object, hold_sec=hold_sec)
         self.sequence = None
 
+    def cancel_focus(self) -> None:
+        self.focus = None
+
     def follow_shot(self) -> CameraShot:
         camera = self.camera_config
         return CameraShot(

@@ -50,6 +50,8 @@ class EnemySpawn:
     kind: str
     x: float
     z: float
+    home_x: float
+    home_z: float
 
 
 @dataclass(frozen=True)
@@ -120,15 +122,7 @@ class WorldData:
         self.spawn_x = float(raw["spawn"]["player"][0])
         self.spawn_z = float(raw["spawn"]["player"][2])
         self.objects = tuple(self._load_object(item) for item in raw["objects"])
-        self.enemies = tuple(
-            EnemySpawn(
-                id=str(item["id"]),
-                kind=str(item["kind"]),
-                x=float(item["position"][0]),
-                z=float(item["position"][2]),
-            )
-            for item in raw["enemies"]
-        )
+        self.enemies = tuple(self._load_enemy(item) for item in raw["enemies"])
         self.safe_zones = tuple(
             SafeZone(
                 id=str(item["id"]),
@@ -169,6 +163,18 @@ class WorldData:
             sprite_world_width=float(sprite_width),
             sprite_world_height=float(sprite_height),
             reaction_radius=float(item.get("reaction_radius", 0.0)),
+        )
+
+    def _load_enemy(self, item: dict[str, Any]) -> EnemySpawn:
+        position = item["position"]
+        home = item.get("home", position)
+        return EnemySpawn(
+            id=str(item["id"]),
+            kind=str(item["kind"]),
+            x=float(position[0]),
+            z=float(position[2]),
+            home_x=float(home[0]),
+            home_z=float(home[2]),
         )
 
     def _load_camera_zone(self, item: dict[str, Any]) -> CameraZone:
@@ -293,6 +299,47 @@ class WorldData:
                 current_x = next_x
             next_z = clamp(current_z + step_z, half_z, self.depth - half_z)
             if not self.collides_player(current_x, next_z, half_x, half_z):
+                current_z = next_z
+        return current_x, current_z
+
+    def point_in_safe_zone(self, x: float, z: float) -> bool:
+        return any(math.hypot(x - zone.x, z - zone.z) <= zone.radius for zone in self.safe_zones)
+
+    def collides_enemy_circle(self, x: float, z: float, radius: float) -> bool:
+        if x - radius < 0.0 or x + radius > self.width:
+            return True
+        if z - radius < 0.0 or z + radius > self.depth:
+            return True
+        for zone in self.safe_zones:
+            if math.hypot(x - zone.x, z - zone.z) < zone.radius + radius:
+                return True
+        for obj in self.query_solids(x - radius, z - radius, x + radius, z + radius):
+            closest_x = clamp(x, obj.min_x, obj.max_x)
+            closest_z = clamp(z, obj.min_z, obj.max_z)
+            if (x - closest_x) ** 2 + (z - closest_z) ** 2 < radius * radius:
+                return True
+        return False
+
+    def move_enemy_circle_sliding(
+        self,
+        x: float,
+        z: float,
+        delta_x: float,
+        delta_z: float,
+        radius: float,
+        max_step: float = 4.0,
+    ) -> tuple[float, float]:
+        steps = max(1, math.ceil(max(abs(delta_x), abs(delta_z)) / max_step))
+        step_x = delta_x / steps
+        step_z = delta_z / steps
+        current_x = x
+        current_z = z
+        for _ in range(steps):
+            next_x = clamp(current_x + step_x, radius, self.width - radius)
+            if not self.collides_enemy_circle(next_x, current_z, radius):
+                current_x = next_x
+            next_z = clamp(current_z + step_z, radius, self.depth - radius)
+            if not self.collides_enemy_circle(current_x, next_z, radius):
                 current_z = next_z
         return current_x, current_z
 

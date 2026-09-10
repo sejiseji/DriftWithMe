@@ -71,6 +71,7 @@ class DriftWithMeApp:
             radius_px=float(input_config["stick_radius_ref_px"]) * ui_scale,
         )
         self.pending_action_pressed = False
+        self.pending_interact_pressed = False
         self.last_denied_reason = ""
         self.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
         self.browser_pointer_sequence_seen = 0
@@ -167,6 +168,7 @@ class DriftWithMeApp:
             return
         if pyxel.btnp(pyxel.KEY_R):
             self.model.reset_scene()
+            self.audio.reset_event_history()
             self.camera_controller.reset(Vec3(self.model.player.x, 0.0, self.model.player.z))
             self.model.snap_buddy(self.camera())
             self.previous_time = None
@@ -181,10 +183,16 @@ class DriftWithMeApp:
     def update_play_screen(self, elapsed: float) -> None:
         pyxel = self.pyxel
         if pyxel.btnp(pyxel.KEY_ESCAPE):
+            if self.model.world_paused:
+                self.process_events(self.model.cancel_interaction())
+                self.camera_controller.cancel_focus()
             self.screen = AppScreen.PAUSE
             self.pointer.cancel()
             return
         if self.mouse_pressed_in(self.pause_button_rect()):
+            if self.model.world_paused:
+                self.process_events(self.model.cancel_interaction())
+                self.camera_controller.cancel_focus()
             self.screen = AppScreen.PAUSE
             self.pointer.cancel()
             return
@@ -192,6 +200,13 @@ class DriftWithMeApp:
             self.audio.toggle_mute()
 
         self.handle_debug_camera_shortcuts()
+        if self.model.world_paused:
+            self.pointer.cancel()
+            paused_events = self.model.update_paused(elapsed)
+            self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+            self.process_events(paused_events)
+            return
+
         input_camera = self.camera()
         if self.camera_controller.freezes_world:
             self.pointer.cancel()
@@ -200,10 +215,12 @@ class DriftWithMeApp:
 
         keyboard_intent = self.keyboard_intent()
         pointer_intent = self.pointer_intent(elapsed)
-        ui_action_intent = self.ui_action_intent()
-        if keyboard_intent.action_pressed or ui_action_intent.action_pressed:
+        ui_button_intent = self.ui_button_intent()
+        if keyboard_intent.action_pressed or ui_button_intent.action_pressed:
             self.pending_action_pressed = True
-        base_intent = merge_intents(keyboard_intent, pointer_intent, ui_action_intent)
+        if keyboard_intent.interact_pressed or ui_button_intent.interact_pressed:
+            self.pending_interact_pressed = True
+        base_intent = merge_intents(keyboard_intent, pointer_intent, ui_button_intent)
 
         self.accumulator += elapsed
         fixed_dt = self.runtime.fixed_dt
@@ -217,13 +234,17 @@ class DriftWithMeApp:
                 strength=base_intent.strength,
                 barrier=base_intent.barrier,
                 action_pressed=self.pending_action_pressed,
-                interact_pressed=base_intent.interact_pressed,
+                interact_pressed=self.pending_interact_pressed,
             )
             self.pending_action_pressed = False
+            self.pending_interact_pressed = False
             events = self.model.step(step_intent, input_camera, fixed_dt)
             all_events.extend(events)
             self.accumulator -= fixed_dt
             steps += 1
+            if self.model.world_paused:
+                self.accumulator = 0.0
+                break
 
         self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
 
@@ -231,11 +252,20 @@ class DriftWithMeApp:
             self.accumulator = 0.0
             self.model.debug.discarded_elapsed_count += 1
         self.model.debug.fixed_steps_last_callback = steps
-        if all_events:
-            for event in all_events:
-                if event.kind == "action_denied":
-                    self.last_denied_reason = str(event.payload.get("reason", "denied"))
-            self.audio.play_events(all_events)
+        self.process_events(all_events)
+
+    def process_events(self, events) -> None:
+        if not events:
+            return
+        for event in events:
+            if event.kind == "action_denied":
+                self.last_denied_reason = str(event.payload.get("reason", "denied"))
+            elif event.kind == "interaction_started" and event.target_id is not None:
+                target = self.world.object_by_id(event.target_id)
+                if target is not None:
+                    hold_sec = float(event.payload.get("duration_sec", 0.8)) + 0.15
+                    self.camera_controller.start_focus_demo(target, hold_sec=hold_sec)
+        self.audio.play_events(events)
 
     def handle_debug_camera_shortcuts(self) -> None:
         pyxel = self.pyxel
@@ -337,18 +367,29 @@ class DriftWithMeApp:
             ui_rects=self.active_ui_rects(),
         )
 
-    def ui_action_intent(self) -> InputIntent:
-        return InputIntent(action_pressed=self.mouse_pressed_in(self.action_button_rect()))
+    def ui_button_intent(self) -> InputIntent:
+        return InputIntent(
+            action_pressed=self.mouse_pressed_in(self.action_button_rect()),
+            interact_pressed=self.mouse_pressed_in(self.interact_button_rect()),
+        )
 
     def mouse_pressed_in(self, rect: Rect) -> bool:
         pointer = self.pointer_snapshot
         return pointer.pressed and rect.contains(pointer.x, pointer.y)
 
     def active_ui_rects(self) -> tuple[Rect, ...]:
-        return (self.action_button_rect(), self.pause_button_rect(), self.sound_button_rect())
+        return (
+            self.action_button_rect(),
+            self.interact_button_rect(),
+            self.pause_button_rect(),
+            self.sound_button_rect(),
+        )
 
     def action_button_rect(self) -> Rect:
         return Rect(self.runtime.screen_width - 102, self.runtime.screen_height - 72, 90, 60)
+
+    def interact_button_rect(self) -> Rect:
+        return Rect(self.runtime.screen_width - 204, self.runtime.screen_height - 72, 90, 60)
 
     def pause_button_rect(self) -> Rect:
         return Rect(self.runtime.screen_width - 86, 8, 74, 44)
@@ -383,7 +424,7 @@ class DriftWithMeApp:
         pyxel = self.pyxel
         pyxel.cls(1)
         self.draw_text_center(self.runtime.screen_width // 2, 28, "DriftWithMe", 7, scale=3)
-        self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 E0", 10)
+        self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 JWP004", 10)
         self.draw_button(self.start_button_rect(), "START", 11)
         self.draw_button(
             self.sound_button_rect(), "SOUND OFF" if self.audio.muted else "SOUND ON", 12
@@ -412,6 +453,8 @@ class DriftWithMeApp:
             self.model, self.camera(), self.presentation_time, self.debug_enabled
         )
         self.draw_hud()
+        if self.model.interaction is not None:
+            self.draw_interaction_panel()
 
     def draw_pause(self) -> None:
         pyxel = self.pyxel
@@ -433,6 +476,9 @@ class DriftWithMeApp:
         energy = int(self.model.energy)
         draw_pixel_text(pyxel, 14, 14, f"WATER {water:03d}", 12)
         draw_pixel_text(pyxel, 14, 32, f"ENERGY {energy:03d}", 10)
+        self.draw_meter(94, 15, 66, 6, self.model.water, self.model.water_max, 12)
+        self.draw_meter(94, 33, 66, 6, self.model.energy, self.model.energy_max, 10)
+        self.draw_button(self.interact_button_rect(), self.interact_button_label(), 10)
         self.draw_button(self.action_button_rect(), "ACTION", 8)
         self.draw_button(self.pause_button_rect(), "PAUSE", 5)
         self.draw_button(self.sound_button_rect(), "MUTE" if self.audio.muted else "SOUND", 12)
@@ -446,7 +492,59 @@ class DriftWithMeApp:
             pyxel.text(8, 68, f"input={self.pointer.state.name}", 7)
             pyxel.text(8, 78, f"discard={self.model.debug.discarded_elapsed_count}", 7)
             pyxel.text(8, 88, f"camera={self.camera_controller.mode_name}", 7)
-            pyxel.text(8, 98, "F focus / P pan", 7)
+            pyxel.text(8, 98, f"repel={self.model.debug.barrier_repels}", 7)
+            pyxel.text(8, 108, f"contact={self.model.debug.player_contacts}", 7)
+            pyxel.text(8, 118, "F focus / P pan", 7)
+
+    def draw_meter(
+        self, x: int, y: int, width: int, height: int, value: float, maximum: float, color: int
+    ) -> None:
+        filled = 0 if maximum <= 0.0 else int(width * max(0.0, min(value / maximum, 1.0)))
+        self.pyxel.rect(x, y, width, height, 1)
+        self.pyxel.rect(x, y, filled, height, color)
+        self.pyxel.rectb(x, y, width, height, 7)
+
+    def interact_button_label(self) -> str:
+        target = (
+            None if self.model.world_paused else self.model.interaction_candidate(self.camera())
+        )
+        if target is None:
+            return "CHECK"
+        if target.kind == "water_station" and target.supply == "working":
+            return "REFILL"
+        if target.kind == "solar_station":
+            return "CHARGE"
+        return "CHECK"
+
+    def draw_interaction_panel(self) -> None:
+        interaction = self.model.interaction
+        if interaction is None:
+            return
+        pyxel = self.pyxel
+        rect = Rect(self.runtime.screen_width / 2 - 132, 62, 264, 76)
+        pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 0)
+        pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
+        self.draw_text_center(
+            self.runtime.screen_width // 2,
+            int(rect.y + 10),
+            interaction.title,
+            7,
+            scale=2,
+        )
+        for index, line in enumerate(interaction.lines[:2]):
+            self.draw_text_center(
+                self.runtime.screen_width // 2,
+                int(rect.y + 31 + index * 14),
+                line,
+                13,
+                scale=1,
+            )
+        meter_x = int(rect.x + 20)
+        meter_y = int(rect.y + rect.height - 14)
+        meter_w = int(rect.width - 40)
+        pyxel.rect(meter_x, meter_y, meter_w, 6, 1)
+        pyxel.rect(meter_x, meter_y, int(meter_w * interaction.progress), 6, 12)
+        pyxel.rectb(meter_x, meter_y, meter_w, 6, 7)
 
     def draw_button(self, rect: Rect, label: str, color: int) -> None:
         pyxel = self.pyxel

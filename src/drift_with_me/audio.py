@@ -52,6 +52,9 @@ class AudioEngine:
         self.muted = not self.muted
         return self.muted
 
+    def reset_event_history(self) -> None:
+        self._processed_event_ids.clear()
+
     def play_preview(self, event_name: str) -> None:
         if self._pyxel is None or self.muted or event_name not in self.defs:
             return

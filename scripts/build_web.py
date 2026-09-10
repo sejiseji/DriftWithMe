@@ -284,9 +284,9 @@ def write_host_assets(output_dir: Path) -> None:
     (output_dir / "manifest.webmanifest").write_text(
         json.dumps(
             {
-                "name": "DriftWithMe E0",
+                "name": "DriftWithMe P0",
                 "short_name": "DriftWithMe",
-                "description": "DriftWithMe Jack World P0 E0 Pyxel prototype.",
+                "description": "DriftWithMe Jack World P0 Pyxel prototype.",
                 "start_url": "./index.html",
                 "scope": "./",
                 "display": "fullscreen",

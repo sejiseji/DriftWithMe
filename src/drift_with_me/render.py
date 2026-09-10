@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import GameModel
-from drift_with_me.world import EnemySpawn, StaticObject, WorldData
+from drift_with_me.world import StaticObject, WorldData
 
 
 @dataclass(frozen=True)
@@ -60,6 +60,7 @@ class Renderer:
         self.draw_barrier(model, camera)
         if self.player_is_occluded(model, camera):
             self.draw_player_outline(model, camera)
+        self.draw_interaction_marker(model, camera)
         if debug:
             self.draw_debug_world(model, camera)
 
@@ -111,7 +112,7 @@ class Renderer:
                     draw=lambda obj=obj: self.draw_object(obj, camera),
                 )
             )
-        for enemy in model.world.enemies:
+        for enemy in model.enemies:
             anchor = camera.project(Vec3(enemy.x, 0.0, enemy.z))
             if anchor is None:
                 continue
@@ -200,13 +201,21 @@ class Renderer:
         pyxel.circ(bounds.x + bounds.width * 2 // 3, bounds.y + crown_h // 2, crown_w // 4, 3)
         pyxel.line(bounds.x + 2, bounds.max_y - 1, bounds.max_x - 2, bounds.max_y - 1, 0)
 
-    def draw_enemy(self, enemy: EnemySpawn, camera: CameraState) -> None:
+    def draw_enemy(self, enemy, camera: CameraState) -> None:
+        if enemy.state == "DEFEATED":
+            return
         point = camera.project(Vec3(enemy.x, 4.0, enemy.z))
         if point is None:
             return
         pyxel = self.pyxel
         radius = max(3, int(900 / max(point.depth, 1.0)))
         color = 8 if enemy.kind == "normal" else 2
+        if enemy.state == "REPELLED":
+            color = 12
+        elif enemy.state == "REST":
+            color = 13
+        elif enemy.state == "RETURN_HOME":
+            color = 5
         x = int(point.x)
         y = int(point.y)
         pyxel.circ(x, y, radius, color)
@@ -219,6 +228,10 @@ class Renderer:
                 y + int(math.sin(angle) * (radius + 3)),
                 7,
             )
+        if enemy.state == "REST":
+            pyxel.line(x - radius, y - radius - 3, x + radius, y - radius - 3, 7)
+        elif enemy.state == "APPROACH":
+            pyxel.circb(x, y, radius + 4, 8)
 
     def draw_player(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:
         hover = float(model.config["player"]["visual_hover_base"])
@@ -350,6 +363,25 @@ class Renderer:
         buddy = camera.project(Vec3(model.buddy.goal_x, model.buddy.goal_y, model.buddy.goal_z))
         if buddy is not None:
             self.pyxel.circb(int(buddy.x), int(buddy.y), 4, 10)
+        for enemy in model.enemies:
+            point = camera.project(Vec3(enemy.home_x, 0.0, enemy.home_z))
+            if point is not None:
+                self.pyxel.circb(int(point.x), int(point.y), 3, 8 if enemy.kind == "normal" else 2)
+
+    def draw_interaction_marker(self, model: GameModel, camera: CameraState) -> None:
+        target = model.interaction_candidate(camera)
+        if target is None:
+            return
+        point = camera.project(Vec3(target.x, max(16.0, target.height + 8.0), target.z))
+        if point is None:
+            return
+        x = int(point.x)
+        y = int(point.y)
+        color = 8 if model.danger_blocks_interaction() else 7
+        self.pyxel.line(x, y - 5, x + 5, y, color)
+        self.pyxel.line(x + 5, y, x, y + 5, color)
+        self.pyxel.line(x, y + 5, x - 5, y, color)
+        self.pyxel.line(x - 5, y, x, y - 5, color)
 
     def sprite_prop_bounds(self, obj: StaticObject, camera: CameraState) -> ScreenRect | None:
         root = camera.project(Vec3(obj.x, 0.0, obj.z))

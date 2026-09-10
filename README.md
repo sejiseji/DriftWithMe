@@ -1,10 +1,12 @@
 # DriftWithMe
 
 DriftWithMe is a Pyxel prototype project for the Jack World P0 slice. The
-current build implements JWP000-JWP003: a 1024 x 1024 square world, cube
+current build implements JWP000-JWP004: a 1024 x 1024 square world, cube
 placeholders for Jack and buddy, fixed-step movement, obstacle sliding, pointer
 ownership for drag-vs-hold, a start screen, five explicit SE preview hooks,
-basic depth-sorted world drawing, and camera demos for overview/focus/pan.
+basic depth-sorted world drawing, camera demos for overview/focus/pan, slow
+normal urchins, water barrier repel, contact knockback, and water/energy refill
+interactions.
 
 The prototype specification pack is stored in `docs/prototype_spec/`. The game
 loads the copied JSON data from `src/drift_with_me/data/`; tests compare both
@@ -39,8 +41,9 @@ drift-with-me
 
 - Arrow keys / WASD: move in screen direction
 - Mouse or touch drag on the world: move
-- Space or stationary pointer hold: barrier placeholder
-- X or ACTION button: E0 action-denied placeholder
+- Space or stationary pointer hold: water barrier; consumes water and stops Jack
+- E or CHECK/REFILL/CHARGE button: interact with nearby stations or markers
+- X or ACTION button: action-denied placeholder
 - M: sound on/off
 - F1: debug HUD
 - ESC: pause
@@ -54,7 +57,7 @@ Debug-only camera checks:
 - Walk into the north overview zone around X/Z 640-896 to trigger AreaCamera
 
 The action button and SE preview do not claim bubble capture or discharge
-success yet. Those systems start in later waves.
+success yet. Bubble capture and manual discharge start in JWP005.
 
 ## Web Build
 
