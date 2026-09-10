@@ -142,9 +142,11 @@ def write_host_assets(output_dir: Path) -> None:
             {
                 "name": "DriftWithMe E0",
                 "short_name": "DriftWithMe",
+                "description": "DriftWithMe Jack World P0 E0 Pyxel prototype.",
                 "start_url": "./index.html",
                 "scope": "./",
-                "display": "standalone",
+                "display": "fullscreen",
+                "display_override": ["fullscreen", "standalone"],
                 "orientation": "landscape",
                 "background_color": "#071016",
                 "theme_color": "#071016",
@@ -169,6 +171,8 @@ def write_html(root: Path, pyxapp: Path, output: Path) -> None:
         'viewport-fit=cover, user-scalable=no">\n'
         '<meta name="apple-mobile-web-app-capable" content="yes">\n'
         '<meta name="apple-mobile-web-app-title" content="DriftWithMe">\n'
+        '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
+        '<meta name="mobile-web-app-capable" content="yes">\n'
         '<link rel="manifest" href="./manifest.webmanifest">\n'
         '<link rel="stylesheet" href="./host.css">\n'
         f'<script src="https://cdn.jsdelivr.net/gh/kitao/pyxel@{pyxel.VERSION}/wasm/pyxel.js"></script>\n'
