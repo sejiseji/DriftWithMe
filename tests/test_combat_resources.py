@@ -171,7 +171,8 @@ def test_stopped_tap_does_not_refill_water() -> None:
     assert model.interaction is None
     assert model.water == 20.0
     assert [event.kind for event in started] == ["interaction_started"]
-    assert finished == []
+    assert [event.kind for event in finished] == ["inspection_completed"]
+    assert "tap_stopped" in model.inspected_object_ids
 
 
 def test_nearby_enemy_blocks_interaction_outside_safe_zone() -> None:

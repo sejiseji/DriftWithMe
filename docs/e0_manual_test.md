@@ -1,6 +1,6 @@
 # E0 Manual Test Notes
 
-Use this for JWP002-JWP005 manual checks. Automated tests cover model, input,
+Use this for JWP002-JWP006 manual checks. Automated tests cover model, input,
 and camera contracts; device display, touch feel, audible output, and camera
 composition still need human confirmation.
 
@@ -21,18 +21,21 @@ python main.py
 8. Approach a normal urchin without the barrier and confirm Jack is knocked back, not damaged.
 9. Stand near a working tap and press E or REFILL; confirm the short panel freezes the world and WATER returns to 100 only at completion.
 10. Start a refill and press ESC before completion; confirm the refill is cancelled and the resource value is unchanged.
-11. Check the stopped tap and confirm it does not refill water.
-12. Move near the abnormal urchin and confirm it shows windup, fixed-direction dash, then recover.
-13. Press X or BUBBLE near the abnormal urchin and confirm WATER decreases by 12 and a bubble travels.
-14. Confirm a bubble hit produces the capture ring and does not automatically discharge.
-15. Press X or ZAP again and confirm ENERGY decreases by 20, the abnormal urchin disappears, and the discharge SE is used once.
-16. Confirm pressing ACTION with no abnormal target, low water, or low energy gives denied feedback without spending the resource.
-17. Press M and confirm sound toggles.
-18. Press F1 to show debug HUD.
-19. Press F and confirm the camera focuses the nearest inspectable object, then returns.
-20. Press P and confirm the pan_demo visits the maintenance unit and observation post.
-21. Walk into the north overview zone around X/Z 640-896 and confirm yaw/zoom blend smoothly.
-22. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
+11. Check the stopped tap and confirm it opens a short investigation panel but does not refill water.
+12. Press Enter or DONE during an investigation panel and confirm the panel closes without moving Jack.
+13. Press F1 and confirm the debug inspect count increments only for first reads.
+14. Move near the abnormal urchin and confirm it shows windup, fixed-direction dash, then recover.
+15. Press X or BUBBLE near the abnormal urchin and confirm WATER decreases by 12 and a bubble travels.
+16. Confirm a bubble hit produces the capture ring and does not automatically discharge.
+17. Press X or ZAP again and confirm ENERGY decreases by 20, the abnormal urchin disappears, and the discharge SE is used once.
+18. Confirm pressing ACTION with no abnormal target, low water, or low energy gives denied feedback without spending the resource.
+19. Walk through grass placeholders and confirm small particles appear without changing movement.
+20. Press M and confirm sound toggles.
+21. Press F1 to show debug HUD.
+22. Press F and confirm the camera focuses the nearest inspectable object, then returns.
+23. Press P and confirm the pan_demo visits the maintenance unit and observation post.
+24. Walk into the north overview zone around X/Z 640-896 and confirm yaw/zoom blend smoothly.
+25. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
 
 ## Web Local
 
@@ -56,10 +59,12 @@ Open `http://127.0.0.1:8000/web/`.
 10. Confirm refill panel and focus camera do not shift touch coordinates after closing.
 11. Confirm ACTION changes to BUBBLE near the abnormal urchin and to ZAP only after capture.
 12. Confirm one tap fires the bubble and a separate later tap is required for discharge.
+13. Confirm DONE closes an investigation panel and the same tap does not leak into movement.
+14. Confirm small event particles and grass reactions appear without strong flashing or shaking.
 
 ## iPhone
 
-Status: JWP002-JWP004 smoke passed by user; JWP005 needs another pass.
+Status: JWP002-JWP005 smoke passed by user; JWP006 needs another pass.
 
 Expected checks:
 
@@ -71,3 +76,4 @@ Expected checks:
 - Buddy readability, overview blend, focus demo, pan_demo, and tree occlusion outline.
 - Normal urchin readability, barrier repel timing, WATER/ENERGY HUD readability, and refill/cancel behavior.
 - Abnormal urchin windup/dash readability, bubble targeting, capture ring, and separate ZAP tap behavior.
+- Investigation text readability, DONE tap behavior, first-read debug count, and small effect readability.

@@ -101,6 +101,7 @@ class DebugCounters:
     bubbles_fired: int = 0
     enemies_captured: int = 0
     discharges: int = 0
+    inspected_count: int = 0
 
 
 class GameModel:
@@ -129,6 +130,7 @@ class GameModel:
         self.barrier_blocked_until_release = False
         self.bubble: BubbleState | None = None
         self.bubble_cooldown_remaining = 0.0
+        self.inspected_object_ids: set[str] = set()
 
     def enemy_from_spawn(self, spawn) -> EnemyState:
         return EnemyState(
@@ -175,6 +177,7 @@ class GameModel:
         self.barrier_blocked_until_release = False
         self.bubble = None
         self.bubble_cooldown_remaining = 0.0
+        self.inspected_object_ids = set()
 
     @property
     def buddy_cube_size(self) -> float:
@@ -640,7 +643,7 @@ class GameModel:
             else:
                 self.start_interaction(
                     events,
-                    kind="message",
+                    kind="inspect",
                     target=target,
                     title="NO WATER",
                     lines=("SUPPLY STOPPED",),
@@ -664,7 +667,7 @@ class GameModel:
 
         self.start_interaction(
             events,
-            kind="message",
+            kind="inspect",
             target=target,
             title="CHECKED",
             lines=self.object_ascii_lines(target),
@@ -738,10 +741,30 @@ class GameModel:
                     payload={"resource": "energy"},
                 )
             )
+        elif interaction.kind == "inspect":
+            first_read = interaction.object_id not in self.inspected_object_ids
+            self.inspected_object_ids.add(interaction.object_id)
+            self.debug.inspected_count = len(self.inspected_object_ids)
+            events.append(
+                self.event_queue.emit(
+                    world_tick=self.world_tick,
+                    kind="inspection_completed",
+                    actor_id="player",
+                    target_id=interaction.object_id,
+                    world_position=object_position(target, self.player.x, self.player.z),
+                    payload={"first_read": first_read},
+                )
+            )
 
         self.interaction = None
         self.last_events = events
         return events
+
+    def complete_interaction(self) -> list[GameEvent]:
+        if self.interaction is None:
+            return []
+        self.interaction.elapsed_sec = self.interaction.duration_sec
+        return self.update_paused(0.0)
 
     def cancel_interaction(self) -> list[GameEvent]:
         events: list[GameEvent] = []
@@ -772,6 +795,8 @@ class GameModel:
                 continue
             distance = math.hypot(obj.x - self.player.x, obj.z - self.player.z)
             if distance > interaction_range:
+                continue
+            if not self.has_line_of_sight(self.player.x, self.player.z, obj.x, obj.z):
                 continue
             if camera is not None:
                 marker = camera.project(Vec3(obj.x, max(8.0, obj.height), obj.z))

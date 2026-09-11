@@ -4,6 +4,7 @@ import math
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from drift_with_me.effects import EffectSystem
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import GameModel
 from drift_with_me.world import StaticObject, WorldData
@@ -46,7 +47,12 @@ class Renderer:
         self.pyxel = pyxel_module
 
     def draw_scene(
-        self, model: GameModel, camera: CameraState, presentation_time: float, debug: bool
+        self,
+        model: GameModel,
+        camera: CameraState,
+        presentation_time: float,
+        debug: bool,
+        effects: EffectSystem | None = None,
     ) -> None:
         pyxel = self.pyxel
         pyxel.cls(1)
@@ -62,6 +68,7 @@ class Renderer:
             self.draw_player_outline(model, camera)
         self.draw_interaction_marker(model, camera)
         self.draw_action_marker(model, camera)
+        self.draw_effects(model, camera, effects)
         if debug:
             self.draw_debug_world(model, camera)
 
@@ -440,6 +447,75 @@ class Renderer:
         self.pyxel.circb(x, y, 7, color)
         self.pyxel.line(x - 3, y, x + 3, y, color)
         self.pyxel.line(x, y - 3, x, y + 3, color)
+
+    def draw_effects(
+        self, model: GameModel, camera: CameraState, effects: EffectSystem | None
+    ) -> None:
+        if effects is None:
+            return
+        self.draw_world_particles(camera, effects)
+        self.draw_actor_emotes(model, camera, effects)
+        self.draw_screen_cues(camera, effects)
+
+    def draw_world_particles(self, camera: CameraState, effects: EffectSystem) -> None:
+        for particle in effects.particles:
+            point = camera.project(Vec3(particle.x, max(0.0, particle.y), particle.z))
+            if point is None:
+                continue
+            size = 2 if particle.progress < 0.5 and point.depth < 620.0 else 1
+            x = int(point.x)
+            y = int(point.y)
+            if size > 1:
+                self.pyxel.rect(x - 1, y - 1, 2, 2, particle.color)
+            else:
+                self.pyxel.pset(x, y, particle.color)
+
+    def draw_actor_emotes(
+        self, model: GameModel, camera: CameraState, effects: EffectSystem
+    ) -> None:
+        for emote in effects.emotes:
+            anchor = self.emote_anchor(model, emote.anchor_kind, emote.anchor_id)
+            x, y, z = anchor if anchor is not None else (emote.fallback_x, 24.0, emote.fallback_z)
+            point = camera.project(Vec3(x, y + 8.0 + emote.progress * 8.0, z))
+            if point is None:
+                continue
+            self.pyxel.text(int(point.x) - 2, int(point.y) - 3, emote.symbol, emote.color)
+
+    def emote_anchor(
+        self, model: GameModel, anchor_kind: str, anchor_id: str
+    ) -> tuple[float, float, float] | None:
+        if anchor_kind == "player":
+            return (model.player.x, model.player_cube_size + 8.0, model.player.z)
+        if anchor_kind == "buddy":
+            return (model.buddy.x, model.buddy.y + model.buddy_cube_size + 8.0, model.buddy.z)
+        if anchor_kind == "enemy":
+            enemy = model.enemy_by_id(anchor_id)
+            if enemy is None or enemy.state == "DEFEATED":
+                return None
+            return (enemy.x, 22.0, enemy.z)
+        if anchor_kind == "object":
+            obj = model.world.object_by_id(anchor_id)
+            if obj is None:
+                return None
+            return (obj.x, max(18.0, obj.height + 12.0), obj.z)
+        return None
+
+    def draw_screen_cues(self, camera: CameraState, effects: EffectSystem) -> None:
+        for cue in effects.screen_cues:
+            if cue.kind != "focus_lines":
+                continue
+            center_x = camera.viewport_width // 2
+            center_y = camera.viewport_height // 2
+            line_count = max(1, effects.concentration_line_count)
+            length = int(12 * (1.0 - cue.progress)) + 8
+            color = 13 if cue.progress < 0.45 else 5
+            for index in range(line_count):
+                angle = index * math.tau / line_count
+                start_x = center_x + int(math.cos(angle) * (camera.viewport_width * 0.42))
+                start_y = center_y + int(math.sin(angle) * (camera.viewport_height * 0.42))
+                end_x = start_x - int(math.cos(angle) * length)
+                end_y = start_y - int(math.sin(angle) * length)
+                self.pyxel.line(start_x, start_y, end_x, end_y, color)
 
     def sprite_prop_bounds(self, obj: StaticObject, camera: CameraState) -> ScreenRect | None:
         root = camera.project(Vec3(obj.x, 0.0, obj.z))
