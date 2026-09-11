@@ -434,7 +434,18 @@ class DriftWithMeApp:
         return Rect(self.runtime.screen_width / 2 - 70, 140, 140, 38)
 
     def interaction_done_button_rect(self) -> Rect:
-        return Rect(self.runtime.screen_width / 2 + 82, 68, 42, 18)
+        chip = self.interaction_chip_rect()
+        return Rect(chip.x + chip.width - 42, chip.y + 7, 34, 18)
+
+    def interaction_chip_rect(self) -> Rect:
+        hud_right = 170
+        pause_left = self.pause_button_rect().x
+        available_width = max(128.0, pause_left - hud_right - 16.0)
+        width = min(220.0, available_width)
+        centered_x = self.runtime.screen_width / 2 - width / 2
+        max_x = pause_left - width - 8.0
+        x = max(hud_right + 8.0, min(centered_x, max_x))
+        return Rect(x, 8.0, width, 44.0)
 
     def preview_button_rects(self) -> tuple[tuple[str, Rect], ...]:
         names = self.audio.preview_events
@@ -487,7 +498,7 @@ class DriftWithMeApp:
         )
         self.draw_hud()
         if self.model.interaction is not None:
-            self.draw_interaction_panel()
+            self.draw_interaction_chip()
 
     def draw_pause(self) -> None:
         pyxel = self.pyxel
@@ -599,36 +610,38 @@ class DriftWithMeApp:
             return "BUBBLE"
         return "ACTION"
 
-    def draw_interaction_panel(self) -> None:
+    def draw_interaction_chip(self) -> None:
         interaction = self.model.interaction
         if interaction is None:
             return
         pyxel = self.pyxel
-        rect = Rect(self.runtime.screen_width / 2 - 132, 62, 264, 76)
+        rect = self.interaction_chip_rect()
+        done_rect = self.interaction_done_button_rect()
+        accent = 12
+        if interaction.kind == "energy_refill":
+            accent = 10
+        elif interaction.kind == "inspect":
+            accent = 13
         pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 0)
         pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
-        self.draw_text_center(
-            self.runtime.screen_width // 2,
-            int(rect.y + 10),
-            interaction.title,
-            7,
-            scale=2,
-        )
-        for index, line in enumerate(interaction.lines[:2]):
-            self.draw_text_center(
-                self.runtime.screen_width // 2,
-                int(rect.y + 31 + index * 14),
-                line,
-                13,
-                scale=1,
-            )
-        meter_x = int(rect.x + 20)
-        meter_y = int(rect.y + rect.height - 14)
-        meter_w = int(rect.width - 40)
-        pyxel.rect(meter_x, meter_y, meter_w, 6, 1)
-        pyxel.rect(meter_x, meter_y, int(meter_w * interaction.progress), 6, 12)
-        pyxel.rectb(meter_x, meter_y, meter_w, 6, 7)
-        self.draw_button(self.interaction_done_button_rect(), "DONE", 5)
+        pyxel.rect(int(rect.x), int(rect.y), 4, int(rect.height), accent)
+
+        text_x = int(rect.x + 10)
+        text_w = max(20, int(done_rect.x - text_x - 7))
+        title_scale = 2 if pixel_text_size(interaction.title, 2)[0] <= text_w else 1
+        title = self.fit_text_to_width(interaction.title, text_w, title_scale)
+        draw_pixel_text(pyxel, text_x, int(rect.y + 7), title, 7, scale=title_scale)
+        if interaction.lines:
+            line = self.fit_text_to_width(interaction.lines[0], text_w, 1)
+            draw_pixel_text(pyxel, text_x, int(rect.y + 25), line, 13, scale=1)
+
+        meter_x = text_x
+        meter_y = int(rect.y + rect.height - 8)
+        meter_w = int(rect.width - 20)
+        pyxel.rect(meter_x, meter_y, meter_w, 4, 1)
+        pyxel.rect(meter_x, meter_y, int(meter_w * interaction.progress), 4, accent)
+        pyxel.rectb(meter_x, meter_y, meter_w, 4, 7)
+        self.draw_button(done_rect, "DONE", 5)
 
     def draw_button(self, rect: Rect, label: str, color: int) -> None:
         pyxel = self.pyxel
@@ -650,6 +663,15 @@ class DriftWithMeApp:
         text = text.upper()
         text_width, _ = pixel_text_size(text, scale)
         draw_pixel_text(self.pyxel, x - text_width // 2, y, text, color, scale=scale)
+
+    def fit_text_to_width(self, text: str, max_width: int, scale: int) -> str:
+        text = text.upper()
+        if pixel_text_size(text, scale)[0] <= max_width:
+            return text
+        suffix = ".."
+        while text and pixel_text_size(text + suffix, scale)[0] > max_width:
+            text = text[:-1]
+        return text + suffix if text else suffix
 
 
 def main() -> None:

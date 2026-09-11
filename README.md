@@ -9,7 +9,7 @@ basic depth-sorted world drawing, camera demos for overview/focus/pan, slow
 normal urchins, water barrier repel, contact knockback, and water/energy refill
 interactions. The action button now fires a bubble at an abnormal urchin and,
 after capture, uses buddy energy for manual discharge. Short investigation
-panels now freeze the world, record read object IDs, and feed a separate
+chips now freeze the world, record read object IDs, and feed a separate
 effect layer for small particles, actor marks, focus cues, and grass reactions.
 Static rendering now uses visual chunk candidates, one-per-chunk deterministic
 ground details, and active enemy hysteresis/pinning without changing model
@@ -53,7 +53,7 @@ drift-with-me
 - Space, stationary pointer hold, or GUARD button near a normal urchin: water barrier; consumes water and stops Jack
 - E or CHECK/REFILL/CHARGE button: interact with nearby stations or markers
 - X or ACTION/BUBBLE/GUARD/ZAP button: guard near normal urchins, fire bubble at abnormal urchins, then manually discharge a captured abnormal urchin
-- Enter or DONE while an interaction panel is open: complete and close the panel
+- Enter or DONE while an interaction chip is open: complete and close the chip
 - M: sound on/off
 - F1: debug HUD
 - ESC: pause

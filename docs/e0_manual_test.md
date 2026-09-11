@@ -21,10 +21,10 @@ python main.py
 8. Let a normal urchin reach barrier range and confirm ACTION changes to GUARD.
 9. Hold GUARD and confirm the barrier appears, WATER decreases, and the normal urchin is pushed away once.
 10. Approach a normal urchin without the barrier and confirm Jack is knocked back, not damaged.
-11. Stand near a working tap and press E or REFILL; confirm the short panel freezes the world and WATER returns to 100 only at completion.
+11. Stand near a working tap and press E or REFILL; confirm the compact chip freezes the world and WATER returns to 100 only at completion.
 12. Start a refill and press ESC before completion; confirm the refill is cancelled and the resource value is unchanged.
-13. Check the stopped tap and confirm it opens a short investigation panel but does not refill water.
-14. Press Enter or DONE during an investigation panel and confirm the panel closes without moving Jack.
+13. Check the stopped tap and confirm it opens a short investigation chip but does not refill water.
+14. Press Enter or DONE during an investigation chip and confirm the chip closes without moving Jack.
 15. Press F1 and confirm the debug inspect count increments only for first reads.
 16. Move near the abnormal urchin and confirm it shows windup, fixed-direction dash, then recover.
 17. Press X or BUBBLE near the abnormal urchin and confirm WATER decreases by 12 and a bubble travels.
@@ -59,11 +59,11 @@ Open `http://127.0.0.1:8000/web/`.
 7. Confirm tree placeholders can pass in front of Jack and show a temporary outline.
 8. Confirm touch hold consumes water only while the barrier is active.
 9. Confirm REFILL/CHARGE/CHECK taps do not start world movement from the same touch.
-10. Confirm refill panel and focus camera do not shift touch coordinates after closing.
+10. Confirm refill chip and focus camera do not shift touch coordinates after closing.
 11. Confirm ACTION changes to BUBBLE near the abnormal urchin and to ZAP only after capture.
 12. Confirm ACTION changes to GUARD near a normal urchin and holding it activates the barrier without starting world movement.
 13. Confirm one tap fires the bubble and a separate later tap is required for discharge.
-14. Confirm DONE closes an investigation panel and the same tap does not leak into movement.
+14. Confirm DONE closes an investigation chip and the same tap does not leak into movement.
 15. Confirm small event particles and grass reactions appear without strong flashing or shaking.
 16. Confirm debug culling counters are visible in landscape and do not cover touch controls.
 
