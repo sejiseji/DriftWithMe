@@ -9,6 +9,7 @@ from drift_with_me import config
 from drift_with_me.audio import AudioEngine
 from drift_with_me.camera import CameraController
 from drift_with_me.effects import EffectSystem
+from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
 from drift_with_me.input import PointerInput, Rect
 from drift_with_me.math3d import CameraState, Vec3, normalize2
 from drift_with_me.model import GameModel, InputIntent, merge_intents
@@ -55,6 +56,7 @@ class DriftWithMeApp:
         )
         self.model.snap_buddy(self.camera_controller.current)
         self.renderer: Renderer | None = None
+        self.sprite_assets: SpriteAssetLibrary | None = None
         self.screen = AppScreen.START
         self.debug_enabled = False
         self.presentation_time = 0.0
@@ -88,8 +90,11 @@ class DriftWithMeApp:
             headless=headless,
         )
         pyxel.mouse(True)
+        self.sprite_assets = load_runtime_sprite_library(pyxel, self.runtime.raw)
+        for error in self.sprite_assets.errors:
+            print(f"asset_error: {error}")
         self.audio.setup(pyxel)
-        self.renderer = Renderer(pyxel)
+        self.renderer = Renderer(pyxel, self.sprite_assets)
         pyxel.run(self.update, self.draw)
 
     def camera(self) -> CameraState:

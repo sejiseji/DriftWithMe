@@ -194,6 +194,12 @@
       512
     ]
   },
+  "assets": {
+    "sprite_rendering_enabled": false,
+    "manifest": "assets/sprites.json",
+    "player_idle_asset": "jack_idle",
+    "fallback_to_primitives": true
+  },
   "effects": {
     "max_particles": 64,
     "max_emotes": 8,

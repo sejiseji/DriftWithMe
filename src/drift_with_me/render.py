@@ -5,6 +5,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from drift_with_me.effects import EffectSystem
+from drift_with_me.hex_assets import (
+    LoadedSpriteAsset,
+    SpriteAssetLibrary,
+    draw_scaled_sprite,
+    placement_for_upright_height_billboard,
+)
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import GameModel
 from drift_with_me.world import GroundDetail, StaticObject, WorldData
@@ -55,8 +61,9 @@ class RenderStats:
 
 
 class Renderer:
-    def __init__(self, pyxel_module) -> None:
+    def __init__(self, pyxel_module, sprite_assets: SpriteAssetLibrary | None = None) -> None:
         self.pyxel = pyxel_module
+        self.sprite_assets = sprite_assets or SpriteAssetLibrary.empty()
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -77,8 +84,8 @@ class Renderer:
         ):
             command.draw()
         self.draw_barrier(model, camera)
-        if self.player_is_occluded(model, camera):
-            self.draw_player_outline(model, camera)
+        if self.player_is_occluded(model, camera, presentation_time):
+            self.draw_player_outline(model, camera, presentation_time)
         self.draw_interaction_marker(model, camera)
         self.draw_action_marker(model, camera)
         self.draw_effects(model, camera, effects)
@@ -344,11 +351,7 @@ class Renderer:
         self.pyxel.pset(x, y, 7)
 
     def draw_player(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:
-        hover = float(model.config["player"]["visual_hover_base"])
-        hover += math.sin(
-            presentation_time / float(model.config["player"]["visual_hover_period_sec"]) * math.tau
-        )
-        hover *= float(model.config["player"]["visual_hover_amplitude"]) / 2.0
+        hover = self.player_visual_hover(model, presentation_time)
         shadow = camera.project(Vec3(model.player.x, 0.0, model.player.z))
         if shadow is not None:
             radius = max(3, int(1200 / max(shadow.depth, 1.0)))
@@ -359,10 +362,53 @@ class Renderer:
                 max(2, radius // 2),
                 0,
             )
+        if self.draw_player_sprite(model, camera, presentation_time):
+            return
         half = model.player_cube_size / 2.0
         self.draw_box(
             camera, model.player.x, model.player.z, half, half, model.player_cube_size, hover, 11
         )
+
+    def player_visual_hover(self, model: GameModel, presentation_time: float) -> float:
+        hover = float(model.config["player"]["visual_hover_base"])
+        hover += math.sin(
+            presentation_time / float(model.config["player"]["visual_hover_period_sec"]) * math.tau
+        )
+        return hover * float(model.config["player"]["visual_hover_amplitude"]) / 2.0
+
+    def player_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
+        if not self.sprite_assets.enabled:
+            return None
+        asset_config = model.config.get("assets", {})
+        asset_id = str(asset_config.get("player_idle_asset", ""))
+        if not asset_id:
+            return None
+        return self.sprite_assets.get(asset_id)
+
+    def player_sprite_placement(
+        self, model: GameModel, camera: CameraState, presentation_time: float
+    ):
+        asset = self.player_sprite_asset(model)
+        if asset is None:
+            return None
+        anchor = Vec3(
+            model.player.x,
+            self.player_visual_hover(model, presentation_time),
+            model.player.z,
+        )
+        return placement_for_upright_height_billboard(camera, asset.definition, anchor)
+
+    def draw_player_sprite(
+        self, model: GameModel, camera: CameraState, presentation_time: float
+    ) -> bool:
+        asset = self.player_sprite_asset(model)
+        if asset is None:
+            return False
+        placement = self.player_sprite_placement(model, camera, presentation_time)
+        if placement is None:
+            return False
+        draw_scaled_sprite(self.pyxel, asset.frame().image, asset.definition, placement)
+        return True
 
     def draw_buddy(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:
         buddy = model.buddy
@@ -668,7 +714,13 @@ class Renderer:
         max_y = int(max(point.y for point in points))
         return ScreenRect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
 
-    def player_screen_bounds(self, model: GameModel, camera: CameraState) -> ScreenRect | None:
+    def player_screen_bounds(
+        self, model: GameModel, camera: CameraState, presentation_time: float | None = None
+    ) -> ScreenRect | None:
+        if presentation_time is not None:
+            placement = self.player_sprite_placement(model, camera, presentation_time)
+            if placement is not None:
+                return ScreenRect(*placement.rect)
         half = model.player_cube_size / 2.0
         return self.project_box_bounds(
             camera,
@@ -680,9 +732,11 @@ class Renderer:
             float(model.config["player"]["visual_hover_base"]),
         )
 
-    def player_is_occluded(self, model: GameModel, camera: CameraState) -> bool:
+    def player_is_occluded(
+        self, model: GameModel, camera: CameraState, presentation_time: float | None = None
+    ) -> bool:
         player_anchor = camera.project(Vec3(model.player.x, 0.0, model.player.z))
-        player_bounds = self.player_screen_bounds(model, camera)
+        player_bounds = self.player_screen_bounds(model, camera, presentation_time)
         if player_anchor is None or player_bounds is None:
             return False
         for obj in model.world.objects:
@@ -696,8 +750,10 @@ class Renderer:
                 return True
         return False
 
-    def draw_player_outline(self, model: GameModel, camera: CameraState) -> None:
-        bounds = self.player_screen_bounds(model, camera)
+    def draw_player_outline(
+        self, model: GameModel, camera: CameraState, presentation_time: float | None = None
+    ) -> None:
+        bounds = self.player_screen_bounds(model, camera, presentation_time)
         if bounds is None:
             return
         self.pyxel.rectb(bounds.x - 2, bounds.y - 2, bounds.width + 4, bounds.height + 4, 7)
