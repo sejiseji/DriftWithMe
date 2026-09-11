@@ -305,18 +305,20 @@ class DriftWithMeApp:
 
     def keyboard_intent(self) -> InputIntent:
         pyxel = self.pyxel
+        action_mode = self.action_button_mode()
         screen_x = float(pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.KEY_D))
         screen_x -= float(pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.KEY_A))
         screen_y = float(pyxel.btn(pyxel.KEY_DOWN) or pyxel.btn(pyxel.KEY_S))
         screen_y -= float(pyxel.btn(pyxel.KEY_UP) or pyxel.btn(pyxel.KEY_W))
         direction = normalize2(screen_x, screen_y)
         strength = 1.0 if abs(screen_x) > 0.0 or abs(screen_y) > 0.0 else 0.0
+        action_down = pyxel.btn(pyxel.KEY_X)
         return InputIntent(
             screen_x=direction.x,
             screen_y=direction.y,
             strength=strength,
-            barrier=pyxel.btn(pyxel.KEY_SPACE),
-            action_pressed=pyxel.btnp(pyxel.KEY_X),
+            barrier=pyxel.btn(pyxel.KEY_SPACE) or (action_mode == "GUARD" and action_down),
+            action_pressed=False if action_mode == "GUARD" else pyxel.btnp(pyxel.KEY_X),
             interact_pressed=pyxel.btnp(pyxel.KEY_E),
         )
 
@@ -381,6 +383,9 @@ class DriftWithMeApp:
         )
 
     def ui_button_intent(self) -> InputIntent:
+        action_mode = self.action_button_mode()
+        if action_mode == "GUARD":
+            return InputIntent(barrier=self.mouse_down_in(self.action_button_rect()))
         return InputIntent(
             action_pressed=self.mouse_pressed_in(self.action_button_rect()),
             interact_pressed=self.mouse_pressed_in(self.interact_button_rect()),
@@ -389,6 +394,10 @@ class DriftWithMeApp:
     def mouse_pressed_in(self, rect: Rect) -> bool:
         pointer = self.pointer_snapshot
         return pointer.pressed and rect.contains(pointer.x, pointer.y)
+
+    def mouse_down_in(self, rect: Rect) -> bool:
+        pointer = self.pointer_snapshot
+        return pointer.down and rect.contains(pointer.x, pointer.y)
 
     def active_ui_rects(self) -> tuple[Rect, ...]:
         rects = [
@@ -569,6 +578,9 @@ class DriftWithMeApp:
         return "CHECK"
 
     def action_button_label(self) -> str:
+        return self.action_button_mode()
+
+    def action_button_mode(self) -> str:
         if self.model.world_paused:
             return "ACTION"
         camera = self.camera()
@@ -576,6 +588,8 @@ class DriftWithMeApp:
             return "ZAP"
         if self.model.bubble is not None:
             return "WAIT"
+        if self.model.guard_threat() is not None:
+            return "GUARD"
         if self.model.bubble_target(camera) is not None:
             return "BUBBLE"
         return "ACTION"

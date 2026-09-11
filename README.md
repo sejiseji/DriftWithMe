@@ -47,9 +47,9 @@ drift-with-me
 
 - Arrow keys / WASD: move in screen direction
 - Mouse or touch drag on the world: move
-- Space or stationary pointer hold: water barrier; consumes water and stops Jack
+- Space, stationary pointer hold, or GUARD button near a normal urchin: water barrier; consumes water and stops Jack
 - E or CHECK/REFILL/CHARGE button: interact with nearby stations or markers
-- X or ACTION/BUBBLE/ZAP button: fire bubble, then manually discharge a captured abnormal urchin
+- X or ACTION/BUBBLE/GUARD/ZAP button: guard near normal urchins, fire bubble at abnormal urchins, then manually discharge a captured abnormal urchin
 - Enter or DONE while an interaction panel is open: complete and close the panel
 - M: sound on/off
 - F1: debug HUD

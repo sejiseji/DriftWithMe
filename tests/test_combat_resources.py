@@ -68,6 +68,28 @@ def test_barrier_consumes_water_and_repels_a_normal_enemy_once() -> None:
     assert not [event for event in later_events if event.kind == "barrier_repelled"]
 
 
+def test_guard_threat_only_tracks_normal_enemy_at_barrier_range() -> None:
+    model, _camera = make_model()
+    model.player.x = 300.0
+    model.player.z = 192.0
+    enemy = normal_enemy(model)
+    enemy.x = model.player.x + float(model.config["barrier"]["radius"]) + model.enemy_radius(enemy)
+    enemy.z = model.player.z
+
+    assert model.guard_threat() is enemy
+
+    enemy.state = "REPELLED"
+    assert model.guard_threat() is None
+
+    abnormal = model.enemy_by_id("urchin_abnormal_01")
+    assert abnormal is not None
+    abnormal.x = model.player.x + 4.0
+    abnormal.z = model.player.z
+    abnormal.state = "APPROACH"
+
+    assert model.guard_threat() is None
+
+
 def test_barrier_depletion_requires_release_before_redeploy() -> None:
     model, camera = make_model()
     dt = 1.0 / 60.0

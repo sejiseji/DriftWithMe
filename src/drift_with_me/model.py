@@ -524,6 +524,19 @@ class GameModel:
             ),
         )
 
+    def guard_threat(self) -> EnemyState | None:
+        barrier_radius = float(self.config["barrier"]["radius"])
+        candidates = []
+        for enemy in self.enemies:
+            if enemy.kind != "normal" or enemy.state in {"DEFEATED", "REPELLED", "REST"}:
+                continue
+            distance = math.hypot(enemy.x - self.player.x, enemy.z - self.player.z)
+            if distance <= barrier_radius + self.enemy_radius(enemy):
+                candidates.append((distance, enemy.id, enemy))
+        if not candidates:
+            return None
+        return min(candidates, key=lambda item: (item[0], item[1]))[2]
+
     def enemy_visible(self, enemy: EnemyState, camera: CameraState) -> bool:
         point = camera.project(Vec3(enemy.x, 4.0, enemy.z))
         return (
