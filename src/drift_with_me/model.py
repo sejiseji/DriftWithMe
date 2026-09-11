@@ -102,12 +102,17 @@ class DebugCounters:
     enemies_captured: int = 0
     discharges: int = 0
     inspected_count: int = 0
+    active_enemies: int = 0
+    dormant_enemies: int = 0
 
 
 class GameModel:
-    def __init__(self, config: dict[str, Any], world: WorldData) -> None:
+    def __init__(
+        self, config: dict[str, Any], world: WorldData, culling_enabled: bool = True
+    ) -> None:
         self.config = config
         self.world = world
+        self.culling_enabled = culling_enabled
         self.event_queue = EventQueue()
         self.player = PlayerState(world.spawn_x, world.spawn_z)
         self.enemies = [self.enemy_from_spawn(spawn) for spawn in self.world.enemies]
@@ -131,6 +136,8 @@ class GameModel:
         self.bubble: BubbleState | None = None
         self.bubble_cooldown_remaining = 0.0
         self.inspected_object_ids: set[str] = set()
+        self.active_enemy_ids: set[str] = set()
+        self.refresh_active_enemies()
 
     def enemy_from_spawn(self, spawn) -> EnemyState:
         return EnemyState(
@@ -178,6 +185,8 @@ class GameModel:
         self.bubble = None
         self.bubble_cooldown_remaining = 0.0
         self.inspected_object_ids = set()
+        self.active_enemy_ids = set()
+        self.refresh_active_enemies()
 
     @property
     def buddy_cube_size(self) -> float:
@@ -280,6 +289,7 @@ class GameModel:
                 self.player.last_move_x = (next_x - before_x) / moved
                 self.player.last_move_z = (next_z - before_z) / moved
 
+        self.refresh_active_enemies()
         self.update_enemies(dt)
         self.update_bubble(dt, events)
         if self.player.barrier_active:
@@ -833,6 +843,8 @@ class GameModel:
         for enemy in self.enemies:
             if enemy.state == "DEFEATED":
                 continue
+            if self.culling_enabled and enemy.id not in self.active_enemy_ids:
+                continue
             if enemy.state == "CAPTURED":
                 enemy.state_timer = max(0.0, enemy.state_timer - dt)
                 if enemy.state_timer <= 0.0:
@@ -1135,6 +1147,31 @@ class GameModel:
 
     def enemy_home_distance(self, enemy: EnemyState) -> float:
         return math.hypot(enemy.x - enemy.home_x, enemy.z - enemy.home_z)
+
+    def refresh_active_enemies(self) -> None:
+        if not self.culling_enabled:
+            self.active_enemy_ids = {
+                enemy.id for enemy in self.enemies if enemy.state != "DEFEATED"
+            }
+            self.debug.active_enemies = len(self.active_enemy_ids)
+            self.debug.dormant_enemies = len(self.enemies) - self.debug.active_enemies
+            return
+
+        culling = self.config["culling"]
+        enter_radius = float(culling["active_enter_radius"])
+        exit_radius = float(culling["active_exit_radius"])
+        next_active: set[str] = set()
+        for enemy in self.enemies:
+            if enemy.state == "DEFEATED":
+                continue
+            distance = math.hypot(enemy.x - self.player.x, enemy.z - self.player.z)
+            pinned = enemy.state not in {"IDLE"}
+            was_active = enemy.id in self.active_enemy_ids
+            if pinned or distance <= enter_radius or (was_active and distance <= exit_radius):
+                next_active.add(enemy.id)
+        self.active_enemy_ids = next_active
+        self.debug.active_enemies = len(next_active)
+        self.debug.dormant_enemies = len(self.enemies) - len(next_active)
 
     def enemy_rest_seconds(self, enemy: EnemyState) -> float:
         barrier = self.config["barrier"]

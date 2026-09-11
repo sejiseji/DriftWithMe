@@ -1,6 +1,6 @@
 # E0 Manual Test Notes
 
-Use this for JWP002-JWP006 manual checks. Automated tests cover model, input,
+Use this for JWP002-JWP007 manual checks. Automated tests cover model, input,
 and camera contracts; device display, touch feel, audible output, and camera
 composition still need human confirmation.
 
@@ -35,7 +35,8 @@ python main.py
 22. Press F and confirm the camera focuses the nearest inspectable object, then returns.
 23. Press P and confirm the pan_demo visits the maintenance unit and observation post.
 24. Walk into the north overview zone around X/Z 640-896 and confirm yaw/zoom blend smoothly.
-25. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
+25. Press F1 and confirm `vis`, `chunks`, and `active` counters change smoothly while walking.
+26. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
 
 ## Web Local
 
@@ -61,10 +62,11 @@ Open `http://127.0.0.1:8000/web/`.
 12. Confirm one tap fires the bubble and a separate later tap is required for discharge.
 13. Confirm DONE closes an investigation panel and the same tap does not leak into movement.
 14. Confirm small event particles and grass reactions appear without strong flashing or shaking.
+15. Confirm debug culling counters are visible in landscape and do not cover touch controls.
 
 ## iPhone
 
-Status: JWP002-JWP005 smoke passed by user; JWP006 needs another pass.
+Status: JWP002-JWP006 smoke passed by user; JWP007 needs another pass.
 
 Expected checks:
 
@@ -77,3 +79,13 @@ Expected checks:
 - Normal urchin readability, barrier repel timing, WATER/ENERGY HUD readability, and refill/cancel behavior.
 - Abnormal urchin windup/dash readability, bubble targeting, capture ring, and separate ZAP tap behavior.
 - Investigation text readability, DONE tap behavior, first-read debug count, and small effect readability.
+- Culling counter readability and actual frame feel with normal and overview camera movement.
+
+## Local Culling Measurement
+
+```sh
+source .venv/bin/activate
+python scripts/measure_culling.py --iterations 600
+```
+
+This measures Python-side candidate generation only. Do not treat it as an iPhone or browser FPS result.

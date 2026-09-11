@@ -1,7 +1,7 @@
 # DriftWithMe
 
 DriftWithMe is a Pyxel prototype project for the Jack World P0 slice. The
-current build implements JWP000-JWP006: a 1024 x 1024 square world, cube
+current build implements JWP000-JWP007: a 1024 x 1024 square world, cube
 placeholders for Jack and buddy, fixed-step movement, obstacle sliding, pointer
 ownership for drag-vs-hold, a start screen, five explicit SE preview hooks,
 basic depth-sorted world drawing, camera demos for overview/focus/pan, slow
@@ -10,6 +10,9 @@ interactions. The action button now fires a bubble at an abnormal urchin and,
 after capture, uses buddy energy for manual discharge. Short investigation
 panels now freeze the world, record read object IDs, and feed a separate
 effect layer for small particles, actor marks, focus cues, and grass reactions.
+Static rendering now uses visual chunk candidates, one-per-chunk deterministic
+ground details, and active enemy hysteresis/pinning without changing model
+results for the covered input comparisons.
 
 The prototype specification pack is stored in `docs/prototype_spec/`. The game
 loads the copied JSON data from `src/drift_with_me/data/`; tests compare both
@@ -89,3 +92,12 @@ python scripts/check_all.py
 
 This runs the specification data validator, pytest, ruff, compileall, web build,
 and `git diff --check`.
+
+## Culling Measurement
+
+```sh
+python scripts/measure_culling.py --iterations 600
+```
+
+This records Python-side static visibility and draw-command preparation only.
+The latest local JWP007 numbers are in `docs/jwp007_culling_measurement.md`.

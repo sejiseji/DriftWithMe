@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from drift_with_me.effects import EffectSystem
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import GameModel
-from drift_with_me.world import StaticObject, WorldData
+from drift_with_me.world import GroundDetail, StaticObject, WorldData
 
 
 @dataclass(frozen=True)
@@ -42,9 +42,22 @@ class ScreenRect:
         )
 
 
+@dataclass(frozen=True)
+class RenderStats:
+    total_static_objects: int = 0
+    candidate_chunks: int = 0
+    candidate_static_objects: int = 0
+    visible_static_objects: int = 0
+    visible_ground_details: int = 0
+    draw_commands: int = 0
+    active_enemies: int = 0
+    dormant_enemies: int = 0
+
+
 class Renderer:
     def __init__(self, pyxel_module) -> None:
         self.pyxel = pyxel_module
+        self.last_stats = RenderStats()
 
     def draw_scene(
         self,
@@ -108,7 +121,31 @@ class Renderer:
         presentation_time: float,
     ) -> list[DrawCommand]:
         commands: list[DrawCommand] = []
-        for obj in model.world.objects:
+        margin = float(model.config["culling"]["screen_margin_ref_px"])
+        visible_query = model.world.query_visible_static_objects(camera, margin)
+        visible_objects = [
+            obj for obj in visible_query.objects if self.object_is_visible(obj, camera, margin)
+        ]
+        visible_details = [
+            detail
+            for detail in model.world.ground_details_for_chunks(visible_query.chunk_ids)
+            if self.ground_detail_is_visible(detail, camera, margin)
+        ]
+        for detail in visible_details:
+            anchor = camera.project(Vec3(detail.x, 0.0, detail.z))
+            if anchor is None:
+                continue
+            commands.append(
+                DrawCommand(
+                    depth=anchor.depth,
+                    layer_bias=1,
+                    stable_id=detail.id,
+                    draw=lambda detail=detail: self.draw_ground_detail(
+                        detail, camera, model.world_tick
+                    ),
+                )
+            )
+        for obj in visible_objects:
             anchor = camera.project(Vec3(obj.x, 0.0, obj.z))
             if anchor is None:
                 continue
@@ -163,6 +200,16 @@ class Renderer:
                     draw=lambda: self.draw_player(model, camera, presentation_time),
                 )
             )
+        self.last_stats = RenderStats(
+            total_static_objects=len(model.world.objects),
+            candidate_chunks=visible_query.candidate_chunk_count,
+            candidate_static_objects=visible_query.candidate_object_count,
+            visible_static_objects=len(visible_objects),
+            visible_ground_details=len(visible_details),
+            draw_commands=len(commands),
+            active_enemies=model.debug.active_enemies,
+            dormant_enemies=model.debug.dormant_enemies,
+        )
         return commands
 
     def draw_object(self, obj: StaticObject, camera: CameraState) -> None:
@@ -201,6 +248,18 @@ class Renderer:
             pyxel.line(x + 4, y, x + 2, y - 4 - phase, 11)
         else:
             pyxel.pset(x, y, 7)
+
+    def draw_ground_detail(
+        self, detail: GroundDetail, camera: CameraState, world_tick: int
+    ) -> None:
+        point = camera.project(Vec3(detail.x, 0.0, detail.z))
+        if point is None:
+            return
+        x = int(point.x)
+        y = int(point.y)
+        phase = (world_tick // 8 + detail.phase) % 2
+        self.pyxel.pset(x, y, detail.color)
+        self.pyxel.line(x - 1, y, x - 1 + phase, y - 3, detail.color)
 
     def draw_sprite_prop(self, obj: StaticObject, camera: CameraState) -> None:
         bounds = self.sprite_prop_bounds(obj, camera)
@@ -534,6 +593,50 @@ class Renderer:
             ),
         )
         return ScreenRect(int(root.x - width / 2), int(root.y - height), width, height)
+
+    def object_is_visible(self, obj: StaticObject, camera: CameraState, margin: float) -> bool:
+        bounds = self.object_screen_bounds(obj, camera)
+        return bounds is not None and self.screen_rect_visible(bounds, camera, margin)
+
+    def object_screen_bounds(self, obj: StaticObject, camera: CameraState) -> ScreenRect | None:
+        if obj.kind == "sprite_prop":
+            return self.sprite_prop_bounds(obj, camera)
+        if obj.solid:
+            bounds = obj.height if obj.height > 0.0 else 24.0
+            return self.project_box_bounds(
+                camera, obj.x, obj.z, obj.half_x, obj.half_z, bounds, 0.0
+            )
+
+        visual = camera.project(Vec3(obj.x, max(16.0, obj.height + 14.0), obj.z))
+        root = camera.project(Vec3(obj.x, 0.0, obj.z))
+        points = [point for point in (root, visual) if point is not None]
+        if not points:
+            return None
+        min_x = int(min(point.x for point in points) - 8)
+        max_x = int(max(point.x for point in points) + 8)
+        min_y = int(min(point.y for point in points) - 16)
+        max_y = int(max(point.y for point in points) + 4)
+        return ScreenRect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
+
+    def ground_detail_is_visible(
+        self, detail: GroundDetail, camera: CameraState, margin: float
+    ) -> bool:
+        point = camera.project(Vec3(detail.x, 0.0, detail.z))
+        if point is None:
+            return False
+        return (
+            -margin <= point.x <= camera.viewport_width + margin
+            and -margin <= point.y <= camera.viewport_height + margin
+        )
+
+    def screen_rect_visible(self, rect: ScreenRect, camera: CameraState, margin: float) -> bool:
+        viewport = ScreenRect(
+            int(-margin),
+            int(-margin),
+            int(camera.viewport_width + margin * 2.0),
+            int(camera.viewport_height + margin * 2.0),
+        )
+        return rect.overlaps(viewport)
 
     def project_box_bounds(
         self,

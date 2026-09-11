@@ -443,7 +443,7 @@ class DriftWithMeApp:
         pyxel = self.pyxel
         pyxel.cls(1)
         self.draw_text_center(self.runtime.screen_width // 2, 28, "DriftWithMe", 7, scale=3)
-        self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 JWP006", 10)
+        self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 JWP007", 10)
         self.draw_button(self.start_button_rect(), "START", 11)
         self.draw_button(
             self.sound_button_rect(), "SOUND OFF" if self.audio.muted else "SOUND ON", 12
@@ -506,6 +506,7 @@ class DriftWithMeApp:
         if self.last_denied_reason:
             draw_pixel_text(pyxel, 184, 30, f"DENIED:{self.last_denied_reason}", 8)
         if self.debug_enabled:
+            render_stats = self.renderer.last_stats if self.renderer is not None else None
             pyxel.text(8, 48, f"pos={self.model.player.x:.1f},{self.model.player.z:.1f}", 7)
             pyxel.text(8, 58, f"steps={self.model.debug.fixed_steps_last_callback}", 7)
             pyxel.text(8, 68, f"input={self.pointer.state.name}", 7)
@@ -522,6 +523,29 @@ class DriftWithMeApp:
             pyxel.text(8, 128, f"zap={self.model.debug.discharges}", 7)
             pyxel.text(8, 138, f"inspect={self.model.debug.inspected_count}", 7)
             pyxel.text(8, 148, f"fx={len(self.effects.particles)}/{len(self.effects.emotes)}", 7)
+            if render_stats is not None:
+                chunks_text = (
+                    f"chunks={render_stats.candidate_chunks}/64 "
+                    f"detail={render_stats.visible_ground_details}"
+                )
+                pyxel.text(
+                    184,
+                    48,
+                    f"vis={render_stats.visible_static_objects}/{render_stats.candidate_static_objects}/{render_stats.total_static_objects}",
+                    7,
+                )
+                pyxel.text(
+                    184,
+                    58,
+                    chunks_text,
+                    7,
+                )
+                pyxel.text(
+                    184,
+                    68,
+                    f"active={self.model.debug.active_enemies}/{len(self.model.enemies)}",
+                    7,
+                )
             pyxel.text(8, 158, "F focus / P pan", 7)
 
     def draw_meter(
