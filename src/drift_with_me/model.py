@@ -49,6 +49,18 @@ class EnemyState:
     state_timer: float = 0.0
     push_x_per_sec: float = 0.0
     push_z_per_sec: float = 0.0
+    dash_x: float = 0.0
+    dash_z: float = 0.0
+
+
+@dataclass
+class BubbleState:
+    x: float
+    z: float
+    dir_x: float
+    dir_z: float
+    traveled: float = 0.0
+    target_id: str | None = None
 
 
 @dataclass
@@ -86,6 +98,9 @@ class DebugCounters:
     player_contacts: int = 0
     completed_refills: int = 0
     cancelled_interactions: int = 0
+    bubbles_fired: int = 0
+    enemies_captured: int = 0
+    discharges: int = 0
 
 
 class GameModel:
@@ -112,6 +127,8 @@ class GameModel:
         self.action_lock_remaining = 0.0
         self.interaction: InteractionState | None = None
         self.barrier_blocked_until_release = False
+        self.bubble: BubbleState | None = None
+        self.bubble_cooldown_remaining = 0.0
 
     def enemy_from_spawn(self, spawn) -> EnemyState:
         return EnemyState(
@@ -156,6 +173,8 @@ class GameModel:
         self.action_lock_remaining = 0.0
         self.interaction = None
         self.barrier_blocked_until_release = False
+        self.bubble = None
+        self.bubble_cooldown_remaining = 0.0
 
     @property
     def buddy_cube_size(self) -> float:
@@ -205,15 +224,12 @@ class GameModel:
 
         self.world_tick += 1
         self.action_lock_remaining = max(0.0, self.action_lock_remaining - dt)
+        self.bubble_cooldown_remaining = max(0.0, self.bubble_cooldown_remaining - dt)
         self.player.stun_remaining = max(0.0, self.player.stun_remaining - dt)
         self.player.invulnerable_remaining = max(0.0, self.player.invulnerable_remaining - dt)
 
         if intent.action_pressed:
-            self.emit_denied(
-                events,
-                "busy" if intent.barrier else "no_target",
-                scope="JWP004_action_placeholder",
-            )
+            self.try_context_action(events, camera, busy=intent.barrier)
 
         if intent.interact_pressed:
             self.try_start_interaction(events, camera, busy=intent.barrier)
@@ -262,6 +278,7 @@ class GameModel:
                 self.player.last_move_z = (next_z - before_z) / moved
 
         self.update_enemies(dt)
+        self.update_bubble(dt, events)
         if self.player.barrier_active:
             self.resolve_barrier_contacts(events)
         self.resolve_player_contacts(events)
@@ -288,6 +305,309 @@ class GameModel:
         self.water = 0.0
         self.barrier_blocked_until_release = True
         self.emit_denied(events, "insufficient_water", scope="barrier")
+
+    def try_context_action(
+        self,
+        events: list[GameEvent],
+        camera: CameraState,
+        busy: bool = False,
+    ) -> None:
+        if busy or self.player.barrier_active or self.world_paused:
+            self.emit_denied(events, "busy", scope="action")
+            return
+
+        captured = self.captured_enemy(camera)
+        if captured is not None:
+            self.try_discharge(captured, events, camera)
+            return
+
+        self.try_fire_bubble(events, camera)
+
+    def try_fire_bubble(self, events: list[GameEvent], camera: CameraState) -> None:
+        if self.bubble is not None:
+            self.emit_denied(events, "busy", scope="bubble")
+            return
+        if self.captured_enemy(None) is not None:
+            self.emit_denied(events, "busy", scope="bubble")
+            return
+        if self.bubble_cooldown_remaining > 0.0:
+            self.emit_denied(events, "cooldown", scope="bubble")
+            return
+
+        target = self.bubble_target(camera)
+        if target is None:
+            self.emit_denied(events, "no_target", scope="bubble")
+            return
+
+        cost = float(self.config["resources"]["bubble_water_cost"])
+        if self.water < cost:
+            self.emit_denied(events, "insufficient_water", target_id=target.id, scope="bubble")
+            return
+
+        dx = target.x - self.player.x
+        dz = target.z - self.player.z
+        length = math.hypot(dx, dz)
+        if length <= 1e-6:
+            dx, dz = stable_direction(target.id)
+        else:
+            dx /= length
+            dz /= length
+
+        self.water = clamp_resource(self.water - cost, self.water_max)
+        self.bubble = BubbleState(
+            x=self.player.x,
+            z=self.player.z,
+            dir_x=dx,
+            dir_z=dz,
+            target_id=target.id,
+        )
+        self.bubble_cooldown_remaining = float(self.config["bubble"]["cooldown_sec"])
+        self.action_lock_remaining = float(self.config["input"]["action_lock_sec"])
+        self.debug.bubbles_fired += 1
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="bubble_fired",
+                actor_id="player",
+                target_id=target.id,
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={"water_cost": cost},
+            )
+        )
+
+    def try_discharge(
+        self,
+        enemy: EnemyState,
+        events: list[GameEvent],
+        camera: CameraState,
+    ) -> None:
+        cost = float(self.config["resources"]["discharge_energy_cost"])
+        if self.energy < cost:
+            self.emit_denied(events, "insufficient_energy", target_id=enemy.id, scope="discharge")
+            return
+        if self.config["simulation"]["day_phase"] != "day" and not bool(
+            self.config["discharge"]["enabled_at_night"]
+        ):
+            self.emit_denied(events, "night", target_id=enemy.id, scope="discharge")
+            return
+        if math.hypot(enemy.x - self.player.x, enemy.z - self.player.z) > float(
+            self.config["discharge"]["range_from_player"]
+        ):
+            self.emit_denied(events, "out_of_range", target_id=enemy.id, scope="discharge")
+            return
+        if math.hypot(self.buddy.x - self.player.x, self.buddy.z - self.player.z) > float(
+            self.config["discharge"]["max_buddy_player_distance"]
+        ):
+            self.emit_denied(events, "out_of_range", target_id=enemy.id, scope="buddy")
+            return
+        if not self.enemy_visible(enemy, camera):
+            self.emit_denied(events, "target_changed", target_id=enemy.id, scope="discharge")
+            return
+        if not self.has_line_of_sight(self.player.x, self.player.z, enemy.x, enemy.z):
+            self.emit_denied(events, "blocked", target_id=enemy.id, scope="discharge")
+            return
+
+        self.energy = clamp_resource(self.energy - cost, self.energy_max)
+        enemy.state = "DEFEATED"
+        enemy.state_timer = 0.0
+        self.action_lock_remaining = float(self.config["input"]["action_lock_sec"])
+        self.debug.discharges += 1
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="discharge_succeeded",
+                actor_id="buddy",
+                target_id=enemy.id,
+                world_position=(enemy.x, 0.0, enemy.z),
+                payload={"energy_cost": cost},
+            )
+        )
+
+    def update_bubble(self, dt: float, events: list[GameEvent]) -> None:
+        if self.bubble is None:
+            return
+
+        bubble = self.bubble
+        speed = float(self.config["bubble"]["speed"])
+        radius = float(self.config["bubble"]["radius"])
+        max_range = float(self.config["bubble"]["max_range"])
+        remaining_range = max_range - bubble.traveled
+        travel = min(speed * dt, remaining_range)
+        start_x = bubble.x
+        start_z = bubble.z
+        end_x = start_x + bubble.dir_x * travel
+        end_z = start_z + bubble.dir_z * travel
+
+        wall_t = self.first_wall_hit_t(start_x, start_z, end_x, end_z, radius)
+        enemy_hit = self.first_bubble_enemy_hit(start_x, start_z, end_x, end_z, radius)
+        enemy_t = enemy_hit[0] if enemy_hit is not None else None
+
+        if wall_t is not None and (enemy_t is None or wall_t <= enemy_t):
+            self.bubble = None
+            return
+
+        if enemy_hit is not None:
+            hit_t, enemy = enemy_hit
+            bubble.x = start_x + (end_x - start_x) * hit_t
+            bubble.z = start_z + (end_z - start_z) * hit_t
+            self.capture_enemy(enemy, events)
+            self.bubble = None
+            return
+
+        bubble.x = end_x
+        bubble.z = end_z
+        bubble.traveled += travel
+        if bubble.traveled >= max_range - 1e-6:
+            self.bubble = None
+
+    def capture_enemy(self, enemy: EnemyState, events: list[GameEvent]) -> None:
+        enemy.state = "CAPTURED"
+        enemy.state_timer = float(self.config["bubble"]["capture_duration_sec"])
+        enemy.push_x_per_sec = 0.0
+        enemy.push_z_per_sec = 0.0
+        enemy.dash_x = 0.0
+        enemy.dash_z = 0.0
+        self.debug.enemies_captured += 1
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="enemy_captured",
+                actor_id="bubble",
+                target_id=enemy.id,
+                world_position=(enemy.x, 0.0, enemy.z),
+                payload={"capture_duration_sec": enemy.state_timer},
+            )
+        )
+
+    def bubble_target(self, camera: CameraState) -> EnemyState | None:
+        select_range = float(self.config["bubble"]["target_select_range"])
+        candidates = []
+        for enemy in self.enemies:
+            if enemy.kind != "abnormal" or enemy.state in {"CAPTURED", "DEFEATED"}:
+                continue
+            distance = math.hypot(enemy.x - self.player.x, enemy.z - self.player.z)
+            if distance > select_range:
+                continue
+            if not self.enemy_visible(enemy, camera):
+                continue
+            if not self.has_line_of_sight(self.player.x, self.player.z, enemy.x, enemy.z):
+                continue
+            candidates.append((distance, enemy.id, enemy))
+        if not candidates:
+            return None
+        return min(candidates, key=lambda item: (item[0], item[1]))[2]
+
+    def captured_enemy(self, camera: CameraState | None) -> EnemyState | None:
+        candidates = [enemy for enemy in self.enemies if enemy.state == "CAPTURED"]
+        if camera is not None:
+            candidates = [enemy for enemy in candidates if self.enemy_visible(enemy, camera)]
+        if not candidates:
+            return None
+        return min(
+            candidates,
+            key=lambda enemy: (
+                math.hypot(enemy.x - self.player.x, enemy.z - self.player.z),
+                enemy.id,
+            ),
+        )
+
+    def enemy_visible(self, enemy: EnemyState, camera: CameraState) -> bool:
+        point = camera.project(Vec3(enemy.x, 4.0, enemy.z))
+        return (
+            point is not None
+            and 0.0 <= point.x <= camera.viewport_width
+            and 0.0 <= point.y <= camera.viewport_height
+        )
+
+    def has_line_of_sight(
+        self,
+        start_x: float,
+        start_z: float,
+        end_x: float,
+        end_z: float,
+        radius: float = 0.0,
+    ) -> bool:
+        min_x = min(start_x, end_x) - radius
+        max_x = max(start_x, end_x) + radius
+        min_z = min(start_z, end_z) - radius
+        max_z = max(start_z, end_z) + radius
+        for obj in self.world.query_solids(min_x, min_z, max_x, max_z):
+            if (
+                segment_aabb_time(
+                    start_x,
+                    start_z,
+                    end_x,
+                    end_z,
+                    obj.min_x - radius,
+                    obj.min_z - radius,
+                    obj.max_x + radius,
+                    obj.max_z + radius,
+                )
+                is not None
+            ):
+                return False
+        return True
+
+    def first_wall_hit_t(
+        self, start_x: float, start_z: float, end_x: float, end_z: float, radius: float
+    ) -> float | None:
+        candidates: list[float] = []
+        dx = end_x - start_x
+        dz = end_z - start_z
+        if dx < -1e-9:
+            candidates.append((radius - start_x) / dx)
+        elif dx > 1e-9:
+            candidates.append((self.world.width - radius - start_x) / dx)
+        if dz < -1e-9:
+            candidates.append((radius - start_z) / dz)
+        elif dz > 1e-9:
+            candidates.append((self.world.depth - radius - start_z) / dz)
+
+        min_x = min(start_x, end_x) - radius
+        max_x = max(start_x, end_x) + radius
+        min_z = min(start_z, end_z) - radius
+        max_z = max(start_z, end_z) + radius
+        for obj in self.world.query_solids(min_x, min_z, max_x, max_z):
+            hit = segment_aabb_time(
+                start_x,
+                start_z,
+                end_x,
+                end_z,
+                obj.min_x - radius,
+                obj.min_z - radius,
+                obj.max_x + radius,
+                obj.max_z + radius,
+            )
+            if hit is not None:
+                candidates.append(hit)
+
+        valid = [value for value in candidates if 0.0 <= value <= 1.0]
+        if not valid:
+            return None
+        return min(valid)
+
+    def first_bubble_enemy_hit(
+        self, start_x: float, start_z: float, end_x: float, end_z: float, bubble_radius: float
+    ) -> tuple[float, EnemyState] | None:
+        hits = []
+        for enemy in self.enemies:
+            if enemy.kind != "abnormal" or enemy.state in {"CAPTURED", "DEFEATED"}:
+                continue
+            hit = segment_circle_time(
+                start_x,
+                start_z,
+                end_x,
+                end_z,
+                enemy.x,
+                enemy.z,
+                bubble_radius + self.enemy_radius(enemy),
+            )
+            if hit is not None:
+                hits.append((hit, enemy.id, enemy))
+        if not hits:
+            return None
+        hit_t, _enemy_id, enemy = min(hits, key=lambda item: (item[0], item[1]))
+        return hit_t, enemy
 
     def try_start_interaction(
         self,
@@ -488,6 +808,12 @@ class GameModel:
         for enemy in self.enemies:
             if enemy.state == "DEFEATED":
                 continue
+            if enemy.state == "CAPTURED":
+                enemy.state_timer = max(0.0, enemy.state_timer - dt)
+                if enemy.state_timer <= 0.0:
+                    enemy.state = "RECOVER"
+                    enemy.state_timer = float(self.config["bubble"]["release_grace_sec"])
+                continue
             if enemy.state == "REPELLED":
                 self.update_repelled_enemy(enemy, dt)
                 continue
@@ -504,6 +830,10 @@ class GameModel:
                     enemy.x = enemy.home_x
                     enemy.z = enemy.home_z
                     enemy.state = "IDLE"
+                continue
+
+            if enemy.kind == "abnormal":
+                self.update_abnormal_enemy(enemy, dt)
                 continue
 
             if enemy.kind != "normal":
@@ -525,6 +855,88 @@ class GameModel:
                 if moved <= 1e-4:
                     enemy.state = "REST"
                     enemy.state_timer = 0.5
+
+    def update_abnormal_enemy(self, enemy: EnemyState, dt: float) -> None:
+        if enemy.state == "RECOVER":
+            enemy.state_timer = max(0.0, enemy.state_timer - dt)
+            if enemy.state_timer <= 0.0:
+                self.resolve_abnormal_after_recover(enemy)
+            return
+
+        if enemy.state == "WINDUP":
+            enemy.state_timer = max(0.0, enemy.state_timer - dt)
+            if enemy.state_timer <= 0.0:
+                enemy.state = "DASH"
+                enemy.state_timer = float(self.config["enemy"]["abnormal"]["dash_duration_sec"])
+            return
+
+        if enemy.state == "DASH":
+            dash_speed = float(self.config["enemy"]["abnormal"]["dash_speed"])
+            expected = dash_speed * dt
+            moved = self.move_enemy(enemy, enemy.dash_x * expected, enemy.dash_z * expected)
+            enemy.state_timer = max(0.0, enemy.state_timer - dt)
+            if enemy.state_timer <= 0.0 or moved < expected * 0.5:
+                enemy.state = "RECOVER"
+                enemy.state_timer = float(self.config["enemy"]["abnormal"]["recover_sec"])
+            return
+
+        if self.world.point_in_safe_zone(self.player.x, self.player.z):
+            enemy.state = "RETURN_HOME" if self.enemy_home_distance(enemy) > 2.0 else "IDLE"
+            return
+        if self.enemy_home_distance(enemy) > self.enemy_leash(enemy):
+            enemy.state = "RETURN_HOME"
+            return
+
+        distance_to_player = math.hypot(enemy.x - self.player.x, enemy.z - self.player.z)
+        abnormal = self.config["enemy"]["abnormal"]
+        if enemy.state == "IDLE":
+            if distance_to_player <= float(abnormal["aggro_radius"]):
+                enemy.state = "APPROACH"
+            return
+
+        if enemy.state == "APPROACH":
+            if distance_to_player > float(abnormal["aggro_radius"]):
+                enemy.state = "RETURN_HOME" if self.enemy_home_distance(enemy) > 2.0 else "IDLE"
+                return
+            if distance_to_player <= float(abnormal["windup_range"]):
+                self.start_abnormal_windup(enemy)
+                return
+            moved = self.move_enemy_towards(
+                enemy,
+                self.player.x,
+                self.player.z,
+                float(abnormal["approach_speed"]),
+                dt,
+            )
+            if moved <= 1e-4:
+                enemy.state = "RECOVER"
+                enemy.state_timer = float(abnormal["recover_sec"])
+
+    def start_abnormal_windup(self, enemy: EnemyState) -> None:
+        dx = self.player.x - enemy.x
+        dz = self.player.z - enemy.z
+        length = math.hypot(dx, dz)
+        if length <= 1e-6:
+            dx, dz = stable_direction(enemy.id)
+        else:
+            dx /= length
+            dz /= length
+        enemy.dash_x = dx
+        enemy.dash_z = dz
+        enemy.state = "WINDUP"
+        enemy.state_timer = float(self.config["enemy"]["abnormal"]["windup_sec"])
+
+    def resolve_abnormal_after_recover(self, enemy: EnemyState) -> None:
+        if self.enemy_home_distance(enemy) > 2.0:
+            enemy.state = "RETURN_HOME"
+            return
+        distance_to_player = math.hypot(enemy.x - self.player.x, enemy.z - self.player.z)
+        if not self.world.point_in_safe_zone(
+            self.player.x, self.player.z
+        ) and distance_to_player <= float(self.config["enemy"]["abnormal"]["aggro_radius"]):
+            enemy.state = "APPROACH"
+        else:
+            enemy.state = "IDLE"
 
     def update_repelled_enemy(self, enemy: EnemyState, dt: float) -> None:
         active_dt = min(dt, max(enemy.state_timer, 0.0))
@@ -584,7 +996,7 @@ class GameModel:
     def resolve_barrier_contacts(self, events: list[GameEvent]) -> None:
         barrier_radius = float(self.config["barrier"]["radius"])
         for enemy in self.enemies:
-            if enemy.state in {"DEFEATED", "REPELLED", "REST"}:
+            if enemy.state in {"DEFEATED", "REPELLED", "REST", "CAPTURED"}:
                 continue
             if math.hypot(enemy.x - self.player.x, enemy.z - self.player.z) <= (
                 barrier_radius + self.enemy_radius(enemy)
@@ -790,3 +1202,69 @@ def stable_direction(identifier: str) -> tuple[float, float]:
 
 def clamp_resource(value: float, maximum: float) -> float:
     return max(0.0, min(value, maximum))
+
+
+def segment_circle_time(
+    start_x: float,
+    start_z: float,
+    end_x: float,
+    end_z: float,
+    center_x: float,
+    center_z: float,
+    radius: float,
+) -> float | None:
+    dx = end_x - start_x
+    dz = end_z - start_z
+    fx = start_x - center_x
+    fz = start_z - center_z
+    a = dx * dx + dz * dz
+    if a <= 1e-12:
+        return 0.0 if fx * fx + fz * fz <= radius * radius else None
+    b = 2.0 * (fx * dx + fz * dz)
+    c = fx * fx + fz * fz - radius * radius
+    discriminant = b * b - 4.0 * a * c
+    if discriminant < 0.0:
+        return None
+    root = math.sqrt(discriminant)
+    t0 = (-b - root) / (2.0 * a)
+    t1 = (-b + root) / (2.0 * a)
+    candidates = [time for time in (t0, t1) if 0.0 <= time <= 1.0]
+    if not candidates:
+        return None
+    return min(candidates)
+
+
+def segment_aabb_time(
+    start_x: float,
+    start_z: float,
+    end_x: float,
+    end_z: float,
+    min_x: float,
+    min_z: float,
+    max_x: float,
+    max_z: float,
+) -> float | None:
+    dx = end_x - start_x
+    dz = end_z - start_z
+    t_min = 0.0
+    t_max = 1.0
+    for origin, delta, low, high in (
+        (start_x, dx, min_x, max_x),
+        (start_z, dz, min_z, max_z),
+    ):
+        if abs(delta) <= 1e-12:
+            if origin < low or origin > high:
+                return None
+            continue
+        inv_delta = 1.0 / delta
+        t1 = (low - origin) * inv_delta
+        t2 = (high - origin) * inv_delta
+        axis_min = min(t1, t2)
+        axis_max = max(t1, t2)
+        t_min = max(t_min, axis_min)
+        t_max = min(t_max, axis_max)
+        if t_min > t_max:
+            return None
+    if t_min < 0.0 or t_min > 1.0:
+        return None
+    return t_min

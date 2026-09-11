@@ -61,6 +61,7 @@ class Renderer:
         if self.player_is_occluded(model, camera):
             self.draw_player_outline(model, camera)
         self.draw_interaction_marker(model, camera)
+        self.draw_action_marker(model, camera)
         if debug:
             self.draw_debug_world(model, camera)
 
@@ -124,6 +125,17 @@ class Renderer:
                     draw=lambda enemy=enemy: self.draw_enemy(enemy, camera),
                 )
             )
+        if model.bubble is not None:
+            bubble_anchor = camera.project(Vec3(model.bubble.x, 4.0, model.bubble.z))
+            if bubble_anchor is not None:
+                commands.append(
+                    DrawCommand(
+                        depth=bubble_anchor.depth,
+                        layer_bias=-1,
+                        stable_id="bubble",
+                        draw=lambda: self.draw_bubble(model, camera),
+                    )
+                )
         buddy_anchor = camera.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
         if buddy_anchor is not None:
             commands.append(
@@ -216,6 +228,12 @@ class Renderer:
             color = 13
         elif enemy.state == "RETURN_HOME":
             color = 5
+        elif enemy.state == "CAPTURED":
+            color = 12
+        elif enemy.state == "WINDUP":
+            color = 8
+        elif enemy.state == "RECOVER":
+            color = 13
         x = int(point.x)
         y = int(point.y)
         pyxel.circ(x, y, radius, color)
@@ -232,6 +250,32 @@ class Renderer:
             pyxel.line(x - radius, y - radius - 3, x + radius, y - radius - 3, 7)
         elif enemy.state == "APPROACH":
             pyxel.circb(x, y, radius + 4, 8)
+        elif enemy.state == "WINDUP":
+            self.draw_world_line(
+                camera,
+                Vec3(enemy.x, 0.0, enemy.z),
+                Vec3(enemy.x + enemy.dash_x * 56.0, 0.0, enemy.z + enemy.dash_z * 56.0),
+                8,
+            )
+            pyxel.circb(x, y, radius + 5, 8)
+        elif enemy.state == "DASH":
+            pyxel.circb(x, y, radius + 5, 2)
+        elif enemy.state == "CAPTURED":
+            self.draw_world_circle(camera, enemy.x, enemy.z, 16.0, 12)
+            pyxel.circb(x, y, radius + 5, 12)
+
+    def draw_bubble(self, model: GameModel, camera: CameraState) -> None:
+        bubble = model.bubble
+        if bubble is None:
+            return
+        point = camera.project(Vec3(bubble.x, 5.0, bubble.z))
+        if point is None:
+            return
+        radius = max(3, int(600 / max(point.depth, 1.0)))
+        x = int(point.x)
+        y = int(point.y)
+        self.pyxel.circb(x, y, radius, 12)
+        self.pyxel.pset(x, y, 7)
 
     def draw_player(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:
         hover = float(model.config["player"]["visual_hover_base"])
@@ -382,6 +426,20 @@ class Renderer:
         self.pyxel.line(x + 5, y, x, y + 5, color)
         self.pyxel.line(x, y + 5, x - 5, y, color)
         self.pyxel.line(x - 5, y, x, y - 5, color)
+
+    def draw_action_marker(self, model: GameModel, camera: CameraState) -> None:
+        enemy = model.captured_enemy(camera) or model.bubble_target(camera)
+        if enemy is None:
+            return
+        point = camera.project(Vec3(enemy.x, 24.0, enemy.z))
+        if point is None:
+            return
+        x = int(point.x)
+        y = int(point.y)
+        color = 10 if enemy.state == "CAPTURED" else 12
+        self.pyxel.circb(x, y, 7, color)
+        self.pyxel.line(x - 3, y, x + 3, y, color)
+        self.pyxel.line(x, y - 3, x, y + 3, color)
 
     def sprite_prop_bounds(self, obj: StaticObject, camera: CameraState) -> ScreenRect | None:
         root = camera.project(Vec3(obj.x, 0.0, obj.z))

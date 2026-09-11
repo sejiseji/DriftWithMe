@@ -1,6 +1,6 @@
 # E0 Manual Test Notes
 
-Use this for JWP002-JWP004 manual checks. Automated tests cover model, input,
+Use this for JWP002-JWP005 manual checks. Automated tests cover model, input,
 and camera contracts; device display, touch feel, audible output, and camera
 composition still need human confirmation.
 
@@ -22,13 +22,17 @@ python main.py
 9. Stand near a working tap and press E or REFILL; confirm the short panel freezes the world and WATER returns to 100 only at completion.
 10. Start a refill and press ESC before completion; confirm the refill is cancelled and the resource value is unchanged.
 11. Check the stopped tap and confirm it does not refill water.
-12. Press X or ACTION and confirm only the denied feedback/denied SE is used.
-13. Press M and confirm sound toggles.
-14. Press F1 to show debug HUD.
-15. Press F and confirm the camera focuses the nearest inspectable object, then returns.
-16. Press P and confirm the pan_demo visits the maintenance unit and observation post.
-17. Walk into the north overview zone around X/Z 640-896 and confirm yaw/zoom blend smoothly.
-18. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
+12. Move near the abnormal urchin and confirm it shows windup, fixed-direction dash, then recover.
+13. Press X or BUBBLE near the abnormal urchin and confirm WATER decreases by 12 and a bubble travels.
+14. Confirm a bubble hit produces the capture ring and does not automatically discharge.
+15. Press X or ZAP again and confirm ENERGY decreases by 20, the abnormal urchin disappears, and the discharge SE is used once.
+16. Confirm pressing ACTION with no abnormal target, low water, or low energy gives denied feedback without spending the resource.
+17. Press M and confirm sound toggles.
+18. Press F1 to show debug HUD.
+19. Press F and confirm the camera focuses the nearest inspectable object, then returns.
+20. Press P and confirm the pan_demo visits the maintenance unit and observation post.
+21. Walk into the north overview zone around X/Z 640-896 and confirm yaw/zoom blend smoothly.
+22. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
 
 ## Web Local
 
@@ -50,10 +54,12 @@ Open `http://127.0.0.1:8000/web/`.
 8. Confirm touch hold consumes water only while the barrier is active.
 9. Confirm REFILL/CHARGE/CHECK taps do not start world movement from the same touch.
 10. Confirm refill panel and focus camera do not shift touch coordinates after closing.
+11. Confirm ACTION changes to BUBBLE near the abnormal urchin and to ZAP only after capture.
+12. Confirm one tap fires the bubble and a separate later tap is required for discharge.
 
 ## iPhone
 
-Status: JWP002-JWP003 smoke passed by user; JWP004 needs another pass.
+Status: JWP002-JWP004 smoke passed by user; JWP005 needs another pass.
 
 Expected checks:
 
@@ -64,3 +70,4 @@ Expected checks:
 - Actual audible output after a user start action.
 - Buddy readability, overview blend, focus demo, pan_demo, and tree occlusion outline.
 - Normal urchin readability, barrier repel timing, WATER/ENERGY HUD readability, and refill/cancel behavior.
+- Abnormal urchin windup/dash readability, bubble targeting, capture ring, and separate ZAP tap behavior.

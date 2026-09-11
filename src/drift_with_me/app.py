@@ -424,7 +424,7 @@ class DriftWithMeApp:
         pyxel = self.pyxel
         pyxel.cls(1)
         self.draw_text_center(self.runtime.screen_width // 2, 28, "DriftWithMe", 7, scale=3)
-        self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 JWP004", 10)
+        self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 JWP005", 10)
         self.draw_button(self.start_button_rect(), "START", 11)
         self.draw_button(
             self.sound_button_rect(), "SOUND OFF" if self.audio.muted else "SOUND ON", 12
@@ -479,7 +479,7 @@ class DriftWithMeApp:
         self.draw_meter(94, 15, 66, 6, self.model.water, self.model.water_max, 12)
         self.draw_meter(94, 33, 66, 6, self.model.energy, self.model.energy_max, 10)
         self.draw_button(self.interact_button_rect(), self.interact_button_label(), 10)
-        self.draw_button(self.action_button_rect(), "ACTION", 8)
+        self.draw_button(self.action_button_rect(), self.action_button_label(), 8)
         self.draw_button(self.pause_button_rect(), "PAUSE", 5)
         self.draw_button(self.sound_button_rect(), "MUTE" if self.audio.muted else "SOUND", 12)
         if self.model.player.barrier_active:
@@ -494,7 +494,14 @@ class DriftWithMeApp:
             pyxel.text(8, 88, f"camera={self.camera_controller.mode_name}", 7)
             pyxel.text(8, 98, f"repel={self.model.debug.barrier_repels}", 7)
             pyxel.text(8, 108, f"contact={self.model.debug.player_contacts}", 7)
-            pyxel.text(8, 118, "F focus / P pan", 7)
+            pyxel.text(
+                8,
+                118,
+                f"bubble={self.model.debug.bubbles_fired}/{self.model.debug.enemies_captured}",
+                7,
+            )
+            pyxel.text(8, 128, f"zap={self.model.debug.discharges}", 7)
+            pyxel.text(8, 138, "F focus / P pan", 7)
 
     def draw_meter(
         self, x: int, y: int, width: int, height: int, value: float, maximum: float, color: int
@@ -515,6 +522,18 @@ class DriftWithMeApp:
         if target.kind == "solar_station":
             return "CHARGE"
         return "CHECK"
+
+    def action_button_label(self) -> str:
+        if self.model.world_paused:
+            return "ACTION"
+        camera = self.camera()
+        if self.model.captured_enemy(camera) is not None:
+            return "ZAP"
+        if self.model.bubble is not None:
+            return "WAIT"
+        if self.model.bubble_target(camera) is not None:
+            return "BUBBLE"
+        return "ACTION"
 
     def draw_interaction_panel(self) -> None:
         interaction = self.model.interaction
