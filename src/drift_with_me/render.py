@@ -407,7 +407,7 @@ class Renderer:
         placement = self.player_sprite_placement(model, camera, presentation_time)
         if placement is None:
             return False
-        draw_scaled_sprite(self.pyxel, asset.frame().image, asset.definition, placement)
+        draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
         return True
 
     def draw_buddy(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:

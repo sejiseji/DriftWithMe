@@ -3,7 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path, PurePosixPath
@@ -37,8 +38,13 @@ class HexFrameSource:
 @dataclass(frozen=True)
 class SpriteFrameDefinition:
     frame_id: str
-    path: str
+    path: str = ""
     source_hash: str | None = None
+    image_bank: int | None = None
+    u: int = 0
+    v: int = 0
+    width: int | None = None
+    height: int | None = None
 
 
 @dataclass(frozen=True)
@@ -65,7 +71,12 @@ class SpriteDefinition:
 class LoadedSpriteFrame:
     frame_id: str
     image: Any
-    source: HexFrameSource
+    source: HexFrameSource | None
+    u: int
+    v: int
+    width: int
+    height: int
+    source_hash: str
 
 
 @dataclass(frozen=True)
@@ -147,6 +158,13 @@ def source_hash_for_rows(rows: tuple[str, ...]) -> str:
 def load_sprite_manifest_path(pyxel_module: Any, manifest_path: Path) -> SpriteAssetLibrary:
     base_dir = manifest_path.parent
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if is_pyxres_sprite_manifest(manifest):
+        return load_pyxres_sprite_manifest(
+            pyxel_module,
+            manifest,
+            lambda relative_path: local_resource_path(base_dir, relative_path),
+            enabled=True,
+        )
 
     def read_text(relative_path: str) -> str:
         path = base_dir / relative_asset_path(relative_path)
@@ -170,6 +188,15 @@ def load_runtime_sprite_library(
         root = resources.files("drift_with_me")
         manifest_path = join_traversable(root, manifest_name)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if is_pyxres_sprite_manifest(manifest):
+            return load_pyxres_sprite_manifest(
+                pyxel_module,
+                manifest,
+                lambda relative_path: resources.as_file(
+                    join_traversable(manifest_path.parent, relative_path)
+                ),
+                enabled=True,
+            )
 
         def read_text(relative_path: str) -> str:
             return join_traversable(manifest_path.parent, relative_path).read_text(encoding="utf-8")
@@ -202,6 +229,205 @@ def load_sprite_manifest(
             raise HexAssetError(f"{asset_id}: duplicate asset id")
         assets[asset_id] = asset
     return SpriteAssetLibrary(enabled=enabled, assets=assets)
+
+
+def is_pyxres_sprite_manifest(manifest: dict[str, Any]) -> bool:
+    return isinstance(manifest.get("resource_file"), str) and isinstance(
+        manifest.get("assets"), dict
+    )
+
+
+def load_pyxres_sprite_manifest(
+    pyxel_module: Any,
+    manifest: dict[str, Any],
+    resource_path: Callable[[str], AbstractContextManager[Path]],
+    *,
+    enabled: bool,
+) -> SpriteAssetLibrary:
+    require_dict(manifest, "manifest")
+    schema_version = require_int(manifest.get("schema_version"), "manifest.schema_version")
+    if schema_version != SUPPORTED_SCHEMA_VERSION:
+        raise HexAssetError("manifest.schema_version: unsupported value")
+    palette_id = require_nonempty_str(manifest.get("palette_id"), "manifest.palette_id")
+    if palette_id != SUPPORTED_PALETTE_ID:
+        raise HexAssetError(f"manifest.palette_id: unsupported value {palette_id!r}")
+    resource_file = str(
+        relative_asset_path(require_nonempty_str(manifest.get("resource_file"), "resource_file"))
+    )
+    load_options = require_dict(manifest.get("load_options"), "manifest.load_options")
+    if require_bool(load_options.get("exclude_images"), "load_options.exclude_images") is not False:
+        raise HexAssetError("load_options.exclude_images: expected false")
+    if (
+        require_bool(load_options.get("exclude_tilemaps"), "load_options.exclude_tilemaps")
+        is not True
+    ):
+        raise HexAssetError("load_options.exclude_tilemaps: expected true")
+    if require_bool(load_options.get("exclude_sounds"), "load_options.exclude_sounds") is not True:
+        raise HexAssetError("load_options.exclude_sounds: expected true")
+    if require_bool(load_options.get("exclude_musics"), "load_options.exclude_musics") is not True:
+        raise HexAssetError("load_options.exclude_musics: expected true")
+
+    image_banks = require_dict(manifest.get("image_banks"), "manifest.image_banks")
+    bank_count = require_int(image_banks.get("count"), "image_banks.count")
+    bank_width = require_int(image_banks.get("width"), "image_banks.width")
+    bank_height = require_int(image_banks.get("height"), "image_banks.height")
+    if bank_count <= 0 or bank_width <= 0 or bank_height <= 0:
+        raise HexAssetError("manifest.image_banks: dimensions must be positive")
+
+    assets_raw = require_dict(manifest.get("assets"), "manifest.assets")
+    parsed: list[SpriteDefinition] = []
+    seen_asset_ids: set[str] = set()
+    for asset_id, raw_asset in assets_raw.items():
+        if not isinstance(asset_id, str) or not asset_id:
+            raise HexAssetError("manifest.assets: expected non-empty string asset ids")
+        if asset_id in seen_asset_ids:
+            raise HexAssetError(f"{asset_id}: duplicate asset id")
+        seen_asset_ids.add(asset_id)
+        parsed.append(
+            parse_pyxres_sprite_definition(
+                asset_id,
+                raw_asset,
+                bank_count=bank_count,
+                bank_width=bank_width,
+                bank_height=bank_height,
+            )
+        )
+
+    with resource_path(resource_file) as resolved:
+        if not resolved.is_file():
+            raise HexAssetError(f"{resource_file}: referenced pyxres file does not exist")
+        pyxel_module.load(
+            str(resolved),
+            exclude_images=False,
+            exclude_tilemaps=True,
+            exclude_sounds=True,
+            exclude_musics=True,
+        )
+
+    if len(pyxel_module.images) < bank_count:
+        actual_count = len(pyxel_module.images)
+        raise HexAssetError(
+            f"manifest.image_banks.count: expected at least {bank_count}, got {actual_count}"
+        )
+
+    assets: dict[str, LoadedSpriteAsset] = {}
+    for definition in parsed:
+        frames: dict[str, LoadedSpriteFrame] = {}
+        for frame_definition in definition.frames:
+            loaded_frame = load_pyxres_frame(pyxel_module, frame_definition)
+            frames[loaded_frame.frame_id] = loaded_frame
+        assets[definition.asset_id] = LoadedSpriteAsset(definition=definition, frames=frames)
+    return SpriteAssetLibrary(enabled=enabled, assets=assets)
+
+
+def parse_pyxres_sprite_definition(
+    asset_id: str,
+    raw_asset: Any,
+    *,
+    bank_count: int,
+    bank_width: int,
+    bank_height: int,
+) -> SpriteDefinition:
+    require_dict(raw_asset, asset_id)
+    image_bank = require_int(raw_asset.get("image_bank"), f"{asset_id}.image_bank")
+    if not 0 <= image_bank < bank_count:
+        raise HexAssetError(f"{asset_id}.image_bank: outside declared image bank range")
+    colkey = require_int(raw_asset.get("colkey"), f"{asset_id}.colkey")
+    if not 0 <= colkey <= 15:
+        raise HexAssetError(f"{asset_id}.colkey: expected 0..15")
+
+    animation = require_dict(raw_asset.get("animation"), f"{asset_id}.animation")
+    animation_mode = require_nonempty_str(animation.get("mode"), f"{asset_id}.animation.mode")
+    if animation_mode != SUPPORTED_ANIMATION:
+        raise HexAssetError(f"{asset_id}.animation.mode: unsupported value {animation_mode!r}")
+    animation_frame_id = require_nonempty_str(
+        animation.get("frame_id"), f"{asset_id}.animation.frame_id"
+    )
+
+    frames_raw = raw_asset.get("frames")
+    if not isinstance(frames_raw, list) or len(frames_raw) != 1:
+        raise HexAssetError(f"{asset_id}.frames: static pyxres assets must have one frame")
+
+    frame_raw = require_dict(frames_raw[0], f"{asset_id}.frames[0]")
+    frame_id = require_nonempty_str(frame_raw.get("id"), f"{asset_id}.frames[0].id")
+    if frame_id != animation_frame_id:
+        raise HexAssetError(f"{asset_id}.animation.frame_id: missing matching frame")
+    u = require_int(frame_raw.get("u"), f"{asset_id}.{frame_id}.u")
+    v = require_int(frame_raw.get("v"), f"{asset_id}.{frame_id}.v")
+    width = require_int(frame_raw.get("w"), f"{asset_id}.{frame_id}.w")
+    height = require_int(frame_raw.get("h"), f"{asset_id}.{frame_id}.h")
+    if u < 0 or v < 0 or width <= 0 or height <= 0:
+        raise HexAssetError(f"{asset_id}.{frame_id}: invalid frame rectangle")
+    if u + width > bank_width or v + height > bank_height:
+        raise HexAssetError(f"{asset_id}.{frame_id}: frame rectangle exceeds image bank bounds")
+    frame_hash = require_sha256(frame_raw.get("source_hash"), f"{asset_id}.{frame_id}.source_hash")
+
+    anchor_px = require_float_pair(raw_asset.get("anchor_px"), f"{asset_id}.anchor_px")
+    if not (0.0 <= anchor_px[0] <= width and 0.0 <= anchor_px[1] <= height):
+        raise HexAssetError(f"{asset_id}.anchor_px: outside image boundary coordinates")
+    world_size = require_float_pair(raw_asset.get("world_size"), f"{asset_id}.world_size")
+    if world_size[0] <= 0.0 or world_size[1] <= 0.0:
+        raise HexAssetError(f"{asset_id}.world_size: dimensions must be positive")
+    if not math.isclose(world_size[0] / world_size[1], width / height, rel_tol=1e-6, abs_tol=1e-9):
+        raise HexAssetError(f"{asset_id}.world_size: aspect ratio must match frame dimensions")
+
+    projection_mode = require_nonempty_str(
+        raw_asset.get("projection_mode"), f"{asset_id}.projection_mode"
+    )
+    if projection_mode != SUPPORTED_PROJECTION_MODE:
+        raise HexAssetError(f"{asset_id}.projection_mode: unsupported value {projection_mode!r}")
+    flip_policy = require_nonempty_str(raw_asset.get("flip_policy"), f"{asset_id}.flip_policy")
+    if flip_policy != SUPPORTED_FLIP_POLICY:
+        raise HexAssetError(f"{asset_id}.flip_policy: unsupported value {flip_policy!r}")
+
+    return SpriteDefinition(
+        asset_id=asset_id,
+        palette_id=SUPPORTED_PALETTE_ID,
+        hex_width=width,
+        hex_height=height,
+        colkey=colkey,
+        anchor_px=anchor_px,
+        world_size=world_size,
+        projection_mode=projection_mode,
+        flip_policy=flip_policy,
+        animation=animation_mode,
+        frames=(
+            SpriteFrameDefinition(
+                frame_id=frame_id,
+                source_hash=frame_hash,
+                image_bank=image_bank,
+                u=u,
+                v=v,
+                width=width,
+                height=height,
+            ),
+        ),
+        source_hash=frame_hash,
+    )
+
+
+def load_pyxres_frame(pyxel_module: Any, frame: SpriteFrameDefinition) -> LoadedSpriteFrame:
+    if frame.image_bank is None or frame.width is None or frame.height is None:
+        raise HexAssetError(f"{frame.frame_id}: missing pyxres frame placement")
+    image = pyxel_module.images[frame.image_bank]
+    pixels = bytes(
+        image.pget(frame.u + x, frame.v + y)
+        for y in range(frame.height)
+        for x in range(frame.width)
+    )
+    source_hash = source_hash_for_pixels(pixels)
+    if frame.source_hash is not None and frame.source_hash != source_hash:
+        raise HexAssetError(f"{frame.frame_id}: source_hash mismatch after pyxres load")
+    return LoadedSpriteFrame(
+        frame_id=frame.frame_id,
+        image=frame.image_bank,
+        source=None,
+        u=frame.u,
+        v=frame.v,
+        width=frame.width,
+        height=frame.height,
+        source_hash=source_hash,
+    )
 
 
 def load_sprite_asset(
@@ -241,6 +467,11 @@ def load_sprite_asset(
             frame_id=source.frame_id,
             image=image,
             source=source,
+            u=0,
+            v=0,
+            width=source.width,
+            height=source.height,
+            source_hash=frame_hash,
         )
         frame_sources.append(source)
 
@@ -398,21 +629,26 @@ def placement_for_upright_height_billboard(
 
 def draw_scaled_sprite(
     pyxel_module: Any,
-    image: Any,
+    frame: LoadedSpriteFrame,
     definition: SpriteDefinition,
     placement: SpritePlacement,
 ) -> None:
     pyxel_module.blt(
         placement.blt_x,
         placement.blt_y,
-        image,
-        0,
-        0,
-        definition.hex_width,
-        definition.hex_height,
+        frame.image,
+        frame.u,
+        frame.v,
+        frame.width,
+        frame.height,
         colkey=definition.colkey,
         scale=placement.scale,
     )
+
+
+@contextmanager
+def local_resource_path(base_dir: Path, relative_path: str) -> Iterator[Path]:
+    yield base_dir / relative_asset_path(relative_path)
 
 
 def relative_asset_path(value: str) -> PurePosixPath:
@@ -444,6 +680,12 @@ def require_nonempty_str(value: Any, path: str) -> str:
 def require_int(value: Any, path: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise HexAssetError(f"{path}: expected integer")
+    return value
+
+
+def require_bool(value: Any, path: str) -> bool:
+    if not isinstance(value, bool):
+        raise HexAssetError(f"{path}: expected boolean")
     return value
 
 

@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "resource_file": "jack_sprite.pyxres",
+  "reference_pyxel_version": "2.9.9",
+  "resource_format_version": 1,
+  "palette_id": "pyxel_default_16",
+  "image_banks": {
+    "count": 3,
+    "width": 256,
+    "height": 256
+  },
+  "load_options": {
+    "exclude_images": false,
+    "exclude_tilemaps": true,
+    "exclude_sounds": true,
+    "exclude_musics": true
+  },
+  "image_bank_policy": "Whole image-bank set replacement on load; this standalone pack occupies bank 0; banks 1 and 2 are blank. Merge with other sprites at build time.",
+  "assets": {
+    "jack_idle_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          1,
+          8,
+          31,
+          32
+        ]
+      },
+      "attachments_px": {
+        "above_head": [
+          16,
+          6
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "idle_00"
+      },
+      "frames": [
+        {
+          "id": "idle_00",
+          "u": 0,
+          "v": 0,
+          "w": 32,
+          "h": 32,
+          "source_hash": "9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d"
+        }
+      ]
+    }
+  },
+  "notes": [
+    "Color indices, transparent margin and artwork are unchanged from art v0.1.0.",
+    "anchor_px uses image-boundary coordinates; (16,32) is intentional.",
+    "No .pyxpal is supplied. Do not load a same-stem custom palette.",
+    "Do not change collider, cube_size, shadow, hover, camera or input in this format change.",
+    "If image banks are in use, integrate the canonical HEX through the project build step instead of loading this standalone pack over existing image banks."
+  ]
+}

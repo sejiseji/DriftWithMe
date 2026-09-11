@@ -3,6 +3,9 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -21,7 +24,9 @@ from drift_with_me.model import GameModel
 from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
 
+ROOT = Path(__file__).resolve().parents[1]
 ROWS = ("012", "345", "678", "9AB", "CDE")
+JACK_SOURCE_HASH = "9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d"
 
 
 class RecordingPyxel:
@@ -85,6 +90,7 @@ def test_load_manifest_transfers_hex_into_pyxel_image(tmp_path: Path) -> None:
     assert asset is not None
     frame = asset.frame()
 
+    assert frame.source is not None
     assert frame.source.source_hash == pixel_hash(ROWS)
     assert [[frame.image.pget(x, y) for x in range(3)] for y in range(5)] == [
         [0, 1, 2],
@@ -182,12 +188,14 @@ def test_placement_keeps_sprite_anchor_on_projected_world_point(tmp_path: Path) 
     )
 
 
-def test_runtime_sprite_library_is_disabled_by_default() -> None:
+def test_runtime_sprite_library_can_be_disabled_by_config() -> None:
     import pyxel
 
     runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = False
 
-    library = load_runtime_sprite_library(pyxel, runtime.raw)
+    library = load_runtime_sprite_library(pyxel, raw)
 
     assert not library.enabled
     assert library.assets == {}
@@ -207,6 +215,112 @@ def test_runtime_sprite_library_reports_missing_manifest_without_crashing() -> N
     assert library.enabled
     assert library.assets == {}
     assert library.errors
+
+
+def test_default_runtime_config_points_to_baked_jack_resource() -> None:
+    runtime = load_runtime_config()
+
+    assert runtime.raw["assets"] == {
+        "sprite_rendering_enabled": True,
+        "manifest": "assets/jack_sprite.json",
+        "player_idle_asset": "jack_idle_32",
+        "fallback_to_primitives": True,
+    }
+
+
+def test_runtime_pyxres_manifest_loads_jack_and_preserves_nonimage_banks() -> None:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT / "src") + os.pathsep + env.get("PYTHONPATH", "")
+    code = f"""
+import json
+
+import pyxel
+
+from drift_with_me.config import load_runtime_config
+from drift_with_me.hex_assets import load_runtime_sprite_library
+from drift_with_me.math3d import CameraState, Vec3
+from drift_with_me.model import GameModel
+from drift_with_me.render import Renderer
+from drift_with_me.world import load_world_data
+
+
+def sound_snapshot():
+    sound = pyxel.sounds[0]
+    return (
+        tuple(sound.notes),
+        tuple(sound.tones),
+        tuple(sound.volumes),
+        tuple(sound.effects),
+        sound.speed,
+    )
+
+
+def music_snapshot():
+    return tuple(tuple(seq) for seq in pyxel.musics[0].seqs)
+
+
+runtime = load_runtime_config()
+pyxel.init(
+    runtime.screen_width,
+    runtime.screen_height,
+    title="DriftWithMe pyxres test",
+    headless=True,
+)
+pyxel.sounds[0].set("c3e3g3", "t", "3", "n", 10)
+pyxel.musics[0].set([0], [], [], [])
+pyxel.tilemaps[0].pset(0, 0, (1, 2))
+before_sound = sound_snapshot()
+before_music = music_snapshot()
+before_tile = pyxel.tilemaps[0].pget(0, 0)
+before_palette = tuple(pyxel.colors)
+
+library = load_runtime_sprite_library(pyxel, runtime.raw)
+assert library.enabled
+assert library.errors == (), library.errors
+asset = library.get("jack_idle_32")
+assert asset is not None
+frame = asset.frame()
+assert frame.image == 0
+assert (frame.u, frame.v, frame.width, frame.height) == (0, 0, 32, 32)
+assert frame.source_hash == {JACK_SOURCE_HASH!r}
+assert asset.definition.anchor_px == (16.0, 32.0)
+assert asset.definition.world_size == (16.0, 16.0)
+assert pyxel.images[0].pget(16, 32 - 1) != 0
+assert sound_snapshot() == before_sound
+assert music_snapshot() == before_music
+assert pyxel.tilemaps[0].pget(0, 0) == before_tile
+assert tuple(pyxel.colors) == before_palette
+
+model = GameModel(runtime.raw, load_world_data())
+camera = CameraState.from_config(
+    runtime.raw,
+    Vec3(model.player.x, 0.0, model.player.z),
+    runtime.screen_width,
+    runtime.screen_height,
+)
+renderer = Renderer(pyxel, library)
+pyxel.cls(3)
+assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
+placement = renderer.player_sprite_placement(model, camera, presentation_time=0.0)
+assert placement is not None
+left, top, width, height = placement.rect
+visible_pixels = 0
+for y in range(max(0, top), min(runtime.screen_height, top + height)):
+    for x in range(max(0, left), min(runtime.screen_width, left + width)):
+        visible_pixels += pyxel.pget(x, y) != 3
+assert visible_pixels > 0
+print(json.dumps({{"asset": asset.definition.asset_id, "hash": frame.source_hash}}))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_renderer_can_draw_player_through_loaded_sprite(tmp_path: Path) -> None:

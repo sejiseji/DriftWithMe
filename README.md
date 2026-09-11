@@ -1,8 +1,9 @@
 # DriftWithMe
 
 DriftWithMe is a Pyxel prototype project for the Jack World P0 slice. The
-current build implements JWP000-JWP007: a 1024 x 1024 square world, cube
-placeholders for Jack and buddy, fixed-step movement, obstacle sliding, pointer
+current build implements JWP000-JWP011C: a 1024 x 1024 square world, a baked
+pyxres Jack sprite, a cube placeholder for buddy, fixed-step movement,
+obstacle sliding, pointer
 ownership for drag-vs-hold, a start screen, five explicit SE preview hooks,
 basic depth-sorted world drawing, camera demos for overview/focus/pan, slow
 normal urchins, water barrier repel, contact knockback, and water/energy refill
@@ -12,7 +13,9 @@ panels now freeze the world, record read object IDs, and feed a separate
 effect layer for small particles, actor marks, focus cues, and grass reactions.
 Static rendering now uses visual chunk candidates, one-per-chunk deterministic
 ground details, and active enemy hysteresis/pinning without changing model
-results for the covered input comparisons.
+results for the covered input comparisons. Jack art is loaded from
+`src/drift_with_me/assets/jack_sprite.pyxres` with a runtime metadata JSON while
+the game-specific anchor and world size stay outside the image resource.
 
 The prototype specification pack is stored in `docs/prototype_spec/`. The game
 loads the copied JSON data from `src/drift_with_me/data/`; tests compare both
