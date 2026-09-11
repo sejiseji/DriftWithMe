@@ -10,9 +10,11 @@ from pathlib import Path
 
 import pytest
 
+from drift_with_me.camera import camera_ground_axes
 from drift_with_me.config import load_runtime_config
 from drift_with_me.hex_assets import (
     HexAssetError,
+    draw_scaled_sprite,
     load_runtime_sprite_library,
     load_sprite_manifest_path,
     parse_hex_rows,
@@ -188,6 +190,41 @@ def test_placement_keeps_sprite_anchor_on_projected_world_point(tmp_path: Path) 
     )
 
 
+def test_flipped_placement_mirrors_anchor_and_draws_negative_width(tmp_path: Path) -> None:
+    import pyxel
+
+    raw_asset = valid_asset()
+    raw_asset["anchor_px"] = [1.0, 5]
+    manifest_path = write_manifest(tmp_path, raw_asset)
+    asset = load_sprite_manifest_path(pyxel, manifest_path).get("jack_test")
+    assert asset is not None
+    runtime = load_runtime_config()
+    camera = CameraState.from_config(
+        runtime.raw,
+        Vec3(512.0, 0.0, 512.0),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    anchor = Vec3(512.0, 1.5, 512.0)
+    projected = camera.project(anchor)
+    assert projected is not None
+
+    placement = placement_for_upright_height_billboard(
+        camera, asset.definition, anchor, flip_x=True
+    )
+    assert placement is not None
+    assert placement.flip_x
+    mirrored_anchor_x = asset.definition.hex_width - 1.0
+    assert placement.left == pytest.approx(projected.x - mirrored_anchor_x * placement.scale)
+
+    fake_pyxel = RecordingPyxel()
+    draw_scaled_sprite(fake_pyxel, asset.frame(), asset.definition, placement)
+
+    args, _kwargs = fake_pyxel.blt_calls[0]
+    assert args[5] == -3
+    assert args[6] == 5
+
+
 def test_runtime_sprite_library_can_be_disabled_by_config() -> None:
     import pyxel
 
@@ -349,3 +386,31 @@ def test_renderer_can_draw_player_through_loaded_sprite(tmp_path: Path) -> None:
     assert args[5:7] == (3, 5)
     assert kwargs["colkey"] == 0
     assert kwargs["scale"] > 0.0
+
+
+def test_renderer_flips_player_sprite_for_screen_right_movement(tmp_path: Path) -> None:
+    import pyxel
+
+    manifest_path = write_manifest(tmp_path, valid_asset())
+    library = load_sprite_manifest_path(pyxel, manifest_path)
+    runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = True
+    raw["assets"]["player_idle_asset"] = "jack_test"
+    model = GameModel(raw, load_world_data())
+    camera = CameraState.from_config(
+        raw,
+        Vec3(model.player.x, 0.0, model.player.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    screen_right, _ground_forward = camera_ground_axes(camera)
+    renderer = Renderer(RecordingPyxel(), library)
+
+    model.player.last_move_x = screen_right.x
+    model.player.last_move_z = screen_right.y
+    assert renderer.player_sprite_flip_x(model, camera)
+
+    model.player.last_move_x = -screen_right.x
+    model.player.last_move_z = -screen_right.y
+    assert not renderer.player_sprite_flip_x(model, camera)

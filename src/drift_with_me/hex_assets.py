@@ -109,6 +109,7 @@ class SpritePlacement:
     anchor_y: float
     depth: float
     scale: float
+    flip_x: bool
     blt_x: float
     blt_y: float
     left: float
@@ -592,6 +593,8 @@ def placement_for_upright_height_billboard(
     camera: CameraState,
     definition: SpriteDefinition,
     anchor: Vec3,
+    *,
+    flip_x: bool = False,
 ) -> SpritePlacement | None:
     if definition.projection_mode != SUPPORTED_PROJECTION_MODE:
         return None
@@ -606,7 +609,8 @@ def placement_for_upright_height_billboard(
 
     source_center_x = definition.hex_width / 2.0
     source_center_y = definition.hex_height / 2.0
-    anchor_x, anchor_y = definition.anchor_px
+    base_anchor_x, anchor_y = definition.anchor_px
+    anchor_x = definition.hex_width - base_anchor_x if flip_x else base_anchor_x
     left = root.x - anchor_x * scale
     top_y = root.y - anchor_y * scale
     right = left + definition.hex_width * scale
@@ -618,6 +622,7 @@ def placement_for_upright_height_billboard(
         anchor_y=root.y,
         depth=root.depth,
         scale=scale,
+        flip_x=flip_x,
         blt_x=blt_x,
         blt_y=blt_y,
         left=left,
@@ -639,7 +644,7 @@ def draw_scaled_sprite(
         frame.image,
         frame.u,
         frame.v,
-        frame.width,
+        -frame.width if placement.flip_x else frame.width,
         frame.height,
         colkey=definition.colkey,
         scale=placement.scale,

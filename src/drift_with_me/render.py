@@ -64,6 +64,7 @@ class Renderer:
     def __init__(self, pyxel_module, sprite_assets: SpriteAssetLibrary | None = None) -> None:
         self.pyxel = pyxel_module
         self.sprite_assets = sprite_assets or SpriteAssetLibrary.empty()
+        self.player_sprite_flipped_x = False
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -396,7 +397,33 @@ class Renderer:
             self.player_visual_hover(model, presentation_time),
             model.player.z,
         )
-        return placement_for_upright_height_billboard(camera, asset.definition, anchor)
+        return placement_for_upright_height_billboard(
+            camera,
+            asset.definition,
+            anchor,
+            flip_x=self.player_sprite_flip_x(model, camera),
+        )
+
+    def player_sprite_flip_x(self, model: GameModel, camera: CameraState) -> bool:
+        move_length = math.hypot(model.player.last_move_x, model.player.last_move_z)
+        if move_length <= 1e-6:
+            return self.player_sprite_flipped_x
+        root = camera.project(Vec3(model.player.x, 0.0, model.player.z))
+        moved = camera.project(
+            Vec3(
+                model.player.x + model.player.last_move_x / move_length * 16.0,
+                0.0,
+                model.player.z + model.player.last_move_z / move_length * 16.0,
+            )
+        )
+        if root is None or moved is None:
+            return self.player_sprite_flipped_x
+        screen_dx = moved.x - root.x
+        if screen_dx > 0.25:
+            self.player_sprite_flipped_x = True
+        elif screen_dx < -0.25:
+            self.player_sprite_flipped_x = False
+        return self.player_sprite_flipped_x
 
     def draw_player_sprite(
         self, model: GameModel, camera: CameraState, presentation_time: float
