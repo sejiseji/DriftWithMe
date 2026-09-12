@@ -3,9 +3,10 @@
 DriftWithMe is a Pyxel prototype project for the Jack World P0 slice. The
 current build implements JWP000-JWP012C: a 1024 x 1024 square world, baked
 pyxres Jack sprites with 8-way direction selection, a baked Fuse buddy
-sprite with 8-way neutral direction selection, side-facing behind-Jack
-repositioning, and primitive fallback, fixed-step movement, obstacle sliding,
-pointer ownership for drag-vs-hold, a start screen, five explicit SE preview hooks,
+sprite with 8-way neutral direction selection, a baked normal urchin sprite,
+side-facing behind-Jack repositioning, and primitive fallback, fixed-step
+movement, obstacle sliding, pointer ownership for drag-vs-hold, a start
+screen, five explicit SE preview hooks,
 basic depth-sorted world drawing, camera demos for overview/focus/pan, slow
 normal urchins, water barrier repel, contact knockback, and water/energy refill
 interactions. The action button now fires a bubble at an abnormal urchin and,

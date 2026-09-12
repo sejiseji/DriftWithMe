@@ -176,7 +176,7 @@ class Renderer:
                     depth=anchor.depth,
                     layer_bias=0,
                     stable_id=enemy.id,
-                    draw=lambda enemy=enemy: self.draw_enemy(enemy, camera),
+                    draw=lambda enemy=enemy: self.draw_enemy(model, enemy, camera),
                 )
             )
         if model.bubble is not None:
@@ -289,7 +289,7 @@ class Renderer:
         pyxel.circ(bounds.x + bounds.width * 2 // 3, bounds.y + crown_h // 2, crown_w // 4, 3)
         pyxel.line(bounds.x + 2, bounds.max_y - 1, bounds.max_x - 2, bounds.max_y - 1, 0)
 
-    def draw_enemy(self, enemy, camera: CameraState) -> None:
+    def draw_enemy(self, model: GameModel, enemy, camera: CameraState) -> None:
         if enemy.state == "DEFEATED":
             return
         point = camera.project(Vec3(enemy.x, 4.0, enemy.z))
@@ -312,16 +312,23 @@ class Renderer:
             color = 13
         x = int(point.x)
         y = int(point.y)
-        pyxel.circ(x, y, radius, color)
-        for index in range(8):
-            angle = index * math.tau / 8.0
-            pyxel.line(
-                x + int(math.cos(angle) * radius),
-                y + int(math.sin(angle) * radius),
-                x + int(math.cos(angle) * (radius + 3)),
-                y + int(math.sin(angle) * (radius + 3)),
-                7,
-            )
+        sprite_placement = self.draw_normal_enemy_sprite(model, enemy, camera)
+        if sprite_placement is not None:
+            left, top, width, height = sprite_placement.rect
+            x = left + width // 2
+            y = top + height // 2
+            radius = max(radius, max(width, height) // 2)
+        else:
+            pyxel.circ(x, y, radius, color)
+            for index in range(8):
+                angle = index * math.tau / 8.0
+                pyxel.line(
+                    x + int(math.cos(angle) * radius),
+                    y + int(math.sin(angle) * radius),
+                    x + int(math.cos(angle) * (radius + 3)),
+                    y + int(math.sin(angle) * (radius + 3)),
+                    7,
+                )
         if enemy.state == "REST":
             pyxel.line(x - radius, y - radius - 3, x + radius, y - radius - 3, 7)
         elif enemy.state == "APPROACH":
@@ -339,6 +346,31 @@ class Renderer:
         elif enemy.state == "CAPTURED":
             self.draw_world_circle(camera, enemy.x, enemy.z, 16.0, 12)
             pyxel.circb(x, y, radius + 5, 12)
+
+    def normal_enemy_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
+        return self.configured_sprite_asset(model, "normal_urchin_idle_asset")
+
+    def normal_enemy_sprite_placement(self, model: GameModel, enemy, camera: CameraState):
+        if enemy.kind != "normal":
+            return None
+        asset = self.normal_enemy_sprite_asset(model)
+        if asset is None:
+            return None
+        return placement_for_upright_height_billboard(
+            camera,
+            asset.definition,
+            Vec3(enemy.x, 0.0, enemy.z),
+        )
+
+    def draw_normal_enemy_sprite(self, model: GameModel, enemy, camera: CameraState):
+        placement = self.normal_enemy_sprite_placement(model, enemy, camera)
+        if placement is None:
+            return None
+        asset = self.normal_enemy_sprite_asset(model)
+        if asset is None:
+            return None
+        draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
+        return placement
 
     def draw_bubble(self, model: GameModel, camera: CameraState) -> None:
         bubble = model.bubble

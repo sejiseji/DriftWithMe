@@ -874,6 +874,50 @@
           "source_hash": "c3f00558ffc3b6cf579e96cfd730e406501859602d26a3fb5b785f9b6c19d72a"
         }
       ]
+    },
+    "normal_urchin_idle_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        20.0,
+        20.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "enemy_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          6,
+          10,
+          26,
+          29
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "idle_00"
+      },
+      "frames": [
+        {
+          "id": "idle_00",
+          "u": 64,
+          "v": 160,
+          "w": 32,
+          "h": 32,
+          "source_hash": "a9e16f5b554a53f4492849cf05f937e3657a2b0aed64bd46f13357148f850d03"
+        }
+      ]
     }
   },
   "notes": [
@@ -884,6 +928,7 @@
     "If image banks are in use, integrate the canonical HEX through the project build step instead of loading this standalone pack over existing image banks.",
     "Fuse v0.2.0 front_right neutral is baked into bank 0 at (128,0,48,40), with source HEX preserved as fuse_front_right_neutral.hex.",
     "Fuse v0.2.0 neutral directions are baked into bank 0 at x=128/176 rows y=0/40/80/120, with source HEX files preserved.",
-    "Jack eight-direction v0.2.0 sprites are baked into bank 0: front_left/idle at (0,0), front_right at (32,0), front at (0,32), left/back_left at (0/32,64), right/back_right at (0/32,96), back at (0,128)."
+    "Jack eight-direction v0.2.0 sprites are baked into bank 0: front_left/idle at (0,0), front_right at (32,0), front at (0,32), left/back_left at (0/32,64), right/back_right at (0/32,96), back at (0,128).",
+    "Normal urchin v0.1.0 idle sprite is baked into bank 0 at (64,160,32,32), with source HEX preserved as normal_urchin_idle_00.hex."
   ]
 }

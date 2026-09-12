@@ -10,8 +10,9 @@
 - 作業開始時の `git status --short`: 空。未コミット差分なし。
 - JWP012C Fuse buddy導入開始時HEAD: `7b98528aafc2447d1ec70fc280d1eef2378ad97e` (`Prune low-value tests`)。開始時の `git status --short`: 空。未コミット差分なし。
 - JWP012C Fuse 8方向拡張開始時HEAD: `625e34930b18b14e0f5a6af2bb7fea410ca52ab2` (`Increase Fuse buddy sprite scale`)。開始時の `git status --short`: 空。未コミット差分なし。
+- 通常ウニスプライト導入開始時HEAD: `2e2d05f262ff036ce1cbc2eba969e34355ba18b7` (`Add Jack eight direction sprites`)。開始時の `git status --short`: 空。未コミット差分なし。
 - 古い基準コミット `e4c6c0a9736a878f0ac0c3635cfcc516992ae24d` へは戻していない。
-- この規約文書の初回作成時は文書化のみ。JWP012CではFuse buddy静止スプライト1枚を既存pyxresへ追加した。入力、カメラ、投影コード、当たり判定、浮遊、影、深度順、SE、パレット、Web配布方針は変更していない。
+- この規約文書の初回作成時は文書化のみ。JWP012CではFuse buddy静止スプライト1枚を既存pyxresへ追加した。通常ウニ導入ではnormal enemy用静止スプライト1枚を既存pyxresへ追加した。入力、カメラ、当たり判定、浮遊、影、深度順、SE、パレット、Web配布方針は変更していない。
 - `docs/current_asset_rendering_contract.md` は画像導入前、基準コミット `e4c6c0a...` 時点の記録である。現在のJack pyxres導入後の状態は、本書、`docs/jwp011c_jack_pyxres_integration.md`、`docs/jwp012a_buddy_sprite_hook.md` を優先して参照する。
 
 ## 1. 現行アセットと読み込み先
@@ -25,13 +26,14 @@
 |`player_idle_asset`|`jack_idle_32`|
 |Jack direction assets|`jack_front_32`, `jack_front_right_32`, `jack_right_32`, `jack_back_right_32`, `jack_back_32`, `jack_back_left_32`, `jack_left_32`, `jack_front_left_32`|
 |`buddy_idle_asset`|`fuse_front_right_neutral_48`|
+|`normal_urchin_idle_asset`|`normal_urchin_idle_32`|
 |`fallback_to_primitives`|`true`|
 
 現行の実行時リソース:
 
 - manifest: `src/drift_with_me/assets/jack_sprite.json`
 - pyxres: `src/drift_with_me/assets/jack_sprite.pyxres`
-- Jack/Fuse source HEX: `src/drift_with_me/assets/jack_*_00.hex`, `src/drift_with_me/assets/fuse_*_neutral.hex`
+- Jack/Fuse/Normal urchin source HEX: `src/drift_with_me/assets/jack_*_00.hex`, `src/drift_with_me/assets/fuse_*_neutral.hex`, `src/drift_with_me/assets/normal_urchin_idle_00.hex`
 - `.pyxpal`: 同梱なし
 
 `jack_sprite.json` の `load_options` は画像を読み込み対象にし、tilemap、sound、musicを除外する。pyxres本体も `tilemaps = []`、`sounds = []`、`musics = []` で、既存SEの上書き対象は確認されなかった。
@@ -42,7 +44,7 @@
 
 |画像バンク|現行用途|実データ|source rect|規約上の扱い|衝突|
 |---:|---|---|---|---|---|
-|0|キャラクター|Jack 8方向、Fuse neutral 8方向|Jack `(0/32,0/64/96,32,32)`, `(0,32,32,32)`, `(0,128,32,32)` / Fuse `(128/176,0/40/80/120,48,40)`|現行JackとFuseを維持。ヒューズpose差分・ウニ等を追加する候補|なし|
+|0|キャラクター|Jack 8方向、Fuse neutral 8方向、通常ウニidle|Jack `(0/32,0/64/96,32,32)`, `(0,32,32,32)`, `(0,128,32,32)` / Fuse `(128/176,0/40/80/120,48,40)` / Normal urchin `(64,160,32,32)`|現行Jack、Fuse、通常ウニを維持。ヒューズpose差分・異常ウニ等を追加する候補|なし|
 |1|なし|空|なし|将来のエフェクト用に予約|なし|
 |2|なし|空|なし|予備。今回用途を固定しない|なし|
 
@@ -53,6 +55,7 @@
 - `pyxel.load()` は画像バンク群を追記せず置き換える前提で扱う。アセット個別pyxresを順番に読むだけで追加できる設計にしない。
 - 今後アセットが増える場合は、既存画像を保持することを確認したうえで、ゲーム側で使用するリソースへ統合する。
 - JWP012C時点では、Jack予約案とFuse frame `(128,0,48,40)` に競合はない。予約領域へは対応アセット受領時まで何も書き込まない。
+- 通常ウニ受領パックの配置候補 `(0,288,32,32)` は現行256x256バンクの範囲外だったため、移動や上書きではなく空き領域 `(64,160,32,32)` へ焼き込んだ。既存Jack/Fuse領域との衝突はない。
 
 ## 3. 保存方式の方針
 
@@ -133,6 +136,18 @@ JWP012Cでは、`drift_with_me_fuse_parts_v0_2` から合成済みneutral 8方�
 
 方向選択はプレイヤーの直近移動方向を画面上の8方向へ丸めて選ぶ。未接続のpose差分、パネルアニメーション、buddy固有の注視方向制御は将来作業とする。未制作方向を反転や補完で増やさない。
 
+### 4.4 通常ウニの現行配置
+
+`drift_with_me_normal_urchin_v0_1` から、通常ウニの静止スプライト1枚を実行用pyxresへ焼き込んだ。
+
+|asset|frame|source rect|source_hash|
+|---|---|---|---|
+|`normal_urchin_idle_32`|`idle_00`|`(64,160,32,32)`|`a9e16f5b554a53f4492849cf05f937e3657a2b0aed64bd46f13357148f850d03`|
+
+canvas 32x32、colkey 0、anchor_px `(16,32)`、world_size `(20.0,20.0)`。制作正本として、同じ画素を `src/drift_with_me/assets/normal_urchin_idle_00.hex` に保持する。
+
+このアセットは `enemy.kind == "normal"` の表示だけに使う。異常ウニは既存のプリミティブ描画のまま維持し、敵AI、接触半径、guard/barrier、capture、SEは変更していない。状態リングなどの演出は引き続きコード駆動であり、画像の再生完了や見た目にゲーム判定を依存させない。
+
 ## 5. エフェクト配置・描画規約
 
 バンク1は将来の水滴、泡、波紋、火花、音符、光の模様などのために予約する。今回、実データは置かない。
@@ -188,6 +203,7 @@ JWP012Cでは、`drift_with_me_fuse_parts_v0_2` から合成済みneutral 8方�
 ## 7. まだ実装しないこと
 
 - Fuseのpose差分、パネルアニメーション、buddy固有の注視方向制御の追加。
+- 異常ウニ、ウニ方向差分、ウニの状態アニメーションの追加。
 - 新しいエフェクト、動的ロード、外部画像への移行、パッカー、容量対策。
 - パレット、SE、Web配布方針の変更。
 - 既存Jack領域の移動、上書き、再パッキング。
@@ -208,5 +224,5 @@ JWP012Cでは新しいFuse静止スプライト1枚を実装対象として追�
 ## 9. 未確認事項
 
 - iPhone実機での見た目、操作、SE再生は今回未実施。
-- Fuseのpose差分、ウニ、街、小物、エフェクトの具体的な画素と正本は未接続。
+- Fuseのpose差分、異常ウニ、街、小物、エフェクトの具体的な画素と正本は未接続。
 - `CODEX_PYXRES_UPDATE.md` という既存文書は現在のrepo内では確認されなかった。外部指示として存在する場合、本書のハイブリッド管理方針を今後の参照先とする。

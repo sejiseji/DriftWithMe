@@ -51,6 +51,8 @@ JACK_DIRECTION_RECTS = {
     "back_right": (32, 96, 32, 32),
     "back": (0, 128, 32, 32),
 }
+NORMAL_URCHIN_SOURCE_HASH = "a9e16f5b554a53f4492849cf05f937e3657a2b0aed64bd46f13357148f850d03"
+NORMAL_URCHIN_RECT = (64, 160, 32, 32)
 FUSE_DIRECTION_HASHES = {
     "front": "a9c9661505e49fbf9d42a4e2f066c2a668b68677d844eb8eaa8000620460189c",
     "front_right": "669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8",
@@ -98,6 +100,19 @@ def test_jack_source_hex_preserves_received_pixels(direction: str) -> None:
     assert len(rows) == 32
     assert {len(row) for row in rows} == {32}
     assert pixel_hash(rows) == JACK_DIRECTION_HASHES[direction]
+
+
+def test_normal_urchin_source_hex_preserves_received_pixels() -> None:
+    rows = tuple(
+        (ROOT / "src/drift_with_me/assets/normal_urchin_idle_00.hex")
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+
+    assert len(rows) == 32
+    assert {len(row) for row in rows} == {32}
+    assert pixel_hash(rows) == NORMAL_URCHIN_SOURCE_HASH
 
 
 @pytest.mark.parametrize("direction", tuple(FUSE_DIRECTION_HASHES))
@@ -393,6 +408,7 @@ assert (back_frame.u, back_frame.v, back_frame.width, back_frame.height) == (0, 
 assert back_frame.source_hash == {JACK_BACK_SOURCE_HASH!r}
 jack_assets = {JACK_DIRECTION_HASHES!r}
 jack_rects = {JACK_DIRECTION_RECTS!r}
+urchin_rect = {NORMAL_URCHIN_RECT!r}
 for direction, expected_hash in jack_assets.items():
     jack = library.get(f"jack_{{direction}}_32")
     assert jack is not None, direction
@@ -404,6 +420,15 @@ for direction, expected_hash in jack_assets.items():
     assert jack.definition.world_size == (16.0, 16.0)
 for direction in jack_assets:
     assert runtime.raw["assets"][f"player_{{direction}}_asset"] == f"jack_{{direction}}_32"
+urchin = library.get("normal_urchin_idle_32")
+assert urchin is not None
+urchin_frame = urchin.frame()
+assert (urchin_frame.u, urchin_frame.v, urchin_frame.width, urchin_frame.height) == urchin_rect
+assert urchin_frame.source_hash == {NORMAL_URCHIN_SOURCE_HASH!r}
+assert urchin.definition.colkey == 0
+assert urchin.definition.anchor_px == (16.0, 32.0)
+assert urchin.definition.world_size == (20.0, 20.0)
+assert runtime.raw["assets"]["normal_urchin_idle_asset"] == "normal_urchin_idle_32"
 fuse_assets = {FUSE_DIRECTION_HASHES!r}
 fuse_rects = {FUSE_DIRECTION_RECTS!r}
 fuse_frame = None
@@ -445,6 +470,19 @@ renderer = Renderer(pyxel, library)
 pyxel.cls(3)
 assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
 placement = renderer.player_sprite_placement(model, camera, presentation_time=0.0)
+assert placement is not None
+left, top, width, height = placement.rect
+visible_pixels = 0
+for y in range(max(0, top), min(runtime.screen_height, top + height)):
+    for x in range(max(0, left), min(runtime.screen_width, left + width)):
+        visible_pixels += pyxel.pget(x, y) != 3
+assert visible_pixels > 0
+pyxel.cls(3)
+enemy = next(enemy for enemy in model.enemies if enemy.kind == "normal")
+assert renderer.normal_enemy_sprite_asset(model) is not None
+assert renderer.normal_enemy_sprite_placement(model, enemy, camera) is not None
+renderer.draw_enemy(model, enemy, camera)
+placement = renderer.normal_enemy_sprite_placement(model, enemy, camera)
 assert placement is not None
 left, top, width, height = placement.rect
 visible_pixels = 0
