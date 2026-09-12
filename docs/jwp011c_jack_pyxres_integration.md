@@ -1,5 +1,7 @@
 # JWP011C Jack pyxres Integration
 
+関連規約: `docs/asset_storage_and_sheet_rules.md`
+
 作業開始HEAD: `3e6a72d223e505f0c71a1ea2fab6fe2903825221`
 
 ## 導入アセット

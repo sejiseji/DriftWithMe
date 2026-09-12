@@ -4,6 +4,11 @@
 対象: 本番HEXスプライト導入前の現行P0描画仕様
 基準コミット: `e4c6c0a9736a878f0ac0c3635cfcc516992ae24d` (`Add guard action for normal urchins`)
 
+更新メモ:
+
+- この文書は画像導入前の履歴資料であり、`blt`、image bank、pyxres未使用という記録は基準コミット時点の状態を示す。
+- 現在のJack pyxres導入後のアセット保存・シート配置規約は `docs/asset_storage_and_sheet_rules.md`、実装ログは `docs/jwp011c_jack_pyxres_integration.md` と `docs/jwp012a_buddy_sprite_hook.md` を参照する。
+
 ## 0. 作業範囲とHEAD確認
 
 - 作業開始時HEADは基準コミット `e4c6c0a9736a878f0ac0c3635cfcc516992ae24d` と一致していた。
