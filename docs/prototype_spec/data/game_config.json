@@ -61,6 +61,11 @@
     "bob_amplitude": 2.0,
     "bob_period_sec": 2.0,
     "follow_tau_sec": 0.18,
+    "side_reposition_enabled": true,
+    "side_reposition_screen_right_world": 20.0,
+    "side_reposition_behind_player_world": 12.0,
+    "side_reposition_min_screen_px": 0.25,
+    "side_reposition_follow_tau_sec": 0.08,
     "hard_follow_limit": 80.0,
     "physical_collision": false
   },

@@ -211,21 +211,76 @@ class GameModel:
     def buddy_goal(self, camera: CameraState) -> tuple[float, float, float]:
         screen_right, ground_forward = camera_ground_axes(camera)
         buddy_config = self.config["buddy"]
-        goal_x = (
-            self.player.x
-            + float(buddy_config["offset_screen_right_world"]) * screen_right.x
-            - float(buddy_config["offset_behind_player_world"]) * ground_forward.x
-        )
-        goal_z = (
-            self.player.z
-            + float(buddy_config["offset_screen_right_world"]) * screen_right.y
-            - float(buddy_config["offset_behind_player_world"]) * ground_forward.y
-        )
+        side_offset, behind_offset = self.buddy_goal_offsets(camera)
+        goal_x = self.player.x + side_offset * screen_right.x - behind_offset * ground_forward.x
+        goal_z = self.player.z + side_offset * screen_right.y - behind_offset * ground_forward.y
         return (
             max(0.0, min(float(self.world.width), goal_x)),
             float(buddy_config["height"]),
             max(0.0, min(float(self.world.depth), goal_z)),
         )
+
+    def buddy_goal_offsets(self, camera: CameraState) -> tuple[float, float]:
+        buddy_config = self.config["buddy"]
+        side_offset = float(buddy_config["offset_screen_right_world"])
+        behind_offset = float(buddy_config["offset_behind_player_world"])
+        if not bool(buddy_config.get("side_reposition_enabled", False)):
+            return side_offset, behind_offset
+
+        delta = self.player_screen_move_delta(camera)
+        if delta is None:
+            return side_offset, behind_offset
+        screen_dx, screen_dy = delta
+        min_screen_px = float(buddy_config.get("side_reposition_min_screen_px", 0.25))
+        if abs(screen_dx) < min_screen_px or abs(screen_dx) < abs(screen_dy):
+            return side_offset, behind_offset
+
+        side_distance = float(
+            buddy_config.get("side_reposition_screen_right_world", abs(side_offset))
+        )
+        side_offset = -math.copysign(side_distance, screen_dx)
+        behind_offset = float(
+            buddy_config.get("side_reposition_behind_player_world", behind_offset)
+        )
+        return side_offset, behind_offset
+
+    def buddy_follow_tau(self, camera: CameraState) -> float:
+        buddy_config = self.config["buddy"]
+        if self.buddy_side_reposition_active(camera):
+            return float(
+                buddy_config.get(
+                    "side_reposition_follow_tau_sec",
+                    buddy_config["follow_tau_sec"],
+                )
+            )
+        return float(buddy_config["follow_tau_sec"])
+
+    def buddy_side_reposition_active(self, camera: CameraState) -> bool:
+        buddy_config = self.config["buddy"]
+        if not bool(buddy_config.get("side_reposition_enabled", False)):
+            return False
+        delta = self.player_screen_move_delta(camera)
+        if delta is None:
+            return False
+        screen_dx, screen_dy = delta
+        min_screen_px = float(buddy_config.get("side_reposition_min_screen_px", 0.25))
+        return abs(screen_dx) >= min_screen_px and abs(screen_dx) >= abs(screen_dy)
+
+    def player_screen_move_delta(self, camera: CameraState) -> tuple[float, float] | None:
+        move_length = math.hypot(self.player.last_move_x, self.player.last_move_z)
+        if move_length <= 1e-6:
+            return None
+        root = camera.project(Vec3(self.player.x, 0.0, self.player.z))
+        moved = camera.project(
+            Vec3(
+                self.player.x + self.player.last_move_x / move_length * 16.0,
+                0.0,
+                self.player.z + self.player.last_move_z / move_length * 16.0,
+            )
+        )
+        if root is None or moved is None:
+            return None
+        return moved.x - root.x, moved.y - root.y
 
     def step(self, intent: InputIntent, camera: CameraState, dt: float) -> list[GameEvent]:
         events: list[GameEvent] = []
@@ -1230,7 +1285,7 @@ class GameModel:
             self.buddy.z = goal_z
             return
 
-        alpha = smoothing_alpha(dt, float(self.config["buddy"]["follow_tau_sec"]))
+        alpha = smoothing_alpha(dt, self.buddy_follow_tau(camera))
         self.buddy.x += (goal_x - self.buddy.x) * alpha
         self.buddy.y += (goal_y - self.buddy.y) * alpha
         self.buddy.z += (goal_z - self.buddy.z) * alpha

@@ -422,20 +422,7 @@ class Renderer:
     def player_screen_move_delta(
         self, model: GameModel, camera: CameraState
     ) -> tuple[float, float] | None:
-        move_length = math.hypot(model.player.last_move_x, model.player.last_move_z)
-        if move_length <= 1e-6:
-            return None
-        root = camera.project(Vec3(model.player.x, 0.0, model.player.z))
-        moved = camera.project(
-            Vec3(
-                model.player.x + model.player.last_move_x / move_length * 16.0,
-                0.0,
-                model.player.z + model.player.last_move_z / move_length * 16.0,
-            )
-        )
-        if root is None or moved is None:
-            return None
-        return moved.x - root.x, moved.y - root.y
+        return model.player_screen_move_delta(camera)
 
     def buddy_sprite_asset(
         self, model: GameModel, camera: CameraState | None = None
