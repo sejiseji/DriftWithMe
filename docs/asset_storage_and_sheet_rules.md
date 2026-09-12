@@ -8,8 +8,9 @@
 
 - 作業開始時HEAD: `0047fe73e75a64b6f07d663a5e9112845b196ea0` (`Add optional buddy sprite hook`)
 - 作業開始時の `git status --short`: 空。未コミット差分なし。
+- JWP012C Fuse buddy導入開始時HEAD: `7b98528aafc2447d1ec70fc280d1eef2378ad97e` (`Prune low-value tests`)。開始時の `git status --short`: 空。未コミット差分なし。
 - 古い基準コミット `e4c6c0a9736a878f0ac0c3635cfcc516992ae24d` へは戻していない。
-- 今回は文書化のみ。コード、画像、`.pyxres`、入力、カメラ、投影、当たり判定、浮遊、影、深度順、SE、パレット、Web配布は変更しない。
+- この規約文書の初回作成時は文書化のみ。JWP012CではFuse buddy静止スプライト1枚を既存pyxresへ追加した。入力、カメラ、投影コード、当たり判定、浮遊、影、深度順、SE、パレット、Web配布方針は変更していない。
 - `docs/current_asset_rendering_contract.md` は画像導入前、基準コミット `e4c6c0a...` 時点の記録である。現在のJack pyxres導入後の状態は、本書、`docs/jwp011c_jack_pyxres_integration.md`、`docs/jwp012a_buddy_sprite_hook.md` を優先して参照する。
 
 ## 1. 現行アセットと読み込み先
@@ -21,13 +22,14 @@
 |`sprite_rendering_enabled`|`true`|
 |`manifest`|`assets/jack_sprite.json`|
 |`player_idle_asset`|`jack_idle_32`|
-|`buddy_idle_asset`|空文字。buddyは従来の仮図形へフォールバック|
+|`buddy_idle_asset`|`fuse_front_right_neutral_48`|
 |`fallback_to_primitives`|`true`|
 
 現行の実行時リソース:
 
 - manifest: `src/drift_with_me/assets/jack_sprite.json`
 - pyxres: `src/drift_with_me/assets/jack_sprite.pyxres`
+- Fuse source HEX: `src/drift_with_me/assets/fuse_front_right_neutral.hex`
 - `.pyxpal`: 同梱なし
 
 `jack_sprite.json` の `load_options` は画像を読み込み対象にし、tilemap、sound、musicを除外する。pyxres本体も `tilemaps = []`、`sounds = []`、`musics = []` で、既存SEの上書き対象は確認されなかった。
@@ -36,11 +38,11 @@
 
 `src/drift_with_me/assets/jack_sprite.pyxres` の `pyxel_resource.toml` を確認した結果は次の通り。
 
-|画像バンク|現行用途|実データ|非ゼロ画素|非ゼロ外接矩形|規約上の扱い|衝突|
-|---:|---|---|---:|---|---|---|
-|0|キャラクター|Jack `jack_idle_32` / `idle_00`|511|`(1,8,31,32)`|現行Jackを維持。ヒューズ・ウニ等を追加する候補|なし|
-|1|なし|空|0|なし|将来のエフェクト用に予約|なし|
-|2|なし|空|0|なし|予備。今回用途を固定しない|なし|
+|画像バンク|現行用途|実データ|source rect|規約上の扱い|衝突|
+|---:|---|---|---|---|---|
+|0|キャラクター|Jack `jack_idle_32` / `jack_front_32` / `jack_back_32`、Fuse `fuse_front_right_neutral_48`|Jack `(0,0,32,32)`, `(0,32,32,32)`, `(0,128,32,32)` / Fuse `(128,0,48,40)`|現行JackとFuseを維持。ヒューズ追加差分・ウニ等を追加する候補|なし|
+|1|なし|空|なし|将来のエフェクト用に予約|なし|
+|2|なし|空|なし|予備。今回用途を固定しない|なし|
 
 注意:
 
@@ -48,7 +50,7 @@
 - バンク番号は保存領域の用途であり、描画優先順位ではない。
 - `pyxel.load()` は画像バンク群を追記せず置き換える前提で扱う。アセット個別pyxresを順番に読むだけで追加できる設計にしない。
 - 今後アセットが増える場合は、既存画像を保持することを確認したうえで、ゲーム側で使用するリソースへ統合する。
-- 今回の確認範囲では、下記の予約案と現行Jackのframe `(0,0,32,32)` に競合はない。ただし予約領域へはまだ何も書き込まない。
+- JWP012C時点では、Jack予約案とFuse frame `(128,0,48,40)` に競合はない。予約領域へは対応アセット受領時まで何も書き込まない。
 
 ## 3. 保存方式の方針
 
@@ -102,6 +104,20 @@
 
 すべて32x32枠の左上座標。現行の斜め向きの絵を、正面差分完成扱いにしない。方向切替や新しいアニメーションは、対応するアセット導入時の作業とする。
 
+### 4.3 Fuse buddyの現行配置
+
+JWP012Cでは、`drift_with_me_fuse_parts_v0_2` から合成済み `front_right__neutral` を1枚だけ実行用pyxresへ焼き込んだ。
+
+|asset|frame|source rect|source_hash|colkey|anchor_px|world_size|
+|---|---|---|---|---:|---|---|
+|`fuse_front_right_neutral_48`|`front_right__neutral`|`(128,0,48,40)`|`669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8`|2|`(24,30)`|`(19.86080254132485,16.550668784437377)`|
+
+制作正本として、同じ画素を `src/drift_with_me/assets/fuse_front_right_neutral.hex` に保持する。透明色は2であり、0は黒い不透明色として扱う。
+
+この `world_size` は既存の高さベース `upright_height_billboard_v1` で、16px基準のFuse本体を現行buddyの `cube_size=6.0` 相当に見せるための実効キャンバス寸法である。buddyの追従、高さ、bob、影、深度ソート、コリジョンなし設定は変更していない。
+
+未接続の `front` / `front_right` 各pose、背面、左右、パネルアニメーション、方向切替は将来作業とする。未制作方向を反転や補完で増やさない。
+
 ## 5. エフェクト配置・描画規約
 
 バンク1は将来の水滴、泡、波紋、火花、音符、光の模様などのために予約する。今回、実データは置かない。
@@ -154,15 +170,15 @@
 
 現行Jackについて、repo内に存在する実行用正本は `jack_sprite.pyxres` と `jack_sprite.json` である。制作元HEXはこのrepo内では確認対象外だったため、将来Jackを再焼き込みする場合は、採用済み画素との色番号一致または編集正本の移管を明示してから行う。
 
-## 7. 今回実装しないこと
+## 7. まだ実装しないこと
 
-- 新しいスプライト、エフェクト、アニメーション、方向切替の追加。
-- pyxres、画像、パレット、SE、Web成果物の変更。
-- 容量対策、動的ロード、外部画像への移行、複雑なパッカー。
+- Fuseの残り方向、pose差分、パネルアニメーション、方向切替の追加。
+- 新しいエフェクト、動的ロード、外部画像への移行、パッカー、容量対策。
+- パレット、SE、Web配布方針の変更。
 - 既存Jack領域の移動、上書き、再パッキング。
 - 新しいJWP番号の推測採番。
 
-## 8. 完了チェック
+## 8. 初回規約文書作成時の完了チェック
 
 - [x] 現在HEADと既存変更を記録し、巻き戻していない。
 - [x] キャラクター/エフェクトの保存領域を区別し、既存配置との衝突有無を記載した。
@@ -172,8 +188,10 @@
 - [x] 新しい絵、エフェクト、パッカー、移行処理を実装していない。
 - [x] 文書以外の変更がないことをdiffで確認した。
 
+JWP012Cでは新しいFuse静止スプライト1枚を実装対象として追加したため、上記の「新しい絵を実装していない」は初回規約文書作成時の履歴であり、現在の到達点ではない。
+
 ## 9. 未確認事項
 
 - iPhone実機での見た目、操作、SE再生は今回未実施。
-- 将来追加されるヒューズ、ウニ、buddy、街、小物、エフェクトの具体的な画素と正本は未受領。
+- Fuseの残り方向・pose、ウニ、街、小物、エフェクトの具体的な画素と正本は未接続。
 - `CODEX_PYXRES_UPDATE.md` という既存文書は現在のrepo内では確認されなかった。外部指示として存在する場合、本書のハイブリッド管理方針を今後の参照先とする。

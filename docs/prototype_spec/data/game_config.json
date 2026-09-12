@@ -200,7 +200,7 @@
     "player_idle_asset": "jack_idle_32",
     "player_front_asset": "jack_front_32",
     "player_back_asset": "jack_back_32",
-    "buddy_idle_asset": "",
+    "buddy_idle_asset": "fuse_front_right_neutral_48",
     "fallback_to_primitives": true
   },
   "effects": {

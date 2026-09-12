@@ -166,6 +166,56 @@
           "source_hash": "19848ca6c4c3e4df4670ae62824943a054aed4fe56a3a57320aa605a3f67d7b6"
         }
       ]
+    },
+    "fuse_front_right_neutral_48": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 2,
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        19.86080254132485,
+        16.550668784437377
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "buddy_visual_root",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          48,
+          40
+        ],
+        "opaque_px_xyxy_exclusive": [
+          13,
+          11,
+          35,
+          35
+        ]
+      },
+      "scale_reference": {
+        "cube_edge_world": 6.0,
+        "cube_edge_source_px": 16.0,
+        "baked_pitch_deg": 25.0,
+        "note": "world_size encodes the current height-based billboard scaler target; buddy model cube_size is unchanged."
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "front_right__neutral"
+      },
+      "frames": [
+        {
+          "id": "front_right__neutral",
+          "u": 128,
+          "v": 0,
+          "w": 48,
+          "h": 40,
+          "source_hash": "669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8"
+        }
+      ]
     }
   },
   "notes": [
@@ -173,6 +223,7 @@
     "anchor_px uses image-boundary coordinates; (16,32) is intentional.",
     "No .pyxpal is supplied. Do not load a same-stem custom palette.",
     "Do not change collider, cube_size, shadow, hover, camera or input in this format change.",
-    "If image banks are in use, integrate the canonical HEX through the project build step instead of loading this standalone pack over existing image banks."
+    "If image banks are in use, integrate the canonical HEX through the project build step instead of loading this standalone pack over existing image banks.",
+    "Fuse v0.2.0 front_right neutral is baked into bank 0 at (128,0,48,40), with source HEX preserved as fuse_front_right_neutral.hex."
   ]
 }

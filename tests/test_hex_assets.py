@@ -31,6 +31,7 @@ ROWS = ("012", "345", "678", "9AB", "CDE")
 JACK_SOURCE_HASH = "9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d"
 JACK_FRONT_SOURCE_HASH = "5cf48ead95a750c893f45e925bbe33d8deb5e778945e33e78fd74e4fc003cf6f"
 JACK_BACK_SOURCE_HASH = "19848ca6c4c3e4df4670ae62824943a054aed4fe56a3a57320aa605a3f67d7b6"
+FUSE_SOURCE_HASH = "669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8"
 
 
 class RecordingPyxel:
@@ -44,6 +45,19 @@ class RecordingPyxel:
 def pixel_hash(rows: tuple[str, ...]) -> str:
     pixels = bytes(int(char, 16) for row in rows for char in row)
     return hashlib.sha256(pixels).hexdigest()
+
+
+def test_fuse_source_hex_preserves_received_pixels() -> None:
+    rows = tuple(
+        (ROOT / "src/drift_with_me/assets/fuse_front_right_neutral.hex")
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+
+    assert len(rows) == 40
+    assert {len(row) for row in rows} == {48}
+    assert pixel_hash(rows) == FUSE_SOURCE_HASH
 
 
 def valid_asset(asset_id: str = "jack_test", frame_path: str = "jack.hex") -> dict:
@@ -323,6 +337,22 @@ assert back is not None
 back_frame = back.frame()
 assert (back_frame.u, back_frame.v, back_frame.width, back_frame.height) == (0, 128, 32, 32)
 assert back_frame.source_hash == {JACK_BACK_SOURCE_HASH!r}
+fuse = library.get("fuse_front_right_neutral_48")
+assert fuse is not None
+fuse_frame = fuse.frame()
+assert (fuse_frame.u, fuse_frame.v, fuse_frame.width, fuse_frame.height) == (128, 0, 48, 40)
+assert fuse_frame.source_hash == {FUSE_SOURCE_HASH!r}
+assert fuse.definition.colkey == 2
+assert fuse.definition.anchor_px == (24.0, 30.0)
+assert all(
+    abs(actual - expected) < 1e-9
+    for actual, expected in zip(
+        fuse.definition.world_size,
+        (19.86080254132485, 16.550668784437377),
+        strict=True,
+    )
+)
+assert runtime.raw["assets"]["buddy_idle_asset"] == "fuse_front_right_neutral_48"
 assert sound_snapshot() == before_sound
 assert music_snapshot() == before_music
 assert pyxel.tilemaps[0].pget(0, 0) == before_tile
@@ -346,7 +376,25 @@ for y in range(max(0, top), min(runtime.screen_height, top + height)):
     for x in range(max(0, left), min(runtime.screen_width, left + width)):
         visible_pixels += pyxel.pget(x, y) != 3
 assert visible_pixels > 0
-print(json.dumps({{"asset": asset.definition.asset_id, "hash": frame.source_hash}}))
+pyxel.cls(3)
+assert renderer.draw_buddy_sprite(model, camera, bob=0.0)
+placement = renderer.buddy_sprite_placement(model, camera, bob=0.0)
+assert placement is not None
+left, top, width, height = placement.rect
+visible_pixels = 0
+for y in range(max(0, top), min(runtime.screen_height, top + height)):
+    for x in range(max(0, left), min(runtime.screen_width, left + width)):
+        visible_pixels += pyxel.pget(x, y) != 3
+assert visible_pixels > 0
+print(
+    json.dumps(
+        {{
+            "asset": asset.definition.asset_id,
+            "hash": frame.source_hash,
+            "fuse": fuse_frame.source_hash,
+        }}
+    )
+)
 """
     completed = subprocess.run(
         [sys.executable, "-c", code],
