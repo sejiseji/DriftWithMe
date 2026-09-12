@@ -57,7 +57,8 @@ drift-with-me
 - M: sound on/off
 - F1: debug HUD
 - ESC: pause
-- R while paused: reset scene
+- While paused: tap RESUME, RESET, RES MAX, ZERO RES, CULL, or DEBUG
+- R/F/Z/C/D while paused: reset, resource max, resource zero, culling toggle, debug HUD
 - Q while paused: quit desktop app
 
 Debug-only camera checks:

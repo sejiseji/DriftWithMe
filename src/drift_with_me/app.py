@@ -170,23 +170,81 @@ class DriftWithMeApp:
         pyxel = self.pyxel
         self.pointer.cancel()
         if pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_RETURN):
-            self.screen = AppScreen.PLAY
-            self.previous_time = None
+            self.resume_from_pause()
             return
         if pyxel.btnp(pyxel.KEY_R):
-            self.model.reset_scene()
-            self.audio.reset_event_history()
-            self.effects.reset()
-            self.camera_controller.reset(Vec3(self.model.player.x, 0.0, self.model.player.z))
-            self.model.snap_buddy(self.camera())
-            self.previous_time = None
+            self.reset_scene_for_debug()
+        if pyxel.btnp(pyxel.KEY_F):
+            self.fill_resources_for_debug()
+        if pyxel.btnp(pyxel.KEY_Z):
+            self.zero_resources_for_debug()
+        if pyxel.btnp(pyxel.KEY_C):
+            self.toggle_culling_for_debug()
+        if pyxel.btnp(pyxel.KEY_D):
+            self.debug_enabled = not self.debug_enabled
         if pyxel.btnp(pyxel.KEY_Q):
             pyxel.quit()
-        if self.mouse_pressed_in(self.resume_button_rect()):
-            self.screen = AppScreen.PLAY
-            self.previous_time = None
+        if self.handle_pause_pointer_controls():
+            return
+        if self.pointer_snapshot.pressed and self.pause_panel_rect().contains(
+            self.pointer_snapshot.x, self.pointer_snapshot.y
+        ):
+            return
         if self.mouse_pressed_in(self.sound_button_rect()):
             self.audio.toggle_mute()
+
+    def resume_from_pause(self) -> None:
+        self.screen = AppScreen.PLAY
+        self.previous_time = None
+
+    def reset_scene_for_debug(self) -> None:
+        self.model.reset_scene()
+        self.audio.reset_event_history()
+        self.effects.reset()
+        self.camera_controller.reset(Vec3(self.model.player.x, 0.0, self.model.player.z))
+        self.model.snap_buddy(self.camera())
+        self.pointer.cancel()
+        self.pending_action_pressed = False
+        self.pending_interact_pressed = False
+        self.last_denied_reason = ""
+        self.previous_time = None
+        self.accumulator = 0.0
+
+    def fill_resources_for_debug(self) -> None:
+        self.model.water = self.model.water_max
+        self.model.energy = self.model.energy_max
+        self.last_denied_reason = ""
+
+    def zero_resources_for_debug(self) -> None:
+        self.model.water = 0.0
+        self.model.energy = 0.0
+        self.model.player.barrier_active = False
+        self.last_denied_reason = ""
+
+    def toggle_culling_for_debug(self) -> None:
+        self.model.culling_enabled = not self.model.culling_enabled
+        self.model.refresh_active_enemies()
+
+    def handle_pause_pointer_controls(self) -> bool:
+        if self.mouse_pressed_in(self.resume_button_rect()):
+            self.resume_from_pause()
+            return True
+        if self.mouse_pressed_in(self.pause_reset_button_rect()):
+            self.reset_scene_for_debug()
+            return True
+        if self.mouse_pressed_in(self.pause_fill_button_rect()):
+            self.fill_resources_for_debug()
+            return True
+        if self.mouse_pressed_in(self.pause_zero_button_rect()):
+            self.zero_resources_for_debug()
+            return True
+        if self.mouse_pressed_in(self.pause_culling_button_rect()):
+            self.toggle_culling_for_debug()
+            return True
+        if self.mouse_pressed_in(self.pause_debug_button_rect()):
+            self.debug_enabled = not self.debug_enabled
+            return True
+        return False
 
     def update_play_screen(self, elapsed: float) -> None:
         pyxel = self.pyxel
@@ -430,8 +488,42 @@ class DriftWithMeApp:
     def start_button_rect(self) -> Rect:
         return Rect(self.runtime.screen_width / 2 - 70, 88, 140, 46)
 
+    def pause_panel_rect(self) -> Rect:
+        width = min(300.0, float(self.runtime.screen_width - 24))
+        height = min(166.0, float(self.runtime.screen_height - 16))
+        return Rect(
+            self.runtime.screen_width / 2 - width / 2,
+            self.runtime.screen_height / 2 - height / 2,
+            width,
+            height,
+        )
+
+    def pause_control_rect(self, column: int, row: int) -> Rect:
+        panel = self.pause_panel_rect()
+        gap = 8.0
+        button_width = (panel.width - 24.0 - gap) / 2.0
+        button_height = 28.0
+        x = panel.x + 12.0 + column * (button_width + gap)
+        y = panel.y + 52.0 + row * (button_height + 8.0)
+        return Rect(x, y, button_width, button_height)
+
     def resume_button_rect(self) -> Rect:
-        return Rect(self.runtime.screen_width / 2 - 70, 140, 140, 38)
+        return self.pause_control_rect(0, 0)
+
+    def pause_reset_button_rect(self) -> Rect:
+        return self.pause_control_rect(1, 0)
+
+    def pause_fill_button_rect(self) -> Rect:
+        return self.pause_control_rect(0, 1)
+
+    def pause_zero_button_rect(self) -> Rect:
+        return self.pause_control_rect(1, 1)
+
+    def pause_culling_button_rect(self) -> Rect:
+        return self.pause_control_rect(0, 2)
+
+    def pause_debug_button_rect(self) -> Rect:
+        return self.pause_control_rect(1, 2)
 
     def interaction_done_button_rect(self) -> Rect:
         chip = self.interaction_chip_rect()
@@ -502,15 +594,34 @@ class DriftWithMeApp:
 
     def draw_pause(self) -> None:
         pyxel = self.pyxel
-        x = self.runtime.screen_width // 2 - 128
-        y = 38
-        pyxel.rect(x, y, 256, 154, 0)
-        pyxel.rectb(x, y, 256, 154, 7)
-        self.draw_text_center(self.runtime.screen_width // 2, y + 14, "PAUSE", 7, scale=3)
-        self.draw_text_center(self.runtime.screen_width // 2, y + 48, "ENTER/ESC RESUME", 13)
-        self.draw_text_center(self.runtime.screen_width // 2, y + 68, "R RESET SCENE", 13)
-        self.draw_text_center(self.runtime.screen_width // 2, y + 88, "Q QUIT", 13)
+        panel = self.pause_panel_rect()
+        x = int(panel.x)
+        y = int(panel.y)
+        width = int(panel.width)
+        height = int(panel.height)
+        pyxel.rect(x, y, width, height, 0)
+        pyxel.rectb(x, y, width, height, 7)
+        self.draw_text_center(self.runtime.screen_width // 2, y + 10, "PAUSE", 7, scale=3)
+        culling_status = "ON" if self.model.culling_enabled else "OFF"
+        status = f"{self.runtime.profile.name.upper()} CULL {culling_status}"
+        self.draw_text_center(self.runtime.screen_width // 2, y + 36, status, 13, scale=1)
         self.draw_button(self.resume_button_rect(), "RESUME", 11)
+        self.draw_button(self.pause_reset_button_rect(), "RESET", 8)
+        self.draw_button(self.pause_fill_button_rect(), "RES MAX", 12)
+        self.draw_button(self.pause_zero_button_rect(), "ZERO RES", 5)
+        self.draw_button(
+            self.pause_culling_button_rect(),
+            "CULL ON" if self.model.culling_enabled else "CULL OFF",
+            10,
+        )
+        self.draw_button(self.pause_debug_button_rect(), "DEBUG", 13 if self.debug_enabled else 6)
+        self.draw_text_center(
+            self.runtime.screen_width // 2,
+            y + height - 12,
+            "ESC/ENTER RESUME  Q QUIT",
+            13,
+            scale=1,
+        )
 
     def draw_hud(self) -> None:
         pyxel = self.pyxel
