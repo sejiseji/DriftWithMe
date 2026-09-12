@@ -65,6 +65,7 @@ class Renderer:
         self.pyxel = pyxel_module
         self.sprite_assets = sprite_assets or SpriteAssetLibrary.empty()
         self.player_sprite_flipped_x = False
+        self.player_sprite_view_name = "idle"
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -377,8 +378,63 @@ class Renderer:
         )
         return hover * float(model.config["player"]["visual_hover_amplitude"]) / 2.0
 
-    def player_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
-        return self.configured_sprite_asset(model, "player_idle_asset")
+    def player_sprite_asset(
+        self, model: GameModel, camera: CameraState | None = None
+    ) -> LoadedSpriteAsset | None:
+        if camera is None:
+            return self.configured_sprite_asset(model, "player_idle_asset")
+        selection = self.player_sprite_selection(model, camera)
+        if selection is None:
+            return None
+        asset, _flip_x = selection
+        return asset
+
+    def player_sprite_selection(
+        self, model: GameModel, camera: CameraState
+    ) -> tuple[LoadedSpriteAsset, bool] | None:
+        view_name = self.player_sprite_direction_view(model, camera)
+        config_key = {
+            "front": "player_front_asset",
+            "back": "player_back_asset",
+        }.get(view_name, "player_idle_asset")
+        asset = self.configured_sprite_asset(model, config_key)
+        if asset is None and config_key != "player_idle_asset":
+            asset = self.configured_sprite_asset(model, "player_idle_asset")
+        if asset is None:
+            return None
+        return asset, view_name == "idle" and self.player_sprite_flip_x(model, camera)
+
+    def player_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        if model.player.moved_distance <= 1e-6:
+            self.player_sprite_view_name = "idle"
+            return self.player_sprite_view_name
+        delta = self.player_screen_move_delta(model, camera)
+        if delta is None:
+            return self.player_sprite_view_name
+        screen_dx, screen_dy = delta
+        if abs(screen_dy) > 0.25 and abs(screen_dy) >= abs(screen_dx):
+            self.player_sprite_view_name = "front" if screen_dy > 0.0 else "back"
+        else:
+            self.player_sprite_view_name = "idle"
+        return self.player_sprite_view_name
+
+    def player_screen_move_delta(
+        self, model: GameModel, camera: CameraState
+    ) -> tuple[float, float] | None:
+        move_length = math.hypot(model.player.last_move_x, model.player.last_move_z)
+        if move_length <= 1e-6:
+            return None
+        root = camera.project(Vec3(model.player.x, 0.0, model.player.z))
+        moved = camera.project(
+            Vec3(
+                model.player.x + model.player.last_move_x / move_length * 16.0,
+                0.0,
+                model.player.z + model.player.last_move_z / move_length * 16.0,
+            )
+        )
+        if root is None or moved is None:
+            return None
+        return moved.x - root.x, moved.y - root.y
 
     def buddy_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
         return self.configured_sprite_asset(model, "buddy_idle_asset")
@@ -397,9 +453,10 @@ class Renderer:
     def player_sprite_placement(
         self, model: GameModel, camera: CameraState, presentation_time: float
     ):
-        asset = self.player_sprite_asset(model)
-        if asset is None:
+        selection = self.player_sprite_selection(model, camera)
+        if selection is None:
             return None
+        asset, flip_x = selection
         anchor = Vec3(
             model.player.x,
             self.player_visual_hover(model, presentation_time),
@@ -409,24 +466,14 @@ class Renderer:
             camera,
             asset.definition,
             anchor,
-            flip_x=self.player_sprite_flip_x(model, camera),
+            flip_x=flip_x,
         )
 
     def player_sprite_flip_x(self, model: GameModel, camera: CameraState) -> bool:
-        move_length = math.hypot(model.player.last_move_x, model.player.last_move_z)
-        if move_length <= 1e-6:
+        delta = self.player_screen_move_delta(model, camera)
+        if delta is None:
             return self.player_sprite_flipped_x
-        root = camera.project(Vec3(model.player.x, 0.0, model.player.z))
-        moved = camera.project(
-            Vec3(
-                model.player.x + model.player.last_move_x / move_length * 16.0,
-                0.0,
-                model.player.z + model.player.last_move_z / move_length * 16.0,
-            )
-        )
-        if root is None or moved is None:
-            return self.player_sprite_flipped_x
-        screen_dx = moved.x - root.x
+        screen_dx, _screen_dy = delta
         if screen_dx > 0.25:
             self.player_sprite_flipped_x = True
         elif screen_dx < -0.25:
@@ -436,7 +483,7 @@ class Renderer:
     def draw_player_sprite(
         self, model: GameModel, camera: CameraState, presentation_time: float
     ) -> bool:
-        asset = self.player_sprite_asset(model)
+        asset = self.player_sprite_asset(model, camera)
         if asset is None:
             return False
         placement = self.player_sprite_placement(model, camera, presentation_time)

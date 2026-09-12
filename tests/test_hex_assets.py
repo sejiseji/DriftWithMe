@@ -21,7 +21,7 @@ from drift_with_me.hex_assets import (
     placement_for_upright_height_billboard,
     source_hash_for_pixels,
 )
-from drift_with_me.math3d import CameraState, Vec3
+from drift_with_me.math3d import CameraState, Vec3, screen_to_world_direction
 from drift_with_me.model import GameModel
 from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
@@ -29,6 +29,8 @@ from drift_with_me.world import load_world_data
 ROOT = Path(__file__).resolve().parents[1]
 ROWS = ("012", "345", "678", "9AB", "CDE")
 JACK_SOURCE_HASH = "9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d"
+JACK_FRONT_SOURCE_HASH = "5cf48ead95a750c893f45e925bbe33d8deb5e778945e33e78fd74e4fc003cf6f"
+JACK_BACK_SOURCE_HASH = "19848ca6c4c3e4df4670ae62824943a054aed4fe56a3a57320aa605a3f67d7b6"
 
 
 class RecordingPyxel:
@@ -70,6 +72,19 @@ def write_manifest(tmp_path: Path, asset: dict, rows: tuple[str, ...] = ROWS) ->
     frame_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
     manifest_path.write_text(
         json.dumps({"schema_version": 1, "assets": [asset]}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return manifest_path
+
+
+def write_manifest_assets(tmp_path: Path, assets: list[dict]) -> Path:
+    manifest_path = tmp_path / "sprites.json"
+    for asset in assets:
+        frame_path = tmp_path / asset["frames"][0]["path"]
+        frame_path.parent.mkdir(parents=True, exist_ok=True)
+        frame_path.write_text("\n".join(ROWS) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps({"schema_version": 1, "assets": assets}, indent=2) + "\n",
         encoding="utf-8",
     )
     return manifest_path
@@ -261,6 +276,8 @@ def test_default_runtime_config_points_to_baked_jack_resource() -> None:
         "sprite_rendering_enabled": True,
         "manifest": "assets/jack_sprite.json",
         "player_idle_asset": "jack_idle_32",
+        "player_front_asset": "jack_front_32",
+        "player_back_asset": "jack_back_32",
         "buddy_idle_asset": "",
         "fallback_to_primitives": True,
     }
@@ -324,6 +341,16 @@ assert frame.source_hash == {JACK_SOURCE_HASH!r}
 assert asset.definition.anchor_px == (16.0, 32.0)
 assert asset.definition.world_size == (16.0, 16.0)
 assert pyxel.images[0].pget(16, 32 - 1) != 0
+front = library.get("jack_front_32")
+assert front is not None
+front_frame = front.frame()
+assert (front_frame.u, front_frame.v, front_frame.width, front_frame.height) == (0, 32, 32, 32)
+assert front_frame.source_hash == {JACK_FRONT_SOURCE_HASH!r}
+back = library.get("jack_back_32")
+assert back is not None
+back_frame = back.frame()
+assert (back_frame.u, back_frame.v, back_frame.width, back_frame.height) == (0, 128, 32, 32)
+assert back_frame.source_hash == {JACK_BACK_SOURCE_HASH!r}
 assert sound_snapshot() == before_sound
 assert music_snapshot() == before_music
 assert pyxel.tilemaps[0].pget(0, 0) == before_tile
@@ -443,3 +470,53 @@ def test_renderer_flips_player_sprite_for_screen_right_movement(tmp_path: Path) 
     model.player.last_move_x = -screen_right.x
     model.player.last_move_z = -screen_right.y
     assert not renderer.player_sprite_flip_x(model, camera)
+
+
+def test_renderer_selects_player_front_and_back_assets_for_screen_vertical_movement(
+    tmp_path: Path,
+) -> None:
+    import pyxel
+
+    assets = [
+        valid_asset("jack_idle_32", "idle.hex"),
+        valid_asset("jack_front_32", "front.hex"),
+        valid_asset("jack_back_32", "back.hex"),
+    ]
+    manifest_path = write_manifest_assets(tmp_path, assets)
+    library = load_sprite_manifest_path(pyxel, manifest_path)
+    runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = True
+    raw["assets"]["player_idle_asset"] = "jack_idle_32"
+    raw["assets"]["player_front_asset"] = "jack_front_32"
+    raw["assets"]["player_back_asset"] = "jack_back_32"
+    model = GameModel(raw, load_world_data())
+    camera = CameraState.from_config(
+        raw,
+        Vec3(model.player.x, 0.0, model.player.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    renderer = Renderer(RecordingPyxel(), library)
+    model.player.moved_distance = 1.0
+
+    screen_down = screen_to_world_direction(camera, model.player.x, model.player.z, 0.0, 1.0)
+    model.player.last_move_x = screen_down.x
+    model.player.last_move_z = screen_down.y
+    asset = renderer.player_sprite_asset(model, camera)
+    assert asset is not None
+    assert asset.definition.asset_id == "jack_front_32"
+
+    screen_up = screen_to_world_direction(camera, model.player.x, model.player.z, 0.0, -1.0)
+    model.player.last_move_x = screen_up.x
+    model.player.last_move_z = screen_up.y
+    asset = renderer.player_sprite_asset(model, camera)
+    assert asset is not None
+    assert asset.definition.asset_id == "jack_back_32"
+
+    screen_right, _ground_forward = camera_ground_axes(camera)
+    model.player.last_move_x = screen_right.x
+    model.player.last_move_z = screen_right.y
+    asset = renderer.player_sprite_asset(model, camera)
+    assert asset is not None
+    assert asset.definition.asset_id == "jack_idle_32"

@@ -66,6 +66,106 @@
           "source_hash": "9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d"
         }
       ]
+    },
+    "jack_front_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          1,
+          8,
+          31,
+          32
+        ]
+      },
+      "attachments_px": {
+        "above_head": [
+          16,
+          6
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "front_00"
+      },
+      "frames": [
+        {
+          "id": "front_00",
+          "u": 0,
+          "v": 32,
+          "w": 32,
+          "h": 32,
+          "source_hash": "5cf48ead95a750c893f45e925bbe33d8deb5e778945e33e78fd74e4fc003cf6f"
+        }
+      ]
+    },
+    "jack_back_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          1,
+          8,
+          31,
+          32
+        ]
+      },
+      "attachments_px": {
+        "above_head": [
+          16,
+          6
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "back_00"
+      },
+      "frames": [
+        {
+          "id": "back_00",
+          "u": 0,
+          "v": 128,
+          "w": 32,
+          "h": 32,
+          "source_hash": "19848ca6c4c3e4df4670ae62824943a054aed4fe56a3a57320aa605a3f67d7b6"
+        }
+      ]
     }
   },
   "notes": [
