@@ -31,6 +31,26 @@ ROWS = ("012", "345", "678", "9AB", "CDE")
 JACK_SOURCE_HASH = "9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d"
 JACK_FRONT_SOURCE_HASH = "5cf48ead95a750c893f45e925bbe33d8deb5e778945e33e78fd74e4fc003cf6f"
 JACK_BACK_SOURCE_HASH = "19848ca6c4c3e4df4670ae62824943a054aed4fe56a3a57320aa605a3f67d7b6"
+JACK_DIRECTION_HASHES = {
+    "front": JACK_FRONT_SOURCE_HASH,
+    "front_left": JACK_SOURCE_HASH,
+    "front_right": "173a29c11bf5952a27e37a3a501a8ac5f941c9de0eb7e424238b30fca39784ab",
+    "left": "ddeb02e3d1ff05281c9fb0ebfadf94c31ca7c66ff55ba5ac273ae68be160d419",
+    "back_left": "48d752c3ea5e5c4669306669cb7159953d637615e09d22edd58a9f30f171b5a0",
+    "back": JACK_BACK_SOURCE_HASH,
+    "back_right": "c3f00558ffc3b6cf579e96cfd730e406501859602d26a3fb5b785f9b6c19d72a",
+    "right": "00792669416356148de3d10ec2320cf6013e94f71328aac9670319b02934dfd8",
+}
+JACK_DIRECTION_RECTS = {
+    "front_left": (0, 0, 32, 32),
+    "front_right": (32, 0, 32, 32),
+    "front": (0, 32, 32, 32),
+    "left": (0, 64, 32, 32),
+    "back_left": (32, 64, 32, 32),
+    "right": (0, 96, 32, 32),
+    "back_right": (32, 96, 32, 32),
+    "back": (0, 128, 32, 32),
+}
 FUSE_DIRECTION_HASHES = {
     "front": "a9c9661505e49fbf9d42a4e2f066c2a668b68677d844eb8eaa8000620460189c",
     "front_right": "669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8",
@@ -64,6 +84,20 @@ class RecordingPyxel:
 def pixel_hash(rows: tuple[str, ...]) -> str:
     pixels = bytes(int(char, 16) for row in rows for char in row)
     return hashlib.sha256(pixels).hexdigest()
+
+
+@pytest.mark.parametrize("direction", tuple(JACK_DIRECTION_HASHES))
+def test_jack_source_hex_preserves_received_pixels(direction: str) -> None:
+    rows = tuple(
+        (ROOT / f"src/drift_with_me/assets/jack_{direction}_00.hex")
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+
+    assert len(rows) == 32
+    assert {len(row) for row in rows} == {32}
+    assert pixel_hash(rows) == JACK_DIRECTION_HASHES[direction]
 
 
 @pytest.mark.parametrize("direction", tuple(FUSE_DIRECTION_HASHES))
@@ -357,6 +391,19 @@ assert back is not None
 back_frame = back.frame()
 assert (back_frame.u, back_frame.v, back_frame.width, back_frame.height) == (0, 128, 32, 32)
 assert back_frame.source_hash == {JACK_BACK_SOURCE_HASH!r}
+jack_assets = {JACK_DIRECTION_HASHES!r}
+jack_rects = {JACK_DIRECTION_RECTS!r}
+for direction, expected_hash in jack_assets.items():
+    jack = library.get(f"jack_{{direction}}_32")
+    assert jack is not None, direction
+    frame = jack.frame()
+    assert (frame.u, frame.v, frame.width, frame.height) == jack_rects[direction]
+    assert frame.source_hash == expected_hash
+    assert jack.definition.colkey == 0
+    assert jack.definition.anchor_px == (16.0, 32.0)
+    assert jack.definition.world_size == (16.0, 16.0)
+for direction in jack_assets:
+    assert runtime.raw["assets"][f"player_{{direction}}_asset"] == f"jack_{{direction}}_32"
 fuse_assets = {FUSE_DIRECTION_HASHES!r}
 fuse_rects = {FUSE_DIRECTION_RECTS!r}
 fuse_frame = None
@@ -513,6 +560,52 @@ def test_renderer_selects_player_front_and_back_assets_for_screen_vertical_movem
     asset = renderer.player_sprite_asset(model, camera)
     assert asset is not None
     assert asset.definition.asset_id == "jack_idle_32"
+
+
+def test_renderer_selects_player_direction_assets_for_screen_movement(tmp_path: Path) -> None:
+    import pyxel
+
+    assets = [
+        valid_asset(f"jack_{direction}_32", f"{direction}.hex")
+        for direction in JACK_DIRECTION_HASHES
+    ]
+    manifest_path = write_manifest_assets(tmp_path, assets)
+    library = load_sprite_manifest_path(pyxel, manifest_path)
+    runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = True
+    raw["assets"]["player_idle_asset"] = "jack_front_left_32"
+    for direction in JACK_DIRECTION_HASHES:
+        raw["assets"][f"player_{direction}_asset"] = f"jack_{direction}_32"
+    model = GameModel(raw, load_world_data())
+    camera = CameraState.from_config(
+        raw,
+        Vec3(model.player.x, 0.0, model.player.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    renderer = Renderer(RecordingPyxel(), library)
+    model.player.moved_distance = 1.0
+
+    cases = (
+        ("right", 1.0, 0.0),
+        ("front_right", 1.0, 1.0),
+        ("front", 0.0, 1.0),
+        ("front_left", -1.0, 1.0),
+        ("left", -1.0, 0.0),
+        ("back_left", -1.0, -1.0),
+        ("back", 0.0, -1.0),
+        ("back_right", 1.0, -1.0),
+    )
+    for expected, screen_x, screen_y in cases:
+        direction = screen_to_world_direction(
+            camera, model.player.x, model.player.z, screen_x, screen_y
+        )
+        model.player.last_move_x = direction.x
+        model.player.last_move_z = direction.y
+        asset = renderer.player_sprite_asset(model, camera)
+        assert asset is not None
+        assert asset.definition.asset_id == f"jack_{expected}_32"
 
 
 def test_renderer_selects_buddy_direction_assets_for_screen_movement(tmp_path: Path) -> None:

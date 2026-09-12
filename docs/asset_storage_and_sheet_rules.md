@@ -23,6 +23,7 @@
 |`sprite_rendering_enabled`|`true`|
 |`manifest`|`assets/jack_sprite.json`|
 |`player_idle_asset`|`jack_idle_32`|
+|Jack direction assets|`jack_front_32`, `jack_front_right_32`, `jack_right_32`, `jack_back_right_32`, `jack_back_32`, `jack_back_left_32`, `jack_left_32`, `jack_front_left_32`|
 |`buddy_idle_asset`|`fuse_front_right_neutral_48`|
 |`fallback_to_primitives`|`true`|
 
@@ -30,7 +31,7 @@
 
 - manifest: `src/drift_with_me/assets/jack_sprite.json`
 - pyxres: `src/drift_with_me/assets/jack_sprite.pyxres`
-- Fuse source HEX: `src/drift_with_me/assets/fuse_front_right_neutral.hex`
+- Jack/Fuse source HEX: `src/drift_with_me/assets/jack_*_00.hex`, `src/drift_with_me/assets/fuse_*_neutral.hex`
 - `.pyxpal`: 同梱なし
 
 `jack_sprite.json` の `load_options` は画像を読み込み対象にし、tilemap、sound、musicを除外する。pyxres本体も `tilemaps = []`、`sounds = []`、`musics = []` で、既存SEの上書き対象は確認されなかった。
@@ -41,7 +42,7 @@
 
 |画像バンク|現行用途|実データ|source rect|規約上の扱い|衝突|
 |---:|---|---|---|---|---|
-|0|キャラクター|Jack `jack_idle_32` / `jack_front_32` / `jack_back_32`、Fuse neutral 8方向|Jack `(0,0,32,32)`, `(0,32,32,32)`, `(0,128,32,32)` / Fuse `(128/176,0/40/80/120,48,40)`|現行JackとFuseを維持。ヒューズpose差分・ウニ等を追加する候補|なし|
+|0|キャラクター|Jack 8方向、Fuse neutral 8方向|Jack `(0/32,0/64/96,32,32)`, `(0,32,32,32)`, `(0,128,32,32)` / Fuse `(128/176,0/40/80/120,48,40)`|現行JackとFuseを維持。ヒューズpose差分・ウニ等を追加する候補|なし|
 |1|なし|空|なし|将来のエフェクト用に予約|なし|
 |2|なし|空|なし|予備。今回用途を固定しない|なし|
 
@@ -79,31 +80,37 @@
 
 ### 4.1 Jackの現行配置
 
-現行Jackはバンク0に3枚の静止スプライトを持つ。
+現行Jackはバンク0に8方向の静止スプライトを持つ。`jack_idle_32` は既存の基準絵として維持し、`jack_front_left_32` は同じ `(0,0)` の画素を参照する別名として追加した。
 
 |asset|frame|source rect|source_hash|
 |---|---|---|---|
 |`jack_idle_32`|`idle_00`|`(0,0,32,32)`|`9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d`|
+|`jack_front_left_32`|`front_left_00`|`(0,0,32,32)`|`9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d`|
+|`jack_front_right_32`|`front_right_00`|`(32,0,32,32)`|`173a29c11bf5952a27e37a3a501a8ac5f941c9de0eb7e424238b30fca39784ab`|
 |`jack_front_32`|`front_00`|`(0,32,32,32)`|`5cf48ead95a750c893f45e925bbe33d8deb5e778945e33e78fd74e4fc003cf6f`|
+|`jack_left_32`|`left_00`|`(0,64,32,32)`|`ddeb02e3d1ff05281c9fb0ebfadf94c31ca7c66ff55ba5ac273ae68be160d419`|
+|`jack_back_left_32`|`back_left_00`|`(32,64,32,32)`|`48d752c3ea5e5c4669306669cb7159953d637615e09d22edd58a9f30f171b5a0`|
+|`jack_right_32`|`right_00`|`(0,96,32,32)`|`00792669416356148de3d10ec2320cf6013e94f71328aac9670319b02934dfd8`|
+|`jack_back_right_32`|`back_right_00`|`(32,96,32,32)`|`c3f00558ffc3b6cf579e96cfd730e406501859602d26a3fb5b785f9b6c19d72a`|
 |`jack_back_32`|`back_00`|`(0,128,32,32)`|`19848ca6c4c3e4df4670ae62824943a054aed4fe56a3a57320aa605a3f67d7b6`|
 
-いずれも画像バンク0、32x32、colkey 0、anchor_px `(16,32)`、world_size `(16.0,16.0)`、projection_mode `upright_height_billboard_v1`、flip_policy `none`。正面・背面の制作正本HEXは `src/drift_with_me/assets/jack_front_00.hex` と `src/drift_with_me/assets/jack_back_00.hex` に保持する。
+いずれも画像バンク0、32x32、colkey 0、anchor_px `(16,32)`、world_size `(16.0,16.0)`、projection_mode `upright_height_billboard_v1`、flip_policy `none`。制作正本HEXは `src/drift_with_me/assets/jack_*_00.hex` に保持する。
 
-正面・背面導入時も、表示寸法、hover、影、深度順、collider、入力、カメラは変更していない。横方向・斜め方向では既存 `jack_idle_32` を使い、正面・背面は画面上の上下移動が優勢な時だけ選ぶ。
+8方向導入時も、表示寸法、hover、影、深度順、collider、入力、カメラは変更していない。方向はJackの最後の移動を画面上へ投影し、`right`, `front_right`, `front`, `front_left`, `left`, `back_left`, `back`, `back_right` の8分割で選ぶ。該当アセットがない場合のみ `jack_idle_32` へフォールバックする。
 
 ### 4.2 Jackの初期配置台帳案
 
-以下は今後の追加フレーム配置案。`front` と `back` のコマ0は実データとして使用中。それ以外は予約のみであり、書き込みや参照は行わない。
+以下は今後のアニメーション追加用の配置案。方向のコマ0の一部は実データとして使用中で、未記載セルは予約のみであり、書き込みや参照は行わない。
 
 |行|用途|コマ0|コマ1|コマ2|コマ3|
 |---|---|---|---|---|---|
-|基準絵|現行 `idle_00`|`(0,0)`|未割当|未割当|未割当|
+|基準絵|現行 `idle_00`|`(0,0)` 実データ|未割当|未割当|未割当|
 |front|正面系|`(0,32)` 実データ|`(32,32)`|`(64,32)`|`(96,32)`|
-|left|左向き|`(0,64)`|`(32,64)`|`(64,64)`|`(96,64)`|
-|right|右向き|`(0,96)`|`(32,96)`|`(64,96)`|`(96,96)`|
+|left|左向き|`(0,64)` 実データ|`(32,64)` は `back_left` 実データ|`(64,64)`|`(96,64)`|
+|right|右向き|`(0,96)` 実データ|`(32,96)` は `back_right` 実データ|`(64,96)`|`(96,96)`|
 |back|背面系|`(0,128)` 実データ|`(32,128)`|`(64,128)`|`(96,128)`|
 
-すべて32x32枠の左上座標。現行の斜め向きの絵を、正面差分完成扱いにしない。方向切替や新しいアニメーションは、対応するアセット導入時の作業とする。
+すべて32x32枠の左上座標。`front_right` は `(32,0)` に配置済み。方向切替は実装済みだが、歩行アニメーションやコマ追加は今後のアセット導入時の作業とする。
 
 ### 4.3 Fuse buddyの現行配置
 

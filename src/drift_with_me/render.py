@@ -394,16 +394,15 @@ class Renderer:
         self, model: GameModel, camera: CameraState
     ) -> tuple[LoadedSpriteAsset, bool] | None:
         view_name = self.player_sprite_direction_view(model, camera)
-        config_key = {
-            "front": "player_front_asset",
-            "back": "player_back_asset",
-        }.get(view_name, "player_idle_asset")
+        config_key = f"player_{view_name}_asset" if view_name != "idle" else "player_idle_asset"
         asset = self.configured_sprite_asset(model, config_key)
+        using_idle_fallback = False
         if asset is None and config_key != "player_idle_asset":
             asset = self.configured_sprite_asset(model, "player_idle_asset")
+            using_idle_fallback = asset is not None
         if asset is None:
             return None
-        return asset, view_name == "idle" and self.player_sprite_flip_x(model, camera)
+        return asset, using_idle_fallback and self.player_sprite_flip_x(model, camera)
 
     def player_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
         if model.player.moved_distance <= 1e-6:
@@ -413,10 +412,9 @@ class Renderer:
         if delta is None:
             return self.player_sprite_view_name
         screen_dx, screen_dy = delta
-        if abs(screen_dy) > 0.25 and abs(screen_dy) >= abs(screen_dx):
-            self.player_sprite_view_name = "front" if screen_dy > 0.0 else "back"
-        else:
-            self.player_sprite_view_name = "idle"
+        next_view = self.screen_direction_view_name(screen_dx, screen_dy)
+        if next_view is not None:
+            self.player_sprite_view_name = next_view
         return self.player_sprite_view_name
 
     def player_screen_move_delta(
@@ -440,11 +438,17 @@ class Renderer:
         if delta is None:
             return self.buddy_sprite_view_name
         screen_dx, screen_dy = delta
+        next_view = self.screen_direction_view_name(screen_dx, screen_dy)
+        if next_view is not None:
+            self.buddy_sprite_view_name = next_view
+        return self.buddy_sprite_view_name
+
+    def screen_direction_view_name(self, screen_dx: float, screen_dy: float) -> str | None:
         if math.hypot(screen_dx, screen_dy) <= 0.25:
-            return self.buddy_sprite_view_name
+            return None
         angle = math.atan2(screen_dy, screen_dx)
         sector = int(math.floor((angle + math.pi / 8.0) / (math.pi / 4.0))) % 8
-        self.buddy_sprite_view_name = (
+        return (
             "right",
             "front_right",
             "front",
@@ -454,7 +458,6 @@ class Renderer:
             "back",
             "back_right",
         )[sector]
-        return self.buddy_sprite_view_name
 
     def configured_sprite_asset(
         self, model: GameModel, config_key: str

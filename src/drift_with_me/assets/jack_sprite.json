@@ -68,7 +68,7 @@
       ]
     },
     "jack_front_32": {
-      "asset_version": "0.1.0",
+      "asset_version": "0.2.0",
       "image_bank": 0,
       "colkey": 0,
       "anchor_px": [
@@ -118,7 +118,7 @@
       ]
     },
     "jack_back_32": {
-      "asset_version": "0.1.0",
+      "asset_version": "0.2.0",
       "image_bank": 0,
       "colkey": 0,
       "anchor_px": [
@@ -574,6 +574,306 @@
           "source_hash": "f7d1a7b3f13c1a57e5505b7706cb03a82721a0197f6b7db1fdb8b56e74838d95"
         }
       ]
+    },
+    "jack_front_left_32": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          1,
+          8,
+          31,
+          32
+        ]
+      },
+      "attachments_px": {
+        "above_head": [
+          16,
+          6
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "front_left_00"
+      },
+      "frames": [
+        {
+          "id": "front_left_00",
+          "u": 0,
+          "v": 0,
+          "w": 32,
+          "h": 32,
+          "source_hash": "9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d"
+        }
+      ]
+    },
+    "jack_front_right_32": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          1,
+          8,
+          31,
+          32
+        ]
+      },
+      "attachments_px": {
+        "above_head": [
+          16,
+          6
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "front_right_00"
+      },
+      "frames": [
+        {
+          "id": "front_right_00",
+          "u": 32,
+          "v": 0,
+          "w": 32,
+          "h": 32,
+          "source_hash": "173a29c11bf5952a27e37a3a501a8ac5f941c9de0eb7e424238b30fca39784ab"
+        }
+      ]
+    },
+    "jack_left_32": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          1,
+          8,
+          29,
+          32
+        ]
+      },
+      "attachments_px": {
+        "above_head": [
+          16,
+          6
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "left_00"
+      },
+      "frames": [
+        {
+          "id": "left_00",
+          "u": 0,
+          "v": 64,
+          "w": 32,
+          "h": 32,
+          "source_hash": "ddeb02e3d1ff05281c9fb0ebfadf94c31ca7c66ff55ba5ac273ae68be160d419"
+        }
+      ]
+    },
+    "jack_back_left_32": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          1,
+          8,
+          31,
+          32
+        ]
+      },
+      "attachments_px": {
+        "above_head": [
+          16,
+          6
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "back_left_00"
+      },
+      "frames": [
+        {
+          "id": "back_left_00",
+          "u": 32,
+          "v": 64,
+          "w": 32,
+          "h": 32,
+          "source_hash": "48d752c3ea5e5c4669306669cb7159953d637615e09d22edd58a9f30f171b5a0"
+        }
+      ]
+    },
+    "jack_right_32": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          3,
+          8,
+          31,
+          32
+        ]
+      },
+      "attachments_px": {
+        "above_head": [
+          16,
+          6
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "right_00"
+      },
+      "frames": [
+        {
+          "id": "right_00",
+          "u": 0,
+          "v": 96,
+          "w": 32,
+          "h": 32,
+          "source_hash": "00792669416356148de3d10ec2320cf6013e94f71328aac9670319b02934dfd8"
+        }
+      ]
+    },
+    "jack_back_right_32": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "opaque_px_xyxy_exclusive": [
+          1,
+          8,
+          31,
+          32
+        ]
+      },
+      "attachments_px": {
+        "above_head": [
+          16,
+          6
+        ]
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "back_right_00"
+      },
+      "frames": [
+        {
+          "id": "back_right_00",
+          "u": 32,
+          "v": 96,
+          "w": 32,
+          "h": 32,
+          "source_hash": "c3f00558ffc3b6cf579e96cfd730e406501859602d26a3fb5b785f9b6c19d72a"
+        }
+      ]
     }
   },
   "notes": [
@@ -583,6 +883,7 @@
     "Do not change collider, cube_size, shadow, hover, camera or input in this format change.",
     "If image banks are in use, integrate the canonical HEX through the project build step instead of loading this standalone pack over existing image banks.",
     "Fuse v0.2.0 front_right neutral is baked into bank 0 at (128,0,48,40), with source HEX preserved as fuse_front_right_neutral.hex.",
-    "Fuse v0.2.0 neutral directions are baked into bank 0 at x=128/176 rows y=0/40/80/120, with source HEX files preserved."
+    "Fuse v0.2.0 neutral directions are baked into bank 0 at x=128/176 rows y=0/40/80/120, with source HEX files preserved.",
+    "Jack eight-direction v0.2.0 sprites are baked into bank 0: front_left/idle at (0,0), front_right at (32,0), front at (0,32), left/back_left at (0/32,64), right/back_right at (0/32,96), back at (0,128)."
   ]
 }
