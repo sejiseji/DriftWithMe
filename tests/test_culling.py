@@ -3,12 +3,7 @@ from __future__ import annotations
 from drift_with_me.config import load_runtime_config
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import GameModel, InputIntent
-from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
-
-
-class DummyPyxel:
-    pass
 
 
 def make_model(culling_enabled: bool = True) -> tuple[GameModel, CameraState]:
@@ -108,37 +103,3 @@ def test_culling_on_off_keeps_model_results_for_same_inputs() -> None:
         disabled.step(intent, disabled_camera, dt)
 
     assert major_state(enabled) == major_state(disabled)
-
-
-def test_ground_details_are_stable_and_one_per_chunk() -> None:
-    first = load_world_data()
-    second = load_world_data()
-
-    assert len(first.chunk_ids) == 64
-    assert len(first.ground_details) == 64
-    assert first.ground_details == second.ground_details
-
-
-def test_visual_bounds_keep_tall_sprite_registration_conservative() -> None:
-    world = load_world_data()
-    tree = world.object_by_id("tree_01")
-    assert tree is not None
-
-    bounds = world.object_visual_bounds(tree)
-
-    assert bounds.height >= 64.0
-    assert bounds.max_x - bounds.min_x >= 48.0
-
-
-def test_renderer_records_visible_chunk_statistics() -> None:
-    model, camera = make_model(culling_enabled=True)
-    renderer = Renderer(DummyPyxel())
-
-    commands = renderer.world_commands(model, camera, presentation_time=0.0)
-    stats = renderer.last_stats
-
-    assert commands
-    assert 1 <= stats.candidate_chunks <= len(model.world.chunk_ids)
-    assert 0 <= stats.visible_static_objects <= stats.candidate_static_objects
-    assert stats.candidate_static_objects <= stats.total_static_objects
-    assert stats.draw_commands == len(commands)

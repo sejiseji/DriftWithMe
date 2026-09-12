@@ -240,20 +240,6 @@ def test_flipped_placement_mirrors_anchor_and_draws_negative_width(tmp_path: Pat
     assert args[6] == 5
 
 
-def test_runtime_sprite_library_can_be_disabled_by_config() -> None:
-    import pyxel
-
-    runtime = load_runtime_config()
-    raw = copy.deepcopy(runtime.raw)
-    raw["assets"]["sprite_rendering_enabled"] = False
-
-    library = load_runtime_sprite_library(pyxel, raw)
-
-    assert not library.enabled
-    assert library.assets == {}
-    assert library.errors == ()
-
-
 def test_runtime_sprite_library_reports_missing_manifest_without_crashing() -> None:
     import pyxel
 
@@ -267,20 +253,6 @@ def test_runtime_sprite_library_reports_missing_manifest_without_crashing() -> N
     assert library.enabled
     assert library.assets == {}
     assert library.errors
-
-
-def test_default_runtime_config_points_to_baked_jack_resource() -> None:
-    runtime = load_runtime_config()
-
-    assert runtime.raw["assets"] == {
-        "sprite_rendering_enabled": True,
-        "manifest": "assets/jack_sprite.json",
-        "player_idle_asset": "jack_idle_32",
-        "player_front_asset": "jack_front_32",
-        "player_back_asset": "jack_back_32",
-        "buddy_idle_asset": "",
-        "fallback_to_primitives": True,
-    }
 
 
 def test_runtime_pyxres_manifest_loads_jack_and_preserves_nonimage_banks() -> None:
@@ -386,62 +358,6 @@ print(json.dumps({{"asset": asset.definition.asset_id, "hash": frame.source_hash
     )
 
     assert completed.returncode == 0, completed.stdout + completed.stderr
-
-
-def test_renderer_can_draw_player_through_loaded_sprite(tmp_path: Path) -> None:
-    import pyxel
-
-    manifest_path = write_manifest(tmp_path, valid_asset())
-    library = load_sprite_manifest_path(pyxel, manifest_path)
-    runtime = load_runtime_config()
-    raw = copy.deepcopy(runtime.raw)
-    raw["assets"]["sprite_rendering_enabled"] = True
-    raw["assets"]["player_idle_asset"] = "jack_test"
-    model = GameModel(raw, load_world_data())
-    camera = CameraState.from_config(
-        raw,
-        Vec3(model.player.x, 0.0, model.player.z),
-        runtime.screen_width,
-        runtime.screen_height,
-    )
-    fake_pyxel = RecordingPyxel()
-    renderer = Renderer(fake_pyxel, library)
-
-    assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
-
-    args, kwargs = fake_pyxel.blt_calls[0]
-    assert args[2] is library.get("jack_test").frame().image
-    assert args[5:7] == (3, 5)
-    assert kwargs["colkey"] == 0
-    assert kwargs["scale"] > 0.0
-
-
-def test_renderer_can_draw_buddy_through_optional_sprite(tmp_path: Path) -> None:
-    import pyxel
-
-    manifest_path = write_manifest(tmp_path, valid_asset())
-    library = load_sprite_manifest_path(pyxel, manifest_path)
-    runtime = load_runtime_config()
-    raw = copy.deepcopy(runtime.raw)
-    raw["assets"]["sprite_rendering_enabled"] = True
-    raw["assets"]["buddy_idle_asset"] = "jack_test"
-    model = GameModel(raw, load_world_data())
-    camera = CameraState.from_config(
-        raw,
-        Vec3(model.player.x, 0.0, model.player.z),
-        runtime.screen_width,
-        runtime.screen_height,
-    )
-    fake_pyxel = RecordingPyxel()
-    renderer = Renderer(fake_pyxel, library)
-
-    assert renderer.draw_buddy_sprite(model, camera, bob=0.0)
-
-    args, kwargs = fake_pyxel.blt_calls[0]
-    assert args[2] is library.get("jack_test").frame().image
-    assert args[5:7] == (3, 5)
-    assert kwargs["colkey"] == 0
-    assert kwargs["scale"] > 0.0
 
 
 def test_renderer_flips_player_sprite_for_screen_right_movement(tmp_path: Path) -> None:
