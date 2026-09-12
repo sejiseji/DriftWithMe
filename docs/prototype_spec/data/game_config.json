@@ -198,6 +198,7 @@
     "sprite_rendering_enabled": true,
     "manifest": "assets/jack_sprite.json",
     "player_idle_asset": "jack_idle_32",
+    "buddy_idle_asset": "",
     "fallback_to_primitives": true
   },
   "effects": {

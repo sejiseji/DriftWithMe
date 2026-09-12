@@ -261,6 +261,7 @@ def test_default_runtime_config_points_to_baked_jack_resource() -> None:
         "sprite_rendering_enabled": True,
         "manifest": "assets/jack_sprite.json",
         "player_idle_asset": "jack_idle_32",
+        "buddy_idle_asset": "",
         "fallback_to_primitives": True,
     }
 
@@ -380,6 +381,34 @@ def test_renderer_can_draw_player_through_loaded_sprite(tmp_path: Path) -> None:
     renderer = Renderer(fake_pyxel, library)
 
     assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
+
+    args, kwargs = fake_pyxel.blt_calls[0]
+    assert args[2] is library.get("jack_test").frame().image
+    assert args[5:7] == (3, 5)
+    assert kwargs["colkey"] == 0
+    assert kwargs["scale"] > 0.0
+
+
+def test_renderer_can_draw_buddy_through_optional_sprite(tmp_path: Path) -> None:
+    import pyxel
+
+    manifest_path = write_manifest(tmp_path, valid_asset())
+    library = load_sprite_manifest_path(pyxel, manifest_path)
+    runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = True
+    raw["assets"]["buddy_idle_asset"] = "jack_test"
+    model = GameModel(raw, load_world_data())
+    camera = CameraState.from_config(
+        raw,
+        Vec3(model.player.x, 0.0, model.player.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    fake_pyxel = RecordingPyxel()
+    renderer = Renderer(fake_pyxel, library)
+
+    assert renderer.draw_buddy_sprite(model, camera, bob=0.0)
 
     args, kwargs = fake_pyxel.blt_calls[0]
     assert args[2] is library.get("jack_test").frame().image

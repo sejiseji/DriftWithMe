@@ -378,10 +378,18 @@ class Renderer:
         return hover * float(model.config["player"]["visual_hover_amplitude"]) / 2.0
 
     def player_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
+        return self.configured_sprite_asset(model, "player_idle_asset")
+
+    def buddy_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
+        return self.configured_sprite_asset(model, "buddy_idle_asset")
+
+    def configured_sprite_asset(
+        self, model: GameModel, config_key: str
+    ) -> LoadedSpriteAsset | None:
         if not self.sprite_assets.enabled:
             return None
         asset_config = model.config.get("assets", {})
-        asset_id = str(asset_config.get("player_idle_asset", ""))
+        asset_id = str(asset_config.get(config_key, ""))
         if not asset_id:
             return None
         return self.sprite_assets.get(asset_id)
@@ -450,6 +458,8 @@ class Renderer:
                 0,
             )
         bob = math.sin(presentation_time * math.tau / 1.3) * 2.0
+        if self.draw_buddy_sprite(model, camera, bob):
+            return
         half = model.buddy_cube_size / 2.0
         self.draw_box(
             camera,
@@ -461,6 +471,23 @@ class Renderer:
             buddy.y + bob,
             10,
         )
+
+    def buddy_sprite_placement(self, model: GameModel, camera: CameraState, bob: float):
+        asset = self.buddy_sprite_asset(model)
+        if asset is None:
+            return None
+        anchor = Vec3(model.buddy.x, model.buddy.y + bob, model.buddy.z)
+        return placement_for_upright_height_billboard(camera, asset.definition, anchor)
+
+    def draw_buddy_sprite(self, model: GameModel, camera: CameraState, bob: float) -> bool:
+        asset = self.buddy_sprite_asset(model)
+        if asset is None:
+            return False
+        placement = self.buddy_sprite_placement(model, camera, bob)
+        if placement is None:
+            return False
+        draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
+        return True
 
     def draw_barrier(self, model: GameModel, camera: CameraState) -> None:
         if not model.player.barrier_active:
