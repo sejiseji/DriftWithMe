@@ -348,7 +348,7 @@ assert all(
     abs(actual - expected) < 1e-9
     for actual, expected in zip(
         fuse.definition.world_size,
-        (19.86080254132485, 16.550668784437377),
+        (25.2, 21.0),
         strict=True,
     )
 )

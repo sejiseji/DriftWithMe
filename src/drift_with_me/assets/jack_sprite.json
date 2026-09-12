@@ -176,8 +176,8 @@
         30
       ],
       "world_size": [
-        19.86080254132485,
-        16.550668784437377
+        25.2,
+        21.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "sort_anchor": "buddy_visual_root",
@@ -200,7 +200,8 @@
         "cube_edge_world": 6.0,
         "cube_edge_source_px": 16.0,
         "baked_pitch_deg": 25.0,
-        "note": "world_size encodes the current height-based billboard scaler target; buddy model cube_size is unchanged."
+        "readability_art_scale": 1.269,
+        "note": "world_size encodes the current height-based billboard scaler target plus a shared readability scale; buddy model cube_size is unchanged."
       },
       "animation": {
         "mode": "static",

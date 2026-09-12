@@ -110,11 +110,11 @@ JWP012Cでは、`drift_with_me_fuse_parts_v0_2` から合成済み `front_right_
 
 |asset|frame|source rect|source_hash|colkey|anchor_px|world_size|
 |---|---|---|---|---:|---|---|
-|`fuse_front_right_neutral_48`|`front_right__neutral`|`(128,0,48,40)`|`669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8`|2|`(24,30)`|`(19.86080254132485,16.550668784437377)`|
+|`fuse_front_right_neutral_48`|`front_right__neutral`|`(128,0,48,40)`|`669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8`|2|`(24,30)`|`(25.2,21.0)`|
 
 制作正本として、同じ画素を `src/drift_with_me/assets/fuse_front_right_neutral.hex` に保持する。透明色は2であり、0は黒い不透明色として扱う。
 
-この `world_size` は既存の高さベース `upright_height_billboard_v1` で、16px基準のFuse本体を現行buddyの `cube_size=6.0` 相当に見せるための実効キャンバス寸法である。buddyの追従、高さ、bob、影、深度ソート、コリジョンなし設定は変更していない。
+この `world_size` は既存の高さベース `upright_height_billboard_v1` で使う実効キャンバス寸法である。JWP012C直後の実機確認で縮小時に片目が消えやすかったため、16px基準から求めた初期値へ全方向共通の可読性倍率を足した。buddyの追従、高さ、bob、影、深度ソート、コリジョンなし設定は変更していない。
 
 未接続の `front` / `front_right` 各pose、背面、左右、パネルアニメーション、方向切替は将来作業とする。未制作方向を反転や補完で増やさない。
 
