@@ -201,6 +201,14 @@
     "player_front_asset": "jack_front_32",
     "player_back_asset": "jack_back_32",
     "buddy_idle_asset": "fuse_front_right_neutral_48",
+    "buddy_front_asset": "fuse_front_neutral_48",
+    "buddy_front_right_asset": "fuse_front_right_neutral_48",
+    "buddy_right_asset": "fuse_right_neutral_48",
+    "buddy_back_right_asset": "fuse_back_right_neutral_48",
+    "buddy_back_asset": "fuse_back_neutral_48",
+    "buddy_back_left_asset": "fuse_back_left_neutral_48",
+    "buddy_left_asset": "fuse_left_neutral_48",
+    "buddy_front_left_asset": "fuse_front_left_neutral_48",
     "fallback_to_primitives": true
   },
   "effects": {

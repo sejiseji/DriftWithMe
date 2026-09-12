@@ -31,7 +31,26 @@ ROWS = ("012", "345", "678", "9AB", "CDE")
 JACK_SOURCE_HASH = "9e63b51c48c928394fc992bda83c1c851588f69ba4dae7be7e340054d885cd7d"
 JACK_FRONT_SOURCE_HASH = "5cf48ead95a750c893f45e925bbe33d8deb5e778945e33e78fd74e4fc003cf6f"
 JACK_BACK_SOURCE_HASH = "19848ca6c4c3e4df4670ae62824943a054aed4fe56a3a57320aa605a3f67d7b6"
-FUSE_SOURCE_HASH = "669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8"
+FUSE_DIRECTION_HASHES = {
+    "front": "a9c9661505e49fbf9d42a4e2f066c2a668b68677d844eb8eaa8000620460189c",
+    "front_right": "669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8",
+    "right": "e4d70c506274fec641c01111add437712777f7e7c6f67101dcbd3c15ffbab5e8",
+    "back_right": "4ade96bae2660569dea2826941e5853f100ab218aaf00ef1dd85b1d39d93ef57",
+    "back": "f36e148c68b10c0f99cdeb0732f90e53d0d074af8f953cd5501d09ca06c19058",
+    "back_left": "18fba52bce98e9a0277f0a0e0d6ed6ba6a886dad4397ae8f50f43b73ce4ec926",
+    "left": "f7d1a7b3f13c1a57e5505b7706cb03a82721a0197f6b7db1fdb8b56e74838d95",
+    "front_left": "3d4f0deba3774002fa4b205c89ce56569e4721eaabd73b7e3bf8ef9a7c10cf13",
+}
+FUSE_DIRECTION_RECTS = {
+    "front_right": (128, 0, 48, 40),
+    "front_left": (176, 0, 48, 40),
+    "front": (128, 40, 48, 40),
+    "right": (176, 40, 48, 40),
+    "back_right": (128, 80, 48, 40),
+    "back": (176, 80, 48, 40),
+    "back_left": (128, 120, 48, 40),
+    "left": (176, 120, 48, 40),
+}
 
 
 class RecordingPyxel:
@@ -47,9 +66,10 @@ def pixel_hash(rows: tuple[str, ...]) -> str:
     return hashlib.sha256(pixels).hexdigest()
 
 
-def test_fuse_source_hex_preserves_received_pixels() -> None:
+@pytest.mark.parametrize("direction", tuple(FUSE_DIRECTION_HASHES))
+def test_fuse_source_hex_preserves_received_pixels(direction: str) -> None:
     rows = tuple(
-        (ROOT / "src/drift_with_me/assets/fuse_front_right_neutral.hex")
+        (ROOT / f"src/drift_with_me/assets/fuse_{direction}_neutral.hex")
         .read_text(encoding="utf-8")
         .strip()
         .splitlines()
@@ -57,7 +77,7 @@ def test_fuse_source_hex_preserves_received_pixels() -> None:
 
     assert len(rows) == 40
     assert {len(row) for row in rows} == {48}
-    assert pixel_hash(rows) == FUSE_SOURCE_HASH
+    assert pixel_hash(rows) == FUSE_DIRECTION_HASHES[direction]
 
 
 def valid_asset(asset_id: str = "jack_test", frame_path: str = "jack.hex") -> dict:
@@ -337,22 +357,31 @@ assert back is not None
 back_frame = back.frame()
 assert (back_frame.u, back_frame.v, back_frame.width, back_frame.height) == (0, 128, 32, 32)
 assert back_frame.source_hash == {JACK_BACK_SOURCE_HASH!r}
-fuse = library.get("fuse_front_right_neutral_48")
-assert fuse is not None
-fuse_frame = fuse.frame()
-assert (fuse_frame.u, fuse_frame.v, fuse_frame.width, fuse_frame.height) == (128, 0, 48, 40)
-assert fuse_frame.source_hash == {FUSE_SOURCE_HASH!r}
-assert fuse.definition.colkey == 2
-assert fuse.definition.anchor_px == (24.0, 30.0)
-assert all(
-    abs(actual - expected) < 1e-9
-    for actual, expected in zip(
-        fuse.definition.world_size,
-        (25.2, 21.0),
-        strict=True,
+fuse_assets = {FUSE_DIRECTION_HASHES!r}
+fuse_rects = {FUSE_DIRECTION_RECTS!r}
+fuse_frame = None
+for direction, expected_hash in fuse_assets.items():
+    fuse = library.get(f"fuse_{{direction}}_neutral_48")
+    assert fuse is not None, direction
+    frame = fuse.frame()
+    assert (frame.u, frame.v, frame.width, frame.height) == fuse_rects[direction]
+    assert frame.source_hash == expected_hash
+    assert fuse.definition.colkey == 2
+    assert fuse.definition.anchor_px == (24.0, 30.0)
+    assert all(
+        abs(actual - expected) < 1e-9
+        for actual, expected in zip(
+            fuse.definition.world_size,
+            (25.2, 21.0),
+            strict=True,
+        )
     )
-)
+    if direction == "front_right":
+        fuse_frame = frame
+assert fuse_frame is not None
 assert runtime.raw["assets"]["buddy_idle_asset"] == "fuse_front_right_neutral_48"
+for direction in fuse_assets:
+    assert runtime.raw["assets"][f"buddy_{{direction}}_asset"] == f"fuse_{{direction}}_neutral_48"
 assert sound_snapshot() == before_sound
 assert music_snapshot() == before_music
 assert pyxel.tilemaps[0].pget(0, 0) == before_tile
@@ -484,3 +513,49 @@ def test_renderer_selects_player_front_and_back_assets_for_screen_vertical_movem
     asset = renderer.player_sprite_asset(model, camera)
     assert asset is not None
     assert asset.definition.asset_id == "jack_idle_32"
+
+
+def test_renderer_selects_buddy_direction_assets_for_screen_movement(tmp_path: Path) -> None:
+    import pyxel
+
+    assets = [
+        valid_asset(f"fuse_{direction}_neutral_48", f"{direction}.hex")
+        for direction in FUSE_DIRECTION_HASHES
+    ]
+    manifest_path = write_manifest_assets(tmp_path, assets)
+    library = load_sprite_manifest_path(pyxel, manifest_path)
+    runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = True
+    raw["assets"]["buddy_idle_asset"] = "fuse_front_right_neutral_48"
+    for direction in FUSE_DIRECTION_HASHES:
+        raw["assets"][f"buddy_{direction}_asset"] = f"fuse_{direction}_neutral_48"
+    model = GameModel(raw, load_world_data())
+    camera = CameraState.from_config(
+        raw,
+        Vec3(model.player.x, 0.0, model.player.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    renderer = Renderer(RecordingPyxel(), library)
+    model.player.moved_distance = 1.0
+
+    cases = (
+        ("right", 1.0, 0.0),
+        ("front_right", 1.0, 1.0),
+        ("front", 0.0, 1.0),
+        ("front_left", -1.0, 1.0),
+        ("left", -1.0, 0.0),
+        ("back_left", -1.0, -1.0),
+        ("back", 0.0, -1.0),
+        ("back_right", 1.0, -1.0),
+    )
+    for expected, screen_x, screen_y in cases:
+        direction = screen_to_world_direction(
+            camera, model.player.x, model.player.z, screen_x, screen_y
+        )
+        model.player.last_move_x = direction.x
+        model.player.last_move_z = direction.y
+        asset = renderer.buddy_sprite_asset(model, camera)
+        assert asset is not None
+        assert asset.definition.asset_id == f"fuse_{expected}_neutral_48"

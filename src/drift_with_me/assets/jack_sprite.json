@@ -217,6 +217,363 @@
           "source_hash": "669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8"
         }
       ]
+    },
+    "fuse_front_left_neutral_48": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 2,
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "buddy_visual_root",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          48,
+          40
+        ],
+        "opaque_px_xyxy_exclusive": [
+          13,
+          11,
+          35,
+          35
+        ]
+      },
+      "scale_reference": {
+        "cube_edge_world": 6.0,
+        "cube_edge_source_px": 16.0,
+        "baked_pitch_deg": 25.0,
+        "readability_art_scale": 1.269,
+        "note": "world_size encodes the current height-based billboard scaler target plus a shared readability scale; buddy model cube_size is unchanged."
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "front_left__neutral"
+      },
+      "frames": [
+        {
+          "id": "front_left__neutral",
+          "u": 176,
+          "v": 0,
+          "w": 48,
+          "h": 40,
+          "source_hash": "3d4f0deba3774002fa4b205c89ce56569e4721eaabd73b7e3bf8ef9a7c10cf13"
+        }
+      ]
+    },
+    "fuse_front_neutral_48": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 2,
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "buddy_visual_root",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          48,
+          40
+        ],
+        "opaque_px_xyxy_exclusive": [
+          15,
+          12,
+          33,
+          33
+        ]
+      },
+      "scale_reference": {
+        "cube_edge_world": 6.0,
+        "cube_edge_source_px": 16.0,
+        "baked_pitch_deg": 25.0,
+        "readability_art_scale": 1.269,
+        "note": "world_size encodes the current height-based billboard scaler target plus a shared readability scale; buddy model cube_size is unchanged."
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "front__neutral"
+      },
+      "frames": [
+        {
+          "id": "front__neutral",
+          "u": 128,
+          "v": 40,
+          "w": 48,
+          "h": 40,
+          "source_hash": "a9c9661505e49fbf9d42a4e2f066c2a668b68677d844eb8eaa8000620460189c"
+        }
+      ]
+    },
+    "fuse_right_neutral_48": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 2,
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "buddy_visual_root",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          48,
+          40
+        ],
+        "opaque_px_xyxy_exclusive": [
+          16,
+          12,
+          32,
+          33
+        ]
+      },
+      "scale_reference": {
+        "cube_edge_world": 6.0,
+        "cube_edge_source_px": 16.0,
+        "baked_pitch_deg": 25.0,
+        "readability_art_scale": 1.269,
+        "note": "world_size encodes the current height-based billboard scaler target plus a shared readability scale; buddy model cube_size is unchanged."
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "right__neutral"
+      },
+      "frames": [
+        {
+          "id": "right__neutral",
+          "u": 176,
+          "v": 40,
+          "w": 48,
+          "h": 40,
+          "source_hash": "e4d70c506274fec641c01111add437712777f7e7c6f67101dcbd3c15ffbab5e8"
+        }
+      ]
+    },
+    "fuse_back_right_neutral_48": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 2,
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "buddy_visual_root",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          48,
+          40
+        ],
+        "opaque_px_xyxy_exclusive": [
+          13,
+          11,
+          35,
+          35
+        ]
+      },
+      "scale_reference": {
+        "cube_edge_world": 6.0,
+        "cube_edge_source_px": 16.0,
+        "baked_pitch_deg": 25.0,
+        "readability_art_scale": 1.269,
+        "note": "world_size encodes the current height-based billboard scaler target plus a shared readability scale; buddy model cube_size is unchanged."
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "back_right__neutral"
+      },
+      "frames": [
+        {
+          "id": "back_right__neutral",
+          "u": 128,
+          "v": 80,
+          "w": 48,
+          "h": 40,
+          "source_hash": "4ade96bae2660569dea2826941e5853f100ab218aaf00ef1dd85b1d39d93ef57"
+        }
+      ]
+    },
+    "fuse_back_neutral_48": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 2,
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "buddy_visual_root",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          48,
+          40
+        ],
+        "opaque_px_xyxy_exclusive": [
+          15,
+          12,
+          33,
+          33
+        ]
+      },
+      "scale_reference": {
+        "cube_edge_world": 6.0,
+        "cube_edge_source_px": 16.0,
+        "baked_pitch_deg": 25.0,
+        "readability_art_scale": 1.269,
+        "note": "world_size encodes the current height-based billboard scaler target plus a shared readability scale; buddy model cube_size is unchanged."
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "back__neutral"
+      },
+      "frames": [
+        {
+          "id": "back__neutral",
+          "u": 176,
+          "v": 80,
+          "w": 48,
+          "h": 40,
+          "source_hash": "f36e148c68b10c0f99cdeb0732f90e53d0d074af8f953cd5501d09ca06c19058"
+        }
+      ]
+    },
+    "fuse_back_left_neutral_48": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 2,
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "buddy_visual_root",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          48,
+          40
+        ],
+        "opaque_px_xyxy_exclusive": [
+          13,
+          11,
+          35,
+          35
+        ]
+      },
+      "scale_reference": {
+        "cube_edge_world": 6.0,
+        "cube_edge_source_px": 16.0,
+        "baked_pitch_deg": 25.0,
+        "readability_art_scale": 1.269,
+        "note": "world_size encodes the current height-based billboard scaler target plus a shared readability scale; buddy model cube_size is unchanged."
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "back_left__neutral"
+      },
+      "frames": [
+        {
+          "id": "back_left__neutral",
+          "u": 128,
+          "v": 120,
+          "w": 48,
+          "h": 40,
+          "source_hash": "18fba52bce98e9a0277f0a0e0d6ed6ba6a886dad4397ae8f50f43b73ce4ec926"
+        }
+      ]
+    },
+    "fuse_left_neutral_48": {
+      "asset_version": "0.2.0",
+      "image_bank": 0,
+      "colkey": 2,
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "buddy_visual_root",
+      "flip_policy": "none",
+      "visual_bounds": {
+        "canvas_px_xyxy": [
+          0,
+          0,
+          48,
+          40
+        ],
+        "opaque_px_xyxy_exclusive": [
+          16,
+          12,
+          32,
+          33
+        ]
+      },
+      "scale_reference": {
+        "cube_edge_world": 6.0,
+        "cube_edge_source_px": 16.0,
+        "baked_pitch_deg": 25.0,
+        "readability_art_scale": 1.269,
+        "note": "world_size encodes the current height-based billboard scaler target plus a shared readability scale; buddy model cube_size is unchanged."
+      },
+      "animation": {
+        "mode": "static",
+        "frame_id": "left__neutral"
+      },
+      "frames": [
+        {
+          "id": "left__neutral",
+          "u": 176,
+          "v": 120,
+          "w": 48,
+          "h": 40,
+          "source_hash": "f7d1a7b3f13c1a57e5505b7706cb03a82721a0197f6b7db1fdb8b56e74838d95"
+        }
+      ]
     }
   },
   "notes": [
@@ -225,6 +582,7 @@
     "No .pyxpal is supplied. Do not load a same-stem custom palette.",
     "Do not change collider, cube_size, shadow, hover, camera or input in this format change.",
     "If image banks are in use, integrate the canonical HEX through the project build step instead of loading this standalone pack over existing image banks.",
-    "Fuse v0.2.0 front_right neutral is baked into bank 0 at (128,0,48,40), with source HEX preserved as fuse_front_right_neutral.hex."
+    "Fuse v0.2.0 front_right neutral is baked into bank 0 at (128,0,48,40), with source HEX preserved as fuse_front_right_neutral.hex.",
+    "Fuse v0.2.0 neutral directions are baked into bank 0 at x=128/176 rows y=0/40/80/120, with source HEX files preserved."
   ]
 }

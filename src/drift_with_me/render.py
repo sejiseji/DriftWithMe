@@ -66,6 +66,7 @@ class Renderer:
         self.sprite_assets = sprite_assets or SpriteAssetLibrary.empty()
         self.player_sprite_flipped_x = False
         self.player_sprite_view_name = "idle"
+        self.buddy_sprite_view_name = "front_right"
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -436,8 +437,37 @@ class Renderer:
             return None
         return moved.x - root.x, moved.y - root.y
 
-    def buddy_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
-        return self.configured_sprite_asset(model, "buddy_idle_asset")
+    def buddy_sprite_asset(
+        self, model: GameModel, camera: CameraState | None = None
+    ) -> LoadedSpriteAsset | None:
+        if camera is None:
+            return self.configured_sprite_asset(model, "buddy_idle_asset")
+        view_name = self.buddy_sprite_direction_view(model, camera)
+        asset = self.configured_sprite_asset(model, f"buddy_{view_name}_asset")
+        if asset is None:
+            asset = self.configured_sprite_asset(model, "buddy_idle_asset")
+        return asset
+
+    def buddy_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        delta = self.player_screen_move_delta(model, camera)
+        if delta is None:
+            return self.buddy_sprite_view_name
+        screen_dx, screen_dy = delta
+        if math.hypot(screen_dx, screen_dy) <= 0.25:
+            return self.buddy_sprite_view_name
+        angle = math.atan2(screen_dy, screen_dx)
+        sector = int(math.floor((angle + math.pi / 8.0) / (math.pi / 4.0))) % 8
+        self.buddy_sprite_view_name = (
+            "right",
+            "front_right",
+            "front",
+            "front_left",
+            "left",
+            "back_left",
+            "back",
+            "back_right",
+        )[sector]
+        return self.buddy_sprite_view_name
 
     def configured_sprite_asset(
         self, model: GameModel, config_key: str
@@ -520,14 +550,14 @@ class Renderer:
         )
 
     def buddy_sprite_placement(self, model: GameModel, camera: CameraState, bob: float):
-        asset = self.buddy_sprite_asset(model)
+        asset = self.buddy_sprite_asset(model, camera)
         if asset is None:
             return None
         anchor = Vec3(model.buddy.x, model.buddy.y + bob, model.buddy.z)
         return placement_for_upright_height_billboard(camera, asset.definition, anchor)
 
     def draw_buddy_sprite(self, model: GameModel, camera: CameraState, bob: float) -> bool:
-        asset = self.buddy_sprite_asset(model)
+        asset = self.buddy_sprite_asset(model, camera)
         if asset is None:
             return False
         placement = self.buddy_sprite_placement(model, camera, bob)

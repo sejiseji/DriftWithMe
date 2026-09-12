@@ -9,6 +9,7 @@
 - 作業開始時HEAD: `0047fe73e75a64b6f07d663a5e9112845b196ea0` (`Add optional buddy sprite hook`)
 - 作業開始時の `git status --short`: 空。未コミット差分なし。
 - JWP012C Fuse buddy導入開始時HEAD: `7b98528aafc2447d1ec70fc280d1eef2378ad97e` (`Prune low-value tests`)。開始時の `git status --short`: 空。未コミット差分なし。
+- JWP012C Fuse 8方向拡張開始時HEAD: `625e34930b18b14e0f5a6af2bb7fea410ca52ab2` (`Increase Fuse buddy sprite scale`)。開始時の `git status --short`: 空。未コミット差分なし。
 - 古い基準コミット `e4c6c0a9736a878f0ac0c3635cfcc516992ae24d` へは戻していない。
 - この規約文書の初回作成時は文書化のみ。JWP012CではFuse buddy静止スプライト1枚を既存pyxresへ追加した。入力、カメラ、投影コード、当たり判定、浮遊、影、深度順、SE、パレット、Web配布方針は変更していない。
 - `docs/current_asset_rendering_contract.md` は画像導入前、基準コミット `e4c6c0a...` 時点の記録である。現在のJack pyxres導入後の状態は、本書、`docs/jwp011c_jack_pyxres_integration.md`、`docs/jwp012a_buddy_sprite_hook.md` を優先して参照する。
@@ -40,7 +41,7 @@
 
 |画像バンク|現行用途|実データ|source rect|規約上の扱い|衝突|
 |---:|---|---|---|---|---|
-|0|キャラクター|Jack `jack_idle_32` / `jack_front_32` / `jack_back_32`、Fuse `fuse_front_right_neutral_48`|Jack `(0,0,32,32)`, `(0,32,32,32)`, `(0,128,32,32)` / Fuse `(128,0,48,40)`|現行JackとFuseを維持。ヒューズ追加差分・ウニ等を追加する候補|なし|
+|0|キャラクター|Jack `jack_idle_32` / `jack_front_32` / `jack_back_32`、Fuse neutral 8方向|Jack `(0,0,32,32)`, `(0,32,32,32)`, `(0,128,32,32)` / Fuse `(128/176,0/40/80/120,48,40)`|現行JackとFuseを維持。ヒューズpose差分・ウニ等を追加する候補|なし|
 |1|なし|空|なし|将来のエフェクト用に予約|なし|
 |2|なし|空|なし|予備。今回用途を固定しない|なし|
 
@@ -106,17 +107,24 @@
 
 ### 4.3 Fuse buddyの現行配置
 
-JWP012Cでは、`drift_with_me_fuse_parts_v0_2` から合成済み `front_right__neutral` を1枚だけ実行用pyxresへ焼き込んだ。
+JWP012Cでは、`drift_with_me_fuse_parts_v0_2` から合成済みneutral 8方向を実行用pyxresへ焼き込んだ。
 
-|asset|frame|source rect|source_hash|colkey|anchor_px|world_size|
-|---|---|---|---|---:|---|---|
-|`fuse_front_right_neutral_48`|`front_right__neutral`|`(128,0,48,40)`|`669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8`|2|`(24,30)`|`(25.2,21.0)`|
+|direction|asset|source rect|source_hash|
+|---|---|---|---|
+|front|`fuse_front_neutral_48`|`(128,40,48,40)`|`a9c9661505e49fbf9d42a4e2f066c2a668b68677d844eb8eaa8000620460189c`|
+|front_right|`fuse_front_right_neutral_48`|`(128,0,48,40)`|`669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8`|
+|right|`fuse_right_neutral_48`|`(176,40,48,40)`|`e4d70c506274fec641c01111add437712777f7e7c6f67101dcbd3c15ffbab5e8`|
+|back_right|`fuse_back_right_neutral_48`|`(128,80,48,40)`|`4ade96bae2660569dea2826941e5853f100ab218aaf00ef1dd85b1d39d93ef57`|
+|back|`fuse_back_neutral_48`|`(176,80,48,40)`|`f36e148c68b10c0f99cdeb0732f90e53d0d074af8f953cd5501d09ca06c19058`|
+|back_left|`fuse_back_left_neutral_48`|`(128,120,48,40)`|`18fba52bce98e9a0277f0a0e0d6ed6ba6a886dad4397ae8f50f43b73ce4ec926`|
+|left|`fuse_left_neutral_48`|`(176,120,48,40)`|`f7d1a7b3f13c1a57e5505b7706cb03a82721a0197f6b7db1fdb8b56e74838d95`|
+|front_left|`fuse_front_left_neutral_48`|`(176,0,48,40)`|`3d4f0deba3774002fa4b205c89ce56569e4721eaabd73b7e3bf8ef9a7c10cf13`|
 
-制作正本として、同じ画素を `src/drift_with_me/assets/fuse_front_right_neutral.hex` に保持する。透明色は2であり、0は黒い不透明色として扱う。
+全方向ともcanvas 48x40、colkey 2、anchor_px `(24,30)`、world_size `(25.2,21.0)`。制作正本として、同じ画素を `src/drift_with_me/assets/fuse_*_neutral.hex` に保持する。透明色は2であり、0は黒い不透明色として扱う。
 
 この `world_size` は既存の高さベース `upright_height_billboard_v1` で使う実効キャンバス寸法である。JWP012C直後の実機確認で縮小時に片目が消えやすかったため、16px基準から求めた初期値へ全方向共通の可読性倍率を足した。buddyの追従、高さ、bob、影、深度ソート、コリジョンなし設定は変更していない。
 
-未接続の `front` / `front_right` 各pose、背面、左右、パネルアニメーション、方向切替は将来作業とする。未制作方向を反転や補完で増やさない。
+方向選択はプレイヤーの直近移動方向を画面上の8方向へ丸めて選ぶ。未接続のpose差分、パネルアニメーション、buddy固有の注視方向制御は将来作業とする。未制作方向を反転や補完で増やさない。
 
 ## 5. エフェクト配置・描画規約
 
@@ -172,7 +180,7 @@ JWP012Cでは、`drift_with_me_fuse_parts_v0_2` から合成済み `front_right_
 
 ## 7. まだ実装しないこと
 
-- Fuseの残り方向、pose差分、パネルアニメーション、方向切替の追加。
+- Fuseのpose差分、パネルアニメーション、buddy固有の注視方向制御の追加。
 - 新しいエフェクト、動的ロード、外部画像への移行、パッカー、容量対策。
 - パレット、SE、Web配布方針の変更。
 - 既存Jack領域の移動、上書き、再パッキング。
@@ -193,5 +201,5 @@ JWP012Cでは新しいFuse静止スプライト1枚を実装対象として追�
 ## 9. 未確認事項
 
 - iPhone実機での見た目、操作、SE再生は今回未実施。
-- Fuseの残り方向・pose、ウニ、街、小物、エフェクトの具体的な画素と正本は未接続。
+- Fuseのpose差分、ウニ、街、小物、エフェクトの具体的な画素と正本は未接続。
 - `CODEX_PYXRES_UPDATE.md` という既存文書は現在のrepo内では確認されなかった。外部指示として存在する場合、本書のハイブリッド管理方針を今後の参照先とする。
