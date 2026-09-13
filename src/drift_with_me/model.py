@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import heapq
 import math
 from dataclasses import dataclass
 from typing import Any
@@ -141,6 +142,7 @@ class GameModel:
         self.inspected_object_ids: set[str] = set()
         self.active_enemy_ids: set[str] = set()
         self.auto_move_goal: tuple[float, float] | None = None
+        self.auto_move_path: list[tuple[float, float]] = []
         self.auto_move_stuck_elapsed = 0.0
         self.refresh_active_enemies()
 
@@ -192,6 +194,7 @@ class GameModel:
         self.inspected_object_ids = set()
         self.active_enemy_ids = set()
         self.auto_move_goal = None
+        self.auto_move_path = []
         self.auto_move_stuck_elapsed = 0.0
         self.refresh_active_enemies()
 
@@ -375,6 +378,7 @@ class GameModel:
 
     def cancel_auto_move(self) -> None:
         self.auto_move_goal = None
+        self.auto_move_path = []
         self.auto_move_stuck_elapsed = 0.0
 
     def request_auto_move_goal(self, goal_x: float, goal_z: float, events: list[GameEvent]) -> None:
@@ -388,33 +392,210 @@ class GameModel:
             self.emit_denied(events, "auto_move_blocked", scope="auto_move")
             return
         if not self.auto_move_path_clear(goal_x, goal_z):
-            self.emit_denied(events, "auto_move_no_path", scope="auto_move")
-            return
+            path = self.find_auto_move_path(goal_x, goal_z)
+            if path is None:
+                self.emit_denied(events, "auto_move_no_path", scope="auto_move")
+                return
+        else:
+            path = [(goal_x, goal_z)]
         self.auto_move_goal = (goal_x, goal_z)
+        self.auto_move_path = path
         self.auto_move_stuck_elapsed = 0.0
 
     def auto_move_path_clear(self, goal_x: float, goal_z: float) -> bool:
-        radius = max(self.player_half_x, self.player_half_z)
+        radius = self.auto_move_nav_radius()
         return self.has_line_of_sight(self.player.x, self.player.z, goal_x, goal_z, radius=radius)
 
+    def auto_move_nav_radius(self) -> float:
+        auto_move = self.config.get("auto_move", {})
+        clearance = float(auto_move.get("nav_clearance_world", 0.0))
+        return max(self.player_half_x, self.player_half_z) + max(0.0, clearance)
+
+    def find_auto_move_path(self, goal_x: float, goal_z: float) -> list[tuple[float, float]] | None:
+        auto_move = self.config.get("auto_move", {})
+        if not bool(auto_move.get("astar_enabled", True)):
+            return None
+
+        grid = float(auto_move.get("nav_grid_world", 16.0))
+        if not math.isfinite(grid) or grid <= 0.0:
+            return None
+        radius = self.auto_move_nav_radius()
+        cols = max(1, math.floor((self.world.width - radius * 2.0) / grid) + 1)
+        rows = max(1, math.floor((self.world.depth - radius * 2.0) / grid) + 1)
+
+        def node_position(node: tuple[int, int]) -> tuple[float, float]:
+            ix, iz = node
+            return radius + ix * grid, radius + iz * grid
+
+        walkable_cache: dict[tuple[int, int], bool] = {}
+
+        def node_walkable(node: tuple[int, int]) -> bool:
+            value = walkable_cache.get(node)
+            if value is not None:
+                return value
+            x, z = node_position(node)
+            value = not self.world.collides_player(x, z, radius, radius)
+            walkable_cache[node] = value
+            return value
+
+        def line_clear(a: tuple[float, float], b: tuple[float, float]) -> bool:
+            return self.has_line_of_sight(a[0], a[1], b[0], b[1], radius=radius)
+
+        def link_candidates(x: float, z: float) -> list[tuple[float, tuple[int, int]]]:
+            limit = max(1, int(auto_move.get("max_link_candidates", 32)))
+            nodes: list[tuple[float, tuple[int, int]]] = []
+            origin = (x, z)
+            for iz in range(rows):
+                for ix in range(cols):
+                    node = (ix, iz)
+                    if not node_walkable(node):
+                        continue
+                    nx, nz = node_position(node)
+                    if not line_clear(origin, (nx, nz)):
+                        continue
+                    nodes.append((math.hypot(nx - x, nz - z), node))
+            nodes.sort(key=lambda item: (item[0], item[1]))
+            return nodes[:limit]
+
+        start = (self.player.x, self.player.z)
+        goal = (goal_x, goal_z)
+        start_links = link_candidates(*start)
+        goal_links = link_candidates(*goal)
+        if not start_links or not goal_links:
+            return None
+
+        goal_nodes = {node for _distance, node in goal_links}
+        open_heap: list[tuple[float, int, tuple[int, int]]] = []
+        best_cost: dict[tuple[int, int], float] = {}
+        came_from: dict[tuple[int, int], tuple[int, int] | None] = {}
+        closed_nodes: set[tuple[int, int]] = set()
+        sequence = 0
+
+        for distance, node in start_links:
+            best_cost[node] = distance
+            came_from[node] = None
+            nx, nz = node_position(node)
+            priority = distance + math.hypot(goal_x - nx, goal_z - nz)
+            heapq.heappush(open_heap, (priority, sequence, node))
+            sequence += 1
+
+        max_nodes = max(1, int(auto_move.get("max_astar_nodes", 4096)))
+        visited = 0
+        found: tuple[int, int] | None = None
+        while open_heap and visited < max_nodes:
+            _priority, _sequence, node = heapq.heappop(open_heap)
+            if node in closed_nodes:
+                continue
+            closed_nodes.add(node)
+            current_cost = best_cost[node]
+            visited += 1
+            if node in goal_nodes:
+                found = node
+                break
+
+            x, z = node_position(node)
+            for neighbor in self.auto_move_neighbors(node, cols, rows):
+                if not node_walkable(neighbor):
+                    continue
+                nx, nz = node_position(neighbor)
+                if not line_clear((x, z), (nx, nz)):
+                    continue
+                step_cost = math.hypot(nx - x, nz - z)
+                next_cost = current_cost + step_cost
+                if next_cost >= best_cost.get(neighbor, math.inf):
+                    continue
+                best_cost[neighbor] = next_cost
+                came_from[neighbor] = node
+                priority = next_cost + math.hypot(goal_x - nx, goal_z - nz)
+                heapq.heappush(open_heap, (priority, sequence, neighbor))
+                sequence += 1
+
+        if found is None:
+            return None
+
+        nodes: list[tuple[int, int]] = []
+        node: tuple[int, int] | None = found
+        while node is not None:
+            nodes.append(node)
+            node = came_from[node]
+        nodes.reverse()
+        points = [start, *(node_position(node) for node in nodes), goal]
+        return self.smooth_auto_move_path(points)
+
+    def auto_move_neighbors(
+        self, node: tuple[int, int], cols: int, rows: int
+    ) -> tuple[tuple[int, int], ...]:
+        ix, iz = node
+        neighbors: list[tuple[int, int]] = []
+        for dz in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dx == 0 and dz == 0:
+                    continue
+                nx = ix + dx
+                nz = iz + dz
+                if 0 <= nx < cols and 0 <= nz < rows:
+                    neighbors.append((nx, nz))
+        return tuple(neighbors)
+
+    def smooth_auto_move_path(
+        self, points: list[tuple[float, float]]
+    ) -> list[tuple[float, float]] | None:
+        if len(points) < 2:
+            return None
+        radius = self.auto_move_nav_radius()
+        result: list[tuple[float, float]] = []
+        anchor_index = 0
+        while anchor_index < len(points) - 1:
+            next_index = len(points) - 1
+            while next_index > anchor_index + 1:
+                if self.has_line_of_sight(
+                    points[anchor_index][0],
+                    points[anchor_index][1],
+                    points[next_index][0],
+                    points[next_index][1],
+                    radius=radius,
+                ):
+                    break
+                next_index -= 1
+            result.append(points[next_index])
+            anchor_index = next_index
+        return result
+
     def update_auto_move(self, events: list[GameEvent], dt: float) -> None:
-        if self.auto_move_goal is None:
+        if self.auto_move_goal is None or not self.auto_move_path:
+            self.cancel_auto_move()
             return
-        goal_x, goal_z = self.auto_move_goal
-        dx = goal_x - self.player.x
-        dz = goal_z - self.player.z
+        target_x, target_z = self.auto_move_path[0]
+        dx = target_x - self.player.x
+        dz = target_z - self.player.z
         distance = math.hypot(dx, dz)
         auto_move = self.config.get("auto_move", {})
         arrival_radius = float(auto_move.get("arrival_radius_world", 2.0))
-        if distance <= arrival_radius:
+        waypoint_radius = float(auto_move.get("waypoint_radius_world", 4.0))
+        current_radius = arrival_radius if len(self.auto_move_path) == 1 else waypoint_radius
+        if distance <= current_radius:
+            self.auto_move_path.pop(0)
+            self.auto_move_stuck_elapsed = 0.0
+        if not self.auto_move_path:
             self.cancel_auto_move()
+            return
+
+        target_x, target_z = self.auto_move_path[0]
+        dx = target_x - self.player.x
+        dz = target_z - self.player.z
+        distance = math.hypot(dx, dz)
+        if distance <= 1e-6:
             return
 
         move_speed = float(self.config["player"]["move_speed"])
         travel = min(move_speed * dt, distance)
         moved = self.move_player_by_delta(dx / distance * travel, dz / distance * travel)
-        remaining = math.hypot(goal_x - self.player.x, goal_z - self.player.z)
-        if remaining <= arrival_radius:
+        remaining = math.hypot(target_x - self.player.x, target_z - self.player.z)
+        current_radius = arrival_radius if len(self.auto_move_path) == 1 else waypoint_radius
+        if remaining <= current_radius:
+            self.auto_move_path.pop(0)
+            self.auto_move_stuck_elapsed = 0.0
+        if not self.auto_move_path:
             self.cancel_auto_move()
             return
 

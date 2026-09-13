@@ -45,6 +45,7 @@ def test_auto_move_reaches_clear_goal_at_walk_speed() -> None:
     assert model.auto_move_goal is None
     assert model.player.x == pytest.approx(goal_x, abs=2.0)
     assert model.player.z == pytest.approx(goal_z, abs=2.0)
+    assert model.auto_move_path == []
 
 
 def test_manual_input_cancels_auto_move_without_resuming() -> None:
@@ -61,6 +62,7 @@ def test_manual_input_cancels_auto_move_without_resuming() -> None:
     model.step(InputIntent(), camera, 1.0 / 60.0)
 
     assert model.auto_move_goal is None
+    assert model.auto_move_path == []
 
 
 def test_auto_move_rejects_goal_inside_solid_object() -> None:
@@ -76,16 +78,25 @@ def test_auto_move_rejects_goal_inside_solid_object() -> None:
     ]
 
 
-def test_auto_move_rejects_straight_path_through_wall() -> None:
+def test_auto_move_paths_around_static_wall() -> None:
     model, camera = make_model()
     model.player.x = 256.0
     model.player.z = 320.0
 
-    events = model.step(
+    first_events = model.step(
         InputIntent(auto_move_goal_x=384.0, auto_move_goal_z=320.0), camera, 1.0 / 60.0
     )
 
+    assert [event.kind for event in first_events] == []
+    assert model.auto_move_goal == (384.0, 320.0)
+    assert len(model.auto_move_path) >= 2
+
+    for _ in range(240):
+        model.step(InputIntent(), camera, 1.0 / 60.0)
+        if model.auto_move_goal is None:
+            break
+
     assert model.auto_move_goal is None
-    assert [event.payload["reason"] for event in events if event.kind == "action_denied"] == [
-        "auto_move_no_path"
-    ]
+    assert model.auto_move_path == []
+    assert model.player.x == pytest.approx(384.0, abs=3.0)
+    assert model.player.z == pytest.approx(320.0, abs=3.0)

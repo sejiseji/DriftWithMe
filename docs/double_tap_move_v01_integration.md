@@ -3,8 +3,8 @@
 ## Scope
 
 - Source design pack: `drift_double_tap_move_v01.zip`
-- Implemented: double-tap / double-click destination movement for clear straight-line ground targets.
-- Not implemented in this pass: A* obstacle avoidance, foreground-object tap rejection, target auto-interaction, new sprites, new SE, or pyxres changes.
+- Implemented: double-tap / double-click destination movement, straight-line movement, and static-obstacle A* fallback.
+- Not implemented in this pass: foreground-object tap rejection, dynamic enemy avoidance, target auto-interaction, new sprites, new SE, or pyxres changes.
 
 ## Runtime Behavior
 
@@ -18,9 +18,12 @@
 
 - `screen_to_ground_point()` in `math3d.py` uses the current presentation camera and intersects the input ray with the `y=0` ground plane.
 - Accepted goals are stored as world X/Z coordinates. They are not re-picked as the camera follows Jack.
-- The first movement version only accepts goals with a clear straight line from Jack to the destination, using the existing solid AABB line-of-sight check expanded by Jack's collider half extent.
+- The movement code first accepts a direct line when possible, using the existing solid AABB line-of-sight check expanded by Jack's collider half extent plus `auto_move.nav_clearance_world`.
+- If the direct line is blocked, a static A* fallback searches a `auto_move.nav_grid_world` grid and links the real start/goal to safe grid nodes. Jack never teleports to a grid cell center.
+- The generated route is smoothed only by replacing segments that pass the same expanded line-of-sight check.
+- The route uses static world solids only. It does not predict moving enemies or auto-avoid future enemy contact.
 - Movement uses the existing player speed and `WorldData.move_player_sliding()`.
-- Arrival radius and stuck timeout are configured in `auto_move`.
+- Arrival radius, waypoint radius, stuck timeout, grid size, clearance, search budget, and link candidate count are configured in `auto_move`.
 
 ## UI Feedback
 
@@ -32,5 +35,5 @@
 
 ## Verification
 
-- Added unit coverage for double-tap recognition, UI/drag rejection, projection round-trip, clear-goal movement, manual cancellation, blocked-goal rejection, and wall-crossing rejection.
-- `scripts/check_all.py` passes after this integration.
+- Added unit coverage for double-tap recognition, UI/drag rejection, projection round-trip, clear-goal movement, manual cancellation, blocked-goal rejection, and static-wall pathing.
+- `scripts/check_all.py` passes after the static A* integration.

@@ -97,7 +97,13 @@
     "max_interval_sec": 0.3,
     "max_distance_ref_px": 20.0,
     "arrival_radius_world": 2.0,
-    "stuck_sec": 0.5
+    "waypoint_radius_world": 4.0,
+    "stuck_sec": 0.5,
+    "astar_enabled": true,
+    "nav_grid_world": 16.0,
+    "nav_clearance_world": 2.0,
+    "max_astar_nodes": 4096,
+    "max_link_candidates": 32
   },
   "camera": {
     "yaw_deg": 20.0,
