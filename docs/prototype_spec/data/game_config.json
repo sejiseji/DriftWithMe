@@ -238,6 +238,12 @@
     "concentration_line_count": 12,
     "onomatopoeia_enabled": false,
     "hitstop_enabled": false,
+    "hitstop_hard_cap_ms": 66.6666666667,
+    "hitstop_event_ms": {
+      "barrier_repelled": 16.6666666667,
+      "enemy_captured": 33.3333333333,
+      "discharge_succeeded": 50.0
+    },
     "flash_enabled": false,
     "shake_enabled": false
   },

@@ -37,6 +37,8 @@ def make_pause_app() -> DriftWithMeApp:
     app.last_denied_reason = "no_target"
     app.previous_time = 1.0
     app.accumulator = 1.0
+    app.hitstop_remaining = 0.25
+    app._processed_hitstop_event_ids = {999}
     return app
 
 
@@ -74,6 +76,8 @@ def test_pause_debug_reset_clears_pending_state() -> None:
     assert app.last_denied_reason == ""
     assert app.previous_time is None
     assert app.accumulator == 0.0
+    assert app.hitstop_remaining == 0.0
+    assert app._processed_hitstop_event_ids == set()
 
 
 def test_pause_debug_culling_toggle_refreshes_active_set() -> None:

@@ -61,6 +61,8 @@ class DriftWithMeApp:
         self.debug_enabled = False
         self.presentation_time = 0.0
         self.accumulator = 0.0
+        self.hitstop_remaining = 0.0
+        self._processed_hitstop_event_ids: set[int] = set()
         self.previous_time: float | None = None
         self.frame = 0
         self.smoke_frames = smoke_frames
@@ -164,6 +166,7 @@ class DriftWithMeApp:
         self.pointer.cancel()
         self.previous_time = None
         self.accumulator = 0.0
+        self.hitstop_remaining = 0.0
         self.screen = AppScreen.PLAY
 
     def update_pause_screen(self) -> None:
@@ -209,6 +212,8 @@ class DriftWithMeApp:
         self.last_denied_reason = ""
         self.previous_time = None
         self.accumulator = 0.0
+        self.hitstop_remaining = 0.0
+        self._processed_hitstop_event_ids.clear()
 
     def fill_resources_for_debug(self) -> None:
         self.model.water = self.model.water_max
@@ -295,6 +300,8 @@ class DriftWithMeApp:
         if keyboard_intent.interact_pressed or ui_button_intent.interact_pressed:
             self.pending_interact_pressed = True
         base_intent = merge_intents(keyboard_intent, pointer_intent, ui_button_intent)
+        if self.update_hitstop(elapsed, base_intent):
+            return
 
         self.accumulator += elapsed
         fixed_dt = self.runtime.fixed_dt
@@ -350,8 +357,39 @@ class DriftWithMeApp:
                         )
                     else:
                         self.camera_controller.start_focus_demo(target, hold_sec=hold_sec)
+        self.request_hitstop_from_events(events)
         self.effects.process_events(events, self.model)
         self.audio.play_events(events)
+
+    def update_hitstop(self, elapsed: float, intent: InputIntent) -> bool:
+        if self.hitstop_remaining <= 0.0:
+            return False
+        if not intent.barrier:
+            self.model.player.barrier_active = False
+        self.hitstop_remaining = max(0.0, self.hitstop_remaining - max(0.0, elapsed))
+        self.accumulator = 0.0
+        self.model.debug.fixed_steps_last_callback = 0
+        self.effects.update(elapsed, self.model)
+        return True
+
+    def request_hitstop_from_events(self, events) -> None:
+        effects_config = self.runtime.raw["effects"]
+        if not bool(effects_config.get("hitstop_enabled", False)):
+            return
+        event_durations = effects_config.get("hitstop_event_ms", {})
+        cap_sec = float(effects_config.get("hitstop_hard_cap_ms", 66.6666666667)) / 1000.0
+        requested = 0.0
+        for event in events:
+            if event.event_id in self._processed_hitstop_event_ids:
+                continue
+            duration_ms = float(event_durations.get(event.kind, 0.0))
+            if duration_ms <= 0.0:
+                continue
+            self._processed_hitstop_event_ids.add(event.event_id)
+            requested = max(requested, min(duration_ms / 1000.0, cap_sec))
+        if requested > 0.0:
+            self.hitstop_remaining = max(self.hitstop_remaining, requested)
+            self.accumulator = 0.0
 
     def player_focus_point(self) -> Vec3:
         return Vec3(
