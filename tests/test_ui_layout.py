@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from drift_with_me.app import DriftWithMeApp
+from drift_with_me.app import DriftWithMeApp, PointerSnapshot
 from drift_with_me.config import load_data_json, load_runtime_config
 from drift_with_me.input import Rect
 
@@ -9,6 +9,16 @@ def make_app_for_profile(profile: str) -> DriftWithMeApp:
     app = DriftWithMeApp.__new__(DriftWithMeApp)
     app.runtime = load_runtime_config(profile)
     return app
+
+
+class FakePyxel:
+    KEY_RETURN = 1
+
+    def __init__(self, return_pressed: bool = False) -> None:
+        self.return_pressed = return_pressed
+
+    def btnp(self, key: int) -> bool:
+        return key == self.KEY_RETURN and self.return_pressed
 
 
 def overlaps(a: Rect, b: Rect) -> bool:
@@ -138,3 +148,33 @@ def test_inspect_panel_uses_dedicated_modal_rects() -> None:
         assert contains(panel, app.inspect_text_rect())
         assert contains(panel, app.inspect_page_rect())
         assert contains(panel, app.interaction_done_button_rect())
+
+
+def test_inspect_panel_closes_on_done_enter_or_outside_press_only() -> None:
+    app = make_app_for_profile("medium")
+    app.pyxel = FakePyxel()
+    panel = app.inspect_panel_rect()
+    done = app.interaction_done_button_rect()
+
+    app.pointer_snapshot = PointerSnapshot(
+        True,
+        True,
+        panel.x + panel.width * 0.5,
+        panel.y + panel.height * 0.5,
+    )
+    assert not app.inspect_completion_requested()
+
+    app.pointer_snapshot = PointerSnapshot(
+        True,
+        True,
+        done.x + done.width * 0.5,
+        done.y + done.height * 0.5,
+    )
+    assert app.inspect_completion_requested()
+
+    app.pointer_snapshot = PointerSnapshot(True, True, panel.x - 1.0, panel.y - 1.0)
+    assert app.inspect_completion_requested()
+
+    app.pyxel = FakePyxel(return_pressed=True)
+    app.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
+    assert app.inspect_completion_requested()

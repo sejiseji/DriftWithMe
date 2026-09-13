@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import math
 
 import pytest
 
@@ -142,6 +143,7 @@ def test_enemy_inspection_event_starts_focus_on_enemy_position() -> None:
     app.process_events([event])
 
     assert app.camera_controller.focus is not None
+    assert math.isinf(app.camera_controller.focus.hold_sec)
     target = app.camera_controller.focus.target_point
     assert target.x == pytest.approx(enemy.x)
     assert target.y == pytest.approx(max(6.0, model.enemy_radius(enemy)))

@@ -188,12 +188,14 @@ def test_stopped_tap_does_not_refill_water() -> None:
     model.water = 20.0
 
     started = model.step(InputIntent(interact_pressed=True), camera, 1.0 / 60.0)
-    finished = model.update_paused(0.8)
+    not_finished = model.update_paused(10.0)
+    finished = model.complete_interaction()
 
-    assert model.interaction is None
+    assert not_finished == []
     assert model.water == 20.0
     assert [event.kind for event in started] == ["interaction_started"]
     assert [event.kind for event in finished] == ["inspection_completed"]
+    assert model.interaction is None
     assert "tap_stopped" in model.inspected_object_ids
 
 

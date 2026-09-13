@@ -161,6 +161,8 @@ def test_enemy_can_be_inspected_as_check_target_and_freezes_world() -> None:
 
     before_state = enemy.state
     before_timer = enemy.state_timer
+    assert model.update_paused(10.0) == []
+    assert model.interaction is not None
     assert model.step(InputIntent(), camera, 1.0) == []
     assert enemy.state == before_state
     assert enemy.state_timer == pytest.approx(before_timer)
@@ -172,6 +174,28 @@ def test_enemy_can_be_inspected_as_check_target_and_freezes_world() -> None:
     assert finished[0].world_position == pytest.approx((enemy.x, 0.0, enemy.z))
     assert finished[0].payload["first_read"] is True
     assert enemy.id in model.inspected_object_ids
+
+
+def test_enemy_inspection_range_matches_barrier_reaction_distance() -> None:
+    model, _camera = make_model()
+    model.player.x = 288.0
+    model.player.z = 192.0
+    enemy = normal_enemy(model)
+    enemy.z = model.player.z
+    camera = camera_for_model(model)
+    guard_distance = model.enemy_interaction_range(enemy)
+
+    enemy.x = model.player.x + guard_distance
+    started = model.step(InputIntent(interact_pressed=True), camera, 1.0 / 60.0)
+    model.cancel_interaction()
+
+    enemy.x = model.player.x + guard_distance + 0.1
+    outside = model.step(InputIntent(interact_pressed=True), camera, 1.0 / 60.0)
+
+    assert [item.kind for item in started] == ["interaction_started"]
+    assert started[0].target_id == enemy.id
+    assert [item.kind for item in outside] == ["action_denied"]
+    assert outside[0].payload["reason"] == "no_target"
 
 
 def test_effects_capacity_and_model_invariance() -> None:

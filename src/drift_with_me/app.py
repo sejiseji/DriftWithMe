@@ -314,10 +314,15 @@ class DriftWithMeApp:
                     self.process_events(self.model.complete_interaction())
                     self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
                     return
-            elif pyxel.btnp(pyxel.KEY_RETURN) or self.mouse_pressed_in(
-                self.interaction_done_button_rect()
-            ):
+            elif interaction is not None and interaction.kind == "inspect":
+                if not self.inspect_completion_requested():
+                    paused_events = self.model.update_paused(elapsed)
+                    self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+                    self.process_events(paused_events)
+                    self.effects.update(elapsed, self.model)
+                    return
                 self.process_events(self.model.complete_interaction())
+                self.camera_controller.cancel_focus()
                 self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
                 return
             paused_events = self.model.update_paused(elapsed)
@@ -422,8 +427,12 @@ class DriftWithMeApp:
                 self.last_denied_reason = str(event.payload.get("reason", "denied"))
             elif event.kind == "interaction_started" and event.target_id is not None:
                 target = self.world.object_by_id(event.target_id)
-                hold_sec = float(event.payload.get("duration_sec", 0.8)) + 0.15
                 interaction_kind = str(event.payload.get("interaction_kind", ""))
+                hold_sec = (
+                    math.inf
+                    if interaction_kind == "inspect"
+                    else float(event.payload.get("duration_sec", 0.8)) + 0.15
+                )
                 if interaction_kind == "water_refill":
                     self.camera_controller.start_focus_point(
                         self.player_focus_point(), hold_sec=hold_sec
@@ -699,6 +708,17 @@ class DriftWithMeApp:
     def mouse_down_in(self, rect: Rect) -> bool:
         pointer = self.pointer_snapshot
         return pointer.down and rect.contains(pointer.x, pointer.y)
+
+    def inspect_completion_requested(self) -> bool:
+        pyxel = self.pyxel
+        if pyxel.btnp(pyxel.KEY_RETURN):
+            return True
+        pointer = self.pointer_snapshot
+        if not pointer.pressed:
+            return False
+        if self.interaction_done_button_rect().contains(pointer.x, pointer.y):
+            return True
+        return not self.inspect_panel_rect().contains(pointer.x, pointer.y)
 
     def active_ui_rects(self) -> tuple[Rect, ...]:
         interaction = self.model.interaction

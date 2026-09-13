@@ -1074,8 +1074,20 @@ class GameModel:
             self.last_events = events
             return events
 
+        if self.interaction.kind == "inspect":
+            self.last_events = events
+            return events
+
         self.interaction.elapsed_sec += max(0.0, dt)
         if self.interaction.progress < 1.0:
+            self.last_events = events
+            return events
+
+        return self.finish_interaction()
+
+    def finish_interaction(self) -> list[GameEvent]:
+        events: list[GameEvent] = []
+        if self.interaction is None:
             self.last_events = events
             return events
 
@@ -1129,7 +1141,7 @@ class GameModel:
         if self.interaction is None:
             return []
         self.interaction.elapsed_sec = self.interaction.duration_sec
-        return self.update_paused(0.0)
+        return self.finish_interaction()
 
     def cancel_interaction(self) -> list[GameEvent]:
         events: list[GameEvent] = []
@@ -1184,10 +1196,10 @@ class GameModel:
                     continue
             candidates.append((distance, 0, obj.id, obj))
         for enemy in self.enemies:
-            if enemy.state == "DEFEATED":
+            if not self.enemy_can_be_inspected(enemy):
                 continue
             distance = math.hypot(enemy.x - self.player.x, enemy.z - self.player.z)
-            if distance > interaction_range:
+            if distance > self.enemy_interaction_range(enemy):
                 continue
             if not self.has_line_of_sight(self.player.x, self.player.z, enemy.x, enemy.z):
                 continue
@@ -1219,6 +1231,12 @@ class GameModel:
             height=max(8.0, radius * 2.0),
             inspectable=True,
         )
+
+    def enemy_can_be_inspected(self, enemy: EnemyState) -> bool:
+        return enemy.state not in {"DEFEATED", "REPELLED", "REST", "CAPTURED"}
+
+    def enemy_interaction_range(self, enemy: EnemyState) -> float:
+        return float(self.config["barrier"]["radius"]) + self.enemy_radius(enemy)
 
     @staticmethod
     def is_enemy_interaction_target(target: StaticObject) -> bool:
