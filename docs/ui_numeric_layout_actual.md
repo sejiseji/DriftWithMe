@@ -98,6 +98,7 @@ Japanese labels touching the lower window borders. The following UI-only correct
 | Button font low/medium/high | runtime `16/16/20` | runtime `14/14/18` | Match the compact layout font values and avoid lower-edge clipping |
 | Button text baseline | centered only | centered, then lifted by 2 logical px | Compensate for the font's visual lower weight |
 | Tooltip/resource/numeric text baseline | centered only | centered, then lifted by 1 logical px | Keep labels inside framed panels |
+| Japanese UI text baseline | style-local corrections only | Japanese strings draw 5 logical px higher | Keep kana/kanji labels clear of lower frame borders |
 
 ## Implementation notes
 

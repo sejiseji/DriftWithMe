@@ -30,6 +30,15 @@ def test_japanese_ui_resources_translate_existing_tokens() -> None:
     assert resources.raw_text("WATER REFILL") == "給水"
 
 
+def test_japanese_ui_text_draws_five_pixels_higher_than_ascii() -> None:
+    app = make_app("medium")
+
+    assert app.ui_text_language_y(40, "調べる") == 35
+    assert app.ui_text_language_y(40, "水") == 35
+    assert app.ui_text_language_y(40, "DRIFTWITHME") == 40
+    assert app.ui_text_language_y(40, "100%") == 40
+
+
 def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
     pyxel.init(64, 64, headless=True)
     primary_tokens = ("NONE", "BUBBLE", "GUARD", "ZAP")
