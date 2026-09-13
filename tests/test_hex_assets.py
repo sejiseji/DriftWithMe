@@ -53,6 +53,14 @@ JACK_DIRECTION_RECTS = {
 }
 NORMAL_URCHIN_SOURCE_HASH = "a9e16f5b554a53f4492849cf05f937e3657a2b0aed64bd46f13357148f850d03"
 NORMAL_URCHIN_RECT = (64, 160, 32, 32)
+ABNORMAL_URCHIN_SOURCE_HASHES = {
+    "body": "0b2a6e1715d99944fcf38e57300a70c750be3f40d5317cc4362e20371caf8b4b",
+    "composite": "9def2c00c1daaf9642812966229d1f2d6afbc04269cad3e1bdd246fbb76e0f4b",
+    "hand_screen_left": "11c55440e8b97445525bcbf86b5bc8116fd1bb770b55e8a7d9a6010f20ba9708",
+    "hand_screen_right": "540500b38cc374fe8005849c3b9e3cd594751cc31685a0ffb79db75caa7c5136",
+    "hands": "823ec08a050a63ce68f08217dc7005d622e0d91ca04f0f86a8dd1a299ee98b7c",
+}
+ABNORMAL_URCHIN_RECT = (0, 160, 64, 64)
 FUSE_DIRECTION_HASHES = {
     "front": "a9c9661505e49fbf9d42a4e2f066c2a668b68677d844eb8eaa8000620460189c",
     "front_right": "669450adbdc57c659942a737164f6727866ef22ac129e647f621482442d850f8",
@@ -113,6 +121,20 @@ def test_normal_urchin_source_hex_preserves_received_pixels() -> None:
     assert len(rows) == 32
     assert {len(row) for row in rows} == {32}
     assert pixel_hash(rows) == NORMAL_URCHIN_SOURCE_HASH
+
+
+@pytest.mark.parametrize("part", tuple(ABNORMAL_URCHIN_SOURCE_HASHES))
+def test_abnormal_urchin_source_hex_preserves_received_pixels(part: str) -> None:
+    rows = tuple(
+        (ROOT / f"src/drift_with_me/assets/abnormal_urchin_{part}_00.hex")
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+
+    assert len(rows) == 64
+    assert {len(row) for row in rows} == {64}
+    assert pixel_hash(rows) == ABNORMAL_URCHIN_SOURCE_HASHES[part]
 
 
 @pytest.mark.parametrize("direction", tuple(FUSE_DIRECTION_HASHES))
@@ -409,6 +431,7 @@ assert back_frame.source_hash == {JACK_BACK_SOURCE_HASH!r}
 jack_assets = {JACK_DIRECTION_HASHES!r}
 jack_rects = {JACK_DIRECTION_RECTS!r}
 urchin_rect = {NORMAL_URCHIN_RECT!r}
+abnormal_urchin_rect = {ABNORMAL_URCHIN_RECT!r}
 for direction, expected_hash in jack_assets.items():
     jack = library.get(f"jack_{{direction}}_32")
     assert jack is not None, direction
@@ -429,6 +452,20 @@ assert urchin.definition.colkey == 0
 assert urchin.definition.anchor_px == (16.0, 32.0)
 assert urchin.definition.world_size == (20.0, 20.0)
 assert runtime.raw["assets"]["normal_urchin_idle_asset"] == "normal_urchin_idle_32"
+abnormal = library.get("abnormal_urchin_inward_hands_64")
+assert abnormal is not None
+abnormal_frame = abnormal.frame()
+assert (
+    abnormal_frame.u,
+    abnormal_frame.v,
+    abnormal_frame.width,
+    abnormal_frame.height,
+) == abnormal_urchin_rect
+assert abnormal_frame.source_hash == {ABNORMAL_URCHIN_SOURCE_HASHES["composite"]!r}
+assert abnormal.definition.colkey == 0
+assert abnormal.definition.anchor_px == (32.0, 62.0)
+assert abnormal.definition.world_size == (20.0, 20.0)
+assert runtime.raw["assets"]["abnormal_urchin_idle_asset"] == "abnormal_urchin_inward_hands_64"
 fuse_assets = {FUSE_DIRECTION_HASHES!r}
 fuse_rects = {FUSE_DIRECTION_RECTS!r}
 fuse_frame = None
@@ -483,6 +520,21 @@ assert renderer.normal_enemy_sprite_asset(model) is not None
 assert renderer.normal_enemy_sprite_placement(model, enemy, camera) is not None
 renderer.draw_enemy(model, enemy, camera)
 placement = renderer.normal_enemy_sprite_placement(model, enemy, camera)
+assert placement is not None
+left, top, width, height = placement.rect
+visible_pixels = 0
+for y in range(max(0, top), min(runtime.screen_height, top + height)):
+    for x in range(max(0, left), min(runtime.screen_width, left + width)):
+        visible_pixels += pyxel.pget(x, y) != 3
+assert visible_pixels > 0
+pyxel.cls(3)
+enemy = next(enemy for enemy in model.enemies if enemy.kind == "abnormal")
+enemy.x = model.player.x + 40.0
+enemy.z = model.player.z + 24.0
+assert renderer.abnormal_enemy_sprite_asset(model) is not None
+assert renderer.abnormal_enemy_sprite_placement(model, enemy, camera) is not None
+renderer.draw_enemy(model, enemy, camera)
+placement = renderer.abnormal_enemy_sprite_placement(model, enemy, camera)
 assert placement is not None
 left, top, width, height = placement.rect
 visible_pixels = 0

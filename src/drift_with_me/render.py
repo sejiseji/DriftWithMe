@@ -312,7 +312,7 @@ class Renderer:
             color = 13
         x = int(point.x)
         y = int(point.y)
-        sprite_placement = self.draw_normal_enemy_sprite(model, enemy, camera)
+        sprite_placement = self.draw_enemy_sprite(model, enemy, camera)
         if sprite_placement is not None:
             left, top, width, height = sprite_placement.rect
             x = left + width // 2
@@ -347,13 +347,15 @@ class Renderer:
             self.draw_world_circle(camera, enemy.x, enemy.z, 16.0, 12)
             pyxel.circb(x, y, radius + 5, 12)
 
-    def normal_enemy_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
-        return self.configured_sprite_asset(model, "normal_urchin_idle_asset")
+    def enemy_sprite_asset(self, model: GameModel, enemy) -> LoadedSpriteAsset | None:
+        if enemy.kind == "normal":
+            return self.configured_sprite_asset(model, "normal_urchin_idle_asset")
+        if enemy.kind == "abnormal":
+            return self.configured_sprite_asset(model, "abnormal_urchin_idle_asset")
+        return None
 
-    def normal_enemy_sprite_placement(self, model: GameModel, enemy, camera: CameraState):
-        if enemy.kind != "normal":
-            return None
-        asset = self.normal_enemy_sprite_asset(model)
+    def enemy_sprite_placement(self, model: GameModel, enemy, camera: CameraState):
+        asset = self.enemy_sprite_asset(model, enemy)
         if asset is None:
             return None
         return placement_for_upright_height_billboard(
@@ -362,15 +364,31 @@ class Renderer:
             Vec3(enemy.x, 0.0, enemy.z),
         )
 
-    def draw_normal_enemy_sprite(self, model: GameModel, enemy, camera: CameraState):
-        placement = self.normal_enemy_sprite_placement(model, enemy, camera)
+    def draw_enemy_sprite(self, model: GameModel, enemy, camera: CameraState):
+        placement = self.enemy_sprite_placement(model, enemy, camera)
         if placement is None:
             return None
-        asset = self.normal_enemy_sprite_asset(model)
+        asset = self.enemy_sprite_asset(model, enemy)
         if asset is None:
             return None
         draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
         return placement
+
+    def normal_enemy_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
+        return self.configured_sprite_asset(model, "normal_urchin_idle_asset")
+
+    def normal_enemy_sprite_placement(self, model: GameModel, enemy, camera: CameraState):
+        if enemy.kind != "normal":
+            return None
+        return self.enemy_sprite_placement(model, enemy, camera)
+
+    def abnormal_enemy_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
+        return self.configured_sprite_asset(model, "abnormal_urchin_idle_asset")
+
+    def abnormal_enemy_sprite_placement(self, model: GameModel, enemy, camera: CameraState):
+        if enemy.kind != "abnormal":
+            return None
+        return self.enemy_sprite_placement(model, enemy, camera)
 
     def draw_bubble(self, model: GameModel, camera: CameraState) -> None:
         bubble = model.bubble
