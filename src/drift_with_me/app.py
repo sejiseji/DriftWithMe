@@ -15,6 +15,7 @@ from drift_with_me.math3d import CameraState, Vec3, normalize2
 from drift_with_me.model import GameModel, InputIntent, merge_intents
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
+from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.world import load_world_data
 
 
@@ -92,6 +93,7 @@ class DriftWithMeApp:
             headless=headless,
         )
         pyxel.mouse(True)
+        self.ui_text = load_ui_text_renderer(pyxel, self.runtime)
         self.sprite_assets = load_runtime_sprite_library(pyxel, self.runtime.raw)
         for error in self.sprite_assets.errors:
             print(f"asset_error: {error}")
@@ -602,7 +604,7 @@ class DriftWithMeApp:
 
     def interaction_done_button_rect(self) -> Rect:
         chip = self.interaction_chip_rect()
-        return Rect(chip.x + chip.width - 42, chip.y + 7, 34, 18)
+        return Rect(chip.x + chip.width - 84, chip.y + 10, 76, 24)
 
     def interaction_chip_rect(self) -> Rect:
         hud_right = 170
@@ -612,7 +614,7 @@ class DriftWithMeApp:
         centered_x = self.runtime.screen_width / 2 - width / 2
         max_x = pause_left - width - 8.0
         x = max(hud_right + 8.0, min(centered_x, max_x))
-        return Rect(x, 8.0, width, 44.0)
+        return Rect(x, 8.0, width, 54.0)
 
     def preview_button_rects(self) -> tuple[tuple[str, Rect], ...]:
         names = self.audio.preview_events
@@ -636,11 +638,15 @@ class DriftWithMeApp:
         pyxel.cls(1)
         self.draw_text_center(self.runtime.screen_width // 2, 28, "DriftWithMe", 7, scale=3)
         self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 JWP007", 10)
-        self.draw_button(self.start_button_rect(), "START", 11)
+        self.draw_button(self.start_button_rect(), self.ui("ui.start"), 11)
         self.draw_button(
-            self.sound_button_rect(), "SOUND OFF" if self.audio.muted else "SOUND ON", 12
+            self.sound_button_rect(),
+            self.ui("ui.sound_off") if self.audio.muted else self.ui("ui.sound_on"),
+            12,
         )
-        self.draw_text_center(self.runtime.screen_width // 2, 132, "SE PREVIEW 1-5", 7)
+        self.draw_ui_text_center(
+            self.runtime.screen_width // 2, 130, self.ui("ui.se_preview"), 7, "label"
+        )
         for index, (event_name, rect) in enumerate(self.preview_button_rects(), start=1):
             self.draw_button(rect, str(index), 5)
             label = event_name.split("_", maxsplit=1)[0][:6]
@@ -651,11 +657,12 @@ class DriftWithMeApp:
                 7,
                 scale=1,
             )
-        self.draw_text_center(
+        self.draw_ui_text_center(
             self.runtime.screen_width // 2,
             self.runtime.screen_height - 18,
-            "ENTER/TAP START",
+            self.ui("ui.start_hint"),
             13,
+            "hint",
         )
 
     def draw_play(self) -> None:
@@ -708,46 +715,56 @@ class DriftWithMeApp:
         height = int(panel.height)
         pyxel.rect(x, y, width, height, 0)
         pyxel.rectb(x, y, width, height, 7)
-        self.draw_text_center(self.runtime.screen_width // 2, y + 10, "PAUSE", 7, scale=3)
+        self.draw_ui_text_center(
+            self.runtime.screen_width // 2, y + 10, self.ui("ui.pause"), 7, "title"
+        )
         culling_status = "ON" if self.model.culling_enabled else "OFF"
         status = f"{self.runtime.profile.name.upper()} CULL {culling_status}"
         self.draw_text_center(self.runtime.screen_width // 2, y + 36, status, 13, scale=1)
-        self.draw_button(self.resume_button_rect(), "RESUME", 11)
-        self.draw_button(self.pause_reset_button_rect(), "RESET", 8)
-        self.draw_button(self.pause_fill_button_rect(), "RES MAX", 12)
-        self.draw_button(self.pause_zero_button_rect(), "ZERO RES", 5)
+        self.draw_button(self.resume_button_rect(), self.ui("ui.resume"), 11)
+        self.draw_button(self.pause_reset_button_rect(), self.ui("ui.reset"), 8)
+        self.draw_button(self.pause_fill_button_rect(), self.ui("ui.resource_max"), 12)
+        self.draw_button(self.pause_zero_button_rect(), self.ui("ui.zero_resource"), 5)
         self.draw_button(
             self.pause_culling_button_rect(),
-            "CULL ON" if self.model.culling_enabled else "CULL OFF",
+            self.ui("ui.cull_on") if self.model.culling_enabled else self.ui("ui.cull_off"),
             10,
         )
-        self.draw_button(self.pause_debug_button_rect(), "DEBUG", 13 if self.debug_enabled else 6)
-        self.draw_text_center(
+        self.draw_button(
+            self.pause_debug_button_rect(), self.ui("ui.debug"), 13 if self.debug_enabled else 6
+        )
+        self.draw_ui_text_center(
             self.runtime.screen_width // 2,
             y + height - 12,
-            "ESC/ENTER RESUME  Q QUIT",
+            self.ui("ui.pause_hint"),
             13,
-            scale=1,
+            "hint",
         )
 
     def draw_hud(self) -> None:
         pyxel = self.pyxel
-        pyxel.rect(6, 6, 164, 48, 0)
-        pyxel.rectb(6, 6, 164, 48, 7)
+        pyxel.rect(6, 6, 164, 50, 0)
+        pyxel.rectb(6, 6, 164, 50, 7)
         water = int(self.model.water)
         energy = int(self.model.energy)
-        draw_pixel_text(pyxel, 14, 14, f"WATER {water:03d}", 12)
-        draw_pixel_text(pyxel, 14, 32, f"ENERGY {energy:03d}", 10)
+        self.draw_ui_text(pyxel, 14, 12, f"{self.ui('hud.water')} {water:03d}", 12, "label")
+        self.draw_ui_text(pyxel, 14, 31, f"{self.ui('hud.energy')} {energy:03d}", 10, "label")
         self.draw_meter(94, 15, 66, 6, self.model.water, self.model.water_max, 12)
-        self.draw_meter(94, 33, 66, 6, self.model.energy, self.model.energy_max, 10)
+        self.draw_meter(94, 34, 66, 6, self.model.energy, self.model.energy_max, 10)
         self.draw_button(self.interact_button_rect(), self.interact_button_label(), 10)
         self.draw_button(self.action_button_rect(), self.action_button_label(), 8)
-        self.draw_button(self.pause_button_rect(), "PAUSE", 5)
-        self.draw_button(self.sound_button_rect(), "MUTE" if self.audio.muted else "SOUND", 12)
+        self.draw_button(self.pause_button_rect(), self.ui("ui.pause"), 5)
+        self.draw_button(
+            self.sound_button_rect(),
+            self.ui("ui.sound_off") if self.audio.muted else self.ui("ui.sound"),
+            12,
+        )
         if self.model.player.barrier_active:
-            draw_pixel_text(pyxel, 184, 12, "BARRIER HOLD", 12)
+            self.draw_ui_text(pyxel, 184, 12, self.ui("hint.guard_hold"), 12, "label")
         if self.last_denied_reason:
-            draw_pixel_text(pyxel, 184, 30, f"DENIED:{self.last_denied_reason}", 8)
+            self.draw_ui_text(
+                pyxel, 184, 31, self.denied_reason_text(self.last_denied_reason), 8, "label"
+            )
         if self.debug_enabled:
             render_stats = self.renderer.last_stats if self.renderer is not None else None
             pyxel.text(8, 48, f"pos={self.model.player.x:.1f},{self.model.player.z:.1f}", 7)
@@ -804,15 +821,15 @@ class DriftWithMeApp:
             None if self.model.world_paused else self.model.interaction_candidate(self.camera())
         )
         if target is None:
-            return "CHECK"
+            return self.ui_token("CHECK")
         if target.kind == "water_station" and target.supply == "working":
-            return "REFILL"
+            return self.ui_token("REFILL")
         if target.kind == "solar_station":
-            return "CHARGE"
-        return "CHECK"
+            return self.ui_token("CHARGE")
+        return self.ui_token("CHECK")
 
     def action_button_label(self) -> str:
-        return self.action_button_mode()
+        return self.ui_token(self.action_button_mode())
 
     def action_button_mode(self) -> str:
         if self.model.world_paused:
@@ -846,12 +863,12 @@ class DriftWithMeApp:
 
         text_x = int(rect.x + 10)
         text_w = max(20, int(done_rect.x - text_x - 7))
-        title_scale = 2 if pixel_text_size(interaction.title, 2)[0] <= text_w else 1
-        title = self.fit_text_to_width(interaction.title, text_w, title_scale)
-        draw_pixel_text(pyxel, text_x, int(rect.y + 7), title, 7, scale=title_scale)
-        if interaction.lines:
-            line = self.fit_text_to_width(interaction.lines[0], text_w, 1)
-            draw_pixel_text(pyxel, text_x, int(rect.y + 25), line, 13, scale=1)
+        title = self.fit_ui_text_to_width(self.interaction_title(interaction), text_w, "title")
+        self.draw_ui_text(pyxel, text_x, int(rect.y + 5), title, 7, "title")
+        lines = self.interaction_lines(interaction)
+        if lines:
+            line = self.fit_ui_text_to_width(lines[0], text_w, "body")
+            self.draw_ui_text(pyxel, text_x, int(rect.y + 28), line, 13, "body")
 
         meter_x = text_x
         meter_y = int(rect.y + rect.height - 8)
@@ -859,23 +876,18 @@ class DriftWithMeApp:
         pyxel.rect(meter_x, meter_y, meter_w, 4, 1)
         pyxel.rect(meter_x, meter_y, int(meter_w * interaction.progress), 4, accent)
         pyxel.rectb(meter_x, meter_y, meter_w, 4, 7)
-        self.draw_button(done_rect, "DONE", 5)
+        self.draw_button(done_rect, self.ui_token("DONE"), 5)
 
     def draw_button(self, rect: Rect, label: str, color: int) -> None:
         pyxel = self.pyxel
         pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), color)
         pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
-        text = label.upper()
-        scale = 2
-        text_width, text_height = pixel_text_size(text, scale)
-        while scale > 1 and (
-            text_width > int(rect.width) - 8 or text_height > int(rect.height) - 8
-        ):
-            scale -= 1
-            text_width, text_height = pixel_text_size(text, scale)
+        text = self.fit_ui_text_to_width(label, int(rect.width) - 8, "label")
+        text_width = self.ui_renderer.text_width(text, "label")
+        text_height = self.ui_renderer.text_height("label")
         text_x = int(rect.x + rect.width / 2 - text_width / 2)
         text_y = int(rect.y + rect.height / 2 - text_height / 2)
-        draw_pixel_text(pyxel, text_x, text_y, text, 0, scale=scale)
+        self.draw_ui_text(pyxel, text_x, text_y, text, 0, "label")
 
     def draw_text_center(self, x: int, y: int, text: str, color: int, scale: int = 2) -> None:
         text = text.upper()
@@ -890,6 +902,57 @@ class DriftWithMeApp:
         while text and pixel_text_size(text + suffix, scale)[0] > max_width:
             text = text[:-1]
         return text + suffix if text else suffix
+
+    @property
+    def ui_renderer(self) -> UITextRenderer:
+        renderer = getattr(self, "ui_text", None)
+        if renderer is None:
+            renderer = load_ui_text_renderer(self.pyxel, self.runtime)
+            self.ui_text = renderer
+        return renderer
+
+    def ui(self, key: str) -> str:
+        return self.ui_renderer.resources.text(key)
+
+    def ui_token(self, token: str) -> str:
+        return self.ui_renderer.resources.token(token)
+
+    def denied_reason_text(self, reason: str) -> str:
+        return self.ui_renderer.resources.reason(reason)
+
+    def draw_ui_text(self, pyxel, x: int, y: int, text: str, color: int, style_name: str) -> None:
+        self.ui_renderer.draw(pyxel, x, y, text, color, style_name)
+
+    def draw_ui_text_center(self, x: int, y: int, text: str, color: int, style_name: str) -> None:
+        self.ui_renderer.draw_centered(self.pyxel, x, y, text, color, style_name)
+
+    def fit_ui_text_to_width(self, text: str, max_width: int, style_name: str) -> str:
+        return self.ui_renderer.fit_text(text, max_width, style_name)
+
+    def interaction_title(self, interaction) -> str:
+        if interaction.kind == "water_refill":
+            return self.ui("interaction.water_refill.title")
+        if interaction.kind == "energy_refill":
+            return self.ui("interaction.energy_charge.title")
+        if interaction.kind == "inspect" and interaction.title == "NO WATER":
+            return self.ui("interaction.no_water.title")
+        return self.ui_renderer.resources.raw_text(interaction.title)
+
+    def interaction_lines(self, interaction) -> tuple[str, ...]:
+        if interaction.kind == "water_refill":
+            return (self.ui("interaction.water_refill.line"),)
+        if interaction.kind == "energy_refill":
+            return (self.ui("interaction.energy_charge.line"),)
+        if interaction.kind == "inspect" and interaction.title == "NO WATER":
+            return (self.ui("interaction.no_water.line"),)
+        if interaction.kind == "inspect":
+            obj = self.world.object_by_id(interaction.object_id)
+            if obj is not None and obj.text_key is not None:
+                text = self.world.texts.get(obj.text_key, {})
+                lines = tuple(str(line) for line in text.get(self.ui_renderer.resources.locale, ()))
+                if lines:
+                    return lines
+        return tuple(self.ui_renderer.resources.raw_text(line) for line in interaction.lines)
 
 
 def main() -> None:

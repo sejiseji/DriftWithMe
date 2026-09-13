@@ -230,6 +230,33 @@
     "abnormal_urchin_idle_asset": "abnormal_urchin_inward_hands_64",
     "fallback_to_primitives": true
   },
+  "ui": {
+    "locale": "ja",
+    "font": {
+      "family": "DotGothic16",
+      "path": "assets/fonts/DotGothic16-Regular.ttf",
+      "label_px": {
+        "low": 16,
+        "medium": 16,
+        "high": 20
+      },
+      "body_px": {
+        "low": 16,
+        "medium": 16,
+        "high": 20
+      },
+      "title_px": {
+        "low": 18,
+        "medium": 18,
+        "high": 22
+      },
+      "hint_px": {
+        "low": 12,
+        "medium": 12,
+        "high": 15
+      }
+    }
+  },
   "effects": {
     "max_particles": 64,
     "max_emotes": 8,

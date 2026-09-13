@@ -25,7 +25,14 @@ drift-with-me = "drift_with_me.app:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-drift_with_me = ["data/*.json", "assets/*.json", "assets/*.hex", "assets/*.pyxres"]
+drift_with_me = [
+    "data/*.json",
+    "assets/*.json",
+    "assets/*.hex",
+    "assets/*.pyxres",
+    "assets/fonts/*.ttf",
+    "assets/i18n/*.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
