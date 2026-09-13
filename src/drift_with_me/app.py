@@ -817,6 +817,9 @@ class DriftWithMeApp:
 
     def interaction_chip_rect(self) -> Rect:
         profile = self.ui_profile_layout()
+        rects = profile.get("rects", {})
+        if "progress_chip" in rects:
+            return self.ui_rect("progress_chip")
         progress_w, progress_h = profile.get("progress", [160, 64])
         width = float(progress_w)
         height = float(progress_h)
@@ -845,7 +848,7 @@ class DriftWithMeApp:
 
     def fallback_progress_rect(self, width: float, height: float) -> Rect:
         x = self.runtime.screen_width / 2 - width / 2
-        y = self.runtime.screen_height / 2 - height / 2 - 18.0
+        y = self.runtime.screen_height - height - 8.0
         return self.clamp_ui_rect(Rect(x, y, width, height), margin=4.0)
 
     def progress_target_screen_rect(self, interaction) -> Rect | None:
@@ -1164,9 +1167,12 @@ class DriftWithMeApp:
         self.draw_panel_frame(rect, fill=0, inner=5)
         profile = self.runtime.profile.name
         scale = 1.25 if profile == "high" else 1.0
-        title_x = int(rect.x + round(8 * scale))
-        title_y = int(rect.y + round(6 * scale))
-        title_w = int(rect.width - round(56 * scale))
+        compact = rect.height <= 50
+        pad_x = int(round(8 * scale))
+        title_x = int(rect.x + pad_x)
+        title_y = int(rect.y + round(5 * scale))
+        pct_w = int(round(42 * scale))
+        title_w = max(24, int(rect.width - pad_x * 2 - pct_w))
         pct_text = f"{int(round(interaction.progress * 100)):03d}%"
         self.draw_ui_text(
             pyxel,
@@ -1184,9 +1190,9 @@ class DriftWithMeApp:
             "numeric",
         )
         meter_x = title_x
-        meter_y = int(rect.y + round(30 * scale))
+        meter_y = int(rect.y + rect.height - round((12 if compact else 28) * scale))
         meter_w = int(rect.width - round(16 * scale))
-        meter_h = max(4, int(round(6 * scale)))
+        meter_h = max(4, int(round((5 if compact else 6) * scale)))
         self.draw_meter(
             meter_x,
             meter_y,
@@ -1197,7 +1203,7 @@ class DriftWithMeApp:
             accent,
         )
         lines = self.interaction_lines(interaction)
-        if lines:
+        if lines and not compact:
             line = self.fit_ui_text_to_width(lines[0], meter_w, "body")
             self.draw_ui_text(
                 pyxel,
@@ -1302,17 +1308,29 @@ class DriftWithMeApp:
         )
 
     def action_button_label_rect(self, rect: Rect) -> Rect:
-        if self.runtime.profile.name == "high":
-            return Rect(rect.x + 10, rect.y + 31, rect.width - 20, 24)
-        if self.runtime.profile.name == "low":
-            return Rect(rect.x + 6, rect.y + 22, rect.width - 12, 18)
-        return Rect(rect.x + 8, rect.y + 25, rect.width - 16, 19)
+        pad_x = 8 if self.runtime.profile.name == "high" else 6
+        label_h = 20 if self.runtime.profile.name == "high" else 16
+        bottom_pad = 5 if self.runtime.profile.name == "high" else 4
+        return Rect(
+            rect.x + pad_x,
+            rect.y + rect.height - label_h - bottom_pad,
+            rect.width - pad_x * 2,
+            label_h,
+        )
 
     def draw_button_icon(self, token: str, rect: Rect, color: int) -> None:
         pyxel = self.pyxel
-        icon_size = 20 if self.runtime.profile.name == "high" else 16
+        if self.runtime.profile.name == "high":
+            icon_size = 16
+            y_offset = 5
+        elif self.runtime.profile.name == "low":
+            icon_size = 12
+            y_offset = 4
+        else:
+            icon_size = 14
+            y_offset = 4
         x = int(rect.x + rect.width / 2 - icon_size / 2)
-        y = int(rect.y + (6 if self.runtime.profile.name == "high" else 5))
+        y = int(rect.y + y_offset)
         cx = x + icon_size // 2
         cy = y + icon_size // 2
         if token in {"CHECK", "DONE", "NEXT"}:

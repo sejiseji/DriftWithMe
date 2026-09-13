@@ -62,5 +62,7 @@ def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
         assert renderer.text_width("100", "numeric") <= 28
         assert renderer.text_width("060", "numeric") <= 28
         progress_width = app.ui_profile_layout()["progress"][0]
-        assert renderer.text_width("ジャックへ給水中", "body") <= progress_width - 16
-        assert renderer.text_width("ヒューズ充電中", "body") <= progress_width - 16
+        compact_title_width = progress_width - 58
+        assert renderer.text_width("給水", "body") <= compact_title_width
+        assert renderer.text_width("充電", "body") <= compact_title_width
+        assert renderer.text_width("100%", "numeric") <= 42

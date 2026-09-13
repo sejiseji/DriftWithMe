@@ -67,13 +67,29 @@ layout-only corrections were applied without changing gameplay, camera, sprites,
 | Resource labels/numbers | row Y only | centered inside explicit row rects | Keep `水/電力/000` inside the resource panel |
 | Progress detail | auxiliary `12/15px` | body `16/20px` | Improve readability while still fitting the popup |
 
+## Compact HUD corrections after play review
+
+User screenshots on 2026-09-13 showed that the v0.2 action buttons and refill/charge popup still
+covered too much of the zoomed character view. The following layout and drawing corrections were
+applied without changing gameplay, camera, sprites, or SE:
+
+| Element | Before | After | Reason |
+|---|---:|---:|---|
+| Low context / primary buttons | `(254,146,80,44)` / `(340,146,80,44)` | `(286,154,62,36)` / `(356,154,62,36)` | Keep touch controls available while exposing more playfield |
+| Medium context / primary buttons | `(328,180,84,48)` / `(420,180,84,48)` | `(348,190,74,38)` / `(430,190,74,38)` | Reduce bottom-right footprint |
+| High context / primary buttons | `(410,224,105,60)` / `(525,224,105,60)` | `(432,236,94,48)` / `(536,236,94,48)` | Same visual density as medium after scaling |
+| Button font low/medium/high | `16/16/20` | `14/14/18` | Fit Japanese labels in smaller buttons |
+| Progress popup low/medium/high | `156x64 / 160x64 / 200x80` | `132x36 / 148x40 / 180x48` | Convert refill/charge status to a compact chip |
+| Progress placement | near Jack/Fuse candidate positions | fixed lower chip slot | Avoid covering the zoom target during refill/charge |
+| Progress detail text | title + percent + meter + detail line | title + percent + meter only in compact chips | Prevent text clipping and character occlusion |
+
 ## Implementation notes
 
 - Existing method names such as `action_button_rect()` and `interact_button_rect()` remain, but now resolve to the v0.2 numeric layout.
 - The resource panel uses separate labels, right-aligned zero-padded numbers, and meters.
 - The right button remains primary action: `GUARD`, `BUBBLE`, `ZAP`, or disabled `NONE`.
 - The left button remains context: `CHECK`, `REFILL`, `CHARGE`, or `CANCEL_*` during refill/charge.
-- Refill/charge progress uses a compact popup near Jack/Fuse when possible, with HUD/button blockers avoided. The full 160ms side hysteresis from the proposal is not implemented yet.
+- Refill/charge progress uses a compact fixed bottom chip so it does not cover Jack/Fuse during zoomed resource animations.
 - Inspect uses the dedicated bottom modal and hides the normal action group, minimap, and tooltip.
 - Minimap is read-only. It shows stage/object markers and Jack only; enemy radar and tap movement were not added.
 - Pause uses the v0.2 modal rects for resume/reset/audio/dev. Existing debug hotkeys and direct debug helper methods remain.

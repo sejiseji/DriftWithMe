@@ -34,8 +34,9 @@ EXPECTED_RECTS = {
         "resource": (6, 6, 156, 44),
         "sound_hit": (356, 6, 30, 30),
         "pause_hit": (390, 6, 30, 30),
-        "context_action": (254, 146, 80, 44),
-        "primary_action": (340, 146, 80, 44),
+        "context_action": (286, 154, 62, 36),
+        "primary_action": (356, 154, 62, 36),
+        "progress_chip": (148, 154, 132, 36),
         "minimap": (18, 113, 56, 56),
         "location": (6, 172, 80, 18),
     },
@@ -43,8 +44,9 @@ EXPECTED_RECTS = {
         "resource": (8, 8, 168, 48),
         "sound_hit": (436, 8, 32, 32),
         "pause_hit": (472, 8, 32, 32),
-        "context_action": (328, 180, 84, 48),
-        "primary_action": (420, 180, 84, 48),
+        "context_action": (348, 190, 74, 38),
+        "primary_action": (430, 190, 74, 38),
+        "progress_chip": (180, 188, 148, 40),
         "minimap": (20, 142, 64, 64),
         "location": (8, 210, 88, 18),
     },
@@ -52,8 +54,9 @@ EXPECTED_RECTS = {
         "resource": (10, 10, 210, 60),
         "sound_hit": (545, 10, 40, 40),
         "pause_hit": (590, 10, 40, 40),
-        "context_action": (410, 224, 105, 60),
-        "primary_action": (525, 224, 105, 60),
+        "context_action": (432, 236, 94, 48),
+        "primary_action": (536, 236, 94, 48),
+        "progress_chip": (225, 236, 180, 48),
         "minimap": (25, 176, 80, 80),
         "location": (10, 261, 110, 23),
     },
@@ -74,6 +77,7 @@ def test_numeric_hud_rects_match_v02_reference_across_profiles() -> None:
         assert rect_tuple(app.pause_button_rect()) == expected["pause_hit"]
         assert rect_tuple(app.interact_button_rect()) == expected["context_action"]
         assert rect_tuple(app.action_button_rect()) == expected["primary_action"]
+        assert rect_tuple(app.interaction_chip_rect()) == expected["progress_chip"]
         assert rect_tuple(app.minimap_rect()) == expected["minimap"]
         assert rect_tuple(app.location_rect()) == expected["location"]
 
@@ -86,6 +90,7 @@ def test_numeric_layout_data_keeps_permanent_hud_inside_screen() -> None:
         "pause_hit",
         "context_action",
         "primary_action",
+        "progress_chip",
         "minimap",
         "location",
     )
