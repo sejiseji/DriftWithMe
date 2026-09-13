@@ -72,6 +72,8 @@ class InteractionState:
     lines: tuple[str, ...]
     duration_sec: float
     elapsed_sec: float = 0.0
+    target_x: float | None = None
+    target_z: float | None = None
 
     @property
     def progress(self) -> float:
@@ -976,7 +978,7 @@ class GameModel:
         if target is None:
             self.emit_denied(events, "no_target", scope="interaction")
             return
-        if self.danger_blocks_interaction():
+        if self.danger_blocks_interaction() and not self.is_enemy_interaction_target(target):
             self.emit_denied(events, "blocked", target_id=target.id, scope="near_enemy")
             return
 
@@ -1015,6 +1017,17 @@ class GameModel:
             )
             return
 
+        if self.is_enemy_interaction_target(target):
+            self.start_interaction(
+                events,
+                kind="inspect",
+                target=target,
+                title=f"ENEMY {self.enemy_kind_from_target(target).upper()}",
+                lines=self.enemy_ascii_lines(target),
+                duration_sec=0.8,
+            )
+            return
+
         self.start_interaction(
             events,
             kind="inspect",
@@ -1041,6 +1054,8 @@ class GameModel:
             title=title,
             lines=lines,
             duration_sec=duration_sec,
+            target_x=target.x,
+            target_z=target.z,
         )
         events.append(
             self.event_queue.emit(
@@ -1065,7 +1080,6 @@ class GameModel:
             return events
 
         interaction = self.interaction
-        target = self.world.object_by_id(interaction.object_id)
         if interaction.kind == "water_refill":
             self.water = self.water_max
             self.debug.completed_refills += 1
@@ -1075,7 +1089,7 @@ class GameModel:
                     kind="resource_refilled",
                     actor_id="player",
                     target_id=interaction.object_id,
-                    world_position=object_position(target, self.player.x, self.player.z),
+                    world_position=self.interaction_world_position(interaction),
                     payload={"resource": "water"},
                 )
             )
@@ -1088,7 +1102,7 @@ class GameModel:
                     kind="resource_refilled",
                     actor_id="buddy",
                     target_id=interaction.object_id,
-                    world_position=object_position(target, self.player.x, self.player.z),
+                    world_position=self.interaction_world_position(interaction),
                     payload={"resource": "energy"},
                 )
             )
@@ -1102,7 +1116,7 @@ class GameModel:
                     kind="inspection_completed",
                     actor_id="player",
                     target_id=interaction.object_id,
-                    world_position=object_position(target, self.player.x, self.player.z),
+                    world_position=self.interaction_world_position(interaction),
                     payload={"first_read": first_read},
                 )
             )
@@ -1122,7 +1136,6 @@ class GameModel:
         if self.interaction is None:
             return events
         interaction = self.interaction
-        target = self.world.object_by_id(interaction.object_id)
         self.interaction = None
         self.debug.cancelled_interactions += 1
         events.append(
@@ -1131,12 +1144,23 @@ class GameModel:
                 kind="interaction_cancelled",
                 actor_id="player",
                 target_id=interaction.object_id,
-                world_position=object_position(target, self.player.x, self.player.z),
+                world_position=self.interaction_world_position(interaction),
                 payload={"interaction_kind": interaction.kind},
             )
         )
         self.last_events = events
         return events
+
+    def interaction_world_position(
+        self, interaction: InteractionState
+    ) -> tuple[float, float, float]:
+        if interaction.target_x is not None and interaction.target_z is not None:
+            return (interaction.target_x, 0.0, interaction.target_z)
+        return object_position(
+            self.world.object_by_id(interaction.object_id),
+            self.player.x,
+            self.player.z,
+        )
 
     def interaction_candidate(self, camera: CameraState | None = None) -> StaticObject | None:
         interaction_range = float(self.config["interaction"]["range"])
@@ -1158,10 +1182,22 @@ class GameModel:
                     and 0.0 <= marker.y <= camera.viewport_height
                 ):
                     continue
-            candidates.append((distance, obj.id, obj))
+            candidates.append((distance, 0, obj.id, obj))
+        for enemy in self.enemies:
+            if enemy.state == "DEFEATED":
+                continue
+            distance = math.hypot(enemy.x - self.player.x, enemy.z - self.player.z)
+            if distance > interaction_range:
+                continue
+            if not self.has_line_of_sight(self.player.x, self.player.z, enemy.x, enemy.z):
+                continue
+            if camera is not None and not self.enemy_visible(enemy, camera):
+                continue
+            target = self.enemy_interaction_target(enemy)
+            candidates.append((distance, 1, target.id, target))
         if not candidates:
             return None
-        return min(candidates, key=lambda item: (item[0], item[1]))[2]
+        return min(candidates, key=lambda item: (item[0], item[1], item[2]))[3]
 
     def object_ascii_lines(self, obj: StaticObject) -> tuple[str, ...]:
         if obj.text_key is None:
@@ -1169,6 +1205,36 @@ class GameModel:
         text = self.world.texts.get(obj.text_key, {})
         lines = tuple(str(line).upper() for line in text.get("ascii", ()))
         return lines or ("CHECKED",)
+
+    def enemy_interaction_target(self, enemy: EnemyState) -> StaticObject:
+        radius = self.enemy_radius(enemy)
+        return StaticObject(
+            id=enemy.id,
+            kind=f"enemy_{enemy.kind}",
+            x=enemy.x,
+            z=enemy.z,
+            solid=False,
+            half_x=radius,
+            half_z=radius,
+            height=max(8.0, radius * 2.0),
+            inspectable=True,
+        )
+
+    @staticmethod
+    def is_enemy_interaction_target(target: StaticObject) -> bool:
+        return target.kind.startswith("enemy_")
+
+    @staticmethod
+    def enemy_kind_from_target(target: StaticObject) -> str:
+        return target.kind.removeprefix("enemy_")
+
+    def enemy_ascii_lines(self, target: StaticObject) -> tuple[str, ...]:
+        enemy_kind = self.enemy_kind_from_target(target)
+        if enemy_kind == "normal":
+            return ("ENEMY NORMAL APPROACH", "ENEMY NORMAL GUARD")
+        if enemy_kind == "abnormal":
+            return ("ENEMY ABNORMAL CAPTURE", "ENEMY ABNORMAL DISCHARGE")
+        return ("UNKNOWN ENEMY",)
 
     def danger_blocks_interaction(self) -> bool:
         if self.world.point_in_safe_zone(self.player.x, self.player.z):

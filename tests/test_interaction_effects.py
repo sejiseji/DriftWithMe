@@ -139,6 +139,41 @@ def test_captured_enemy_blocks_interaction_outside_safe_zone() -> None:
     assert events[0].payload["reason"] == "blocked"
 
 
+def test_enemy_can_be_inspected_as_check_target_and_freezes_world() -> None:
+    model, _camera = make_model()
+    model.player.x = 288.0
+    model.player.z = 192.0
+    enemy = normal_enemy(model)
+    enemy.x = 320.0
+    enemy.z = 192.0
+    camera = camera_for_model(model)
+
+    events = model.step(InputIntent(interact_pressed=True), camera, 1.0 / 60.0)
+
+    assert [item.kind for item in events] == ["interaction_started"]
+    assert events[0].target_id == enemy.id
+    assert events[0].payload["interaction_kind"] == "inspect"
+    assert model.interaction is not None
+    assert model.interaction.object_id == enemy.id
+    assert model.interaction.title == "ENEMY NORMAL"
+    assert model.interaction.lines == ("ENEMY NORMAL APPROACH", "ENEMY NORMAL GUARD")
+    assert model.world_paused
+
+    before_state = enemy.state
+    before_timer = enemy.state_timer
+    assert model.step(InputIntent(), camera, 1.0) == []
+    assert enemy.state == before_state
+    assert enemy.state_timer == pytest.approx(before_timer)
+
+    finished = model.complete_interaction()
+
+    assert [item.kind for item in finished] == ["inspection_completed"]
+    assert finished[0].target_id == enemy.id
+    assert finished[0].world_position == pytest.approx((enemy.x, 0.0, enemy.z))
+    assert finished[0].payload["first_read"] is True
+    assert enemy.id in model.inspected_object_ids
+
+
 def test_effects_capacity_and_model_invariance() -> None:
     model, _camera = make_model()
     effects = EffectSystem(model.config)

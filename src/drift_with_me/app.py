@@ -422,19 +422,24 @@ class DriftWithMeApp:
                 self.last_denied_reason = str(event.payload.get("reason", "denied"))
             elif event.kind == "interaction_started" and event.target_id is not None:
                 target = self.world.object_by_id(event.target_id)
-                if target is not None:
-                    hold_sec = float(event.payload.get("duration_sec", 0.8)) + 0.15
-                    interaction_kind = str(event.payload.get("interaction_kind", ""))
-                    if interaction_kind == "water_refill":
+                hold_sec = float(event.payload.get("duration_sec", 0.8)) + 0.15
+                interaction_kind = str(event.payload.get("interaction_kind", ""))
+                if interaction_kind == "water_refill":
+                    self.camera_controller.start_focus_point(
+                        self.player_focus_point(), hold_sec=hold_sec
+                    )
+                elif interaction_kind == "energy_refill":
+                    self.camera_controller.start_focus_point(
+                        self.buddy_focus_point(), hold_sec=hold_sec
+                    )
+                elif target is not None:
+                    self.camera_controller.start_focus_demo(target, hold_sec=hold_sec)
+                else:
+                    enemy = self.model.enemy_by_id(event.target_id)
+                    if enemy is not None:
                         self.camera_controller.start_focus_point(
-                            self.player_focus_point(), hold_sec=hold_sec
+                            self.enemy_focus_point(enemy), hold_sec=hold_sec
                         )
-                    elif interaction_kind == "energy_refill":
-                        self.camera_controller.start_focus_point(
-                            self.buddy_focus_point(), hold_sec=hold_sec
-                        )
-                    else:
-                        self.camera_controller.start_focus_demo(target, hold_sec=hold_sec)
         camera_reaction_delay = self.request_hitstop_from_events(events)
         self.effects.process_events(
             events,
@@ -489,6 +494,9 @@ class DriftWithMeApp:
             max(0.0, self.model.buddy.y - self.model.buddy_cube_size),
             self.model.buddy.z,
         )
+
+    def enemy_focus_point(self, enemy) -> Vec3:
+        return Vec3(enemy.x, max(6.0, self.model.enemy_radius(enemy)), enemy.z)
 
     def combat_camera_reactions_allowed(self) -> bool:
         return (

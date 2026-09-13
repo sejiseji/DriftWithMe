@@ -62,7 +62,13 @@
       "interaction.energy_charge.line": "ヒューズ充電中",
       "interaction.water_refill.done": "給水完了",
       "interaction.energy_charge.done": "充電完了",
-      "interaction.checked.title": "調査"
+      "interaction.checked.title": "調査",
+      "interaction.enemy_normal.title": "通常ウニ",
+      "interaction.enemy_normal.line1": "ジャックへ近づいてくる影。",
+      "interaction.enemy_normal.line2": "近距離では防御で押し返せる。",
+      "interaction.enemy_abnormal.title": "異常ウニ",
+      "interaction.enemy_abnormal.line1": "泡で捕捉できる敵影。",
+      "interaction.enemy_abnormal.line2": "捕捉後は電撃で撃退できる。"
     },
     "en": {
       "action.action": "ACTION",
@@ -124,7 +130,13 @@
       "interaction.energy_charge.line": "CHARGING BUDDY",
       "interaction.water_refill.done": "WATER FULL",
       "interaction.energy_charge.done": "ENERGY FULL",
-      "interaction.checked.title": "CHECKED"
+      "interaction.checked.title": "CHECKED",
+      "interaction.enemy_normal.title": "NORMAL URCHIN",
+      "interaction.enemy_normal.line1": "An enemy shadow approaching Jack.",
+      "interaction.enemy_normal.line2": "Guard at close range to repel it.",
+      "interaction.enemy_abnormal.title": "ABNORMAL URCHIN",
+      "interaction.enemy_abnormal.line1": "An enemy shadow that can be captured.",
+      "interaction.enemy_abnormal.line2": "Discharge after capture to repel it."
     }
   },
   "display_token_mapping": {
@@ -151,6 +163,12 @@
     "SUPPLY STOPPED": "interaction.no_water.line",
     "ENERGY CHARGE": "interaction.energy_charge.title",
     "CHARGING BUDDY": "interaction.energy_charge.line",
-    "CHECKED": "interaction.checked.title"
+    "CHECKED": "interaction.checked.title",
+    "ENEMY NORMAL": "interaction.enemy_normal.title",
+    "ENEMY NORMAL APPROACH": "interaction.enemy_normal.line1",
+    "ENEMY NORMAL GUARD": "interaction.enemy_normal.line2",
+    "ENEMY ABNORMAL": "interaction.enemy_abnormal.title",
+    "ENEMY ABNORMAL CAPTURE": "interaction.enemy_abnormal.line1",
+    "ENEMY ABNORMAL DISCHARGE": "interaction.enemy_abnormal.line2"
   }
 }

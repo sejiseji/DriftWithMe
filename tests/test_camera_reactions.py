@@ -53,6 +53,10 @@ def make_app(raw: dict, model: GameModel) -> DriftWithMeApp:
     app.world = model.world
     app.model = model
     app.effects = EffectSystem(raw)
+    app.audio = SilentAudio()
+    app.hitstop_remaining = 0.0
+    app.accumulator = 0.0
+    app._processed_hitstop_event_ids = set()
     app.camera_controller = CameraController(
         raw,
         model.world,
@@ -61,6 +65,11 @@ def make_app(raw: dict, model: GameModel) -> DriftWithMeApp:
         Vec3(model.player.x, 0.0, model.player.z),
     )
     return app
+
+
+class SilentAudio:
+    def play_events(self, events) -> None:
+        self.last_events = list(events)
 
 
 def test_camera_reactions_default_off_do_not_create_impulses() -> None:
@@ -111,3 +120,29 @@ def test_presentation_camera_changes_render_only_and_respects_focus_mode() -> No
     app.camera_controller.start_focus_point(Vec3(model.player.x, 8.0, model.player.z))
 
     assert app.presentation_camera(base_camera) is base_camera
+
+
+def test_enemy_inspection_event_starts_focus_on_enemy_position() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    enemy = model.enemy_by_id("urchin_normal_01")
+    assert enemy is not None
+    enemy.x = model.player.x + 32.0
+    enemy.z = model.player.z
+    event = model.event_queue.emit(
+        world_tick=model.world_tick,
+        kind="interaction_started",
+        actor_id="player",
+        target_id=enemy.id,
+        world_position=(enemy.x, 0.0, enemy.z),
+        payload={"interaction_kind": "inspect", "duration_sec": 0.8},
+    )
+
+    app.process_events([event])
+
+    assert app.camera_controller.focus is not None
+    target = app.camera_controller.focus.target_point
+    assert target.x == pytest.approx(enemy.x)
+    assert target.y == pytest.approx(max(6.0, model.enemy_radius(enemy)))
+    assert target.z == pytest.approx(enemy.z)
