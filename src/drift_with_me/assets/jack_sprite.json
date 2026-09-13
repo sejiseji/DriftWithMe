@@ -1113,10 +1113,10 @@
         {
           "id": "idle_00",
           "path": "tree_leafy_a.hex",
-          "source_hash": "73aaeba8b4fb2377000d9b13e90b0d37c364375860e75b5ed6ed576df1bc466c"
+          "source_hash": "b2869ada09a121eaa379f0d79953a56b02690a8c3037b019386ff586c36f06c6"
         }
       ],
-      "source_hash": "73aaeba8b4fb2377000d9b13e90b0d37c364375860e75b5ed6ed576df1bc466c",
+      "source_hash": "b2869ada09a121eaa379f0d79953a56b02690a8c3037b019386ff586c36f06c6",
       "render_mode": "vertical_billboard",
       "source_policy": "environment_wave1_v0_1_hex"
     },
@@ -1142,10 +1142,10 @@
         {
           "id": "idle_00",
           "path": "tree_thin_b.hex",
-          "source_hash": "c911841d83d913a1b5502326e31e167c61754bacbec57eb276ff70fa3e92a62b"
+          "source_hash": "f2dfa10bd7188dbf06beceab48ccca8f8f6a0b91e5030500512f5ca570b65229"
         }
       ],
-      "source_hash": "c911841d83d913a1b5502326e31e167c61754bacbec57eb276ff70fa3e92a62b",
+      "source_hash": "f2dfa10bd7188dbf06beceab48ccca8f8f6a0b91e5030500512f5ca570b65229",
       "render_mode": "vertical_billboard",
       "source_policy": "environment_wave1_v0_1_hex"
     },

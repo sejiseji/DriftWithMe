@@ -20,6 +20,13 @@ Integrated the following DriftWithMe Environment Wave1 v0.1 HEX source assets:
 - `ground_crack_grass`
 - `ground_rubble`
 
+Tree assets were updated on 2026-09-14 from the tree fix v0.1 pack:
+
+- `tree_leafy_a`: source hash `b2869ada09a121eaa379f0d79953a56b02690a8c3037b019386ff586c36f06c6`
+- `tree_thin_b`: source hash `f2dfa10bd7188dbf06beceab48ccca8f8f6a0b91e5030500512f5ca570b65229`
+
+Both fixed tree sources use visible colors `1`, `3`, `4`, `5`, `B`, and `D`; `0` remains the only transparent color.
+
 The Wave1 `ground/` material and decal pack remains deferred. Those assets are ground material sources, not vertical billboards, and need a separate ground rendering review before connection.
 
 ## Runtime Loading

@@ -86,14 +86,18 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "water_station_stopped": "d0165ea2ae70e0f34b54eab847267ac57cabb95910cf663e4fc0e71f756c14cc",
     "solar_station_idle": "4e55dda3ed9904e3f7fbd8f0f848974480427ad2a67afe7ffac7bf81fd4fb430",
     "solar_station_active": "a5c9877948cb76a59447bb21f6fbbe954625feeea79bfd6d7f8756ea23546f18",
-    "tree_leafy_a": "73aaeba8b4fb2377000d9b13e90b0d37c364375860e75b5ed6ed576df1bc466c",
-    "tree_thin_b": "c911841d83d913a1b5502326e31e167c61754bacbec57eb276ff70fa3e92a62b",
+    "tree_leafy_a": "b2869ada09a121eaa379f0d79953a56b02690a8c3037b019386ff586c36f06c6",
+    "tree_thin_b": "f2dfa10bd7188dbf06beceab48ccca8f8f6a0b91e5030500512f5ca570b65229",
     "reactive_grass_tall": "4b8d853400e617c486a88468f5203906d3f1f5ef6972c132b7614c3fbdf5c8f7",
     "reactive_grass_low": "5706308cefaf67b84c5ee62d0a742b17d5f60f28113e0272ae7fb8318f10c092",
     "ground_pebbles": "4bbbaed6dbc1a8219523d1bcd734171989693d2205428804302a90f7a5af47be",
     "ground_fallen_leaves": "9ee3c9b0ca1baf6a67a043e7650c7eab720b1b666ca886251b3452a21bc8c4aa",
     "ground_crack_grass": "fef48effd241c5d71ff9f7606dda45112e70ccdcd7a0ad1d519e3acc21fefa69",
     "ground_rubble": "bd1d1394dc20ff381e380ea7b373a4056c0d4cb988abc9809614bcad59b35423",
+}
+ENVIRONMENT_TREE_VISIBLE_COLORS = {
+    "tree_leafy_a": {"1", "3", "4", "5", "B", "D"},
+    "tree_thin_b": {"1", "3", "4", "5", "B", "D"},
 }
 
 
@@ -179,6 +183,8 @@ def test_environment_wave1_source_hex_preserves_received_pixels(asset_id: str) -
     assert len(rows) == expected_size
     assert {len(row) for row in rows} == {expected_width}
     assert pixel_hash(rows) == ENVIRONMENT_WAVE1_SOURCE_HASHES[asset_id]
+    if asset_id in ENVIRONMENT_TREE_VISIBLE_COLORS:
+        assert set("".join(rows)) - {"0"} == ENVIRONMENT_TREE_VISIBLE_COLORS[asset_id]
 
 
 def valid_asset(asset_id: str = "jack_test", frame_path: str = "jack.hex") -> dict:
