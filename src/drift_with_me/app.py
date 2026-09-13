@@ -676,7 +676,7 @@ class DriftWithMeApp:
             obj_projection = camera.project(Vec3(obj.x, 0.0, obj.z))
             if obj_projection is None or obj_projection.depth > ground_projection.depth + 1e-6:
                 continue
-            bounds = renderer.object_screen_bounds(obj, camera)
+            bounds = renderer.object_ground_pick_block_bounds(obj, camera)
             if bounds is not None and bounds.contains(screen_x, screen_y, margin):
                 return True
         return False

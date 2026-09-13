@@ -81,6 +81,20 @@ FUSE_DIRECTION_RECTS = {
     "back_left": (128, 120, 48, 40),
     "left": (176, 120, 48, 40),
 }
+ENVIRONMENT_WAVE1_SOURCE_HASHES = {
+    "water_station_active": "0cb1fde1142eeb4ed531b335c4d866b16f2e8498818bcad838f793228419643f",
+    "water_station_stopped": "d0165ea2ae70e0f34b54eab847267ac57cabb95910cf663e4fc0e71f756c14cc",
+    "solar_station_idle": "4e55dda3ed9904e3f7fbd8f0f848974480427ad2a67afe7ffac7bf81fd4fb430",
+    "solar_station_active": "a5c9877948cb76a59447bb21f6fbbe954625feeea79bfd6d7f8756ea23546f18",
+    "tree_leafy_a": "73aaeba8b4fb2377000d9b13e90b0d37c364375860e75b5ed6ed576df1bc466c",
+    "tree_thin_b": "c911841d83d913a1b5502326e31e167c61754bacbec57eb276ff70fa3e92a62b",
+    "reactive_grass_tall": "4b8d853400e617c486a88468f5203906d3f1f5ef6972c132b7614c3fbdf5c8f7",
+    "reactive_grass_low": "5706308cefaf67b84c5ee62d0a742b17d5f60f28113e0272ae7fb8318f10c092",
+    "ground_pebbles": "4bbbaed6dbc1a8219523d1bcd734171989693d2205428804302a90f7a5af47be",
+    "ground_fallen_leaves": "9ee3c9b0ca1baf6a67a043e7650c7eab720b1b666ca886251b3452a21bc8c4aa",
+    "ground_crack_grass": "fef48effd241c5d71ff9f7606dda45112e70ccdcd7a0ad1d519e3acc21fefa69",
+    "ground_rubble": "bd1d1394dc20ff381e380ea7b373a4056c0d4cb988abc9809614bcad59b35423",
+}
 
 
 class RecordingPyxel:
@@ -149,6 +163,22 @@ def test_fuse_source_hex_preserves_received_pixels(direction: str) -> None:
     assert len(rows) == 40
     assert {len(row) for row in rows} == {48}
     assert pixel_hash(rows) == FUSE_DIRECTION_HASHES[direction]
+
+
+@pytest.mark.parametrize("asset_id", tuple(ENVIRONMENT_WAVE1_SOURCE_HASHES))
+def test_environment_wave1_source_hex_preserves_received_pixels(asset_id: str) -> None:
+    rows = tuple(
+        (ROOT / f"src/drift_with_me/assets/{asset_id}.hex")
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+
+    expected_size = 128 if asset_id.startswith(("water_", "solar_", "tree_")) else 64
+    expected_width = 96 if expected_size == 128 else 64
+    assert len(rows) == expected_size
+    assert {len(row) for row in rows} == {expected_width}
+    assert pixel_hash(rows) == ENVIRONMENT_WAVE1_SOURCE_HASHES[asset_id]
 
 
 def valid_asset(asset_id: str = "jack_test", frame_path: str = "jack.hex") -> dict:
@@ -371,7 +401,7 @@ import pyxel
 from drift_with_me.config import load_runtime_config
 from drift_with_me.hex_assets import load_runtime_sprite_library
 from drift_with_me.math3d import CameraState, Vec3
-from drift_with_me.model import GameModel
+from drift_with_me.model import GameModel, InteractionState
 from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
 
@@ -468,6 +498,35 @@ assert abnormal.definition.world_size == (20.0, 20.0)
 assert runtime.raw["assets"]["abnormal_urchin_idle_asset"] == "abnormal_urchin_inward_hands_64"
 fuse_assets = {FUSE_DIRECTION_HASHES!r}
 fuse_rects = {FUSE_DIRECTION_RECTS!r}
+environment_hashes = {ENVIRONMENT_WAVE1_SOURCE_HASHES!r}
+environment_asset_ids = {{
+    "water_station_active": "water_station_active_96",
+    "water_station_stopped": "water_station_stopped_96",
+    "solar_station_idle": "solar_station_idle_96",
+    "solar_station_active": "solar_station_active_96",
+    "tree_leafy_a": "tree_leafy_a_96",
+    "tree_thin_b": "tree_thin_b_96",
+    "reactive_grass_tall": "reactive_grass_tall_64",
+    "reactive_grass_low": "reactive_grass_low_64",
+    "ground_pebbles": "ground_pebbles_64",
+    "ground_fallen_leaves": "ground_fallen_leaves_64",
+    "ground_crack_grass": "ground_crack_grass_64",
+    "ground_rubble": "ground_rubble_64",
+}}
+environment_world_sizes = {{
+    "water_station_active": (36.0, 48.0),
+    "water_station_stopped": (36.0, 48.0),
+    "solar_station_idle": (36.0, 48.0),
+    "solar_station_active": (36.0, 48.0),
+    "tree_leafy_a": (48.0, 64.0),
+    "tree_thin_b": (48.0, 64.0),
+    "reactive_grass_tall": (24.0, 24.0),
+    "reactive_grass_low": (28.0, 28.0),
+    "ground_pebbles": (32.0, 32.0),
+    "ground_fallen_leaves": (32.0, 32.0),
+    "ground_crack_grass": (32.0, 32.0),
+    "ground_rubble": (40.0, 32.0),
+}}
 fuse_frame = None
 for direction, expected_hash in fuse_assets.items():
     fuse = library.get(f"fuse_{{direction}}_neutral_48")
@@ -491,6 +550,19 @@ assert fuse_frame is not None
 assert runtime.raw["assets"]["buddy_idle_asset"] == "fuse_front_right_neutral_48"
 for direction in fuse_assets:
     assert runtime.raw["assets"][f"buddy_{{direction}}_asset"] == f"fuse_{{direction}}_neutral_48"
+for source_id, expected_hash in environment_hashes.items():
+    env_asset = library.get(environment_asset_ids[source_id])
+    assert env_asset is not None, source_id
+    env_frame = env_asset.frame()
+    assert env_frame.source is not None
+    assert env_frame.source_hash == expected_hash
+    assert env_asset.definition.world_size == environment_world_sizes[source_id]
+    if source_id.startswith("ground_"):
+        assert env_asset.definition.projection_mode == "ground_decal_source_v1"
+    else:
+        assert env_asset.definition.projection_mode == "upright_height_billboard_v1"
+assert runtime.raw["assets"]["water_station_working_asset"] == "water_station_active_96"
+assert runtime.raw["assets"]["ground_rubble_asset"] == "ground_rubble_64"
 assert sound_snapshot() == before_sound
 assert music_snapshot() == before_music
 assert pyxel.tilemaps[0].pget(0, 0) == before_tile
@@ -504,6 +576,32 @@ camera = CameraState.from_config(
     runtime.screen_height,
 )
 renderer = Renderer(pyxel, library)
+tap = model.world.object_by_id("tap_start")
+stopped_tap = model.world.object_by_id("tap_stopped")
+solar = model.world.object_by_id("solar_start")
+tree = model.world.object_by_id("tree_02")
+grass = model.world.object_by_id("grass_01")
+assert tap is not None and stopped_tap is not None and solar is not None
+assert tree is not None and grass is not None
+assert renderer.object_sprite_asset(model, tap).definition.asset_id == "water_station_active_96"
+assert (
+    renderer.object_sprite_asset(model, stopped_tap).definition.asset_id
+    == "water_station_stopped_96"
+)
+assert renderer.object_sprite_asset(model, solar).definition.asset_id == "solar_station_idle_96"
+model.interaction = InteractionState(
+    kind="energy_refill",
+    object_id="solar_start",
+    title="ENERGY CHARGE",
+    lines=(),
+    duration_sec=1.0,
+)
+assert renderer.object_sprite_asset(model, solar).definition.asset_id == "solar_station_active_96"
+model.interaction = None
+assert renderer.object_sprite_asset(model, tree).definition.asset_id == "tree_thin_b_96"
+assert renderer.object_sprite_asset(model, grass).definition.asset_id == "reactive_grass_tall_64"
+detail = model.world.ground_details[0]
+assert renderer.ground_detail_sprite_asset(model, detail) is not None
 pyxel.cls(3)
 assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
 placement = renderer.player_sprite_placement(model, camera, presentation_time=0.0)

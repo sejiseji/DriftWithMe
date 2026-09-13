@@ -15,6 +15,8 @@ from drift_with_me.math3d import CameraState, Vec3
 SUPPORTED_SCHEMA_VERSION = 1
 SUPPORTED_PALETTE_ID = "pyxel_default_16"
 SUPPORTED_PROJECTION_MODE = "upright_height_billboard_v1"
+GROUND_DECAL_PROJECTION_MODE = "ground_decal_source_v1"
+SUPPORTED_PROJECTION_MODES = {SUPPORTED_PROJECTION_MODE, GROUND_DECAL_PROJECTION_MODE}
 SUPPORTED_FLIP_POLICY = "none"
 SUPPORTED_ANIMATION = "static"
 HEX_DIGITS = "0123456789ABCDEF"
@@ -159,19 +161,21 @@ def source_hash_for_rows(rows: tuple[str, ...]) -> str:
 def load_sprite_manifest_path(pyxel_module: Any, manifest_path: Path) -> SpriteAssetLibrary:
     base_dir = manifest_path.parent
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if is_pyxres_sprite_manifest(manifest):
-        return load_pyxres_sprite_manifest(
-            pyxel_module,
-            manifest,
-            lambda relative_path: local_resource_path(base_dir, relative_path),
-            enabled=True,
-        )
 
     def read_text(relative_path: str) -> str:
         path = base_dir / relative_asset_path(relative_path)
         if not path.is_file():
             raise HexAssetError(f"{relative_path}: referenced HEX file does not exist")
         return path.read_text(encoding="utf-8")
+
+    if is_pyxres_sprite_manifest(manifest):
+        return load_pyxres_sprite_manifest(
+            pyxel_module,
+            manifest,
+            lambda relative_path: local_resource_path(base_dir, relative_path),
+            read_text=read_text,
+            enabled=True,
+        )
 
     return load_sprite_manifest(pyxel_module, manifest, read_text, enabled=True)
 
@@ -189,6 +193,10 @@ def load_runtime_sprite_library(
         root = resources.files("drift_with_me")
         manifest_path = join_traversable(root, manifest_name)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        def read_text(relative_path: str) -> str:
+            return join_traversable(manifest_path.parent, relative_path).read_text(encoding="utf-8")
+
         if is_pyxres_sprite_manifest(manifest):
             return load_pyxres_sprite_manifest(
                 pyxel_module,
@@ -196,11 +204,9 @@ def load_runtime_sprite_library(
                 lambda relative_path: resources.as_file(
                     join_traversable(manifest_path.parent, relative_path)
                 ),
+                read_text=read_text,
                 enabled=True,
             )
-
-        def read_text(relative_path: str) -> str:
-            return join_traversable(manifest_path.parent, relative_path).read_text(encoding="utf-8")
 
         return load_sprite_manifest(pyxel_module, manifest, read_text, enabled=True)
     except Exception as exc:
@@ -243,6 +249,7 @@ def load_pyxres_sprite_manifest(
     manifest: dict[str, Any],
     resource_path: Callable[[str], AbstractContextManager[Path]],
     *,
+    read_text: Callable[[str], str] | None = None,
     enabled: bool,
 ) -> SpriteAssetLibrary:
     require_dict(manifest, "manifest")
@@ -318,6 +325,23 @@ def load_pyxres_sprite_manifest(
             loaded_frame = load_pyxres_frame(pyxel_module, frame_definition)
             frames[loaded_frame.frame_id] = loaded_frame
         assets[definition.asset_id] = LoadedSpriteAsset(definition=definition, frames=frames)
+    source_assets_raw = manifest.get("source_assets", [])
+    if source_assets_raw:
+        if read_text is None:
+            raise HexAssetError("manifest.source_assets: no source reader is available")
+        if not isinstance(source_assets_raw, list):
+            raise HexAssetError("manifest.source_assets: expected list")
+        for index, raw_asset in enumerate(source_assets_raw):
+            asset = load_sprite_asset(
+                pyxel_module,
+                raw_asset,
+                read_text,
+                f"manifest.source_assets[{index}]",
+            )
+            asset_id = asset.definition.asset_id
+            if asset_id in assets:
+                raise HexAssetError(f"{asset_id}: duplicate asset id")
+            assets[asset_id] = asset
     return SpriteAssetLibrary(enabled=enabled, assets=assets)
 
 
@@ -509,16 +533,19 @@ def parse_sprite_definition(raw_asset: Any, path: str) -> SpriteDefinition:
     world_size = require_float_pair(raw_asset.get("world_size"), f"{asset_id}.world_size")
     if world_size[0] <= 0.0 or world_size[1] <= 0.0:
         raise HexAssetError(f"{asset_id}.world_size: dimensions must be positive")
-    if not math.isclose(
-        world_size[0] / world_size[1], hex_width / hex_height, rel_tol=1e-6, abs_tol=1e-9
-    ):
-        raise HexAssetError(f"{asset_id}.world_size: aspect ratio must match HEX dimensions")
 
     projection_mode = require_nonempty_str(
         raw_asset.get("projection_mode"), f"{asset_id}.projection_mode"
     )
-    if projection_mode != SUPPORTED_PROJECTION_MODE:
+    if projection_mode not in SUPPORTED_PROJECTION_MODES:
         raise HexAssetError(f"{asset_id}.projection_mode: unsupported value {projection_mode!r}")
+    if (
+        not math.isclose(
+            world_size[0] / world_size[1], hex_width / hex_height, rel_tol=1e-6, abs_tol=1e-9
+        )
+        and projection_mode == SUPPORTED_PROJECTION_MODE
+    ):
+        raise HexAssetError(f"{asset_id}.world_size: aspect ratio must match HEX dimensions")
 
     flip_policy = require_nonempty_str(raw_asset.get("flip_policy"), f"{asset_id}.flip_policy")
     if flip_policy != SUPPORTED_FLIP_POLICY:

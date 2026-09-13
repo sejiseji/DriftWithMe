@@ -974,6 +974,356 @@
       ]
     }
   },
+  "source_assets": [
+    {
+      "schema_version": 1,
+      "id": "water_station_active_96",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 96,
+      "hex_height": 128,
+      "colkey": 0,
+      "anchor_px": [
+        48,
+        124
+      ],
+      "world_size": [
+        36.0,
+        48.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "water_station_active.hex",
+          "source_hash": "0cb1fde1142eeb4ed531b335c4d866b16f2e8498818bcad838f793228419643f"
+        }
+      ],
+      "source_hash": "0cb1fde1142eeb4ed531b335c4d866b16f2e8498818bcad838f793228419643f",
+      "render_mode": "vertical_billboard",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "water_station_stopped_96",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 96,
+      "hex_height": 128,
+      "colkey": 0,
+      "anchor_px": [
+        48,
+        124
+      ],
+      "world_size": [
+        36.0,
+        48.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "water_station_stopped.hex",
+          "source_hash": "d0165ea2ae70e0f34b54eab847267ac57cabb95910cf663e4fc0e71f756c14cc"
+        }
+      ],
+      "source_hash": "d0165ea2ae70e0f34b54eab847267ac57cabb95910cf663e4fc0e71f756c14cc",
+      "render_mode": "vertical_billboard",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "solar_station_idle_96",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 96,
+      "hex_height": 128,
+      "colkey": 0,
+      "anchor_px": [
+        48,
+        124
+      ],
+      "world_size": [
+        36.0,
+        48.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "solar_station_idle.hex",
+          "source_hash": "4e55dda3ed9904e3f7fbd8f0f848974480427ad2a67afe7ffac7bf81fd4fb430"
+        }
+      ],
+      "source_hash": "4e55dda3ed9904e3f7fbd8f0f848974480427ad2a67afe7ffac7bf81fd4fb430",
+      "render_mode": "vertical_billboard",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "solar_station_active_96",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 96,
+      "hex_height": 128,
+      "colkey": 0,
+      "anchor_px": [
+        48,
+        124
+      ],
+      "world_size": [
+        36.0,
+        48.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "solar_station_active.hex",
+          "source_hash": "a5c9877948cb76a59447bb21f6fbbe954625feeea79bfd6d7f8756ea23546f18"
+        }
+      ],
+      "source_hash": "a5c9877948cb76a59447bb21f6fbbe954625feeea79bfd6d7f8756ea23546f18",
+      "render_mode": "vertical_billboard",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "tree_leafy_a_96",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 96,
+      "hex_height": 128,
+      "colkey": 0,
+      "anchor_px": [
+        48,
+        124
+      ],
+      "world_size": [
+        48.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "tree_leafy_a.hex",
+          "source_hash": "73aaeba8b4fb2377000d9b13e90b0d37c364375860e75b5ed6ed576df1bc466c"
+        }
+      ],
+      "source_hash": "73aaeba8b4fb2377000d9b13e90b0d37c364375860e75b5ed6ed576df1bc466c",
+      "render_mode": "vertical_billboard",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "tree_thin_b_96",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 96,
+      "hex_height": 128,
+      "colkey": 0,
+      "anchor_px": [
+        48,
+        124
+      ],
+      "world_size": [
+        48.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "tree_thin_b.hex",
+          "source_hash": "c911841d83d913a1b5502326e31e167c61754bacbec57eb276ff70fa3e92a62b"
+        }
+      ],
+      "source_hash": "c911841d83d913a1b5502326e31e167c61754bacbec57eb276ff70fa3e92a62b",
+      "render_mode": "vertical_billboard",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "reactive_grass_tall_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 0,
+      "anchor_px": [
+        32,
+        60
+      ],
+      "world_size": [
+        24.0,
+        24.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "reactive_grass_tall.hex",
+          "source_hash": "4b8d853400e617c486a88468f5203906d3f1f5ef6972c132b7614c3fbdf5c8f7"
+        }
+      ],
+      "source_hash": "4b8d853400e617c486a88468f5203906d3f1f5ef6972c132b7614c3fbdf5c8f7",
+      "render_mode": "low_billboard",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "reactive_grass_low_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 0,
+      "anchor_px": [
+        32,
+        60
+      ],
+      "world_size": [
+        28.0,
+        28.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "reactive_grass_low.hex",
+          "source_hash": "5706308cefaf67b84c5ee62d0a742b17d5f60f28113e0272ae7fb8318f10c092"
+        }
+      ],
+      "source_hash": "5706308cefaf67b84c5ee62d0a742b17d5f60f28113e0272ae7fb8318f10c092",
+      "render_mode": "low_billboard",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "ground_pebbles_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 0,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "ground_pebbles.hex",
+          "source_hash": "4bbbaed6dbc1a8219523d1bcd734171989693d2205428804302a90f7a5af47be"
+        }
+      ],
+      "source_hash": "4bbbaed6dbc1a8219523d1bcd734171989693d2205428804302a90f7a5af47be",
+      "render_mode": "ground_decal_source",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "ground_fallen_leaves_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 0,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "ground_fallen_leaves.hex",
+          "source_hash": "9ee3c9b0ca1baf6a67a043e7650c7eab720b1b666ca886251b3452a21bc8c4aa"
+        }
+      ],
+      "source_hash": "9ee3c9b0ca1baf6a67a043e7650c7eab720b1b666ca886251b3452a21bc8c4aa",
+      "render_mode": "ground_decal_source",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "ground_crack_grass_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 0,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "ground_crack_grass.hex",
+          "source_hash": "fef48effd241c5d71ff9f7606dda45112e70ccdcd7a0ad1d519e3acc21fefa69"
+        }
+      ],
+      "source_hash": "fef48effd241c5d71ff9f7606dda45112e70ccdcd7a0ad1d519e3acc21fefa69",
+      "render_mode": "ground_decal_source",
+      "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "ground_rubble_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 0,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        40.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "ground_rubble.hex",
+          "source_hash": "bd1d1394dc20ff381e380ea7b373a4056c0d4cb988abc9809614bcad59b35423"
+        }
+      ],
+      "source_hash": "bd1d1394dc20ff381e380ea7b373a4056c0d4cb988abc9809614bcad59b35423",
+      "render_mode": "ground_decal_source",
+      "source_policy": "environment_wave1_v0_1_hex"
+    }
+  ],
   "notes": [
     "Color indices, transparent margin and artwork are unchanged from art v0.1.0.",
     "anchor_px uses image-boundary coordinates; (16,32) is intentional.",
@@ -984,6 +1334,10 @@
     "Fuse v0.2.0 neutral directions are baked into bank 0 at x=128/176 rows y=0/40/80/120, with source HEX files preserved.",
     "Jack eight-direction v0.2.0 sprites are baked into bank 0: front_left/idle at (0,0), front_right at (32,0), front at (0,32), left/back_left at (0/32,64), right/back_right at (0/32,96), back at (0,128).",
     "Normal urchin natural v0.3.0 idle sprite is baked into bank 0 at (64,160,64,64), with source HEX preserved as normal_urchin_idle_00.hex. This asset uses colkey 3; color index 0 is opaque black.",
-    "Abnormal urchin v0.4.0 composite sprite is baked into bank 0 at (0,160,64,64), with source HEX parts preserved as abnormal_urchin_*_00.hex."
+    "Abnormal urchin v0.4.0 composite sprite is baked into bank 0 at (0,160,64,64), with source HEX parts preserved as abnormal_urchin_*_00.hex.",
+    "Environment Wave1 v0.1 source HEX assets are loaded as source_assets, not baked into jack_sprite.pyxres.",
+    "Equipment and tree sprites use upright_height_billboard_v1. Water station width is adjusted to 36 world units to preserve the 96x128 pixel aspect at 48 world-unit height.",
+    "Reactive grass uses upright low-billboard assets with square world_size because Pyxel blt scale is uniform.",
+    "Nature ground detail assets use ground_decal_source_v1 and are projected onto the X/Z ground plane. Ground material tiles from the Wave1 ground pack are intentionally not connected yet."
   ]
 }

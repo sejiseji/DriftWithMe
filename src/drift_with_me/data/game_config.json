@@ -244,6 +244,18 @@
     "buddy_front_left_asset": "fuse_front_left_neutral_48",
     "normal_urchin_idle_asset": "normal_urchin_idle_64",
     "abnormal_urchin_idle_asset": "abnormal_urchin_inward_hands_64",
+    "water_station_working_asset": "water_station_active_96",
+    "water_station_stopped_asset": "water_station_stopped_96",
+    "solar_station_idle_asset": "solar_station_idle_96",
+    "solar_station_active_asset": "solar_station_active_96",
+    "tree_leafy_asset": "tree_leafy_a_96",
+    "tree_thin_asset": "tree_thin_b_96",
+    "reactive_grass_tall_asset": "reactive_grass_tall_64",
+    "reactive_grass_low_asset": "reactive_grass_low_64",
+    "ground_pebbles_asset": "ground_pebbles_64",
+    "ground_fallen_leaves_asset": "ground_fallen_leaves_64",
+    "ground_crack_grass_asset": "ground_crack_grass_64",
+    "ground_rubble_asset": "ground_rubble_64",
     "fallback_to_primitives": true
   },
   "ui": {

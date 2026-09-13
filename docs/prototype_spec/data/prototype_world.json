@@ -65,6 +65,10 @@
         192.0
       ],
       "visual": "tap_placeholder",
+      "sprite_world_size": [
+        36.0,
+        48.0
+      ],
       "supply": "working",
       "solid": false,
       "inspectable": true,
@@ -79,6 +83,10 @@
         128.0
       ],
       "visual": "solar_marker",
+      "sprite_world_size": [
+        36.0,
+        48.0
+      ],
       "supply": "daylight",
       "solid": false,
       "inspectable": true,
@@ -106,6 +114,10 @@
         256.0
       ],
       "visual": "tap_placeholder",
+      "sprite_world_size": [
+        36.0,
+        48.0
+      ],
       "supply": "stopped",
       "solid": false,
       "inspectable": true,
@@ -120,6 +132,10 @@
         256.0
       ],
       "visual": "tap_placeholder",
+      "sprite_world_size": [
+        36.0,
+        48.0
+      ],
       "supply": "working",
       "solid": false,
       "inspectable": true,
@@ -134,6 +150,10 @@
         256.0
       ],
       "visual": "solar_marker",
+      "sprite_world_size": [
+        36.0,
+        48.0
+      ],
       "supply": "daylight",
       "solid": false,
       "inspectable": true,
@@ -254,7 +274,7 @@
         0.0,
         576.0
       ],
-      "visual": "tree_placeholder",
+      "visual": "tree_leafy_a",
       "solid": true,
       "half_extents_xz": [
         8.0,
@@ -275,7 +295,7 @@
         0.0,
         608.0
       ],
-      "visual": "tree_placeholder",
+      "visual": "tree_thin_b",
       "solid": true,
       "half_extents_xz": [
         8.0,
@@ -296,7 +316,7 @@
         0.0,
         640.0
       ],
-      "visual": "tree_placeholder",
+      "visual": "tree_leafy_a",
       "solid": true,
       "half_extents_xz": [
         8.0,
@@ -317,7 +337,11 @@
         0.0,
         352.0
       ],
-      "visual": "grass_placeholder",
+      "visual": "reactive_grass_tall",
+      "sprite_world_size": [
+        24.0,
+        24.0
+      ],
       "solid": false,
       "animation": "idle_2_frames",
       "reaction_radius": 24.0
@@ -330,7 +354,11 @@
         0.0,
         368.0
       ],
-      "visual": "grass_placeholder",
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
       "solid": false,
       "animation": "idle_2_frames",
       "reaction_radius": 24.0

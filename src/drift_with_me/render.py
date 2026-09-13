@@ -180,7 +180,7 @@ class Renderer:
                     layer_bias=1,
                     stable_id=detail.id,
                     draw=lambda detail=detail: self.draw_ground_detail(
-                        detail, camera, model.world_tick
+                        model, detail, camera, model.world_tick
                     ),
                 )
             )
@@ -193,7 +193,7 @@ class Renderer:
                     depth=anchor.depth,
                     layer_bias=0,
                     stable_id=obj.id,
-                    draw=lambda obj=obj: self.draw_object(obj, camera),
+                    draw=lambda obj=obj: self.draw_object(model, obj, camera),
                 )
             )
         for enemy in model.enemies:
@@ -266,7 +266,9 @@ class Renderer:
         )
         return commands
 
-    def draw_object(self, obj: StaticObject, camera: CameraState) -> None:
+    def draw_object(self, model: GameModel, obj: StaticObject, camera: CameraState) -> None:
+        if self.draw_object_sprite(model, obj, camera):
+            return
         if obj.kind == "sprite_prop":
             self.draw_sprite_prop(obj, camera)
             return
@@ -304,8 +306,10 @@ class Renderer:
             pyxel.pset(x, y, 7)
 
     def draw_ground_detail(
-        self, detail: GroundDetail, camera: CameraState, world_tick: int
+        self, model: GameModel, detail: GroundDetail, camera: CameraState, world_tick: int
     ) -> None:
+        if self.draw_ground_detail_sprite(model, detail, camera):
+            return
         point = camera.project(Vec3(detail.x, 0.0, detail.z))
         if point is None:
             return
@@ -314,6 +318,105 @@ class Renderer:
         phase = (world_tick // 8 + detail.phase) % 2
         self.pyxel.pset(x, y, detail.color)
         self.pyxel.line(x - 1, y, x - 1 + phase, y - 3, detail.color)
+
+    def draw_object_sprite(self, model: GameModel, obj: StaticObject, camera: CameraState) -> bool:
+        asset = self.object_sprite_asset(model, obj)
+        if asset is None:
+            return False
+        placement = placement_for_upright_height_billboard(
+            camera,
+            asset.definition,
+            Vec3(obj.x, 0.0, obj.z),
+        )
+        if placement is None:
+            return False
+        draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
+        return True
+
+    def object_sprite_asset(self, model: GameModel, obj: StaticObject) -> LoadedSpriteAsset | None:
+        if obj.kind == "water_station":
+            key = (
+                "water_station_working_asset"
+                if obj.supply == "working"
+                else "water_station_stopped_asset"
+            )
+            return self.configured_sprite_asset(model, key)
+        if obj.kind == "solar_station":
+            active = (
+                model.interaction is not None
+                and model.interaction.kind == "energy_refill"
+                and model.interaction.object_id == obj.id
+            )
+            return self.configured_sprite_asset(
+                model,
+                "solar_station_active_asset" if active else "solar_station_idle_asset",
+            )
+        if obj.kind == "sprite_prop":
+            key = "tree_thin_asset" if obj.visual == "tree_thin_b" else "tree_leafy_asset"
+            return self.configured_sprite_asset(model, key)
+        if obj.kind == "reactive_prop":
+            key = (
+                "reactive_grass_low_asset"
+                if obj.visual == "reactive_grass_low"
+                else "reactive_grass_tall_asset"
+            )
+            return self.configured_sprite_asset(model, key)
+        return None
+
+    def draw_ground_detail_sprite(
+        self, model: GameModel, detail: GroundDetail, camera: CameraState
+    ) -> bool:
+        asset = self.ground_detail_sprite_asset(model, detail)
+        if asset is None or asset.definition.projection_mode != "ground_decal_source_v1":
+            return False
+        frame = asset.frame()
+        source = frame.source
+        if source is None:
+            return False
+        width_world, depth_world = asset.definition.world_size
+        anchor_x, anchor_y = asset.definition.anchor_px
+        origin_x = detail.x - anchor_x * width_world / source.width
+        origin_z = detail.z - anchor_y * depth_world / source.height
+        step_x = width_world / source.width
+        step_z = depth_world / source.height
+        draw_size = self.ground_decal_screen_pixel_size(camera, detail.x, detail.z, step_x, step_z)
+        colkey_char = format(asset.definition.colkey, "X")
+        for row_index, row in enumerate(source.rows):
+            world_z = origin_z + (row_index + 0.5) * step_z
+            for col_index, char in enumerate(row):
+                if char == colkey_char:
+                    continue
+                world_x = origin_x + (col_index + 0.5) * step_x
+                point = camera.project(Vec3(world_x, 0.0, world_z))
+                if point is None:
+                    continue
+                x = int(point.x)
+                y = int(point.y)
+                color = int(char, 16)
+                if draw_size <= 1:
+                    self.pyxel.pset(x, y, color)
+                else:
+                    self.pyxel.rect(x, y, draw_size, draw_size, color)
+        return True
+
+    def ground_decal_screen_pixel_size(
+        self, camera: CameraState, x: float, z: float, step_x: float, step_z: float
+    ) -> int:
+        center = camera.project(Vec3(x, 0.0, z))
+        right = camera.project(Vec3(x + step_x, 0.0, z))
+        forward = camera.project(Vec3(x, 0.0, z + step_z))
+        if center is None or right is None or forward is None:
+            return 1
+        size = max(
+            math.hypot(right.x - center.x, right.y - center.y),
+            math.hypot(forward.x - center.x, forward.y - center.y),
+        )
+        return max(1, min(3, int(round(size))))
+
+    def ground_detail_sprite_asset(
+        self, model: GameModel, detail: GroundDetail
+    ) -> LoadedSpriteAsset | None:
+        return self.configured_sprite_asset(model, f"{detail.visual}_asset")
 
     def draw_sprite_prop(self, obj: StaticObject, camera: CameraState) -> None:
         bounds = self.sprite_prop_bounds(obj, camera)
@@ -940,8 +1043,32 @@ class Renderer:
         bounds = self.object_screen_bounds(obj, camera)
         return bounds is not None and self.screen_rect_visible(bounds, camera, margin)
 
-    def object_screen_bounds(self, obj: StaticObject, camera: CameraState) -> ScreenRect | None:
+    def object_ground_pick_block_bounds(
+        self, obj: StaticObject, camera: CameraState
+    ) -> ScreenRect | None:
         if obj.kind == "sprite_prop":
+            return self.sprite_prop_bounds(obj, camera)
+        if obj.solid:
+            bounds = obj.height if obj.height > 0.0 else 24.0
+            return self.project_box_bounds(
+                camera, obj.x, obj.z, obj.half_x, obj.half_z, bounds, 0.0
+            )
+
+        visual = camera.project(Vec3(obj.x, max(16.0, obj.height + 14.0), obj.z))
+        root = camera.project(Vec3(obj.x, 0.0, obj.z))
+        points = [point for point in (root, visual) if point is not None]
+        if not points:
+            return None
+        min_x = int(min(point.x for point in points) - 8)
+        max_x = int(max(point.x for point in points) + 8)
+        min_y = int(min(point.y for point in points) - 16)
+        max_y = int(max(point.y for point in points) + 4)
+        return ScreenRect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
+
+    def object_screen_bounds(self, obj: StaticObject, camera: CameraState) -> ScreenRect | None:
+        if obj.kind == "sprite_prop" or (
+            obj.sprite_world_width > 0.0 and obj.sprite_world_height > 0.0
+        ):
             return self.sprite_prop_bounds(obj, camera)
         if obj.solid:
             bounds = obj.height if obj.height > 0.0 else 24.0

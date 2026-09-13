@@ -59,6 +59,7 @@ class GroundDetail:
     chunk_id: tuple[int, int]
     x: float
     z: float
+    visual: str
     phase: int
     color: int
 
@@ -348,6 +349,12 @@ class WorldData:
 
     def _build_ground_details(self) -> tuple[GroundDetail, ...]:
         details: list[GroundDetail] = []
+        visuals = (
+            "ground_pebbles",
+            "ground_fallen_leaves",
+            "ground_crack_grass",
+            "ground_rubble",
+        )
         for cx, cz in self.chunk_ids:
             for index in range(self.visual_detail_per_chunk):
                 seed = stable_u32(cx, cz, index)
@@ -359,6 +366,7 @@ class WorldData:
                         chunk_id=(cx, cz),
                         x=min(self.width - 1.0, cx * self.chunk_size + x_offset),
                         z=min(self.depth - 1.0, cz * self.chunk_size + z_offset),
+                        visual=visuals[seed % len(visuals)],
                         phase=seed % 4,
                         color=11 if seed & 1 else 3,
                     )
