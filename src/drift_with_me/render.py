@@ -61,6 +61,17 @@ class RenderStats:
 
 
 class Renderer:
+    SPIN_DIRECTION_VIEWS = (
+        "right",
+        "front_right",
+        "front",
+        "front_left",
+        "left",
+        "back_left",
+        "back",
+        "back_right",
+    )
+
     def __init__(self, pyxel_module, sprite_assets: SpriteAssetLibrary | None = None) -> None:
         self.pyxel = pyxel_module
         self.sprite_assets = sprite_assets or SpriteAssetLibrary.empty()
@@ -404,7 +415,7 @@ class Renderer:
         self.pyxel.pset(x, y, 7)
 
     def draw_player(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:
-        hover = self.player_visual_hover(model, presentation_time)
+        hover = self.player_visual_y_offset(model, presentation_time)
         shadow = camera.project(Vec3(model.player.x, 0.0, model.player.z))
         if shadow is not None:
             radius = max(3, int(1200 / max(shadow.depth, 1.0)))
@@ -420,6 +431,11 @@ class Renderer:
         half = model.player_cube_size / 2.0
         self.draw_box(
             camera, model.player.x, model.player.z, half, half, model.player_cube_size, hover, 11
+        )
+
+    def player_visual_y_offset(self, model: GameModel, presentation_time: float) -> float:
+        return self.player_visual_hover(model, presentation_time) + self.interaction_actor_jump(
+            model, "water_refill"
         )
 
     def player_visual_hover(self, model: GameModel, presentation_time: float) -> float:
@@ -455,6 +471,10 @@ class Renderer:
         return asset, using_idle_fallback and self.player_sprite_flip_x(model, camera)
 
     def player_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        spin_view = self.interaction_spin_view_name(model, "water_refill")
+        if spin_view is not None:
+            self.player_sprite_view_name = spin_view
+            return spin_view
         if model.player.moved_distance <= 1e-6:
             self.player_sprite_view_name = "idle"
             return self.player_sprite_view_name
@@ -484,6 +504,10 @@ class Renderer:
         return asset
 
     def buddy_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        spin_view = self.interaction_spin_view_name(model, "energy_refill")
+        if spin_view is not None:
+            self.buddy_sprite_view_name = spin_view
+            return spin_view
         delta = self.player_screen_move_delta(model, camera)
         if delta is None:
             return self.buddy_sprite_view_name
@@ -498,16 +522,23 @@ class Renderer:
             return None
         angle = math.atan2(screen_dy, screen_dx)
         sector = int(math.floor((angle + math.pi / 8.0) / (math.pi / 4.0))) % 8
-        return (
-            "right",
-            "front_right",
-            "front",
-            "front_left",
-            "left",
-            "back_left",
-            "back",
-            "back_right",
-        )[sector]
+        return self.SPIN_DIRECTION_VIEWS[sector]
+
+    def interaction_spin_view_name(self, model: GameModel, interaction_kind: str) -> str | None:
+        interaction = model.interaction
+        if interaction is None or interaction.kind != interaction_kind:
+            return None
+        direction_count = max(1, int(model.config["interaction"].get("actor_spin_directions", 8)))
+        progress = max(0.0, min(interaction.progress, 0.999999))
+        index = int(progress * direction_count) % len(self.SPIN_DIRECTION_VIEWS)
+        return self.SPIN_DIRECTION_VIEWS[index]
+
+    def interaction_actor_jump(self, model: GameModel, interaction_kind: str) -> float:
+        interaction = model.interaction
+        if interaction is None or interaction.kind != interaction_kind:
+            return 0.0
+        height = float(model.config["interaction"].get("actor_jump_height", 0.0))
+        return math.sin(max(0.0, min(interaction.progress, 1.0)) * math.pi) * height
 
     def configured_sprite_asset(
         self, model: GameModel, config_key: str
@@ -529,7 +560,7 @@ class Renderer:
         asset, flip_x = selection
         anchor = Vec3(
             model.player.x,
-            self.player_visual_hover(model, presentation_time),
+            self.player_visual_y_offset(model, presentation_time),
             model.player.z,
         )
         return placement_for_upright_height_billboard(
@@ -575,6 +606,7 @@ class Renderer:
                 0,
             )
         bob = math.sin(presentation_time * math.tau / 1.3) * 2.0
+        bob += self.interaction_actor_jump(model, "energy_refill")
         if self.draw_buddy_sprite(model, camera, bob):
             return
         half = model.buddy_cube_size / 2.0

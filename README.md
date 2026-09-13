@@ -8,9 +8,10 @@ urchin sprites, side-facing behind-Jack repositioning, and primitive fallback,
 fixed-step movement, obstacle sliding, pointer ownership for drag-vs-hold, a
 start screen, five explicit SE preview hooks,
 basic depth-sorted world drawing, camera demos for overview/focus/pan, slow
-normal urchins, water barrier repel, contact knockback, and water/energy refill
-interactions. The action button now fires a bubble at an abnormal urchin and,
-after capture, uses buddy energy for manual discharge. Short investigation
+normal urchins, water barrier repel, contact knockback, and water/energy
+refill interactions with focus zoom and actor spin-jumps. The action button now
+fires a bubble at an abnormal urchin and, after capture, uses buddy energy for
+manual discharge. Short investigation
 chips now freeze the world, record read object IDs, and feed a separate
 effect layer for small particles, actor marks, focus cues, and grass reactions.
 Static rendering now uses visual chunk candidates, one-per-chunk deterministic

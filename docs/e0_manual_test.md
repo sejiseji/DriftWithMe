@@ -21,24 +21,25 @@ python main.py
 8. Let a normal urchin reach barrier range and confirm ACTION changes to GUARD.
 9. Hold GUARD and confirm the barrier appears, WATER decreases, and the normal urchin is pushed away once.
 10. Approach a normal urchin without the barrier and confirm Jack is knocked back, not damaged.
-11. Stand near a working tap and press E or REFILL; confirm the compact chip freezes the world and WATER returns to 100 only at completion.
+11. Stand near a working tap and press E or REFILL; confirm the compact chip freezes the world, the focus camera moves closer, Jack spins once while jumping, and WATER returns to 100 only at completion.
 12. Start a refill and press ESC before completion; confirm the refill is cancelled and the resource value is unchanged.
-13. Check the stopped tap and confirm it opens a short investigation chip but does not refill water.
-14. Press Enter or DONE during an investigation chip and confirm the chip closes without moving Jack.
-15. Press F1 and confirm the debug inspect count increments only for first reads.
-16. Move near the abnormal urchin and confirm it shows windup, fixed-direction dash, then recover.
-17. Press X or BUBBLE near the abnormal urchin and confirm WATER decreases by 12 and a bubble travels.
-18. Confirm a bubble hit produces the capture ring and does not automatically discharge.
-19. Press X or ZAP again and confirm ENERGY decreases by 20, the abnormal urchin disappears, and the discharge SE is used once.
-20. Confirm pressing ACTION with no abnormal target, low water, or low energy gives denied feedback without spending the resource.
-21. Walk through grass placeholders and confirm small particles appear without changing movement.
-22. Press M and confirm sound toggles.
-23. Press F1 to show debug HUD.
-24. Press F and confirm the camera focuses the nearest inspectable object, then returns.
-25. Press P and confirm the pan_demo visits the maintenance unit and observation post.
-26. Walk into the north overview zone around X/Z 640-896 and confirm yaw/zoom blend smoothly.
-27. Press F1 and confirm `vis`, `chunks`, and `active` counters change smoothly while walking.
-28. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
+13. Stand near a solar station and press E or CHARGE; confirm Fuse spins once while jumping and ENERGY returns to 60 only at completion.
+14. Check the stopped tap and confirm it opens a short investigation chip but does not refill water.
+15. Press Enter or DONE during an investigation chip and confirm the chip closes without moving Jack.
+16. Press F1 and confirm the debug inspect count increments only for first reads.
+17. Move near the abnormal urchin and confirm it shows windup, fixed-direction dash, then recover.
+18. Press X or BUBBLE near the abnormal urchin and confirm WATER decreases by 12 and a bubble travels.
+19. Confirm a bubble hit produces the capture ring and does not automatically discharge.
+20. Press X or ZAP again and confirm ENERGY decreases by 20, the abnormal urchin disappears, and the discharge SE is used once.
+21. Confirm pressing ACTION with no abnormal target, low water, or low energy gives denied feedback without spending the resource.
+22. Walk through grass placeholders and confirm small particles appear without changing movement.
+23. Press M and confirm sound toggles.
+24. Press F1 to show debug HUD.
+25. Press F and confirm the camera focuses the nearest inspectable object, then returns.
+26. Press P and confirm the pan_demo visits the maintenance unit and observation post.
+27. Walk into the north overview zone around X/Z 640-896 and confirm yaw/zoom blend smoothly.
+28. Press F1 and confirm `vis`, `chunks`, and `active` counters change smoothly while walking.
+29. Press ESC, then R to reset, Enter/ESC to resume, Q to quit.
 
 ## Web Local
 
@@ -79,7 +80,7 @@ Expected checks:
 - Touch drag, long hold, UI capture, and rotation/cancel behavior.
 - Actual audible output after a user start action.
 - Buddy readability, overview blend, focus demo, pan_demo, and tree occlusion outline.
-- Normal urchin readability, barrier repel timing, WATER/ENERGY HUD readability, and refill/cancel behavior.
+- Normal urchin readability, barrier repel timing, WATER/ENERGY HUD readability, refill/charge spin-jump, and refill/cancel behavior.
 - Abnormal urchin windup/dash readability, bubble targeting, capture ring, and separate ZAP tap behavior.
 - Investigation text readability, DONE tap behavior, first-read debug count, and small effect readability.
 - Culling counter readability and actual frame feel with normal and overview camera movement.

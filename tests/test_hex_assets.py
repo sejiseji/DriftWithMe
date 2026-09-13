@@ -22,7 +22,7 @@ from drift_with_me.hex_assets import (
     source_hash_for_pixels,
 )
 from drift_with_me.math3d import CameraState, Vec3, screen_to_world_direction
-from drift_with_me.model import GameModel
+from drift_with_me.model import GameModel, InteractionState
 from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
 
@@ -742,3 +742,83 @@ def test_renderer_selects_buddy_direction_assets_for_screen_movement(tmp_path: P
         asset = renderer.buddy_sprite_asset(model, camera)
         assert asset is not None
         assert asset.definition.asset_id == f"fuse_{expected}_neutral_48"
+
+
+def test_renderer_spins_and_jumps_jack_during_water_refill(tmp_path: Path) -> None:
+    import pyxel
+
+    assets = [
+        valid_asset(f"jack_{direction}_32", f"{direction}.hex")
+        for direction in JACK_DIRECTION_HASHES
+    ]
+    manifest_path = write_manifest_assets(tmp_path, assets)
+    library = load_sprite_manifest_path(pyxel, manifest_path)
+    runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = True
+    raw["assets"]["player_idle_asset"] = "jack_front_left_32"
+    for direction in JACK_DIRECTION_HASHES:
+        raw["assets"][f"player_{direction}_asset"] = f"jack_{direction}_32"
+    model = GameModel(raw, load_world_data())
+    model.interaction = InteractionState(
+        kind="water_refill",
+        object_id="tap_start",
+        title="WATER REFILL",
+        lines=(),
+        duration_sec=1.0,
+        elapsed_sec=0.5,
+    )
+    camera = CameraState.from_config(
+        raw,
+        Vec3(model.player.x, 0.0, model.player.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    renderer = Renderer(RecordingPyxel(), library)
+
+    asset = renderer.player_sprite_asset(model, camera)
+    assert asset is not None
+    assert asset.definition.asset_id == "jack_left_32"
+    assert renderer.player_visual_y_offset(model, 0.0) == pytest.approx(
+        renderer.player_visual_hover(model, 0.0) + 12.0
+    )
+
+
+def test_renderer_spins_and_jumps_buddy_during_energy_refill(tmp_path: Path) -> None:
+    import pyxel
+
+    assets = [
+        valid_asset(f"fuse_{direction}_neutral_48", f"{direction}.hex")
+        for direction in FUSE_DIRECTION_HASHES
+    ]
+    manifest_path = write_manifest_assets(tmp_path, assets)
+    library = load_sprite_manifest_path(pyxel, manifest_path)
+    runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = True
+    raw["assets"]["buddy_idle_asset"] = "fuse_front_right_neutral_48"
+    for direction in FUSE_DIRECTION_HASHES:
+        raw["assets"][f"buddy_{direction}_asset"] = f"fuse_{direction}_neutral_48"
+    model = GameModel(raw, load_world_data())
+    model.interaction = InteractionState(
+        kind="energy_refill",
+        object_id="solar_start",
+        title="ENERGY CHARGE",
+        lines=(),
+        duration_sec=1.0,
+        elapsed_sec=0.25,
+    )
+    camera = CameraState.from_config(
+        raw,
+        Vec3(model.player.x, 0.0, model.player.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    renderer = Renderer(RecordingPyxel(), library)
+
+    asset = renderer.buddy_sprite_asset(model, camera)
+    assert asset is not None
+    assert asset.definition.asset_id == "fuse_front_neutral_48"
+    assert renderer.interaction_actor_jump(model, "energy_refill") == pytest.approx(
+        12.0 * 2**0.5 / 2.0
+    )
