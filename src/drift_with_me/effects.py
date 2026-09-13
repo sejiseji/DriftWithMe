@@ -97,6 +97,44 @@ class ScreenCue:
         return max(0.0, min(self.age / self.lifetime, 1.0))
 
 
+@dataclass
+class CameraImpulse:
+    cue_id: str
+    lifetime: float
+    delay: float = 0.0
+    age: float = 0.0
+    shake_amplitude_px: float = 0.0
+    shake_duration: float = 0.0
+    zoom_peak: float = 0.0
+    zoom_attack: float = 0.0
+    zoom_hold: float = 0.0
+    zoom_return: float = 0.0
+
+    @property
+    def local_age(self) -> float:
+        return self.age - self.delay
+
+    @property
+    def active(self) -> bool:
+        return self.local_age >= 0.0 and self.age < self.delay + self.lifetime
+
+    def zoom_envelope(self, age: float) -> float:
+        return _zoom_envelope(age, self.zoom_attack, self.zoom_hold, self.zoom_return)
+
+    def shake_amount(self, age: float) -> float:
+        return _shake_amount(age, self.shake_amplitude_px, self.shake_duration)
+
+    def shake_offset(self, age: float, amount: float) -> tuple[float, float]:
+        return _shake_offset(age, amount)
+
+
+@dataclass(frozen=True)
+class CameraPresentationTransform:
+    offset_x: float = 0.0
+    offset_y: float = 0.0
+    zoom_multiplier: float = 1.0
+
+
 def presentation_cue_for_event(event: GameEvent) -> str | None:
     if event.kind == "resource_refilled":
         resource = event.payload.get("resource")
@@ -124,13 +162,19 @@ class EffectSystem:
         self.max_screen_effects = int(effects["max_screen_effects"])
         self.max_particles_per_event = int(effects["max_particles_per_event"])
         self.concentration_line_count = int(effects["concentration_line_count"])
+        self.shake_enabled = bool(effects.get("shake_enabled", False))
+        self.combat_camera_pulse_enabled = bool(effects.get("combat_camera_pulse_enabled", False))
+        self.camera_offset_cap_px = float(effects.get("camera_offset_cap_px", 2.0))
+        self.camera_reactions = effects.get("camera_reactions", {})
         self.particles: list[WorldParticle] = []
         self.rings: list[WorldRing] = []
         self.strokes: list[WorldStroke] = []
         self.emotes: list[ActorEmote] = []
         self.screen_cues: list[ScreenCue] = []
+        self.camera_impulses: list[CameraImpulse] = []
         self._grass_cooldowns: dict[str, float] = {}
         self._processed_cues: set[tuple[int, str]] = set()
+        self._processed_camera_cues: set[tuple[int, str]] = set()
 
     def reset(self) -> None:
         self.particles.clear()
@@ -138,10 +182,18 @@ class EffectSystem:
         self.strokes.clear()
         self.emotes.clear()
         self.screen_cues.clear()
+        self.camera_impulses.clear()
         self._grass_cooldowns.clear()
         self._processed_cues.clear()
+        self._processed_camera_cues.clear()
 
-    def process_events(self, events: list[GameEvent], model) -> None:
+    def process_events(
+        self,
+        events: list[GameEvent],
+        model,
+        camera_reaction_delay: float = 0.0,
+        camera_reactions_allowed: bool = True,
+    ) -> None:
         for event in events:
             x, y, z = event.world_position
             cue_id = presentation_cue_for_event(event)
@@ -151,6 +203,8 @@ class EffectSystem:
                     continue
                 self._processed_cues.add(key)
                 self.process_presentation_cue(cue_id, event, model)
+                if camera_reactions_allowed:
+                    self.process_camera_cue(cue_id, event, camera_reaction_delay)
             elif event.kind == "bubble_fired":
                 self.spawn_burst(x, y, z, color=12, count=5, speed=16.0)
             elif event.kind == "action_denied":
@@ -205,6 +259,45 @@ class EffectSystem:
             if math.hypot(dx, dz) > 1e-6:
                 self.add_stroke(x, 1.0, z, x + dx * 28.0, 1.0, z + dz * 28.0, 8, 0.35)
 
+    def process_camera_cue(
+        self, cue_id: str, event: GameEvent, camera_reaction_delay: float
+    ) -> None:
+        key = (event.event_id, cue_id)
+        if key in self._processed_camera_cues:
+            return
+        reaction = self.camera_reactions.get(cue_id)
+        if not isinstance(reaction, dict):
+            return
+        shake_amplitude = (
+            float(reaction.get("shake_amplitude_px", 0.0)) if self.shake_enabled else 0.0
+        )
+        zoom_peak = (
+            float(reaction.get("zoom_peak", 0.0)) if self.combat_camera_pulse_enabled else 0.0
+        )
+        if shake_amplitude <= 0.0 and zoom_peak <= 0.0:
+            return
+        self._processed_camera_cues.add(key)
+        shake_duration = max(0.0, float(reaction.get("shake_duration_ms", 0.0)) / 1000.0)
+        zoom_attack = max(0.0, float(reaction.get("zoom_attack_ms", 0.0)) / 1000.0)
+        zoom_hold = max(0.0, float(reaction.get("zoom_hold_ms", 0.0)) / 1000.0)
+        zoom_return = max(0.0, float(reaction.get("zoom_return_ms", 0.0)) / 1000.0)
+        lifetime = max(shake_duration, zoom_attack + zoom_hold + zoom_return)
+        if lifetime <= 0.0:
+            return
+        self.add_camera_impulse(
+            CameraImpulse(
+                cue_id=cue_id,
+                lifetime=lifetime,
+                delay=max(0.0, camera_reaction_delay),
+                shake_amplitude_px=shake_amplitude,
+                shake_duration=shake_duration,
+                zoom_peak=zoom_peak,
+                zoom_attack=zoom_attack,
+                zoom_hold=zoom_hold,
+                zoom_return=zoom_return,
+            )
+        )
+
     def update(self, dt: float, model) -> None:
         dt = max(0.0, dt)
         for particle in self.particles:
@@ -232,6 +325,14 @@ class EffectSystem:
         for cue in self.screen_cues:
             cue.age += dt
         self.screen_cues = [cue for cue in self.screen_cues if cue.age < cue.lifetime]
+
+        for impulse in self.camera_impulses:
+            impulse.age += dt
+        self.camera_impulses = [
+            impulse
+            for impulse in self.camera_impulses
+            if impulse.age < impulse.delay + impulse.lifetime
+        ]
 
         for object_id in tuple(self._grass_cooldowns):
             self._grass_cooldowns[object_id] = max(0.0, self._grass_cooldowns[object_id] - dt)
@@ -374,3 +475,67 @@ class EffectSystem:
         if len(self.screen_cues) >= self.max_screen_effects:
             self.screen_cues.pop(0)
         self.screen_cues.append(ScreenCue(kind, lifetime))
+
+    def add_camera_impulse(self, impulse: CameraImpulse) -> None:
+        self.camera_impulses = [
+            item for item in self.camera_impulses if item.cue_id != impulse.cue_id
+        ]
+        self.camera_impulses.append(impulse)
+
+    def camera_transform(
+        self, viewport_width: int, viewport_height: int
+    ) -> CameraPresentationTransform:
+        offset_x = 0.0
+        offset_y = 0.0
+        strongest_shake = 0.0
+        zoom_multiplier = 1.0
+        scale = viewport_height / 236.0
+        offset_cap = self.camera_offset_cap_px * scale
+        for impulse in self.camera_impulses:
+            if not impulse.active:
+                continue
+            local_age = impulse.local_age
+            shake_amount = impulse.shake_amount(local_age) * scale
+            if shake_amount > strongest_shake:
+                strongest_shake = shake_amount
+                offset_x, offset_y = impulse.shake_offset(local_age, shake_amount)
+            zoom_multiplier = max(
+                zoom_multiplier, 1.0 + impulse.zoom_peak * impulse.zoom_envelope(local_age)
+            )
+        if offset_cap > 0.0:
+            offset_x = max(-offset_cap, min(offset_x, offset_cap))
+            offset_y = max(-offset_cap, min(offset_y, offset_cap))
+        return CameraPresentationTransform(offset_x, offset_y, zoom_multiplier)
+
+
+def _smoothstep(amount: float) -> float:
+    amount = max(0.0, min(amount, 1.0))
+    return amount * amount * (3.0 - 2.0 * amount)
+
+
+def _zoom_envelope(age: float, attack: float, hold: float, return_: float) -> float:
+    if age < 0.0:
+        return 0.0
+    if attack > 1e-6 and age < attack:
+        return _smoothstep(age / attack)
+    age -= attack
+    if age < hold:
+        return 1.0
+    age -= hold
+    if return_ <= 1e-6:
+        return 0.0
+    return 1.0 - _smoothstep(age / return_)
+
+
+def _shake_amount(age: float, amplitude: float, duration: float) -> float:
+    if age < 0.0 or duration <= 1e-6 or age >= duration:
+        return 0.0
+    return max(0.0, amplitude * (1.0 - age / duration))
+
+
+def _shake_offset(age: float, amount: float) -> tuple[float, float]:
+    if amount <= 0.0:
+        return 0.0, 0.0
+    x = math.sin(age * math.tau * 37.0) * amount
+    y = math.sin(age * math.tau * 53.0 + math.tau * 0.25) * amount * 0.55
+    return x, y

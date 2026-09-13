@@ -6,7 +6,8 @@
 - Baseline HEAD before implementation: `7404dd4`
 - Implemented the first low-risk cue connection pass.
 - Hitstop control is present for comparison, but remains disabled by default.
-- Combat camera pulse, new FX sprites, new SE shapes, and gameplay balance changes remain unimplemented.
+- Combat camera reactions are present for comparison, but remain disabled by default.
+- New FX sprites, new SE shapes, and gameplay balance changes remain unimplemented.
 
 ## Cue Mapping
 
@@ -64,6 +65,37 @@ During hitstop:
 
 This is a comparison mechanism, not a default gameplay change.
 
+## Combat Camera Reactions
+
+`EffectSystem` can now create short camera impulses from presentation cues when the related flags are enabled.
+
+Default runtime config keeps both controls disabled:
+
+```json
+"shake_enabled": false,
+"combat_camera_pulse_enabled": false
+```
+
+Configured comparison values:
+
+|Cue|Shake|Zoom|
+|---|---:|---:|
+|`DWF_GUARD_REPEL`|1.0px for 90ms|none|
+|`DWF_ZAP_HIT`|1.5px for 100ms|peak +4%, 40ms attack / 30ms hold / 170ms return|
+
+The offset is scaled from the 512x236 reference viewport and capped at `camera_offset_cap_px`.
+Multiple active reactions are not added into a larger shake; the strongest offset and highest zoom multiplier are used.
+
+These reactions are draw-camera only:
+
+- model/input camera state is unchanged
+- HUD and touch coordinates are unchanged
+- yaw and pitch are unchanged
+- FOCUS, event pan, and base camera blends suppress combat reactions instead of replaying them later
+- when hitstop is active, camera reaction start can be delayed until the stop releases
+
+This is a comparison mechanism, not a default gameplay change.
+
 ## Abnormal Windup Event
 
 `start_abnormal_windup()` now emits `abnormal_windup_started` after the dash direction is fixed.
@@ -77,7 +109,6 @@ The direction calculation, windup duration, dash transition, enemy AI, and exist
 
 ## Explicitly Not Implemented
 
-- non-modal combat camera pulse or render-offset shake
 - new pyxres/HEX FX sprite assets
 - new audio events for refill, charge, or abnormal windup
 - full-screen flashes
@@ -93,4 +124,6 @@ Automated tests cover:
 - abnormal windup event emission after dash direction fixation
 - hitstop disabled-by-default behavior
 - hitstop max-duration merge, event deduplication, and model-clock freeze
+- combat camera reaction disabled-by-default behavior
+- delayed shake / pulse transform and FOCUS suppression
 - existing combat resource behavior

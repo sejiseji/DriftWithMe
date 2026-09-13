@@ -244,6 +244,22 @@
       "enemy_captured": 33.3333333333,
       "discharge_succeeded": 50.0
     },
+    "combat_camera_pulse_enabled": false,
+    "camera_offset_cap_px": 2.0,
+    "camera_reactions": {
+      "DWF_GUARD_REPEL": {
+        "shake_amplitude_px": 1.0,
+        "shake_duration_ms": 90.0
+      },
+      "DWF_ZAP_HIT": {
+        "shake_amplitude_px": 1.5,
+        "shake_duration_ms": 100.0,
+        "zoom_peak": 0.04,
+        "zoom_attack_ms": 40.0,
+        "zoom_hold_ms": 30.0,
+        "zoom_return_ms": 170.0
+      }
+    },
     "flash_enabled": false,
     "shake_enabled": false
   },

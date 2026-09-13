@@ -357,8 +357,13 @@ class DriftWithMeApp:
                         )
                     else:
                         self.camera_controller.start_focus_demo(target, hold_sec=hold_sec)
-        self.request_hitstop_from_events(events)
-        self.effects.process_events(events, self.model)
+        camera_reaction_delay = self.request_hitstop_from_events(events)
+        self.effects.process_events(
+            events,
+            self.model,
+            camera_reaction_delay=camera_reaction_delay,
+            camera_reactions_allowed=self.combat_camera_reactions_allowed(),
+        )
         self.audio.play_events(events)
 
     def update_hitstop(self, elapsed: float, intent: InputIntent) -> bool:
@@ -372,10 +377,10 @@ class DriftWithMeApp:
         self.effects.update(elapsed, self.model)
         return True
 
-    def request_hitstop_from_events(self, events) -> None:
+    def request_hitstop_from_events(self, events) -> float:
         effects_config = self.runtime.raw["effects"]
         if not bool(effects_config.get("hitstop_enabled", False)):
-            return
+            return 0.0
         event_durations = effects_config.get("hitstop_event_ms", {})
         cap_sec = float(effects_config.get("hitstop_hard_cap_ms", 66.6666666667)) / 1000.0
         requested = 0.0
@@ -390,6 +395,8 @@ class DriftWithMeApp:
         if requested > 0.0:
             self.hitstop_remaining = max(self.hitstop_remaining, requested)
             self.accumulator = 0.0
+            return self.hitstop_remaining
+        return 0.0
 
     def player_focus_point(self) -> Vec3:
         return Vec3(
@@ -403,6 +410,12 @@ class DriftWithMeApp:
             self.model.buddy.x,
             max(0.0, self.model.buddy.y - self.model.buddy_cube_size),
             self.model.buddy.z,
+        )
+
+    def combat_camera_reactions_allowed(self) -> bool:
+        return (
+            self.camera_controller.mode_name in {"FOLLOW", "OVERVIEW"}
+            and self.camera_controller.base_blend is None
         )
 
     def handle_debug_camera_shortcuts(self) -> None:
@@ -647,12 +660,44 @@ class DriftWithMeApp:
 
     def draw_play(self) -> None:
         assert self.renderer is not None
+        render_camera = self.presentation_camera(self.camera())
         self.renderer.draw_scene(
-            self.model, self.camera(), self.presentation_time, self.debug_enabled, self.effects
+            self.model, render_camera, self.presentation_time, self.debug_enabled, self.effects
         )
         self.draw_hud()
         if self.model.interaction is not None:
             self.draw_interaction_chip()
+
+    def presentation_camera(self, camera: CameraState) -> CameraState:
+        if not self.combat_camera_reactions_allowed():
+            return camera
+        transform = self.effects.camera_transform(camera.viewport_width, camera.viewport_height)
+        if (
+            abs(transform.offset_x) <= 1e-6
+            and abs(transform.offset_y) <= 1e-6
+            and abs(transform.zoom_multiplier - 1.0) <= 1e-6
+        ):
+            return camera
+        camera_config = self.runtime.raw["camera"]
+        base_distance = float(camera_config["base_distance"])
+        current_zoom = base_distance / camera.distance
+        target_zoom = min(
+            float(camera_config["zoom_max"]),
+            max(float(camera_config["zoom_min"]), current_zoom * transform.zoom_multiplier),
+        )
+        return CameraState(
+            target=camera.target,
+            yaw_deg=camera.yaw_deg,
+            pitch_deg=camera.pitch_deg,
+            horizontal_fov_deg=camera.horizontal_fov_deg,
+            distance=base_distance / target_zoom,
+            near=camera.near,
+            far=camera.far,
+            anchor_x=camera.anchor_x + transform.offset_x / camera.viewport_width,
+            anchor_y=camera.anchor_y + transform.offset_y / camera.viewport_height,
+            viewport_width=camera.viewport_width,
+            viewport_height=camera.viewport_height,
+        )
 
     def draw_pause(self) -> None:
         pyxel = self.pyxel
