@@ -628,7 +628,48 @@ class DriftWithMeApp:
         ):
             self.reject_auto_move_goal("auto_move_blocked")
             return InputIntent()
+        if self.foreground_object_blocks_ground_pick(
+            request.camera, request.screen_x, request.screen_y, point.x, point.y
+        ):
+            self.reject_auto_move_goal("auto_move_blocked")
+            return InputIntent()
         return InputIntent(auto_move_goal_x=point.x, auto_move_goal_z=point.y)
+
+    def foreground_object_blocks_ground_pick(
+        self,
+        camera: CameraState,
+        screen_x: float,
+        screen_y: float,
+        ground_x: float,
+        ground_z: float,
+    ) -> bool:
+        auto_move = self.runtime.raw.get("auto_move", {})
+        if not bool(auto_move.get("foreground_pick_block_enabled", True)):
+            return False
+        renderer = self.renderer
+        if renderer is None:
+            return False
+        ground_projection = camera.project(Vec3(ground_x, 0.0, ground_z))
+        if ground_projection is None:
+            return False
+        margin = self.foreground_pick_margin_px()
+        for obj in self.world.objects:
+            if not (obj.solid or obj.occludes_player or obj.inspectable):
+                continue
+            obj_projection = camera.project(Vec3(obj.x, 0.0, obj.z))
+            if obj_projection is None or obj_projection.depth > ground_projection.depth + 1e-6:
+                continue
+            bounds = renderer.object_screen_bounds(obj, camera)
+            if bounds is not None and bounds.contains(screen_x, screen_y, margin):
+                return True
+        return False
+
+    def foreground_pick_margin_px(self) -> float:
+        auto_move = self.runtime.raw.get("auto_move", {})
+        ui_scale = self.runtime.screen_height / float(
+            self.runtime.raw["display"]["reference_ui_height"]
+        )
+        return float(auto_move.get("foreground_pick_margin_ref_px", 2.0)) * ui_scale
 
     def reject_auto_move_goal(self, reason: str) -> None:
         self.last_denied_reason = reason

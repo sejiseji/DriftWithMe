@@ -47,6 +47,12 @@ class ScreenRect:
             and self.max_y > other.y
         )
 
+    def contains(self, px: float, py: float, margin: float = 0.0) -> bool:
+        return (
+            self.x - margin <= px <= self.max_x + margin
+            and self.y - margin <= py <= self.max_y + margin
+        )
+
 
 @dataclass(frozen=True)
 class RenderStats:

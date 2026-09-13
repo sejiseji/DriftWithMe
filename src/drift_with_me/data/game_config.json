@@ -96,6 +96,8 @@
     "short_tap_sec": 0.18,
     "max_interval_sec": 0.3,
     "max_distance_ref_px": 20.0,
+    "foreground_pick_block_enabled": true,
+    "foreground_pick_margin_ref_px": 2.0,
     "arrival_radius_world": 2.0,
     "waypoint_radius_world": 4.0,
     "stuck_sec": 0.5,
