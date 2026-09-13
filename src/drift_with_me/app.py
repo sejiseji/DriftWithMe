@@ -1640,18 +1640,22 @@ class DriftWithMeApp:
         return self.ui_renderer.resources.reason(reason)
 
     def draw_ui_text(self, pyxel, x: int, y: int, text: str, color: int, style_name: str) -> None:
-        y = self.ui_text_language_y(y, text)
+        y = self.ui_text_language_y(y, text, style_name)
         self.ui_renderer.draw(pyxel, x, y, text, color, style_name)
 
     def draw_ui_text_center(self, x: int, y: int, text: str, color: int, style_name: str) -> None:
-        y = self.ui_text_language_y(y, text)
+        y = self.ui_text_language_y(y, text, style_name)
         self.ui_renderer.draw_centered(self.pyxel, x, y, text, color, style_name)
 
     def fit_ui_text_to_width(self, text: str, max_width: int, style_name: str) -> str:
         return self.ui_renderer.fit_text(text, max_width, style_name)
 
-    def ui_text_language_y(self, y: int, text: str) -> int:
-        return y - 5 if self.ui_text_has_japanese(text) else y
+    def ui_text_language_y(self, y: int, text: str, style_name: str = "") -> int:
+        if not self.ui_text_has_japanese(text):
+            return y
+        if style_name == "resource":
+            return y - 10
+        return y - 8
 
     @staticmethod
     def ui_text_has_japanese(text: str) -> bool:
