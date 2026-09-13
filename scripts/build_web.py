@@ -313,6 +313,7 @@ def write_host_assets(output_dir: Path) -> None:
 def write_html(root: Path, pyxapp: Path, output: Path) -> None:
     base64_string = base64.b64encode(pyxapp.read_bytes()).decode("ascii")
     pyxapp_name = json.dumps(cache_busted_name(pyxapp), ensure_ascii=True)
+    css_version = hashlib.sha256(HOST_CSS.encode("utf-8")).hexdigest()[:WEB_HASH_LENGTH]
     screen_width, screen_height = default_screen_size(root)
     logical_size = json.dumps({"width": screen_width, "height": screen_height})
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -328,7 +329,7 @@ def write_html(root: Path, pyxapp: Path, output: Path) -> None:
         '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
         '<meta name="mobile-web-app-capable" content="yes">\n'
         '<link rel="manifest" href="./manifest.webmanifest">\n'
-        '<link rel="stylesheet" href="./host.css">\n'
+        f'<link rel="stylesheet" href="./host.css?v={css_version}">\n'
         f'<script src="https://cdn.jsdelivr.net/gh/kitao/pyxel@{pyxel.VERSION}/wasm/pyxel.js"></script>\n'
         "</head>\n"
         "<body>\n"
