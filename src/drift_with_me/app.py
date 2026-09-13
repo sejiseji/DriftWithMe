@@ -191,12 +191,8 @@ class DriftWithMeApp:
             pyxel.quit()
         if self.handle_pause_pointer_controls():
             return
-        if self.pointer_snapshot.pressed and self.pause_panel_rect().contains(
-            self.pointer_snapshot.x, self.pointer_snapshot.y
-        ):
+        if self.pointer_snapshot.pressed:
             return
-        if self.mouse_pressed_in(self.sound_button_rect()):
-            self.audio.toggle_mute()
 
     def resume_from_pause(self) -> None:
         self.screen = AppScreen.PLAY
@@ -239,16 +235,10 @@ class DriftWithMeApp:
         if self.mouse_pressed_in(self.pause_reset_button_rect()):
             self.reset_scene_for_debug()
             return True
-        if self.mouse_pressed_in(self.pause_fill_button_rect()):
-            self.fill_resources_for_debug()
+        if self.mouse_pressed_in(self.pause_audio_button_rect()):
+            self.audio.toggle_mute()
             return True
-        if self.mouse_pressed_in(self.pause_zero_button_rect()):
-            self.zero_resources_for_debug()
-            return True
-        if self.mouse_pressed_in(self.pause_culling_button_rect()):
-            self.toggle_culling_for_debug()
-            return True
-        if self.mouse_pressed_in(self.pause_debug_button_rect()):
+        if self.mouse_pressed_in(self.pause_dev_entry_button_rect()):
             self.debug_enabled = not self.debug_enabled
             return True
         return False
@@ -275,7 +265,18 @@ class DriftWithMeApp:
         self.handle_debug_camera_shortcuts()
         if self.model.world_paused:
             self.pointer.cancel()
-            if pyxel.btnp(pyxel.KEY_RETURN) or self.mouse_pressed_in(
+            interaction = self.model.interaction
+            if interaction is not None and interaction.kind in {"water_refill", "energy_refill"}:
+                if self.mouse_pressed_in(self.interact_button_rect()):
+                    self.process_events(self.model.cancel_interaction())
+                    self.camera_controller.cancel_focus()
+                    self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+                    return
+                if pyxel.btnp(pyxel.KEY_RETURN):
+                    self.process_events(self.model.complete_interaction())
+                    self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+                    return
+            elif pyxel.btnp(pyxel.KEY_RETURN) or self.mouse_pressed_in(
                 self.interaction_done_button_rect()
             ):
                 self.process_events(self.model.complete_interaction())
@@ -540,81 +541,207 @@ class DriftWithMeApp:
         return pointer.down and rect.contains(pointer.x, pointer.y)
 
     def active_ui_rects(self) -> tuple[Rect, ...]:
+        interaction = self.model.interaction
+        if interaction is not None and interaction.kind == "inspect":
+            return (
+                self.pause_button_rect(),
+                self.sound_button_rect(),
+                self.inspect_panel_rect(),
+                self.interaction_done_button_rect(),
+            )
         rects = [
             self.action_button_rect(),
             self.interact_button_rect(),
             self.pause_button_rect(),
             self.sound_button_rect(),
+            self.minimap_rect(),
+            self.location_rect(),
         ]
-        if self.model.world_paused:
-            rects.append(self.interaction_done_button_rect())
+        if self.last_denied_reason:
+            rects.append(self.tooltip_rect(two_lines=False))
+        if interaction is not None and interaction.kind in {"water_refill", "energy_refill"}:
+            rects.append(self.interaction_chip_rect())
         return tuple(rects)
 
+    def ui_numeric_layout(self) -> dict:
+        layout = getattr(self, "_ui_numeric_layout", None)
+        if layout is None:
+            layout = config.load_data_json("ui_numeric_layout.json")
+            self._ui_numeric_layout = layout
+        return layout
+
+    def ui_profile_layout(self) -> dict:
+        profiles = self.ui_numeric_layout()["profiles"]
+        return profiles.get(self.runtime.profile.name, profiles["medium"])
+
+    def ui_theme(self) -> dict:
+        return self.ui_numeric_layout()["theme"]
+
+    def ui_rect(self, name: str) -> Rect:
+        rect = self.ui_profile_layout()["rects"][name]
+        return Rect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+
     def action_button_rect(self) -> Rect:
-        return Rect(self.runtime.screen_width - 102, self.runtime.screen_height - 72, 90, 60)
+        return self.ui_rect("primary_action")
 
     def interact_button_rect(self) -> Rect:
-        return Rect(self.runtime.screen_width - 204, self.runtime.screen_height - 72, 90, 60)
+        return self.ui_rect("context_action")
 
     def pause_button_rect(self) -> Rect:
-        return Rect(self.runtime.screen_width - 86, 8, 74, 44)
+        return self.ui_rect("pause_hit")
 
     def sound_button_rect(self) -> Rect:
-        return Rect(10, self.runtime.screen_height - 50, 90, 40)
+        return self.ui_rect("sound_hit")
+
+    def pause_visual_rect(self) -> Rect:
+        return self.ui_rect("pause_visual")
+
+    def sound_visual_rect(self) -> Rect:
+        return self.ui_rect("sound_visual")
+
+    def resource_panel_rect(self) -> Rect:
+        return self.ui_rect("resource")
+
+    def minimap_rect(self) -> Rect:
+        return self.ui_rect("minimap")
+
+    def location_rect(self) -> Rect:
+        return self.ui_rect("location")
+
+    def wordmark_rect(self) -> Rect:
+        return self.ui_rect("wordmark")
+
+    def tooltip_rect(self, two_lines: bool) -> Rect:
+        return self.ui_rect("tooltip_two" if two_lines else "tooltip_one")
 
     def start_button_rect(self) -> Rect:
         return Rect(self.runtime.screen_width / 2 - 70, 88, 140, 46)
 
     def pause_panel_rect(self) -> Rect:
-        width = min(300.0, float(self.runtime.screen_width - 24))
-        height = min(166.0, float(self.runtime.screen_height - 16))
-        return Rect(
-            self.runtime.screen_width / 2 - width / 2,
-            self.runtime.screen_height / 2 - height / 2,
-            width,
-            height,
-        )
+        return self.ui_rect("pause_panel")
 
     def pause_control_rect(self, column: int, row: int) -> Rect:
-        panel = self.pause_panel_rect()
-        gap = 8.0
-        button_width = (panel.width - 24.0 - gap) / 2.0
-        button_height = 28.0
-        x = panel.x + 12.0 + column * (button_width + gap)
-        y = panel.y + 52.0 + row * (button_height + 8.0)
-        return Rect(x, y, button_width, button_height)
+        ids = (("resume", "reset"), ("pause_audio", "dev_entry"))
+        return self.ui_rect(ids[row][column])
 
     def resume_button_rect(self) -> Rect:
-        return self.pause_control_rect(0, 0)
+        return self.ui_rect("resume")
 
     def pause_reset_button_rect(self) -> Rect:
-        return self.pause_control_rect(1, 0)
+        return self.ui_rect("reset")
+
+    def pause_audio_button_rect(self) -> Rect:
+        return self.ui_rect("pause_audio")
+
+    def pause_dev_entry_button_rect(self) -> Rect:
+        return self.ui_rect("dev_entry")
 
     def pause_fill_button_rect(self) -> Rect:
-        return self.pause_control_rect(0, 1)
+        return self.pause_audio_button_rect()
 
     def pause_zero_button_rect(self) -> Rect:
-        return self.pause_control_rect(1, 1)
+        return self.pause_dev_entry_button_rect()
 
     def pause_culling_button_rect(self) -> Rect:
-        return self.pause_control_rect(0, 2)
+        return self.pause_audio_button_rect()
 
     def pause_debug_button_rect(self) -> Rect:
-        return self.pause_control_rect(1, 2)
+        return self.pause_dev_entry_button_rect()
 
     def interaction_done_button_rect(self) -> Rect:
-        chip = self.interaction_chip_rect()
-        return Rect(chip.x + chip.width - 84, chip.y + 10, 76, 24)
+        return self.ui_rect("inspect_done")
+
+    def inspect_panel_rect(self) -> Rect:
+        return self.ui_rect("inspect_panel")
+
+    def inspect_title_rect(self) -> Rect:
+        return self.ui_rect("inspect_title")
+
+    def inspect_text_rect(self) -> Rect:
+        return self.ui_rect("inspect_text")
+
+    def inspect_page_rect(self) -> Rect:
+        return self.ui_rect("inspect_page")
 
     def interaction_chip_rect(self) -> Rect:
-        hud_right = 170
-        pause_left = self.pause_button_rect().x
-        available_width = max(128.0, pause_left - hud_right - 16.0)
-        width = min(220.0, available_width)
-        centered_x = self.runtime.screen_width / 2 - width / 2
-        max_x = pause_left - width - 8.0
-        x = max(hud_right + 8.0, min(centered_x, max_x))
-        return Rect(x, 8.0, width, 54.0)
+        profile = self.ui_profile_layout()
+        progress_w, progress_h = profile.get("progress", [160, 64])
+        width = float(progress_w)
+        height = float(progress_h)
+        interaction = getattr(self.model, "interaction", None)
+        if interaction is None:
+            return self.fallback_progress_rect(width, height)
+        target_rect = self.progress_target_screen_rect(interaction)
+        if target_rect is None:
+            return self.fallback_progress_rect(width, height)
+
+        gap = 12.0 if self.runtime.profile.name != "high" else 15.0
+        center_x = target_rect.x + target_rect.width / 2
+        center_y = target_rect.y + target_rect.height / 2
+        candidates = (
+            Rect(center_x - width / 2, target_rect.y - height - gap, width, height),
+            Rect(target_rect.x + target_rect.width + gap, center_y - height / 2, width, height),
+            Rect(target_rect.x - width - gap, center_y - height / 2, width, height),
+            Rect(center_x - width / 2, target_rect.y + target_rect.height + gap, width, height),
+        )
+        blockers = self.progress_popup_blockers(target_rect)
+        for candidate in candidates:
+            rect = self.clamp_ui_rect(candidate, margin=4.0)
+            if not any(self.rects_overlap(rect, blocker) for blocker in blockers):
+                return rect
+        return self.fallback_progress_rect(width, height)
+
+    def fallback_progress_rect(self, width: float, height: float) -> Rect:
+        x = self.runtime.screen_width / 2 - width / 2
+        y = self.runtime.screen_height / 2 - height / 2 - 18.0
+        return self.clamp_ui_rect(Rect(x, y, width, height), margin=4.0)
+
+    def progress_target_screen_rect(self, interaction) -> Rect | None:
+        camera = self.camera()
+        if interaction.kind == "energy_refill":
+            point = camera.project(self.buddy_focus_point())
+            half_w = 14.0
+            half_h = 18.0
+        else:
+            point = camera.project(self.player_focus_point())
+            half_w = 16.0
+            half_h = 18.0
+        if point is None:
+            return None
+        return Rect(point.x - half_w, point.y - half_h, half_w * 2.0, half_h * 2.0)
+
+    def progress_popup_blockers(self, target_rect: Rect) -> tuple[Rect, ...]:
+        return (
+            self.expand_rect(target_rect, 6.0),
+            self.resource_panel_rect(),
+            self.pause_button_rect(),
+            self.sound_button_rect(),
+            self.interact_button_rect(),
+            self.action_button_rect(),
+            self.minimap_rect(),
+            self.location_rect(),
+        )
+
+    def clamp_ui_rect(self, rect: Rect, margin: float) -> Rect:
+        x = max(margin, min(float(self.runtime.screen_width) - rect.width - margin, rect.x))
+        y = max(margin, min(float(self.runtime.screen_height) - rect.height - margin, rect.y))
+        return Rect(x, y, rect.width, rect.height)
+
+    def expand_rect(self, rect: Rect, amount: float) -> Rect:
+        return Rect(
+            rect.x - amount,
+            rect.y - amount,
+            rect.width + amount * 2.0,
+            rect.height + amount * 2.0,
+        )
+
+    def rects_overlap(self, a: Rect, b: Rect) -> bool:
+        return (
+            a.x < b.x + b.width
+            and a.x + a.width > b.x
+            and a.y < b.y + b.height
+            and a.y + a.height > b.y
+        )
 
     def preview_button_rects(self) -> tuple[tuple[str, Rect], ...]:
         names = self.audio.preview_events
@@ -709,62 +836,81 @@ class DriftWithMeApp:
     def draw_pause(self) -> None:
         pyxel = self.pyxel
         panel = self.pause_panel_rect()
-        x = int(panel.x)
-        y = int(panel.y)
-        width = int(panel.width)
-        height = int(panel.height)
-        pyxel.rect(x, y, width, height, 0)
-        pyxel.rectb(x, y, width, height, 7)
+        pyxel.dither(0.5)
+        pyxel.rect(0, 0, self.runtime.screen_width, self.runtime.screen_height, 0)
+        pyxel.dither(1.0)
+        self.draw_panel_frame(panel, fill=0, inner=5)
+        title_rect = self.ui_rect("pause_title")
         self.draw_ui_text_center(
-            self.runtime.screen_width // 2, y + 10, self.ui("ui.pause"), 7, "title"
+            int(title_rect.x + title_rect.width / 2),
+            int(title_rect.y),
+            self.ui("ui.pause"),
+            7,
+            "title",
         )
         culling_status = "ON" if self.model.culling_enabled else "OFF"
         status = f"{self.runtime.profile.name.upper()} CULL {culling_status}"
-        self.draw_text_center(self.runtime.screen_width // 2, y + 36, status, 13, scale=1)
-        self.draw_button(self.resume_button_rect(), self.ui("ui.resume"), 11)
-        self.draw_button(self.pause_reset_button_rect(), self.ui("ui.reset"), 8)
-        self.draw_button(self.pause_fill_button_rect(), self.ui("ui.resource_max"), 12)
-        self.draw_button(self.pause_zero_button_rect(), self.ui("ui.zero_resource"), 5)
         self.draw_button(
-            self.pause_culling_button_rect(),
-            self.ui("ui.cull_on") if self.model.culling_enabled else self.ui("ui.cull_off"),
+            self.resume_button_rect(),
+            self.ui("ui.resume"),
             10,
+            text_color=0,
+            style_name="button",
         )
         self.draw_button(
-            self.pause_debug_button_rect(), self.ui("ui.debug"), 13 if self.debug_enabled else 6
+            self.pause_reset_button_rect(), self.ui("ui.reset"), 8, style_name="button"
+        )
+        self.draw_button(
+            self.pause_audio_button_rect(),
+            self.ui("ui.sound_off") if self.audio.muted else self.ui("ui.sound_on"),
+            5,
+            style_name="button",
+        )
+        self.draw_button(
+            self.pause_dev_entry_button_rect(),
+            self.ui("ui.debug"),
+            1,
+            text_color=13 if self.debug_enabled else 7,
+            style_name="button",
         )
         self.draw_ui_text_center(
-            self.runtime.screen_width // 2,
-            y + height - 12,
-            self.ui("ui.pause_hint"),
+            int(panel.x + panel.width / 2),
+            int(panel.y + panel.height - 16),
+            status,
             13,
-            "hint",
+            "auxiliary",
         )
 
     def draw_hud(self) -> None:
         pyxel = self.pyxel
-        pyxel.rect(6, 6, 164, 50, 0)
-        pyxel.rectb(6, 6, 164, 50, 7)
-        water = int(self.model.water)
-        energy = int(self.model.energy)
-        self.draw_ui_text(pyxel, 14, 12, f"{self.ui('hud.water')} {water:03d}", 12, "label")
-        self.draw_ui_text(pyxel, 14, 31, f"{self.ui('hud.energy')} {energy:03d}", 10, "label")
-        self.draw_meter(94, 15, 66, 6, self.model.water, self.model.water_max, 12)
-        self.draw_meter(94, 34, 66, 6, self.model.energy, self.model.energy_max, 10)
-        self.draw_button(self.interact_button_rect(), self.interact_button_label(), 10)
-        self.draw_button(self.action_button_rect(), self.action_button_label(), 8)
-        self.draw_button(self.pause_button_rect(), self.ui("ui.pause"), 5)
-        self.draw_button(
-            self.sound_button_rect(),
-            self.ui("ui.sound_off") if self.audio.muted else self.ui("ui.sound"),
-            12,
-        )
-        if self.model.player.barrier_active:
-            self.draw_ui_text(pyxel, 184, 12, self.ui("hint.guard_hold"), 12, "label")
-        if self.last_denied_reason:
-            self.draw_ui_text(
-                pyxel, 184, 31, self.denied_reason_text(self.last_denied_reason), 8, "label"
+        self.draw_resource_panel()
+        self.draw_system_button(self.sound_button_rect(), self.sound_visual_rect(), "sound")
+        self.draw_system_button(self.pause_button_rect(), self.pause_visual_rect(), "pause")
+
+        interaction = self.model.interaction
+        inspect_modal = interaction is not None and interaction.kind == "inspect"
+        resource_modal = interaction is not None and interaction.kind in {
+            "water_refill",
+            "energy_refill",
+        }
+        if not inspect_modal:
+            self.draw_wordmark()
+            self.draw_minimap()
+            self.draw_location_label()
+            self.draw_action_button(
+                self.interact_button_rect(),
+                self.interact_button_token(),
+                slot="context",
+                enabled=True,
             )
+            primary_enabled = not resource_modal and self.action_button_mode() != "NONE"
+            self.draw_action_button(
+                self.action_button_rect(),
+                self.action_button_mode(),
+                slot="primary",
+                enabled=primary_enabled,
+            )
+            self.draw_tooltip()
         if self.debug_enabled:
             render_stats = self.renderer.last_stats if self.renderer is not None else None
             pyxel.text(8, 48, f"pos={self.model.player.x:.1f},{self.model.player.z:.1f}", 7)
@@ -817,77 +963,420 @@ class DriftWithMeApp:
         self.pyxel.rectb(x, y, width, height, 7)
 
     def interact_button_label(self) -> str:
+        return self.ui_token(self.interact_button_token())
+
+    def interact_button_token(self) -> str:
+        if self.model.interaction is not None:
+            if self.model.interaction.kind == "water_refill":
+                return "CANCEL_REFILL"
+            if self.model.interaction.kind == "energy_refill":
+                return "CANCEL_CHARGE"
+            return "DONE"
         target = (
             None if self.model.world_paused else self.model.interaction_candidate(self.camera())
         )
         if target is None:
-            return self.ui_token("CHECK")
+            return "CHECK"
         if target.kind == "water_station" and target.supply == "working":
-            return self.ui_token("REFILL")
+            return "REFILL"
         if target.kind == "solar_station":
-            return self.ui_token("CHARGE")
-        return self.ui_token("CHECK")
+            return "CHARGE"
+        return "CHECK"
 
     def action_button_label(self) -> str:
         return self.ui_token(self.action_button_mode())
 
     def action_button_mode(self) -> str:
         if self.model.world_paused:
-            return "ACTION"
+            return "NONE"
         camera = self.camera()
         if self.model.captured_enemy(camera) is not None:
             return "ZAP"
         if self.model.bubble is not None:
-            return "WAIT"
+            return "NONE"
         if self.model.guard_threat() is not None:
             return "GUARD"
         if self.model.bubble_target(camera) is not None:
             return "BUBBLE"
-        return "ACTION"
+        return "NONE"
 
     def draw_interaction_chip(self) -> None:
         interaction = self.model.interaction
         if interaction is None:
             return
+        if interaction.kind == "inspect":
+            self.draw_inspect_panel(interaction)
+            return
+        self.draw_progress_popup(interaction)
+
+    def draw_progress_popup(self, interaction) -> None:
         pyxel = self.pyxel
         rect = self.interaction_chip_rect()
-        done_rect = self.interaction_done_button_rect()
-        accent = 12
-        if interaction.kind == "energy_refill":
-            accent = 10
-        elif interaction.kind == "inspect":
-            accent = 13
-        pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 0)
-        pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
-        pyxel.rect(int(rect.x), int(rect.y), 4, int(rect.height), accent)
-
-        text_x = int(rect.x + 10)
-        text_w = max(20, int(done_rect.x - text_x - 7))
-        title = self.fit_ui_text_to_width(self.interaction_title(interaction), text_w, "title")
-        self.draw_ui_text(pyxel, text_x, int(rect.y + 5), title, 7, "title")
+        accent = 10 if interaction.kind == "energy_refill" else 12
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        profile = self.runtime.profile.name
+        scale = 1.25 if profile == "high" else 1.0
+        title_x = int(rect.x + round(8 * scale))
+        title_y = int(rect.y + round(6 * scale))
+        title_w = int(rect.width - round(56 * scale))
+        pct_text = f"{int(round(interaction.progress * 100)):03d}%"
+        self.draw_ui_text(
+            pyxel,
+            title_x,
+            title_y,
+            self.fit_ui_text_to_width(self.interaction_title(interaction), title_w, "body"),
+            7,
+            "body",
+        )
+        self.draw_text_right(
+            int(rect.x + rect.width - round(8 * scale)),
+            title_y,
+            pct_text,
+            13,
+            "numeric",
+        )
+        meter_x = title_x
+        meter_y = int(rect.y + round(30 * scale))
+        meter_w = int(rect.width - round(16 * scale))
+        meter_h = max(4, int(round(6 * scale)))
+        self.draw_meter(
+            meter_x,
+            meter_y,
+            meter_w,
+            meter_h,
+            interaction.progress,
+            1.0,
+            accent,
+        )
         lines = self.interaction_lines(interaction)
         if lines:
-            line = self.fit_ui_text_to_width(lines[0], text_w, "body")
-            self.draw_ui_text(pyxel, text_x, int(rect.y + 28), line, 13, "body")
+            line = self.fit_ui_text_to_width(lines[0], meter_w, "auxiliary")
+            self.draw_ui_text(
+                pyxel,
+                meter_x,
+                int(rect.y + round(42 * scale)),
+                line,
+                13,
+                "auxiliary",
+            )
 
-        meter_x = text_x
-        meter_y = int(rect.y + rect.height - 8)
-        meter_w = int(rect.width - 20)
-        pyxel.rect(meter_x, meter_y, meter_w, 4, 1)
-        pyxel.rect(meter_x, meter_y, int(meter_w * interaction.progress), 4, accent)
-        pyxel.rectb(meter_x, meter_y, meter_w, 4, 7)
-        self.draw_button(done_rect, self.ui_token("DONE"), 5)
+    def draw_inspect_panel(self, interaction) -> None:
+        panel = self.inspect_panel_rect()
+        title_rect = self.inspect_title_rect()
+        text_rect = self.inspect_text_rect()
+        page_rect = self.inspect_page_rect()
+        done_rect = self.interaction_done_button_rect()
+        self.draw_panel_frame(panel, fill=0, inner=5)
+        title = self.fit_ui_text_to_width(
+            self.interaction_title(interaction),
+            int(title_rect.width),
+            "title",
+        )
+        self.draw_ui_text(self.pyxel, int(title_rect.x), int(title_rect.y), title, 7, "title")
+        lines = self.interaction_lines(interaction)
+        line_height = 25 if self.runtime.profile.name == "high" else 20
+        max_lines = max(1, int(text_rect.height // line_height))
+        wrapped = self.wrap_ui_lines(lines, int(text_rect.width), "body")
+        for index, line in enumerate(wrapped[:max_lines]):
+            self.draw_ui_text(
+                self.pyxel,
+                int(text_rect.x),
+                int(text_rect.y + index * line_height),
+                line,
+                13,
+                "body",
+            )
+        if len(wrapped) > max_lines:
+            self.draw_ui_text_center(
+                int(page_rect.x + page_rect.width / 2),
+                int(page_rect.y),
+                "1/2",
+                13,
+                "auxiliary",
+            )
+        self.draw_button(done_rect, self.ui_token("DONE"), 5, style_name="button")
 
-    def draw_button(self, rect: Rect, label: str, color: int) -> None:
+    def draw_button(
+        self,
+        rect: Rect,
+        label: str,
+        color: int,
+        text_color: int = 0,
+        style_name: str = "label",
+    ) -> None:
         pyxel = self.pyxel
         pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), color)
         pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
-        text = self.fit_ui_text_to_width(label, int(rect.width) - 8, "label")
-        text_width = self.ui_renderer.text_width(text, "label")
-        text_height = self.ui_renderer.text_height("label")
+        text = self.fit_ui_text_to_width(label, int(rect.width) - 8, style_name)
+        text_width = self.ui_renderer.text_width(text, style_name)
+        text_height = self.ui_renderer.text_height(style_name)
         text_x = int(rect.x + rect.width / 2 - text_width / 2)
         text_y = int(rect.y + rect.height / 2 - text_height / 2)
-        self.draw_ui_text(pyxel, text_x, text_y, text, 0, "label")
+        self.draw_ui_text(pyxel, text_x, text_y, text, text_color, style_name)
+
+    def draw_panel_frame(self, rect: Rect, fill: int, inner: int | None = None) -> None:
+        pyxel = self.pyxel
+        x = int(rect.x)
+        y = int(rect.y)
+        width = int(rect.width)
+        height = int(rect.height)
+        pyxel.rect(x, y, width, height, fill)
+        pyxel.rectb(x, y, width, height, 7)
+        chamfer = 5 if self.runtime.profile.name == "high" else 4
+        pyxel.line(x, y + chamfer, x + chamfer, y, 6)
+        pyxel.line(x + width - 1 - chamfer, y, x + width - 1, y + chamfer, 6)
+        pyxel.line(
+            x + width - 1,
+            y + height - 1 - chamfer,
+            x + width - 1 - chamfer,
+            y + height - 1,
+            6,
+        )
+        pyxel.line(x + chamfer, y + height - 1, x, y + height - 1 - chamfer, 6)
+        if inner is not None and width > 10 and height > 10:
+            inset = 3 if self.runtime.profile.name != "high" else 4
+            pyxel.rectb(x + inset, y + inset, width - inset * 2, height - inset * 2, inner)
+
+    def draw_action_button(self, rect: Rect, token: str, slot: str, enabled: bool) -> None:
+        theme = self.ui_theme()
+        fill = theme["context_fill"] if slot == "context" else theme["primary_fill"]
+        text_color = theme["context_text"] if slot == "context" else theme["primary_text"]
+        if not enabled:
+            fill = theme["disabled_fill"]
+            text_color = theme["disabled_text"]
+        inner_key = "context_light" if slot == "context" else "primary_light"
+        self.draw_panel_frame(rect, fill=fill, inner=theme[inner_key])
+        self.draw_button_icon(token, rect, text_color)
+        label = self.fit_ui_text_to_width(self.ui_token(token), int(rect.width) - 12, "button")
+        label_y = int(rect.y + (31 if self.runtime.profile.name == "high" else 25))
+        self.draw_ui_text_center(
+            int(rect.x + rect.width / 2),
+            label_y,
+            label,
+            text_color,
+            "button",
+        )
+
+    def draw_button_icon(self, token: str, rect: Rect, color: int) -> None:
+        pyxel = self.pyxel
+        icon_size = 20 if self.runtime.profile.name == "high" else 16
+        x = int(rect.x + rect.width / 2 - icon_size / 2)
+        y = int(rect.y + (6 if self.runtime.profile.name == "high" else 5))
+        cx = x + icon_size // 2
+        cy = y + icon_size // 2
+        if token in {"CHECK", "DONE", "NEXT"}:
+            pyxel.circb(cx - 2, cy - 2, max(4, icon_size // 4), color)
+            pyxel.line(cx + 2, cy + 2, cx + icon_size // 2 - 1, cy + icon_size // 2 - 1, color)
+        elif token in {"GUARD", "CANCEL_REFILL", "CANCEL_CHARGE"}:
+            pyxel.line(cx, y, x + icon_size - 3, y + 4, color)
+            pyxel.line(x + icon_size - 3, y + 4, x + icon_size - 5, y + icon_size - 3, color)
+            pyxel.line(x + icon_size - 5, y + icon_size - 3, cx, y + icon_size - 1, color)
+            pyxel.line(cx, y + icon_size - 1, x + 3, y + icon_size - 3, color)
+            pyxel.line(x + 3, y + icon_size - 3, x + 2, y + 4, color)
+            pyxel.line(x + 2, y + 4, cx, y, color)
+        elif token == "BUBBLE":
+            pyxel.circb(cx - 3, cy, 4, color)
+            pyxel.circb(cx + 4, cy - 4, 3, color)
+        elif token in {"ZAP", "CHARGE"}:
+            pyxel.line(cx, y, x + 3, cy, color)
+            pyxel.line(x + 3, cy, cx, cy, color)
+            pyxel.line(cx, cy, x + 6, y + icon_size - 1, color)
+        elif token == "REFILL":
+            pyxel.circ(cx, cy + 2, max(4, icon_size // 4), color)
+            pyxel.line(cx, y + 1, cx - 4, cy, color)
+            pyxel.line(cx, y + 1, cx + 4, cy, color)
+        else:
+            pyxel.rect(cx - 1, y + 2, 3, icon_size - 4, color)
+
+    def draw_system_button(self, hit_rect: Rect, visual_rect: Rect, icon: str) -> None:
+        theme = self.ui_theme()
+        self.draw_panel_frame(visual_rect, fill=theme["system_fill"], inner=theme["system_hover"])
+        x = int(visual_rect.x)
+        y = int(visual_rect.y)
+        width = int(visual_rect.width)
+        height = int(visual_rect.height)
+        cx = x + width // 2
+        cy = y + height // 2
+        if icon == "pause":
+            bar_w = max(3, width // 7)
+            pyxel = self.pyxel
+            pyxel.rect(cx - bar_w - 2, y + height // 4, bar_w, height // 2, 7)
+            pyxel.rect(cx + 2, y + height // 4, bar_w, height // 2, 7)
+        else:
+            self.pyxel.rect(x + width // 4, cy - 4, 4, 8, 7)
+            self.pyxel.line(x + width // 4 + 4, cy - 4, cx + 2, cy - 8, 7)
+            self.pyxel.line(x + width // 4 + 4, cy + 4, cx + 2, cy + 8, 7)
+            if not self.audio.muted:
+                self.pyxel.circb(cx + 6, cy, 5, 7)
+
+    def draw_text_right(self, right_x: int, y: int, text: str, color: int, style_name: str) -> None:
+        self.draw_ui_text(
+            self.pyxel,
+            right_x - self.ui_renderer.text_width(text, style_name),
+            y,
+            text,
+            color,
+            style_name,
+        )
+
+    def draw_resource_panel(self) -> None:
+        rect = self.resource_panel_rect()
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        profile = self.runtime.profile.name
+        if profile == "high":
+            rows = ((10, 10, 76, 120, 15, 80), (10, 35, 76, 120, 40, 80))
+        elif profile == "low":
+            rows = ((8, 4, 60, 96, 10, 52), (8, 24, 60, 96, 30, 52))
+        else:
+            rows = ((8, 8, 60, 96, 12, 64), (8, 28, 60, 96, 32, 64))
+        resources = (
+            (self.ui("hud.water"), int(self.model.water), self.model.water_max, 12, "water"),
+            (self.ui("hud.energy"), int(self.model.energy), self.model.energy_max, 10, "energy"),
+        )
+        for index, (label, value, maximum, color, icon) in enumerate(resources):
+            icon_x, row_y, value_x, meter_x, meter_y, meter_w = rows[index]
+            x = int(rect.x)
+            y = int(rect.y)
+            self.draw_resource_icon(x + icon_x, y + row_y + 2, icon, color)
+            self.draw_ui_text(self.pyxel, x + icon_x + 16, y + row_y, label, color, "resource")
+            self.draw_text_right(x + value_x + 28, y + row_y, f"{value:03d}", 7, "numeric")
+            self.draw_meter(x + meter_x, y + meter_y, meter_w, 7, value, maximum, color)
+
+    def draw_resource_icon(self, x: int, y: int, icon: str, color: int) -> None:
+        if icon == "water":
+            self.pyxel.circ(x + 6, y + 7, 5, color)
+            self.pyxel.tri(x + 6, y, x + 2, y + 8, x + 10, y + 8, color)
+        else:
+            self.pyxel.line(x + 7, y, x + 2, y + 7, color)
+            self.pyxel.line(x + 2, y + 7, x + 7, y + 7, color)
+            self.pyxel.line(x + 7, y + 7, x + 4, y + 13, color)
+
+    def draw_wordmark(self) -> None:
+        rect = self.wordmark_rect()
+        if rect.x < self.resource_panel_rect().x + self.resource_panel_rect().width + 8:
+            return
+        self.draw_ui_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y),
+            "DriftWithMe",
+            7,
+            "auxiliary",
+        )
+        baseline = int(rect.y + rect.height - 2)
+        self.pyxel.line(int(rect.x + 8), baseline, int(rect.x + rect.width - 8), baseline, 6)
+
+    def draw_location_label(self) -> None:
+        rect = self.location_rect()
+        self.draw_panel_frame(rect, fill=1, inner=None)
+        text = self.fit_ui_text_to_width(self.ui("hud.location"), int(rect.width) - 8, "auxiliary")
+        self.draw_ui_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y + 3),
+            text,
+            7,
+            "auxiliary",
+        )
+
+    def draw_minimap(self) -> None:
+        rect = self.minimap_rect()
+        x = int(rect.x)
+        y = int(rect.y)
+        size = int(rect.width)
+        radius = size // 2 - 2
+        cx = x + size // 2
+        cy = y + size // 2
+        self.pyxel.circ(cx, cy, radius, 1)
+        self.pyxel.circb(cx, cy, radius, 7)
+        for offset in range(-radius + 6, radius, 8):
+            span = int(math.sqrt(max(0, radius * radius - offset * offset)))
+            self.pyxel.line(cx - span, cy + offset, cx + span, cy + offset, 5)
+            self.pyxel.line(cx + offset, cy - span, cx + offset, cy + span, 5)
+        map_side = max(16, int((size - 12) / math.sqrt(2)))
+        map_x = cx - map_side // 2
+        map_y = cy - map_side // 2
+        for obj in self.world.objects:
+            px, py = self.minimap_point(obj.x, obj.z, map_x, map_y, map_side)
+            if obj.kind == "water_station":
+                color = 12
+            elif obj.kind == "solar_station":
+                color = 10
+            elif obj.inspectable:
+                color = 7
+            else:
+                color = 5
+            self.pyxel.pset(px, py, color)
+        px, py = self.minimap_point(
+            self.model.player.x,
+            self.model.player.z,
+            map_x,
+            map_y,
+            map_side,
+        )
+        self.pyxel.tri(px, py - 3, px - 3, py + 3, px + 3, py + 3, 7)
+
+    def minimap_point(
+        self, world_x: float, world_z: float, map_x: int, map_y: int, map_side: int
+    ) -> tuple[int, int]:
+        u = 0.0 if self.world.width <= 0 else max(0.0, min(world_x / self.world.width, 1.0))
+        v = 0.0 if self.world.depth <= 0 else max(0.0, min(world_z / self.world.depth, 1.0))
+        return map_x + round(u * (map_side - 1)), map_y + round(v * (map_side - 1))
+
+    def draw_tooltip(self) -> None:
+        text = self.current_tooltip_text()
+        if not text:
+            return
+        rect = self.tooltip_rect(two_lines=False)
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        fitted = self.fit_ui_text_to_width(text, int(rect.width) - 16, "tooltip")
+        self.draw_ui_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y + 6),
+            fitted,
+            8 if self.last_denied_reason else 7,
+            "tooltip",
+        )
+
+    def current_tooltip_text(self) -> str:
+        if self.model.world_paused:
+            return ""
+        if self.last_denied_reason:
+            return self.denied_reason_text(self.last_denied_reason)
+        if self.model.player.barrier_active:
+            return self.ui("hint.guard_hold")
+        token = self.action_button_mode()
+        if token == "NONE":
+            token = self.interact_button_token()
+            if token == "CHECK" and self.model.interaction_candidate(self.camera()) is None:
+                return ""
+        return self.tooltip_for_token(token)
+
+    def tooltip_for_token(self, token: str) -> str:
+        mapping = {
+            "CHECK": "tooltip.check",
+            "REFILL": "tooltip.refill",
+            "CHARGE": "tooltip.charge",
+            "GUARD": "tooltip.guard",
+            "BUBBLE": "tooltip.bubble",
+            "ZAP": "tooltip.zap",
+            "NONE": "tooltip.none",
+        }
+        key = mapping.get(token)
+        return self.ui(key) if key is not None else ""
+
+    def wrap_ui_lines(self, lines: tuple[str, ...], max_width: int, style_name: str) -> list[str]:
+        wrapped: list[str] = []
+        for line in lines:
+            current = ""
+            for char in line:
+                candidate = current + char
+                if current and self.ui_renderer.text_width(candidate, style_name) > max_width:
+                    wrapped.append(current)
+                    current = char
+                else:
+                    current = candidate
+            if current:
+                wrapped.append(current)
+        return wrapped
 
     def draw_text_center(self, x: int, y: int, text: str, color: int, scale: int = 2) -> None:
         text = text.upper()

@@ -246,11 +246,36 @@
         "high": 20
       },
       "title_px": {
-        "low": 18,
-        "medium": 18,
-        "high": 22
+        "low": 20,
+        "medium": 20,
+        "high": 25
       },
       "hint_px": {
+        "low": 12,
+        "medium": 12,
+        "high": 15
+      },
+      "button_px": {
+        "low": 16,
+        "medium": 16,
+        "high": 20
+      },
+      "resource_px": {
+        "low": 16,
+        "medium": 16,
+        "high": 20
+      },
+      "tooltip_px": {
+        "low": 16,
+        "medium": 16,
+        "high": 20
+      },
+      "numeric_px": {
+        "low": 14,
+        "medium": 14,
+        "high": 18
+      },
+      "auxiliary_px": {
         "low": 12,
         "medium": 12,
         "high": 15

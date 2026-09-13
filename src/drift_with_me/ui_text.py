@@ -115,6 +115,11 @@ def load_ui_text_renderer(pyxel: Any, runtime: RuntimeConfig) -> UITextRenderer:
         "body": int(font_config.get("body_px", {}).get(profile_name, 16)),
         "title": int(font_config.get("title_px", {}).get(profile_name, 18)),
         "hint": int(font_config.get("hint_px", {}).get(profile_name, 12)),
+        "button": int(font_config.get("button_px", {}).get(profile_name, 16)),
+        "resource": int(font_config.get("resource_px", {}).get(profile_name, 16)),
+        "tooltip": int(font_config.get("tooltip_px", {}).get(profile_name, 16)),
+        "numeric": int(font_config.get("numeric_px", {}).get(profile_name, 14)),
+        "auxiliary": int(font_config.get("auxiliary_px", {}).get(profile_name, 12)),
     }
     font_path = str(font_config.get("path", ""))
     styles: dict[str, FontStyle] = {}

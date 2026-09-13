@@ -20,16 +20,19 @@ def test_japanese_ui_resources_translate_existing_tokens() -> None:
     assert resources.token("GUARD") == "防御"
     assert resources.token("ZAP") == "電撃"
     assert resources.token("CHECK") == "調べる"
+    assert resources.token("CANCEL_REFILL") == "中断"
+    assert resources.token("NONE") == "行動"
     assert resources.token("DONE") == "閉じる"
+    assert resources.token("NEXT") == "次へ"
     assert resources.reason("insufficient_water") == "水が足りない"
     assert resources.raw_text("WATER REFILL") == "給水"
 
 
 def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
     pyxel.init(64, 64, headless=True)
-    action_tokens = ("ACTION", "WAIT", "BUBBLE", "GUARD", "ZAP")
-    interact_tokens = ("CHECK", "REFILL", "CHARGE")
-    done_token = "DONE"
+    primary_tokens = ("NONE", "BUBBLE", "GUARD", "ZAP")
+    context_tokens = ("CHECK", "REFILL", "CHARGE", "CANCEL_REFILL", "CANCEL_CHARGE")
+    inspect_tokens = ("DONE", "NEXT")
 
     for profile in ("low", "medium", "high"):
         app = make_app(profile)
@@ -37,15 +40,18 @@ def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
         app.ui_text = renderer
 
         assert renderer.font_loaded
-        for token in action_tokens:
+        for token in primary_tokens:
             label = renderer.resources.token(token)
-            assert renderer.text_width(label, "label") <= app.action_button_rect().width - 8
-        for token in interact_tokens:
+            assert renderer.text_width(label, "button") <= app.action_button_rect().width - 12
+        for token in context_tokens:
             label = renderer.resources.token(token)
-            assert renderer.text_width(label, "label") <= app.interact_button_rect().width - 8
-        assert (
-            renderer.text_width(renderer.resources.token(done_token), "label")
-            <= app.interaction_done_button_rect().width - 8
-        )
-        assert renderer.text_width("水 100", "label") <= 80
-        assert renderer.text_width("電力 060", "label") <= 80
+            assert renderer.text_width(label, "button") <= app.interact_button_rect().width - 12
+        for token in inspect_tokens:
+            label = renderer.resources.token(token)
+            assert (
+                renderer.text_width(label, "button") <= app.interaction_done_button_rect().width - 8
+            )
+        assert renderer.text_width("水", "resource") <= 34
+        assert renderer.text_width("電力", "resource") <= 42
+        assert renderer.text_width("100", "numeric") <= 28
+        assert renderer.text_width("060", "numeric") <= 28
