@@ -42,10 +42,14 @@ def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
         assert renderer.font_loaded
         for token in primary_tokens:
             label = renderer.resources.token(token)
-            assert renderer.text_width(label, "button") <= app.action_button_rect().width - 12
+            label_rect = app.action_button_label_rect(app.action_button_rect())
+            assert renderer.text_width(label, "button") <= label_rect.width
+            assert renderer.text_height("button") <= label_rect.height
         for token in context_tokens:
             label = renderer.resources.token(token)
-            assert renderer.text_width(label, "button") <= app.interact_button_rect().width - 12
+            label_rect = app.action_button_label_rect(app.interact_button_rect())
+            assert renderer.text_width(label, "button") <= label_rect.width
+            assert renderer.text_height("button") <= label_rect.height
         for token in inspect_tokens:
             label = renderer.resources.token(token)
             assert (
@@ -55,3 +59,6 @@ def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
         assert renderer.text_width("電力", "resource") <= 42
         assert renderer.text_width("100", "numeric") <= 28
         assert renderer.text_width("060", "numeric") <= 28
+        progress_width = app.ui_profile_layout()["progress"][0]
+        assert renderer.text_width("ジャックへ給水中", "body") <= progress_width - 16
+        assert renderer.text_width("ヒューズ充電中", "body") <= progress_width - 16

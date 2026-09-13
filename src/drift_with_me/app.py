@@ -766,13 +766,9 @@ class DriftWithMeApp:
         self.draw_text_center(self.runtime.screen_width // 2, 28, "DriftWithMe", 7, scale=3)
         self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 JWP007", 10)
         self.draw_button(self.start_button_rect(), self.ui("ui.start"), 11)
-        self.draw_button(
-            self.sound_button_rect(),
-            self.ui("ui.sound_off") if self.audio.muted else self.ui("ui.sound_on"),
-            12,
-        )
+        self.draw_system_button(self.sound_button_rect(), self.sound_visual_rect(), "sound")
         self.draw_ui_text_center(
-            self.runtime.screen_width // 2, 130, self.ui("ui.se_preview"), 7, "label"
+            self.runtime.screen_width // 2, 124, self.ui("ui.se_preview"), 7, "label"
         )
         for index, (event_name, rect) in enumerate(self.preview_button_rects(), start=1):
             self.draw_button(rect, str(index), 5)
@@ -1050,14 +1046,14 @@ class DriftWithMeApp:
         )
         lines = self.interaction_lines(interaction)
         if lines:
-            line = self.fit_ui_text_to_width(lines[0], meter_w, "auxiliary")
+            line = self.fit_ui_text_to_width(lines[0], meter_w, "body")
             self.draw_ui_text(
                 pyxel,
                 meter_x,
                 int(rect.y + round(42 * scale)),
                 line,
                 13,
-                "auxiliary",
+                "body",
             )
 
     def draw_inspect_panel(self, interaction) -> None:
@@ -1108,11 +1104,7 @@ class DriftWithMeApp:
         pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), color)
         pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
         text = self.fit_ui_text_to_width(label, int(rect.width) - 8, style_name)
-        text_width = self.ui_renderer.text_width(text, style_name)
-        text_height = self.ui_renderer.text_height(style_name)
-        text_x = int(rect.x + rect.width / 2 - text_width / 2)
-        text_y = int(rect.y + rect.height / 2 - text_height / 2)
-        self.draw_ui_text(pyxel, text_x, text_y, text, text_color, style_name)
+        self.draw_ui_text_in_rect(rect, text, text_color, style_name, align="center")
 
     def draw_panel_frame(self, rect: Rect, fill: int, inner: int | None = None) -> None:
         pyxel = self.pyxel
@@ -1147,15 +1139,22 @@ class DriftWithMeApp:
         inner_key = "context_light" if slot == "context" else "primary_light"
         self.draw_panel_frame(rect, fill=fill, inner=theme[inner_key])
         self.draw_button_icon(token, rect, text_color)
-        label = self.fit_ui_text_to_width(self.ui_token(token), int(rect.width) - 12, "button")
-        label_y = int(rect.y + (31 if self.runtime.profile.name == "high" else 25))
-        self.draw_ui_text_center(
-            int(rect.x + rect.width / 2),
-            label_y,
+        label_rect = self.action_button_label_rect(rect)
+        label = self.fit_ui_text_to_width(self.ui_token(token), int(label_rect.width), "button")
+        self.draw_ui_text_in_rect(
+            label_rect,
             label,
             text_color,
             "button",
+            align="center",
         )
+
+    def action_button_label_rect(self, rect: Rect) -> Rect:
+        if self.runtime.profile.name == "high":
+            return Rect(rect.x + 10, rect.y + 31, rect.width - 20, 24)
+        if self.runtime.profile.name == "low":
+            return Rect(rect.x + 6, rect.y + 22, rect.width - 12, 18)
+        return Rect(rect.x + 8, rect.y + 25, rect.width - 16, 19)
 
     def draw_button_icon(self, token: str, rect: Rect, color: int) -> None:
         pyxel = self.pyxel
@@ -1219,27 +1218,80 @@ class DriftWithMeApp:
             style_name,
         )
 
+    def draw_ui_text_in_rect(
+        self,
+        rect: Rect,
+        text: str,
+        color: int,
+        style_name: str,
+        align: str = "left",
+    ) -> None:
+        text_width = self.ui_renderer.text_width(text, style_name)
+        text_height = self.ui_renderer.text_height(style_name)
+        if align == "right":
+            x = int(rect.x + rect.width - text_width)
+        elif align == "center":
+            x = int(rect.x + rect.width / 2 - text_width / 2)
+        else:
+            x = int(rect.x)
+        y = int(rect.y + max(0.0, (rect.height - text_height) / 2.0))
+        self.draw_ui_text(self.pyxel, x, y, text, color, style_name)
+
     def draw_resource_panel(self) -> None:
         rect = self.resource_panel_rect()
         self.draw_panel_frame(rect, fill=0, inner=5)
         profile = self.runtime.profile.name
         if profile == "high":
-            rows = ((10, 10, 76, 120, 15, 80), (10, 35, 76, 120, 40, 80))
+            rows = (
+                (10, 10, 30, 8, 42, 75, 8, 35, 120, 15, 80),
+                (10, 35, 30, 33, 42, 75, 33, 35, 120, 40, 80),
+            )
         elif profile == "low":
-            rows = ((8, 4, 60, 96, 10, 52), (8, 24, 60, 96, 30, 52))
+            rows = (
+                (8, 6, 24, 4, 34, 60, 4, 28, 96, 10, 52),
+                (8, 26, 24, 24, 34, 60, 24, 28, 96, 30, 52),
+            )
         else:
-            rows = ((8, 8, 60, 96, 12, 64), (8, 28, 60, 96, 32, 64))
+            rows = (
+                (8, 8, 24, 6, 34, 60, 6, 28, 96, 12, 64),
+                (8, 28, 24, 26, 34, 60, 26, 28, 96, 32, 64),
+            )
         resources = (
             (self.ui("hud.water"), int(self.model.water), self.model.water_max, 12, "water"),
             (self.ui("hud.energy"), int(self.model.energy), self.model.energy_max, 10, "energy"),
         )
+        row_text_height = 22 if profile == "high" else 18
         for index, (label, value, maximum, color, icon) in enumerate(resources):
-            icon_x, row_y, value_x, meter_x, meter_y, meter_w = rows[index]
+            (
+                icon_x,
+                icon_y,
+                label_x,
+                label_y,
+                label_w,
+                value_x,
+                value_y,
+                value_w,
+                meter_x,
+                meter_y,
+                meter_w,
+            ) = rows[index]
             x = int(rect.x)
             y = int(rect.y)
-            self.draw_resource_icon(x + icon_x, y + row_y + 2, icon, color)
-            self.draw_ui_text(self.pyxel, x + icon_x + 16, y + row_y, label, color, "resource")
-            self.draw_text_right(x + value_x + 28, y + row_y, f"{value:03d}", 7, "numeric")
+            self.draw_resource_icon(x + icon_x, y + icon_y, icon, color)
+            self.draw_ui_text_in_rect(
+                Rect(x + label_x, y + label_y, label_w, row_text_height),
+                label,
+                color,
+                "resource",
+                align="left",
+            )
+            self.draw_ui_text_in_rect(
+                Rect(x + value_x, y + value_y, value_w, row_text_height),
+                f"{value:03d}",
+                7,
+                "numeric",
+                align="right",
+            )
             self.draw_meter(x + meter_x, y + meter_y, meter_w, 7, value, maximum, color)
 
     def draw_resource_icon(self, x: int, y: int, icon: str, color: int) -> None:
@@ -1255,12 +1307,8 @@ class DriftWithMeApp:
         rect = self.wordmark_rect()
         if rect.x < self.resource_panel_rect().x + self.resource_panel_rect().width + 8:
             return
-        self.draw_ui_text_center(
-            int(rect.x + rect.width / 2),
-            int(rect.y),
-            "DriftWithMe",
-            7,
-            "auxiliary",
+        self.draw_text_center(
+            int(rect.x + rect.width / 2), int(rect.y + 2), "DRIFTWITHME", 7, scale=1
         )
         baseline = int(rect.y + rect.height - 2)
         self.pyxel.line(int(rect.x + 8), baseline, int(rect.x + rect.width - 8), baseline, 6)
@@ -1328,12 +1376,12 @@ class DriftWithMeApp:
         rect = self.tooltip_rect(two_lines=False)
         self.draw_panel_frame(rect, fill=0, inner=5)
         fitted = self.fit_ui_text_to_width(text, int(rect.width) - 16, "tooltip")
-        self.draw_ui_text_center(
-            int(rect.x + rect.width / 2),
-            int(rect.y + 6),
+        self.draw_ui_text_in_rect(
+            Rect(rect.x + 8, rect.y + 4, rect.width - 16, rect.height - 8),
             fitted,
             8 if self.last_denied_reason else 7,
             "tooltip",
+            align="center",
         )
 
     def current_tooltip_text(self) -> str:

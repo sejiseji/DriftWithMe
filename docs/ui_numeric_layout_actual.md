@@ -53,6 +53,20 @@ Font changes:
 | Numeric | hint/label style only | `14/14/18` | fixed-width resource numbers |
 | Auxiliary | hint style | `12/12/15` | minimap label and status text |
 
+## Fit corrections after device review
+
+User screenshots on 2026-09-13 showed text spilling or degrading in compact windows. The following
+layout-only corrections were applied without changing gameplay, camera, sprites, or SE:
+
+| Element | Before | After | Reason |
+|---|---:|---:|---|
+| Start sound control | `音：入/音：切` text in `32x32` medium system slot | icon-only system button | The text is wider than the compact system slot |
+| Start SE guide Y | `130` | `124` | Keep the guide clear of the preview buttons |
+| Play wordmark | DotGothic auxiliary text `DriftWithMe` | built-in pixel text `DRIFTWITHME` | Small TTF lowercase rendering was visually unstable |
+| Action button label position | fixed Y `25` medium / `31` high | centered inside the v0.2 label rect | Avoid baseline drift and lower-edge clipping |
+| Resource labels/numbers | row Y only | centered inside explicit row rects | Keep `水/電力/000` inside the resource panel |
+| Progress detail | auxiliary `12/15px` | body `16/20px` | Improve readability while still fitting the popup |
+
 ## Implementation notes
 
 - Existing method names such as `action_button_rect()` and `interact_button_rect()` remain, but now resolve to the v0.2 numeric layout.
