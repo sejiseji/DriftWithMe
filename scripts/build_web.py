@@ -63,6 +63,14 @@ body {
 body.drift-portrait #orientation-message {
   display: block;
 }
+
+@media (hover: none), (pointer: coarse) {
+  html,
+  body,
+  canvas {
+    cursor: none;
+  }
+}
 """
 
 
