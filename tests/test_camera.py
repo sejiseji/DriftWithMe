@@ -62,6 +62,23 @@ def test_pan_demo_sequence_freezes_world_and_returns_to_base() -> None:
     assert controller.mode_name == "FOLLOW"
 
 
+def test_actor_focus_point_frames_target_slightly_below_center() -> None:
+    controller, model = make_controller()
+    target = Vec3(model.player.x, model.player_cube_size * 0.5, model.player.z)
+
+    controller.start_focus_point(target, hold_sec=1.0)
+    camera = controller.update(1.0, model.player.x, model.player.z)
+    projected = camera.project(target)
+
+    assert projected is not None
+    assert projected.x == pytest.approx(controller.viewport_width * 0.5)
+    assert projected.y == pytest.approx(controller.viewport_height * 0.56)
+    assert camera.distance == pytest.approx(
+        float(controller.camera_config["base_distance"])
+        / float(controller.camera_config["zoom_max"])
+    )
+
+
 def test_buddy_follows_camera_relative_goal_without_affecting_movement() -> None:
     controller, model = make_controller()
     start_x = model.player.x

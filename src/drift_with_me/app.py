@@ -339,9 +339,33 @@ class DriftWithMeApp:
                 target = self.world.object_by_id(event.target_id)
                 if target is not None:
                     hold_sec = float(event.payload.get("duration_sec", 0.8)) + 0.15
-                    self.camera_controller.start_focus_demo(target, hold_sec=hold_sec)
+                    interaction_kind = str(event.payload.get("interaction_kind", ""))
+                    if interaction_kind == "water_refill":
+                        self.camera_controller.start_focus_point(
+                            self.player_focus_point(), hold_sec=hold_sec
+                        )
+                    elif interaction_kind == "energy_refill":
+                        self.camera_controller.start_focus_point(
+                            self.buddy_focus_point(), hold_sec=hold_sec
+                        )
+                    else:
+                        self.camera_controller.start_focus_demo(target, hold_sec=hold_sec)
         self.effects.process_events(events, self.model)
         self.audio.play_events(events)
+
+    def player_focus_point(self) -> Vec3:
+        return Vec3(
+            self.model.player.x,
+            self.model.player_cube_size * 0.5,
+            self.model.player.z,
+        )
+
+    def buddy_focus_point(self) -> Vec3:
+        return Vec3(
+            self.model.buddy.x,
+            max(0.0, self.model.buddy.y - self.model.buddy_cube_size),
+            self.model.buddy.z,
+        )
 
     def handle_debug_camera_shortcuts(self) -> None:
         pyxel = self.pyxel

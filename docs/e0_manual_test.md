@@ -21,9 +21,9 @@ python main.py
 8. Let a normal urchin reach barrier range and confirm ACTION changes to GUARD.
 9. Hold GUARD and confirm the barrier appears, WATER decreases, and the normal urchin is pushed away once.
 10. Approach a normal urchin without the barrier and confirm Jack is knocked back, not damaged.
-11. Stand near a working tap and press E or REFILL; confirm the compact chip freezes the world, the focus camera moves closer, Jack spins once while jumping, and WATER returns to 100 only at completion.
+11. Stand near a working tap and press E or REFILL; confirm the compact chip freezes the world, the focus camera frames Jack slightly below center, Jack spins once while jumping, and WATER returns to 100 only at completion.
 12. Start a refill and press ESC before completion; confirm the refill is cancelled and the resource value is unchanged.
-13. Stand near a solar station and press E or CHARGE; confirm Fuse spins once while jumping and ENERGY returns to 60 only at completion.
+13. Stand near a solar station and press E or CHARGE; confirm the focus camera frames Fuse slightly below center, Fuse spins once while jumping, and ENERGY returns to 60 only at completion.
 14. Check the stopped tap and confirm it opens a short investigation chip but does not refill water.
 15. Press Enter or DONE during an investigation chip and confirm the chip closes without moving Jack.
 16. Press F1 and confirm the debug inspect count increments only for first reads.

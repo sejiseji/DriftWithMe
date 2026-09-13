@@ -36,8 +36,11 @@ class SequenceRuntime:
 
 @dataclass
 class FocusRuntime:
-    target_object: StaticObject
     hold_sec: float
+    target_object: StaticObject | None = None
+    target_point: Vec3 | None = None
+    anchor_x: float | None = None
+    anchor_y: float | None = None
     phase: str = "blend_in"
     elapsed: float = 0.0
     origin: CameraShot | None = None
@@ -117,7 +120,22 @@ class CameraController:
         return True
 
     def start_focus_demo(self, target_object: StaticObject, hold_sec: float = 1.0) -> None:
-        self.focus = FocusRuntime(target_object=target_object, hold_sec=hold_sec)
+        self.focus = FocusRuntime(hold_sec=hold_sec, target_object=target_object)
+        self.sequence = None
+
+    def start_focus_point(
+        self,
+        target_point: Vec3,
+        hold_sec: float = 1.0,
+        anchor_x: float | None = None,
+        anchor_y: float | None = None,
+    ) -> None:
+        self.focus = FocusRuntime(
+            hold_sec=hold_sec,
+            target_point=target_point,
+            anchor_x=anchor_x,
+            anchor_y=anchor_y,
+        )
         self.sequence = None
 
     def cancel_focus(self) -> None:
@@ -259,7 +277,7 @@ class CameraController:
         runtime = self.focus
         if runtime.target is None:
             runtime.origin = self.from_camera_state(self.current)
-            runtime.target = self.focus_shot(runtime.target_object, base, player_x, player_z)
+            runtime.target = self.focus_shot(runtime, base, player_x, player_z)
             runtime.elapsed = 0.0
             runtime.phase = "blend_in"
 
@@ -309,8 +327,23 @@ class CameraController:
         )
 
     def focus_shot(
-        self, target_object: StaticObject, base: CameraShot, player_x: float, player_z: float
+        self, runtime: FocusRuntime, base: CameraShot, player_x: float, player_z: float
     ) -> CameraShot:
+        if runtime.target_point is not None:
+            anchor = self.camera_config.get(
+                "actor_focus_screen_anchor", self.camera_config["focus_screen_anchor"]
+            )
+            return CameraShot(
+                target=runtime.target_point,
+                yaw_deg=base.yaw_deg,
+                pitch_deg=base.pitch_deg,
+                zoom=float(self.camera_config["zoom_max"]),
+                anchor_x=float(anchor[0] if runtime.anchor_x is None else runtime.anchor_x),
+                anchor_y=float(anchor[1] if runtime.anchor_y is None else runtime.anchor_y),
+            )
+
+        assert runtime.target_object is not None
+        target_object = runtime.target_object
         obj_center = Vec3(target_object.x, max(12.0, target_object.height * 0.5), target_object.z)
         player_center = Vec3(
             player_x,
