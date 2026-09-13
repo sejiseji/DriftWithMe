@@ -91,6 +91,14 @@
       "debug": "F1"
     }
   },
+  "auto_move": {
+    "enabled": true,
+    "short_tap_sec": 0.18,
+    "max_interval_sec": 0.3,
+    "max_distance_ref_px": 20.0,
+    "arrival_radius_world": 2.0,
+    "stuck_sec": 0.5
+  },
   "camera": {
     "yaw_deg": 20.0,
     "pitch_deg": 25.0,

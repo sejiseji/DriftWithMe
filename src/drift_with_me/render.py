@@ -92,6 +92,7 @@ class Renderer:
         pyxel.cls(1)
         self.draw_ground(model.world, camera)
         self.draw_safe_zones(model.world, camera)
+        self.draw_auto_move_goal(model, camera, presentation_time)
         commands = self.world_commands(model, camera, presentation_time, effects)
         for command in sorted(
             commands, key=lambda item: (-item.depth, item.layer_bias, item.stable_id)
@@ -134,6 +135,16 @@ class Renderer:
     def draw_safe_zones(self, world: WorldData, camera: CameraState) -> None:
         for zone in world.safe_zones:
             self.draw_world_circle(camera, zone.x, zone.z, zone.radius, 12)
+
+    def draw_auto_move_goal(
+        self, model: GameModel, camera: CameraState, presentation_time: float
+    ) -> None:
+        if model.auto_move_goal is None:
+            return
+        goal_x, goal_z = model.auto_move_goal
+        pulse = 1.0 + 0.14 * math.sin(presentation_time * math.tau * 2.0)
+        self.draw_world_circle(camera, goal_x, goal_z, 10.0 * pulse, 10)
+        self.draw_world_circle(camera, goal_x, goal_z, 4.5 * pulse, 7)
 
     def world_commands(
         self,

@@ -4,6 +4,7 @@ import math
 from dataclasses import dataclass
 from enum import Enum, auto
 
+from drift_with_me.math3d import CameraState
 from drift_with_me.model import InputIntent
 
 
@@ -25,6 +26,146 @@ class Rect:
 
     def contains(self, px: float, py: float) -> bool:
         return self.x <= px <= self.x + self.width and self.y <= py <= self.y + self.height
+
+
+@dataclass(frozen=True)
+class DoubleTapMoveRequest:
+    screen_x: float
+    screen_y: float
+    camera: CameraState
+
+
+class DoubleTapMoveRecognizer:
+    def __init__(
+        self,
+        short_tap_sec: float,
+        max_interval_sec: float,
+        max_distance_px: float,
+        drag_threshold_px: float,
+    ) -> None:
+        self.short_tap_sec = short_tap_sec
+        self.max_interval_sec = max_interval_sec
+        self.max_distance_px = max_distance_px
+        self.drag_threshold_px = drag_threshold_px
+        self.was_down = False
+        self.candidate_active = False
+        self.candidate_valid = False
+        self.start_x = 0.0
+        self.start_y = 0.0
+        self.current_x = 0.0
+        self.current_y = 0.0
+        self.held_sec = 0.0
+        self.start_camera: CameraState | None = None
+        self.candidate_matches_last_tap = False
+        self.last_tap_active = False
+        self.last_tap_elapsed = 0.0
+        self.last_tap_x = 0.0
+        self.last_tap_y = 0.0
+
+    def cancel(self) -> None:
+        self.candidate_active = False
+        self.candidate_valid = False
+        self.start_camera = None
+        self.candidate_matches_last_tap = False
+        self.last_tap_active = False
+        self.last_tap_elapsed = 0.0
+
+    def update(
+        self,
+        down: bool,
+        x: float,
+        y: float,
+        dt: float,
+        ui_rects: tuple[Rect, ...],
+        camera: CameraState,
+        accepting_world_input: bool = True,
+    ) -> DoubleTapMoveRequest | None:
+        dt = max(0.0, dt)
+        if self.last_tap_active:
+            self.last_tap_elapsed += dt
+            if self.last_tap_elapsed > self.max_interval_sec:
+                self.last_tap_active = False
+
+        if not accepting_world_input:
+            self.cancel()
+            self.was_down = down
+            return None
+
+        if not down:
+            if self.was_down and self.candidate_active:
+                self.held_sec += dt
+            request = self._release(x, y)
+            self.was_down = False
+            return request
+
+        if not self.was_down:
+            self.was_down = True
+            if any(rect.contains(x, y) for rect in ui_rects):
+                self.candidate_active = False
+                self.candidate_valid = False
+                return None
+            self.candidate_active = True
+            self.candidate_valid = True
+            self.start_x = x
+            self.start_y = y
+            self.current_x = x
+            self.current_y = y
+            self.held_sec = 0.0
+            self.start_camera = camera
+            self.candidate_matches_last_tap = False
+            if self.last_tap_active and self.last_tap_elapsed <= self.max_interval_sec:
+                distance = math.hypot(
+                    self.start_x - self.last_tap_x, self.start_y - self.last_tap_y
+                )
+                self.candidate_matches_last_tap = distance <= self.max_distance_px
+            return None
+
+        self.current_x = x
+        self.current_y = y
+        self.held_sec += dt
+        if not self.candidate_active:
+            return None
+
+        moved = math.hypot(self.current_x - self.start_x, self.current_y - self.start_y)
+        if moved >= self.drag_threshold_px or self.held_sec > self.short_tap_sec:
+            self.candidate_valid = False
+            if moved >= self.drag_threshold_px:
+                self.last_tap_active = False
+        return None
+
+    def _release(self, x: float, y: float) -> DoubleTapMoveRequest | None:
+        if not self.was_down or not self.candidate_active:
+            self.candidate_active = False
+            self.candidate_valid = False
+            return None
+
+        start_camera = self.start_camera
+        moved = math.hypot(x - self.start_x, y - self.start_y)
+        short_tap = (
+            self.candidate_valid
+            and self.held_sec <= self.short_tap_sec
+            and moved < self.drag_threshold_px
+            and start_camera is not None
+        )
+        self.candidate_active = False
+        self.candidate_valid = False
+        self.start_camera = None
+        if not short_tap:
+            self.candidate_matches_last_tap = False
+            return None
+
+        if self.candidate_matches_last_tap:
+            self.candidate_matches_last_tap = False
+            self.last_tap_active = False
+            self.last_tap_elapsed = 0.0
+            return DoubleTapMoveRequest(self.start_x, self.start_y, start_camera)
+
+        self.candidate_matches_last_tap = False
+        self.last_tap_active = True
+        self.last_tap_elapsed = 0.0
+        self.last_tap_x = self.start_x
+        self.last_tap_y = self.start_y
+        return None
 
 
 class PointerInput:

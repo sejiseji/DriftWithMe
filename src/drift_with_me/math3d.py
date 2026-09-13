@@ -153,3 +153,31 @@ def screen_to_world_direction(
     world_x = (j11 * screen_x - j01 * screen_y) / det
     world_z = (-j10 * screen_x + j00 * screen_y) / det
     return normalize2(world_x, world_z)
+
+
+def screen_to_ground_point(camera: CameraState, screen_x: float, screen_y: float) -> Vec2 | None:
+    camera_position, forward, right, up = camera.basis
+    f = camera.viewport_width / (2.0 * math.tan(math.radians(camera.horizontal_fov_deg) / 2.0))
+    if not math.isfinite(f) or abs(f) <= 1e-9:
+        return None
+
+    ray = (
+        forward
+        + right * ((screen_x - camera.anchor_x * camera.viewport_width) / f)
+        + up * ((camera.anchor_y * camera.viewport_height - screen_y) / f)
+    )
+    if not math.isfinite(ray.y) or abs(ray.y) <= 1e-9:
+        return None
+
+    t = -camera_position.y / ray.y
+    if not math.isfinite(t) or t <= 0.0:
+        return None
+
+    point = camera_position + ray * t
+    view = point - camera_position
+    depth = dot(view, forward)
+    if depth < camera.near or depth > camera.far or not math.isfinite(depth):
+        return None
+    if not math.isfinite(point.x) or not math.isfinite(point.z):
+        return None
+    return Vec2(point.x, point.z)

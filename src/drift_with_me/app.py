@@ -10,8 +10,8 @@ from drift_with_me.audio import AudioEngine
 from drift_with_me.camera import CameraController
 from drift_with_me.effects import EffectSystem
 from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
-from drift_with_me.input import PointerInput, Rect
-from drift_with_me.math3d import CameraState, Vec3, normalize2
+from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput, Rect
+from drift_with_me.math3d import CameraState, Vec3, normalize2, screen_to_ground_point
 from drift_with_me.model import GameModel, InputIntent, merge_intents
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
@@ -68,17 +68,27 @@ class DriftWithMeApp:
         self.frame = 0
         self.smoke_frames = smoke_frames
         input_config = self.runtime.raw["input"]
+        auto_move_config = self.runtime.raw.get("auto_move", {})
         ui_scale = self.runtime.screen_height / float(
             self.runtime.raw["display"]["reference_ui_height"]
         )
+        drag_threshold_px = float(input_config["drag_threshold_ref_px"]) * ui_scale
         self.pointer = PointerInput(
             hold_sec=float(input_config["hold_sec"]),
-            drag_threshold_px=float(input_config["drag_threshold_ref_px"]) * ui_scale,
+            drag_threshold_px=drag_threshold_px,
             deadzone_px=float(input_config["stick_deadzone_ref_px"]) * ui_scale,
             radius_px=float(input_config["stick_radius_ref_px"]) * ui_scale,
         )
+        self.double_tap_move = DoubleTapMoveRecognizer(
+            short_tap_sec=float(auto_move_config.get("short_tap_sec", 0.18)),
+            max_interval_sec=float(auto_move_config.get("max_interval_sec", 0.3)),
+            max_distance_px=float(auto_move_config.get("max_distance_ref_px", 20.0)) * ui_scale,
+            drag_threshold_px=drag_threshold_px,
+        )
         self.pending_action_pressed = False
         self.pending_interact_pressed = False
+        self.pending_auto_move_goal: tuple[float, float] | None = None
+        self.pending_cancel_auto_move = False
         self.last_denied_reason = ""
         self.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
         self.browser_pointer_sequence_seen = 0
@@ -166,14 +176,22 @@ class DriftWithMeApp:
 
     def start_game(self) -> None:
         self.pointer.cancel()
+        self.cancel_double_tap_move_gesture()
+        self.model.cancel_auto_move()
         self.previous_time = None
         self.accumulator = 0.0
         self.hitstop_remaining = 0.0
+        self.pending_auto_move_goal = None
+        self.pending_cancel_auto_move = False
         self.screen = AppScreen.PLAY
 
     def update_pause_screen(self) -> None:
         pyxel = self.pyxel
         self.pointer.cancel()
+        self.cancel_double_tap_move_gesture()
+        self.model.cancel_auto_move()
+        self.pending_auto_move_goal = None
+        self.pending_cancel_auto_move = False
         if pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_RETURN):
             self.resume_from_pause()
             return
@@ -196,6 +214,7 @@ class DriftWithMeApp:
 
     def resume_from_pause(self) -> None:
         self.screen = AppScreen.PLAY
+        self.cancel_double_tap_move_gesture()
         self.previous_time = None
 
     def reset_scene_for_debug(self) -> None:
@@ -205,8 +224,11 @@ class DriftWithMeApp:
         self.camera_controller.reset(Vec3(self.model.player.x, 0.0, self.model.player.z))
         self.model.snap_buddy(self.camera())
         self.pointer.cancel()
+        self.cancel_double_tap_move_gesture()
         self.pending_action_pressed = False
         self.pending_interact_pressed = False
+        self.pending_auto_move_goal = None
+        self.pending_cancel_auto_move = False
         self.last_denied_reason = ""
         self.previous_time = None
         self.accumulator = 0.0
@@ -243,6 +265,11 @@ class DriftWithMeApp:
             return True
         return False
 
+    def cancel_double_tap_move_gesture(self) -> None:
+        recognizer = getattr(self, "double_tap_move", None)
+        if recognizer is not None:
+            recognizer.cancel()
+
     def update_play_screen(self, elapsed: float) -> None:
         pyxel = self.pyxel
         if pyxel.btnp(pyxel.KEY_ESCAPE):
@@ -251,6 +278,10 @@ class DriftWithMeApp:
                 self.camera_controller.cancel_focus()
             self.screen = AppScreen.PAUSE
             self.pointer.cancel()
+            self.cancel_double_tap_move_gesture()
+            self.pending_auto_move_goal = None
+            self.pending_cancel_auto_move = False
+            self.model.cancel_auto_move()
             return
         if self.mouse_pressed_in(self.pause_button_rect()):
             if self.model.world_paused:
@@ -258,6 +289,10 @@ class DriftWithMeApp:
                 self.camera_controller.cancel_focus()
             self.screen = AppScreen.PAUSE
             self.pointer.cancel()
+            self.cancel_double_tap_move_gesture()
+            self.pending_auto_move_goal = None
+            self.pending_cancel_auto_move = False
+            self.model.cancel_auto_move()
             return
         if self.mouse_pressed_in(self.sound_button_rect()):
             self.audio.toggle_mute()
@@ -265,6 +300,9 @@ class DriftWithMeApp:
         self.handle_debug_camera_shortcuts()
         if self.model.world_paused:
             self.pointer.cancel()
+            self.cancel_double_tap_move_gesture()
+            self.pending_auto_move_goal = None
+            self.pending_cancel_auto_move = False
             interaction = self.model.interaction
             if interaction is not None and interaction.kind in {"water_refill", "energy_refill"}:
                 if self.mouse_pressed_in(self.interact_button_rect()):
@@ -291,6 +329,10 @@ class DriftWithMeApp:
         input_camera = self.camera()
         if self.camera_controller.freezes_world:
             self.pointer.cancel()
+            self.cancel_double_tap_move_gesture()
+            self.pending_auto_move_goal = None
+            self.pending_cancel_auto_move = False
+            self.model.cancel_auto_move()
             self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
             self.effects.update(elapsed, self.model)
             return
@@ -298,11 +340,29 @@ class DriftWithMeApp:
         keyboard_intent = self.keyboard_intent()
         pointer_intent = self.pointer_intent(elapsed)
         ui_button_intent = self.ui_button_intent()
+        ground_pointer_cancel_intent = self.ground_pointer_cancel_intent()
+        double_tap_intent = self.double_tap_move_intent(
+            elapsed, self.presentation_camera(input_camera)
+        )
         if keyboard_intent.action_pressed or ui_button_intent.action_pressed:
             self.pending_action_pressed = True
         if keyboard_intent.interact_pressed or ui_button_intent.interact_pressed:
             self.pending_interact_pressed = True
-        base_intent = merge_intents(keyboard_intent, pointer_intent, ui_button_intent)
+        base_intent = merge_intents(
+            keyboard_intent,
+            pointer_intent,
+            ui_button_intent,
+            ground_pointer_cancel_intent,
+            double_tap_intent,
+        )
+        if base_intent.auto_move_goal_x is not None and base_intent.auto_move_goal_z is not None:
+            self.pending_auto_move_goal = (
+                base_intent.auto_move_goal_x,
+                base_intent.auto_move_goal_z,
+            )
+            self.pending_cancel_auto_move = False
+        elif base_intent.cancel_auto_move:
+            self.pending_cancel_auto_move = True
         if self.update_hitstop(elapsed, base_intent):
             return
 
@@ -312,6 +372,15 @@ class DriftWithMeApp:
         steps = 0
         all_events = []
         while self.accumulator >= fixed_dt and steps < max_steps:
+            first_step = steps == 0
+            pending_auto_move_goal = self.pending_auto_move_goal if first_step else None
+            one_shot_auto_goal_x = (
+                pending_auto_move_goal[0] if pending_auto_move_goal is not None else None
+            )
+            one_shot_auto_goal_z = (
+                pending_auto_move_goal[1] if pending_auto_move_goal is not None else None
+            )
+            one_shot_cancel_auto_move = self.pending_cancel_auto_move if first_step else False
             step_intent = InputIntent(
                 screen_x=base_intent.screen_x,
                 screen_y=base_intent.screen_y,
@@ -319,10 +388,16 @@ class DriftWithMeApp:
                 barrier=base_intent.barrier,
                 action_pressed=self.pending_action_pressed,
                 interact_pressed=self.pending_interact_pressed,
+                auto_move_goal_x=one_shot_auto_goal_x,
+                auto_move_goal_z=one_shot_auto_goal_z,
+                cancel_auto_move=one_shot_cancel_auto_move,
             )
             self.pending_action_pressed = False
             self.pending_interact_pressed = False
             events = self.model.step(step_intent, input_camera, fixed_dt)
+            if first_step:
+                self.pending_auto_move_goal = None
+                self.pending_cancel_auto_move = False
             all_events.extend(events)
             self.accumulator -= fixed_dt
             steps += 1
@@ -522,6 +597,42 @@ class DriftWithMeApp:
             dt=elapsed,
             ui_rects=self.active_ui_rects(),
         )
+
+    def ground_pointer_cancel_intent(self) -> InputIntent:
+        pointer = self.pointer_snapshot
+        if not pointer.pressed:
+            return InputIntent()
+        if any(rect.contains(pointer.x, pointer.y) for rect in self.active_ui_rects()):
+            return InputIntent()
+        return InputIntent(cancel_auto_move=True)
+
+    def double_tap_move_intent(self, elapsed: float, camera: CameraState) -> InputIntent:
+        if not bool(self.runtime.raw.get("auto_move", {}).get("enabled", False)):
+            return InputIntent()
+        pointer = self.pointer_snapshot
+        request = self.double_tap_move.update(
+            down=pointer.down,
+            x=pointer.x,
+            y=pointer.y,
+            dt=elapsed,
+            ui_rects=self.active_ui_rects(),
+            camera=camera,
+            accepting_world_input=self.hitstop_remaining <= 0.0,
+        )
+        if request is None:
+            return InputIntent()
+
+        point = screen_to_ground_point(request.camera, request.screen_x, request.screen_y)
+        if point is None or not (
+            0.0 <= point.x <= self.world.width and 0.0 <= point.y <= self.world.depth
+        ):
+            self.reject_auto_move_goal("auto_move_blocked")
+            return InputIntent()
+        return InputIntent(auto_move_goal_x=point.x, auto_move_goal_z=point.y)
+
+    def reject_auto_move_goal(self, reason: str) -> None:
+        self.last_denied_reason = reason
+        self.audio.play_preview("action_denied")
 
     def ui_button_intent(self) -> InputIntent:
         action_mode = self.action_button_mode()

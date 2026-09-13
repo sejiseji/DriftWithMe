@@ -87,6 +87,9 @@ class InputIntent:
     barrier: bool = False
     action_pressed: bool = False
     interact_pressed: bool = False
+    auto_move_goal_x: float | None = None
+    auto_move_goal_z: float | None = None
+    cancel_auto_move: bool = False
 
 
 @dataclass
@@ -137,6 +140,8 @@ class GameModel:
         self.bubble_cooldown_remaining = 0.0
         self.inspected_object_ids: set[str] = set()
         self.active_enemy_ids: set[str] = set()
+        self.auto_move_goal: tuple[float, float] | None = None
+        self.auto_move_stuck_elapsed = 0.0
         self.refresh_active_enemies()
 
     def enemy_from_spawn(self, spawn) -> EnemyState:
@@ -186,6 +191,8 @@ class GameModel:
         self.bubble_cooldown_remaining = 0.0
         self.inspected_object_ids = set()
         self.active_enemy_ids = set()
+        self.auto_move_goal = None
+        self.auto_move_stuck_elapsed = 0.0
         self.refresh_active_enemies()
 
     @property
@@ -285,6 +292,7 @@ class GameModel:
     def step(self, intent: InputIntent, camera: CameraState, dt: float) -> list[GameEvent]:
         events: list[GameEvent] = []
         if self.world_paused:
+            self.cancel_auto_move()
             self.player.barrier_active = False
             self.last_events = events
             return events
@@ -294,6 +302,23 @@ class GameModel:
         self.bubble_cooldown_remaining = max(0.0, self.bubble_cooldown_remaining - dt)
         self.player.stun_remaining = max(0.0, self.player.stun_remaining - dt)
         self.player.invulnerable_remaining = max(0.0, self.player.invulnerable_remaining - dt)
+
+        manual_cancel = (
+            intent.cancel_auto_move
+            or intent.strength > 0.0
+            or intent.barrier
+            or intent.action_pressed
+            or intent.interact_pressed
+        )
+        if manual_cancel:
+            self.cancel_auto_move()
+
+        if (
+            not manual_cancel
+            and intent.auto_move_goal_x is not None
+            and intent.auto_move_goal_z is not None
+        ):
+            self.request_auto_move_goal(intent.auto_move_goal_x, intent.auto_move_goal_z, events)
 
         if intent.action_pressed:
             self.try_context_action(events, camera, busy=intent.barrier)
@@ -326,23 +351,15 @@ class GameModel:
             distance = move_speed * max(0.0, min(intent.strength, 1.0)) * dt
             delta_x = direction.x * distance
             delta_z = direction.y * distance
-            before_x = self.player.x
-            before_z = self.player.z
-            next_x, next_z = self.world.move_player_sliding(
-                before_x,
-                before_z,
-                delta_x,
-                delta_z,
-                self.player_half_x,
-                self.player_half_z,
-            )
-            self.player.x = next_x
-            self.player.z = next_z
-            moved = ((next_x - before_x) ** 2 + (next_z - before_z) ** 2) ** 0.5
-            self.player.moved_distance += moved
-            if moved > 1e-6:
-                self.player.last_move_x = (next_x - before_x) / moved
-                self.player.last_move_z = (next_z - before_z) / moved
+            self.move_player_by_delta(delta_x, delta_z)
+        elif (
+            not intent.barrier
+            and not self.player.barrier_active
+            and self.action_lock_remaining <= 0.0
+            and self.player.stun_remaining <= 0.0
+            and self.auto_move_goal is not None
+        ):
+            self.update_auto_move(events, dt)
 
         self.refresh_active_enemies()
         self.update_enemies(dt, events)
@@ -355,6 +372,80 @@ class GameModel:
 
         self.last_events = events
         return events
+
+    def cancel_auto_move(self) -> None:
+        self.auto_move_goal = None
+        self.auto_move_stuck_elapsed = 0.0
+
+    def request_auto_move_goal(self, goal_x: float, goal_z: float, events: list[GameEvent]) -> None:
+        auto_move = self.config.get("auto_move", {})
+        if not bool(auto_move.get("enabled", False)):
+            return
+        if not math.isfinite(goal_x) or not math.isfinite(goal_z):
+            self.emit_denied(events, "auto_move_blocked", scope="auto_move")
+            return
+        if self.world.collides_player(goal_x, goal_z, self.player_half_x, self.player_half_z):
+            self.emit_denied(events, "auto_move_blocked", scope="auto_move")
+            return
+        if not self.auto_move_path_clear(goal_x, goal_z):
+            self.emit_denied(events, "auto_move_no_path", scope="auto_move")
+            return
+        self.auto_move_goal = (goal_x, goal_z)
+        self.auto_move_stuck_elapsed = 0.0
+
+    def auto_move_path_clear(self, goal_x: float, goal_z: float) -> bool:
+        radius = max(self.player_half_x, self.player_half_z)
+        return self.has_line_of_sight(self.player.x, self.player.z, goal_x, goal_z, radius=radius)
+
+    def update_auto_move(self, events: list[GameEvent], dt: float) -> None:
+        if self.auto_move_goal is None:
+            return
+        goal_x, goal_z = self.auto_move_goal
+        dx = goal_x - self.player.x
+        dz = goal_z - self.player.z
+        distance = math.hypot(dx, dz)
+        auto_move = self.config.get("auto_move", {})
+        arrival_radius = float(auto_move.get("arrival_radius_world", 2.0))
+        if distance <= arrival_radius:
+            self.cancel_auto_move()
+            return
+
+        move_speed = float(self.config["player"]["move_speed"])
+        travel = min(move_speed * dt, distance)
+        moved = self.move_player_by_delta(dx / distance * travel, dz / distance * travel)
+        remaining = math.hypot(goal_x - self.player.x, goal_z - self.player.z)
+        if remaining <= arrival_radius:
+            self.cancel_auto_move()
+            return
+
+        if moved <= max(0.01, travel * 0.1):
+            self.auto_move_stuck_elapsed += dt
+        else:
+            self.auto_move_stuck_elapsed = 0.0
+
+        if self.auto_move_stuck_elapsed >= float(auto_move.get("stuck_sec", 0.5)):
+            self.cancel_auto_move()
+            self.emit_denied(events, "auto_move_no_path", scope="auto_move")
+
+    def move_player_by_delta(self, delta_x: float, delta_z: float) -> float:
+        before_x = self.player.x
+        before_z = self.player.z
+        next_x, next_z = self.world.move_player_sliding(
+            before_x,
+            before_z,
+            delta_x,
+            delta_z,
+            self.player_half_x,
+            self.player_half_z,
+        )
+        self.player.x = next_x
+        self.player.z = next_z
+        moved = math.hypot(next_x - before_x, next_z - before_z)
+        self.player.moved_distance += moved
+        if moved > 1e-6:
+            self.player.last_move_x = (next_x - before_x) / moved
+            self.player.last_move_z = (next_z - before_z) / moved
+        return moved
 
     def update_barrier(self, requested: bool, dt: float, events: list[GameEvent]) -> None:
         self.player.barrier_active = False
@@ -761,6 +852,7 @@ class GameModel:
         lines: tuple[str, ...],
         duration_sec: float,
     ) -> None:
+        self.cancel_auto_move()
         self.player.barrier_active = False
         self.interaction = InteractionState(
             kind=kind,
@@ -1160,6 +1252,7 @@ class GameModel:
             if enemy.state in {"DEFEATED", "REPELLED", "REST", "CAPTURED"}:
                 continue
             if self.player_overlaps_enemy(enemy):
+                self.cancel_auto_move()
                 self.knock_player_from(enemy)
                 self.player.stun_remaining = float(self.config["player"]["contact_stun_sec"])
                 self.player.invulnerable_remaining = float(
@@ -1308,6 +1401,9 @@ def merge_intents(*intents: InputIntent) -> InputIntent:
     barrier = False
     action_pressed = False
     interact_pressed = False
+    auto_move_goal_x: float | None = None
+    auto_move_goal_z: float | None = None
+    cancel_auto_move = False
     for intent in intents:
         if intent.strength > strength:
             screen_x = intent.screen_x
@@ -1316,6 +1412,10 @@ def merge_intents(*intents: InputIntent) -> InputIntent:
         barrier = barrier or intent.barrier
         action_pressed = action_pressed or intent.action_pressed
         interact_pressed = interact_pressed or intent.interact_pressed
+        if intent.auto_move_goal_x is not None and intent.auto_move_goal_z is not None:
+            auto_move_goal_x = intent.auto_move_goal_x
+            auto_move_goal_z = intent.auto_move_goal_z
+        cancel_auto_move = cancel_auto_move or intent.cancel_auto_move
     return InputIntent(
         screen_x=screen_x,
         screen_y=screen_y,
@@ -1323,6 +1423,9 @@ def merge_intents(*intents: InputIntent) -> InputIntent:
         barrier=barrier,
         action_pressed=action_pressed,
         interact_pressed=interact_pressed,
+        auto_move_goal_x=auto_move_goal_x,
+        auto_move_goal_z=auto_move_goal_z,
+        cancel_auto_move=cancel_auto_move,
     )
 
 
