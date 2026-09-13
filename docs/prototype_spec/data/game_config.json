@@ -272,9 +272,9 @@
         "high": 15
       },
       "button_px": {
-        "low": 16,
-        "medium": 16,
-        "high": 20
+        "low": 14,
+        "medium": 14,
+        "high": 18
       },
       "resource_px": {
         "low": 16,

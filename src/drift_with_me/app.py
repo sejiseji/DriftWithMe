@@ -1310,7 +1310,7 @@ class DriftWithMeApp:
     def action_button_label_rect(self, rect: Rect) -> Rect:
         pad_x = 8 if self.runtime.profile.name == "high" else 6
         label_h = 20 if self.runtime.profile.name == "high" else 16
-        bottom_pad = 5 if self.runtime.profile.name == "high" else 4
+        bottom_pad = 8 if self.runtime.profile.name == "high" else 6
         return Rect(
             rect.x + pad_x,
             rect.y + rect.height - label_h - bottom_pad,
@@ -1404,8 +1404,20 @@ class DriftWithMeApp:
             x = int(rect.x + rect.width / 2 - text_width / 2)
         else:
             x = int(rect.x)
-        y = int(rect.y + max(0.0, (rect.height - text_height) / 2.0))
+        y_float = rect.y + max(0.0, (rect.height - text_height) / 2.0)
+        y_float += self.ui_text_vertical_offset(style_name)
+        max_y = rect.y + rect.height - text_height
+        if max_y >= rect.y:
+            y_float = min(max(y_float, rect.y), max_y)
+        y = int(y_float)
         self.draw_ui_text(self.pyxel, x, y, text, color, style_name)
+
+    def ui_text_vertical_offset(self, style_name: str) -> int:
+        if style_name == "button":
+            return -2
+        if style_name in {"tooltip", "resource", "numeric"}:
+            return -1
+        return 0
 
     def draw_resource_panel(self) -> None:
         rect = self.resource_panel_rect()

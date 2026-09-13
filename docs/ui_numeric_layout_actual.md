@@ -83,6 +83,22 @@ applied without changing gameplay, camera, sprites, or SE:
 | Progress placement | near Jack/Fuse candidate positions | fixed lower chip slot | Avoid covering the zoom target during refill/charge |
 | Progress detail text | title + percent + meter + detail line | title + percent + meter only in compact chips | Prevent text clipping and character occlusion |
 
+## Text fit corrections after device review
+
+User screenshot review on 2026-09-13 showed the compact bottom UI still sitting too low, with
+Japanese labels touching the lower window borders. The following UI-only corrections were applied:
+
+| Element | Before | After | Reason |
+|---|---:|---:|---|
+| Low context / primary / progress Y | `154` | `148` | Lift lower UI away from the screen edge |
+| Medium context / primary Y | `190` | `184` | Lift lower action windows |
+| Medium progress Y | `188` | `182` | Keep progress chip aligned above the lower edge |
+| High context / primary / progress Y | `236` | `228` | Preserve scaled spacing on high profile |
+| Tooltip Y low/medium/high | `119/154/190` | `111/146/180` | Keep tooltip clear of button labels after the button lift |
+| Button font low/medium/high | runtime `16/16/20` | runtime `14/14/18` | Match the compact layout font values and avoid lower-edge clipping |
+| Button text baseline | centered only | centered, then lifted by 2 logical px | Compensate for the font's visual lower weight |
+| Tooltip/resource/numeric text baseline | centered only | centered, then lifted by 1 logical px | Keep labels inside framed panels |
+
 ## Implementation notes
 
 - Existing method names such as `action_button_rect()` and `interact_button_rect()` remain, but now resolve to the v0.2 numeric layout.
