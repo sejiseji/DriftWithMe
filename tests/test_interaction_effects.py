@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from drift_with_me.config import load_runtime_config
-from drift_with_me.effects import EffectSystem
+from drift_with_me.effects import EffectSystem, presentation_cue_for_event
 from drift_with_me.events import GameEvent
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import BubbleState, GameModel, InputIntent
@@ -145,8 +145,79 @@ def test_effects_capacity_and_model_invariance() -> None:
     effects.update(1.0 / 60.0, model)
 
     assert len(effects.particles) <= effects.max_particles
+    assert len(effects.rings) <= effects.max_particles
+    assert len(effects.strokes) <= effects.max_particles
     assert len(effects.emotes) <= effects.max_emotes
     assert snapshot_model(model) == before
+
+
+def test_presentation_cue_mapping_for_existing_events() -> None:
+    model, _camera = make_model()
+
+    assert (
+        presentation_cue_for_event(
+            event(
+                model,
+                "resource_refilled",
+                model.player.x,
+                model.player.z,
+                payload={"resource": "water"},
+            )
+        )
+        == "DWF_REFILL_DONE"
+    )
+    assert (
+        presentation_cue_for_event(
+            event(
+                model,
+                "resource_refilled",
+                model.player.x,
+                model.player.z,
+                payload={"resource": "energy"},
+            )
+        )
+        == "DWF_CHARGE_DONE"
+    )
+    assert (
+        presentation_cue_for_event(event(model, "barrier_repelled", model.player.x, model.player.z))
+        == "DWF_GUARD_REPEL"
+    )
+    assert (
+        presentation_cue_for_event(event(model, "enemy_captured", model.player.x, model.player.z))
+        == "DWF_BUBBLE_CAPTURE"
+    )
+    assert (
+        presentation_cue_for_event(
+            event(model, "discharge_succeeded", model.player.x, model.player.z)
+        )
+        == "DWF_ZAP_HIT"
+    )
+    assert (
+        presentation_cue_for_event(
+            event(model, "abnormal_windup_started", model.player.x, model.player.z)
+        )
+        == "DWF_ABNORMAL_WINDUP"
+    )
+
+
+def test_presentation_cues_create_local_fx_once_per_event() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    refill = event(
+        model,
+        "resource_refilled",
+        model.player.x,
+        model.player.z,
+        payload={"resource": "water"},
+    )
+    zap = event(model, "discharge_succeeded", model.player.x + 32.0, model.player.z)
+
+    effects.process_events([refill, refill, zap, zap], model)
+
+    assert len(effects.rings) == 2
+    assert len(effects.strokes) == 4
+    assert len(effects.particles) == effects.max_particles_per_event * 2
+    assert {particle.color for particle in effects.particles} >= {5, 7, 9, 10, 12}
 
 
 def test_grass_reaction_uses_cooldown() -> None:

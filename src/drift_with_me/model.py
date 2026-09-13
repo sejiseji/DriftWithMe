@@ -345,7 +345,7 @@ class GameModel:
                 self.player.last_move_z = (next_z - before_z) / moved
 
         self.refresh_active_enemies()
-        self.update_enemies(dt)
+        self.update_enemies(dt, events)
         self.update_bubble(dt, events)
         if self.player.barrier_active:
             self.resolve_barrier_contacts(events)
@@ -907,7 +907,7 @@ class GameModel:
             for enemy in self.enemies
         )
 
-    def update_enemies(self, dt: float) -> None:
+    def update_enemies(self, dt: float, events: list[GameEvent]) -> None:
         for enemy in self.enemies:
             if enemy.state == "DEFEATED":
                 continue
@@ -938,7 +938,7 @@ class GameModel:
                 continue
 
             if enemy.kind == "abnormal":
-                self.update_abnormal_enemy(enemy, dt)
+                self.update_abnormal_enemy(enemy, dt, events)
                 continue
 
             if enemy.kind != "normal":
@@ -961,7 +961,7 @@ class GameModel:
                     enemy.state = "REST"
                     enemy.state_timer = 0.5
 
-    def update_abnormal_enemy(self, enemy: EnemyState, dt: float) -> None:
+    def update_abnormal_enemy(self, enemy: EnemyState, dt: float, events: list[GameEvent]) -> None:
         if enemy.state == "RECOVER":
             enemy.state_timer = max(0.0, enemy.state_timer - dt)
             if enemy.state_timer <= 0.0:
@@ -1004,7 +1004,7 @@ class GameModel:
                 enemy.state = "RETURN_HOME" if self.enemy_home_distance(enemy) > 2.0 else "IDLE"
                 return
             if distance_to_player <= float(abnormal["windup_range"]):
-                self.start_abnormal_windup(enemy)
+                self.start_abnormal_windup(enemy, events)
                 return
             moved = self.move_enemy_towards(
                 enemy,
@@ -1017,7 +1017,7 @@ class GameModel:
                 enemy.state = "RECOVER"
                 enemy.state_timer = float(abnormal["recover_sec"])
 
-    def start_abnormal_windup(self, enemy: EnemyState) -> None:
+    def start_abnormal_windup(self, enemy: EnemyState, events: list[GameEvent]) -> None:
         dx = self.player.x - enemy.x
         dz = self.player.z - enemy.z
         length = math.hypot(dx, dz)
@@ -1030,6 +1030,16 @@ class GameModel:
         enemy.dash_z = dz
         enemy.state = "WINDUP"
         enemy.state_timer = float(self.config["enemy"]["abnormal"]["windup_sec"])
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="abnormal_windup_started",
+                actor_id=enemy.id,
+                target_id="player",
+                world_position=(enemy.x, 0.0, enemy.z),
+                payload={"dash_x": enemy.dash_x, "dash_z": enemy.dash_z},
+            )
+        )
 
     def resolve_abnormal_after_recover(self, enemy: EnemyState) -> None:
         if self.enemy_home_distance(enemy) > 2.0:

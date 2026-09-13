@@ -27,6 +27,46 @@ class WorldParticle:
 
 
 @dataclass
+class WorldRing:
+    x: float
+    z: float
+    start_radius: float
+    end_radius: float
+    color: int
+    lifetime: float
+    age: float = 0.0
+
+    @property
+    def progress(self) -> float:
+        if self.lifetime <= 1e-6:
+            return 1.0
+        return max(0.0, min(self.age / self.lifetime, 1.0))
+
+    @property
+    def radius(self) -> float:
+        return self.start_radius + (self.end_radius - self.start_radius) * self.progress
+
+
+@dataclass
+class WorldStroke:
+    start_x: float
+    start_y: float
+    start_z: float
+    end_x: float
+    end_y: float
+    end_z: float
+    color: int
+    lifetime: float
+    age: float = 0.0
+
+    @property
+    def progress(self) -> float:
+        if self.lifetime <= 1e-6:
+            return 1.0
+        return max(0.0, min(self.age / self.lifetime, 1.0))
+
+
+@dataclass
 class ActorEmote:
     anchor_kind: str
     anchor_id: str
@@ -57,6 +97,25 @@ class ScreenCue:
         return max(0.0, min(self.age / self.lifetime, 1.0))
 
 
+def presentation_cue_for_event(event: GameEvent) -> str | None:
+    if event.kind == "resource_refilled":
+        resource = event.payload.get("resource")
+        if resource == "water":
+            return "DWF_REFILL_DONE"
+        if resource == "energy":
+            return "DWF_CHARGE_DONE"
+        return None
+    if event.kind == "barrier_repelled":
+        return "DWF_GUARD_REPEL"
+    if event.kind == "enemy_captured":
+        return "DWF_BUBBLE_CAPTURE"
+    if event.kind == "discharge_succeeded":
+        return "DWF_ZAP_HIT"
+    if event.kind == "abnormal_windup_started":
+        return "DWF_ABNORMAL_WINDUP"
+    return None
+
+
 class EffectSystem:
     def __init__(self, config: dict[str, Any]) -> None:
         effects = config["effects"]
@@ -66,44 +125,85 @@ class EffectSystem:
         self.max_particles_per_event = int(effects["max_particles_per_event"])
         self.concentration_line_count = int(effects["concentration_line_count"])
         self.particles: list[WorldParticle] = []
+        self.rings: list[WorldRing] = []
+        self.strokes: list[WorldStroke] = []
         self.emotes: list[ActorEmote] = []
         self.screen_cues: list[ScreenCue] = []
         self._grass_cooldowns: dict[str, float] = {}
+        self._processed_cues: set[tuple[int, str]] = set()
 
     def reset(self) -> None:
         self.particles.clear()
+        self.rings.clear()
+        self.strokes.clear()
         self.emotes.clear()
         self.screen_cues.clear()
         self._grass_cooldowns.clear()
+        self._processed_cues.clear()
 
     def process_events(self, events: list[GameEvent], model) -> None:
         for event in events:
             x, y, z = event.world_position
-            if event.kind == "bubble_fired":
+            cue_id = presentation_cue_for_event(event)
+            if cue_id is not None:
+                key = (event.event_id, cue_id)
+                if key in self._processed_cues:
+                    continue
+                self._processed_cues.add(key)
+                self.process_presentation_cue(cue_id, event, model)
+            elif event.kind == "bubble_fired":
                 self.spawn_burst(x, y, z, color=12, count=5, speed=16.0)
-            elif event.kind == "enemy_captured":
-                self.spawn_burst(x, y, z, color=12, count=7, speed=10.0)
-                self.add_emote("enemy", event.target_id or "", x, z, "!", 12, 0.7)
-            elif event.kind == "barrier_repelled":
-                self.spawn_burst(x, y, z, color=12, count=6, speed=18.0)
-                self.add_emote("enemy", event.target_id or "", x, z, "!", 7, 0.45)
-            elif event.kind == "discharge_succeeded":
-                self.spawn_burst(x, y, z, color=10, count=8, speed=22.0)
-                self.add_emote("enemy", event.target_id or "", x, z, "!", 10, 0.6)
             elif event.kind == "action_denied":
                 self.add_emote("player", "player", model.player.x, model.player.z, "?", 8, 0.45)
             elif event.kind == "inspection_completed":
                 self.add_emote("object", event.target_id or "", x, z, "?", 7, 0.8)
                 self.add_screen_cue("focus_lines", 0.35)
-            elif event.kind == "resource_refilled":
-                self.spawn_burst(
-                    x,
-                    y,
-                    z,
-                    color=10 if event.payload.get("resource") == "energy" else 12,
-                    count=6,
-                    speed=10.0,
-                )
+
+    def process_presentation_cue(self, cue_id: str, event: GameEvent, model) -> None:
+        x, y, z = event.world_position
+        if cue_id == "DWF_REFILL_DONE":
+            self.spawn_burst_palette(
+                model.player.x,
+                model.player_cube_size * 0.5,
+                model.player.z,
+                colors=(5, 12, 6, 7),
+                count=8,
+                speed=12.0,
+            )
+            self.add_ring(model.player.x, model.player.z, 6.0, 22.0, 12, 0.6)
+        elif cue_id == "DWF_CHARGE_DONE":
+            self.spawn_burst_palette(
+                model.buddy.x,
+                model.buddy.y,
+                model.buddy.z,
+                colors=(9, 10, 7),
+                count=8,
+                speed=14.0,
+            )
+            self.add_ring(model.buddy.x, model.buddy.z, 4.0, 12.0, 10, 0.55)
+        elif cue_id == "DWF_GUARD_REPEL":
+            self.spawn_burst_palette(x, y, z, colors=(5, 12, 6, 7), count=5, speed=18.0)
+            self.add_ring(x, z, 6.0, 14.0, 12, 0.24)
+            self.add_direction_strokes(model.player.x, model.player.z, x, z, 12.0, 7, 0.18)
+            self.add_emote("enemy", event.target_id or "", x, z, "!", 7, 0.45)
+        elif cue_id == "DWF_BUBBLE_CAPTURE":
+            self.spawn_burst_palette(x, y, z, colors=(5, 12, 6, 7), count=7, speed=10.0)
+            self.add_ring(x, z, 10.0, 18.0, 12, 0.3)
+            self.add_glint_strokes(x, z, 12.0, 12, 0.22)
+            self.add_emote("enemy", event.target_id or "", x, z, "!", 12, 0.7)
+        elif cue_id == "DWF_ZAP_HIT":
+            self.spawn_burst_palette(x, y, z, colors=(9, 10, 7), count=10, speed=22.0)
+            self.add_ring(x, z, 6.0, 18.0, 10, 0.4)
+            self.add_stroke(model.buddy.x, model.buddy.y + 6.0, model.buddy.z, x, 10.0, z, 7, 0.16)
+            self.add_stroke(model.buddy.x, model.buddy.y + 3.0, model.buddy.z, x, 2.0, z, 10, 0.1)
+            self.add_glint_strokes(x, z, 14.0, 10, 0.18)
+            self.add_emote("enemy", event.target_id or "", x, z, "!", 10, 0.6)
+        elif cue_id == "DWF_ABNORMAL_WINDUP":
+            self.add_ring(x, z, 8.0, 16.0, 8, 0.3)
+            dx = float(event.payload.get("dash_x", 0.0))
+            dz = float(event.payload.get("dash_z", 0.0))
+            if math.hypot(dx, dz) > 1e-6:
+                self.add_stroke(x, 1.0, z, x + dx * 28.0, 1.0, z + dz * 28.0, 8, 0.35)
 
     def update(self, dt: float, model) -> None:
         dt = max(0.0, dt)
@@ -116,6 +216,14 @@ class EffectSystem:
         self.particles = [
             particle for particle in self.particles if particle.age < particle.lifetime
         ]
+
+        for ring in self.rings:
+            ring.age += dt
+        self.rings = [ring for ring in self.rings if ring.age < ring.lifetime]
+
+        for stroke in self.strokes:
+            stroke.age += dt
+        self.strokes = [stroke for stroke in self.strokes if stroke.age < stroke.lifetime]
 
         for emote in self.emotes:
             emote.age += dt
@@ -144,7 +252,13 @@ class EffectSystem:
     def spawn_burst(
         self, x: float, y: float, z: float, color: int, count: int, speed: float
     ) -> None:
+        self.spawn_burst_palette(x, y, z, colors=(color,), count=count, speed=speed)
+
+    def spawn_burst_palette(
+        self, x: float, y: float, z: float, colors: tuple[int, ...], count: int, speed: float
+    ) -> None:
         count = min(count, self.max_particles_per_event)
+        colors = colors or (7,)
         for index in range(count):
             if len(self.particles) >= self.max_particles:
                 return
@@ -157,10 +271,88 @@ class EffectSystem:
                     vx=math.cos(angle) * speed,
                     vy=8.0 + (index % 3) * 2.0,
                     vz=math.sin(angle) * speed,
-                    color=color,
+                    color=colors[index % len(colors)],
                     lifetime=0.45 + (index % 2) * 0.1,
                 )
             )
+
+    def add_ring(
+        self,
+        x: float,
+        z: float,
+        start_radius: float,
+        end_radius: float,
+        color: int,
+        lifetime: float,
+    ) -> None:
+        if len(self.rings) >= self.max_particles:
+            self.rings.pop(0)
+        self.rings.append(WorldRing(x, z, start_radius, end_radius, color, lifetime))
+
+    def add_stroke(
+        self,
+        start_x: float,
+        start_y: float,
+        start_z: float,
+        end_x: float,
+        end_y: float,
+        end_z: float,
+        color: int,
+        lifetime: float,
+    ) -> None:
+        if len(self.strokes) >= self.max_particles:
+            self.strokes.pop(0)
+        self.strokes.append(
+            WorldStroke(start_x, start_y, start_z, end_x, end_y, end_z, color, lifetime)
+        )
+
+    def add_direction_strokes(
+        self,
+        origin_x: float,
+        origin_z: float,
+        hit_x: float,
+        hit_z: float,
+        length: float,
+        color: int,
+        lifetime: float,
+    ) -> None:
+        dx = hit_x - origin_x
+        dz = hit_z - origin_z
+        magnitude = math.hypot(dx, dz)
+        if magnitude <= 1e-6:
+            return
+        dx /= magnitude
+        dz /= magnitude
+        side_x = -dz
+        side_z = dx
+        for offset in (-2.5, 2.5):
+            sx = hit_x + side_x * offset
+            sz = hit_z + side_z * offset
+            self.add_stroke(sx, 5.0, sz, sx + dx * length, 5.0, sz + dz * length, color, lifetime)
+
+    def add_glint_strokes(
+        self, x: float, z: float, radius: float, color: int, lifetime: float
+    ) -> None:
+        self.add_stroke(
+            x - radius * 0.35,
+            14.0,
+            z - radius * 0.2,
+            x + radius * 0.2,
+            14.0,
+            z,
+            color,
+            lifetime,
+        )
+        self.add_stroke(
+            x + radius * 0.2,
+            11.0,
+            z + radius * 0.3,
+            x + radius * 0.45,
+            11.0,
+            z + radius * 0.05,
+            color,
+            lifetime,
+        )
 
     def add_emote(
         self,

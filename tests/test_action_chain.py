@@ -56,11 +56,16 @@ def test_abnormal_windup_fixes_dash_direction_before_dash() -> None:
     enemy.z = 420.0
     dt = 1.0 / 60.0
 
-    model.step(InputIntent(), camera, dt)
-    model.step(InputIntent(), camera, dt)
+    first_events = model.step(InputIntent(), camera, dt)
+    second_events = model.step(InputIntent(), camera, dt)
+
+    assert first_events == []
+    assert [event.kind for event in second_events] == ["abnormal_windup_started"]
     assert enemy.state == "WINDUP"
     dash_x = enemy.dash_x
     dash_z = enemy.dash_z
+    assert second_events[0].payload["dash_x"] == pytest.approx(dash_x)
+    assert second_events[0].payload["dash_z"] == pytest.approx(dash_z)
 
     model.player.x = 730.0
     model.player.z = 500.0

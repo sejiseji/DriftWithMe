@@ -761,9 +761,24 @@ class Renderer:
     ) -> None:
         if effects is None:
             return
+        self.draw_world_rings(camera, effects)
+        self.draw_world_strokes(camera, effects)
         self.draw_world_particles(camera, effects)
         self.draw_actor_emotes(model, camera, effects)
         self.draw_screen_cues(camera, effects)
+
+    def draw_world_rings(self, camera: CameraState, effects: EffectSystem) -> None:
+        for ring in effects.rings:
+            self.draw_world_circle(camera, ring.x, ring.z, ring.radius, ring.color)
+
+    def draw_world_strokes(self, camera: CameraState, effects: EffectSystem) -> None:
+        for stroke in effects.strokes:
+            self.draw_world_line(
+                camera,
+                Vec3(stroke.start_x, stroke.start_y, stroke.start_z),
+                Vec3(stroke.end_x, stroke.end_y, stroke.end_z),
+                stroke.color,
+            )
 
     def draw_world_particles(self, camera: CameraState, effects: EffectSystem) -> None:
         for particle in effects.particles:
