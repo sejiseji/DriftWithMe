@@ -85,6 +85,22 @@ class ActorEmote:
 
 
 @dataclass
+class EnemySnapshot:
+    enemy_id: str
+    enemy_kind: str
+    x: float
+    z: float
+    lifetime: float
+    age: float = 0.0
+
+    @property
+    def progress(self) -> float:
+        if self.lifetime <= 1e-6:
+            return 1.0
+        return max(0.0, min(self.age / self.lifetime, 1.0))
+
+
+@dataclass
 class ScreenCue:
     kind: str
     lifetime: float
@@ -170,6 +186,7 @@ class EffectSystem:
         self.rings: list[WorldRing] = []
         self.strokes: list[WorldStroke] = []
         self.emotes: list[ActorEmote] = []
+        self.enemy_snapshots: list[EnemySnapshot] = []
         self.screen_cues: list[ScreenCue] = []
         self.camera_impulses: list[CameraImpulse] = []
         self._grass_cooldowns: dict[str, float] = {}
@@ -181,6 +198,7 @@ class EffectSystem:
         self.rings.clear()
         self.strokes.clear()
         self.emotes.clear()
+        self.enemy_snapshots.clear()
         self.screen_cues.clear()
         self.camera_impulses.clear()
         self._grass_cooldowns.clear()
@@ -246,6 +264,7 @@ class EffectSystem:
             self.add_glint_strokes(x, z, 12.0, 12, 0.22)
             self.add_emote("enemy", event.target_id or "", x, z, "!", 12, 0.7)
         elif cue_id == "DWF_ZAP_HIT":
+            self.add_enemy_snapshot(event, model)
             self.spawn_burst_palette(x, y, z, colors=(9, 10, 7), count=10, speed=22.0)
             self.add_ring(x, z, 6.0, 18.0, 10, 0.4)
             self.add_stroke(model.buddy.x, model.buddy.y + 6.0, model.buddy.z, x, 10.0, z, 7, 0.16)
@@ -321,6 +340,12 @@ class EffectSystem:
         for emote in self.emotes:
             emote.age += dt
         self.emotes = [emote for emote in self.emotes if emote.age < emote.lifetime]
+
+        for snapshot in self.enemy_snapshots:
+            snapshot.age += dt
+        self.enemy_snapshots = [
+            snapshot for snapshot in self.enemy_snapshots if snapshot.age < snapshot.lifetime
+        ]
 
         for cue in self.screen_cues:
             cue.age += dt
@@ -469,6 +494,30 @@ class EffectSystem:
             self.emotes.pop(0)
         self.emotes.append(
             ActorEmote(anchor_kind, anchor_id, fallback_x, fallback_z, symbol, color, lifetime)
+        )
+
+    def add_enemy_snapshot(self, event: GameEvent, model) -> None:
+        if event.target_id is None:
+            return
+        enemy = model.enemy_by_id(event.target_id)
+        if enemy is None:
+            return
+        effects = model.config["effects"]
+        lifetime = float(effects.get("defeated_enemy_snapshot_ms", 100.0)) / 1000.0
+        if lifetime <= 0.0:
+            return
+        x, _y, z = event.world_position
+        self.enemy_snapshots = [
+            snapshot for snapshot in self.enemy_snapshots if snapshot.enemy_id != event.target_id
+        ]
+        self.enemy_snapshots.append(
+            EnemySnapshot(
+                enemy_id=event.target_id,
+                enemy_kind=enemy.kind,
+                x=x,
+                z=z,
+                lifetime=lifetime,
+            )
         )
 
     def add_screen_cue(self, kind: str, lifetime: float) -> None:

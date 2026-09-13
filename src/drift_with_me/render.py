@@ -4,7 +4,7 @@ import math
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from drift_with_me.effects import EffectSystem
+from drift_with_me.effects import EffectSystem, EnemySnapshot
 from drift_with_me.hex_assets import (
     LoadedSpriteAsset,
     SpriteAssetLibrary,
@@ -92,7 +92,7 @@ class Renderer:
         pyxel.cls(1)
         self.draw_ground(model.world, camera)
         self.draw_safe_zones(model.world, camera)
-        commands = self.world_commands(model, camera, presentation_time)
+        commands = self.world_commands(model, camera, presentation_time, effects)
         for command in sorted(
             commands, key=lambda item: (-item.depth, item.layer_bias, item.stable_id)
         ):
@@ -140,6 +140,7 @@ class Renderer:
         model: GameModel,
         camera: CameraState,
         presentation_time: float,
+        effects: EffectSystem | None = None,
     ) -> list[DrawCommand]:
         commands: list[DrawCommand] = []
         margin = float(model.config["culling"]["screen_margin_ref_px"])
@@ -190,6 +191,21 @@ class Renderer:
                     draw=lambda enemy=enemy: self.draw_enemy(model, enemy, camera),
                 )
             )
+        if effects is not None:
+            for snapshot in effects.enemy_snapshots:
+                anchor = camera.project(Vec3(snapshot.x, 0.0, snapshot.z))
+                if anchor is None:
+                    continue
+                commands.append(
+                    DrawCommand(
+                        depth=anchor.depth,
+                        layer_bias=0,
+                        stable_id=f"enemy_snapshot:{snapshot.enemy_id}",
+                        draw=lambda snapshot=snapshot: self.draw_enemy_snapshot(
+                            model, snapshot, camera
+                        ),
+                    )
+                )
         if model.bubble is not None:
             bubble_anchor = camera.project(Vec3(model.bubble.x, 4.0, model.bubble.z))
             if bubble_anchor is not None:
@@ -359,9 +375,14 @@ class Renderer:
             pyxel.circb(x, y, radius + 5, 12)
 
     def enemy_sprite_asset(self, model: GameModel, enemy) -> LoadedSpriteAsset | None:
-        if enemy.kind == "normal":
+        return self.enemy_kind_sprite_asset(model, enemy.kind)
+
+    def enemy_kind_sprite_asset(
+        self, model: GameModel, enemy_kind: str
+    ) -> LoadedSpriteAsset | None:
+        if enemy_kind == "normal":
             return self.configured_sprite_asset(model, "normal_urchin_idle_asset")
-        if enemy.kind == "abnormal":
+        if enemy_kind == "abnormal":
             return self.configured_sprite_asset(model, "abnormal_urchin_idle_asset")
         return None
 
@@ -384,6 +405,46 @@ class Renderer:
             return None
         draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
         return placement
+
+    def draw_enemy_snapshot(
+        self, model: GameModel, snapshot: EnemySnapshot, camera: CameraState
+    ) -> None:
+        asset = self.enemy_kind_sprite_asset(model, snapshot.enemy_kind)
+        point = camera.project(Vec3(snapshot.x, 4.0, snapshot.z))
+        if point is None:
+            return
+        if asset is not None:
+            placement = placement_for_upright_height_billboard(
+                camera,
+                asset.definition,
+                Vec3(snapshot.x, 0.0, snapshot.z),
+            )
+            if placement is None:
+                return
+            draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
+            left, top, width, height = placement.rect
+            x = left + width // 2
+            y = top + height // 2
+            radius = max(4, max(width, height) // 2)
+        else:
+            x = int(point.x)
+            y = int(point.y)
+            radius = max(3, int(900 / max(point.depth, 1.0)))
+            self.pyxel.circb(x, y, radius, 10)
+            for index in range(4):
+                angle = index * math.tau / 4.0
+                self.pyxel.line(
+                    x,
+                    y,
+                    x + int(math.cos(angle) * radius),
+                    y + int(math.sin(angle) * radius),
+                    7,
+                )
+        accent = 7 if snapshot.progress < 0.55 else 10
+        self.pyxel.circb(x, y, radius + 4, accent)
+        self.pyxel.line(x - radius - 2, y, x - radius + 2, y, 10)
+        self.pyxel.line(x + radius - 2, y, x + radius + 2, y, 10)
+        self.pyxel.line(x, y - radius - 2, x, y - radius + 2, 7)
 
     def normal_enemy_sprite_asset(self, model: GameModel) -> LoadedSpriteAsset | None:
         return self.configured_sprite_asset(model, "normal_urchin_idle_asset")

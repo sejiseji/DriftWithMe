@@ -236,6 +236,7 @@
     "max_screen_effects": 1,
     "max_particles_per_event": 8,
     "concentration_line_count": 12,
+    "defeated_enemy_snapshot_ms": 100.0,
     "onomatopoeia_enabled": false,
     "hitstop_enabled": false,
     "hitstop_hard_cap_ms": 66.6666666667,

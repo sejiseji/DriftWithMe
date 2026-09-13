@@ -31,8 +31,30 @@ All visuals are code-driven temporary shapes:
 - world particles with cue-specific color palettes
 - expanding world-space rings
 - short world-space strokes for guard knockback, bubble glints, ZAP bolts, and abnormal windup direction
+- a short ZAP defeat enemy snapshot drawn from the existing enemy sprite/primitive path
 
 These records are presentation-only. They are not collision, target selection, resource, AI, or camera inputs.
+
+## ZAP Defeat Snapshot
+
+`DWF_ZAP_HIT` now stores a small draw-only record for the defeated enemy.
+
+Configured duration:
+
+```json
+"defeated_enemy_snapshot_ms": 100.0
+```
+
+The snapshot records only:
+
+- target enemy ID
+- enemy kind
+- event world position
+- remaining visual lifetime
+
+It is mixed into the existing world draw command sort and uses the current enemy sprite asset when available. If the sprite asset is missing, it draws the existing primitive-style silhouette plus a small electric accent.
+
+The model enemy remains `DEFEATED`; the snapshot is not collision, AI, capture state, ZAP target state, or a way to restore a removed enemy.
 
 ## Hitstop
 
@@ -126,4 +148,5 @@ Automated tests cover:
 - hitstop max-duration merge, event deduplication, and model-clock freeze
 - combat camera reaction disabled-by-default behavior
 - delayed shake / pulse transform and FOCUS suppression
+- ZAP defeated-enemy snapshot lifetime and model-state invariance
 - existing combat resource behavior

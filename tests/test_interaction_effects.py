@@ -7,6 +7,7 @@ from drift_with_me.effects import EffectSystem, presentation_cue_for_event
 from drift_with_me.events import GameEvent
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import BubbleState, GameModel, InputIntent
+from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
 
 
@@ -29,6 +30,12 @@ def camera_for_model(model: GameModel) -> CameraState:
 
 def normal_enemy(model: GameModel):
     enemy = model.enemy_by_id("urchin_normal_01")
+    assert enemy is not None
+    return enemy
+
+
+def abnormal_enemy(model: GameModel):
+    enemy = model.enemy_by_id("urchin_abnormal_01")
     assert enemy is not None
     return enemy
 
@@ -218,6 +225,34 @@ def test_presentation_cues_create_local_fx_once_per_event() -> None:
     assert len(effects.strokes) == 4
     assert len(effects.particles) == effects.max_particles_per_event * 2
     assert {particle.color for particle in effects.particles} >= {5, 7, 9, 10, 12}
+
+
+def test_zap_cue_creates_draw_only_enemy_snapshot() -> None:
+    model, camera = make_model()
+    effects = EffectSystem(model.config)
+    enemy = abnormal_enemy(model)
+    enemy.state = "DEFEATED"
+    before = snapshot_model(model)
+    zap = event(model, "discharge_succeeded", enemy.x, enemy.z, target_id=enemy.id)
+
+    effects.process_events([zap, zap], model)
+
+    assert snapshot_model(model) == before
+    assert len(effects.enemy_snapshots) == 1
+    snapshot = effects.enemy_snapshots[0]
+    assert snapshot.enemy_id == enemy.id
+    assert snapshot.enemy_kind == "abnormal"
+    assert snapshot.x == pytest.approx(enemy.x)
+    assert snapshot.z == pytest.approx(enemy.z)
+    assert snapshot.lifetime == pytest.approx(0.1)
+
+    commands = Renderer(object()).world_commands(model, camera, 0.0, effects)
+    assert f"enemy_snapshot:{enemy.id}" in {command.stable_id for command in commands}
+
+    effects.update(0.11, model)
+
+    assert effects.enemy_snapshots == []
+    assert snapshot_model(model) == before
 
 
 def test_grass_reaction_uses_cooldown() -> None:
