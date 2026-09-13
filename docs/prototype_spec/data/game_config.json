@@ -226,7 +226,7 @@
     "buddy_back_left_asset": "fuse_back_left_neutral_48",
     "buddy_left_asset": "fuse_left_neutral_48",
     "buddy_front_left_asset": "fuse_front_left_neutral_48",
-    "normal_urchin_idle_asset": "normal_urchin_idle_32",
+    "normal_urchin_idle_asset": "normal_urchin_idle_64",
     "abnormal_urchin_idle_asset": "abnormal_urchin_inward_hands_64",
     "fallback_to_primitives": true
   },

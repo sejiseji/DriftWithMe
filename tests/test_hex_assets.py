@@ -51,8 +51,8 @@ JACK_DIRECTION_RECTS = {
     "back_right": (32, 96, 32, 32),
     "back": (0, 128, 32, 32),
 }
-NORMAL_URCHIN_SOURCE_HASH = "a9e16f5b554a53f4492849cf05f937e3657a2b0aed64bd46f13357148f850d03"
-NORMAL_URCHIN_RECT = (64, 160, 32, 32)
+NORMAL_URCHIN_SOURCE_HASH = "06fec2bbf7eeac8b6e8b9fab9e4ebc4584c2a364c2ba03d3e34ee41878b0dfa4"
+NORMAL_URCHIN_RECT = (64, 160, 64, 64)
 ABNORMAL_URCHIN_SOURCE_HASHES = {
     "body": "0b2a6e1715d99944fcf38e57300a70c750be3f40d5317cc4362e20371caf8b4b",
     "composite": "9def2c00c1daaf9642812966229d1f2d6afbc04269cad3e1bdd246fbb76e0f4b",
@@ -118,8 +118,8 @@ def test_normal_urchin_source_hex_preserves_received_pixels() -> None:
         .splitlines()
     )
 
-    assert len(rows) == 32
-    assert {len(row) for row in rows} == {32}
+    assert len(rows) == 64
+    assert {len(row) for row in rows} == {64}
     assert pixel_hash(rows) == NORMAL_URCHIN_SOURCE_HASH
 
 
@@ -443,15 +443,15 @@ for direction, expected_hash in jack_assets.items():
     assert jack.definition.world_size == (16.0, 16.0)
 for direction in jack_assets:
     assert runtime.raw["assets"][f"player_{{direction}}_asset"] == f"jack_{{direction}}_32"
-urchin = library.get("normal_urchin_idle_32")
+urchin = library.get("normal_urchin_idle_64")
 assert urchin is not None
 urchin_frame = urchin.frame()
 assert (urchin_frame.u, urchin_frame.v, urchin_frame.width, urchin_frame.height) == urchin_rect
 assert urchin_frame.source_hash == {NORMAL_URCHIN_SOURCE_HASH!r}
-assert urchin.definition.colkey == 0
-assert urchin.definition.anchor_px == (16.0, 32.0)
+assert urchin.definition.colkey == 3
+assert urchin.definition.anchor_px == (32.0, 60.0)
 assert urchin.definition.world_size == (20.0, 20.0)
-assert runtime.raw["assets"]["normal_urchin_idle_asset"] == "normal_urchin_idle_32"
+assert runtime.raw["assets"]["normal_urchin_idle_asset"] == "normal_urchin_idle_64"
 abnormal = library.get("abnormal_urchin_inward_hands_64")
 assert abnormal is not None
 abnormal_frame = abnormal.frame()

@@ -875,13 +875,13 @@
         }
       ]
     },
-    "normal_urchin_idle_32": {
-      "asset_version": "0.1.0",
+    "normal_urchin_idle_64": {
+      "asset_version": "0.3.0",
       "image_bank": 0,
-      "colkey": 0,
+      "colkey": 3,
       "anchor_px": [
-        16,
-        32
+        32,
+        60
       ],
       "world_size": [
         20.0,
@@ -894,15 +894,20 @@
         "canvas_px_xyxy": [
           0,
           0,
-          32,
-          32
+          64,
+          64
         ],
         "opaque_px_xyxy_exclusive": [
+          2,
           6,
-          10,
-          26,
-          29
+          62,
+          60
         ]
+      },
+      "scale_reference": {
+        "enemy_radius_world": 10.0,
+        "runtime_visual_size_policy": "Keep the current normal urchin runtime visual size for first review; source 64px density does not change collider or AI.",
+        "note": "Color index 0 is opaque black in this asset. Use colkey 3 only."
       },
       "animation": {
         "mode": "static",
@@ -913,9 +918,9 @@
           "id": "idle_00",
           "u": 64,
           "v": 160,
-          "w": 32,
-          "h": 32,
-          "source_hash": "a9e16f5b554a53f4492849cf05f937e3657a2b0aed64bd46f13357148f850d03"
+          "w": 64,
+          "h": 64,
+          "source_hash": "06fec2bbf7eeac8b6e8b9fab9e4ebc4584c2a364c2ba03d3e34ee41878b0dfa4"
         }
       ]
     },
@@ -978,7 +983,7 @@
     "Fuse v0.2.0 front_right neutral is baked into bank 0 at (128,0,48,40), with source HEX preserved as fuse_front_right_neutral.hex.",
     "Fuse v0.2.0 neutral directions are baked into bank 0 at x=128/176 rows y=0/40/80/120, with source HEX files preserved.",
     "Jack eight-direction v0.2.0 sprites are baked into bank 0: front_left/idle at (0,0), front_right at (32,0), front at (0,32), left/back_left at (0/32,64), right/back_right at (0/32,96), back at (0,128).",
-    "Normal urchin v0.1.0 idle sprite is baked into bank 0 at (64,160,32,32), with source HEX preserved as normal_urchin_idle_00.hex.",
+    "Normal urchin natural v0.3.0 idle sprite is baked into bank 0 at (64,160,64,64), with source HEX preserved as normal_urchin_idle_00.hex. This asset uses colkey 3; color index 0 is opaque black.",
     "Abnormal urchin v0.4.0 composite sprite is baked into bank 0 at (0,160,64,64), with source HEX parts preserved as abnormal_urchin_*_00.hex."
   ]
 }

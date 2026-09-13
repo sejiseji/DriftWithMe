@@ -33,7 +33,7 @@ The game draws only the composite sprite. The part HEX files are preserved as re
 ## Rendering
 
 - Abnormal enemies use `abnormal_urchin_inward_hands_64` when sprite rendering is enabled and the asset loads successfully.
-- Normal enemies continue to use `normal_urchin_idle_32`.
+- Normal enemies continue to use `normal_urchin_idle_64`.
 - Existing enemy state overlays, such as approach, windup, dash, capture rings, and warning lines, remain code-driven.
 - If the sprite asset is missing or invalid, the abnormal enemy falls back to the previous primitive drawing.
 

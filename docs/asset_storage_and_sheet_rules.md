@@ -27,7 +27,7 @@
 |`player_idle_asset`|`jack_idle_32`|
 |Jack direction assets|`jack_front_32`, `jack_front_right_32`, `jack_right_32`, `jack_back_right_32`, `jack_back_32`, `jack_back_left_32`, `jack_left_32`, `jack_front_left_32`|
 |`buddy_idle_asset`|`fuse_front_right_neutral_48`|
-|`normal_urchin_idle_asset`|`normal_urchin_idle_32`|
+|`normal_urchin_idle_asset`|`normal_urchin_idle_64`|
 |`abnormal_urchin_idle_asset`|`abnormal_urchin_inward_hands_64`|
 |`fallback_to_primitives`|`true`|
 
@@ -141,13 +141,13 @@ JWP012Cでは、`drift_with_me_fuse_parts_v0_2` から合成済みneutral 8方�
 
 ### 4.4 通常ウニの現行配置
 
-`drift_with_me_normal_urchin_v0_1` から、通常ウニの静止スプライト1枚を実行用pyxresへ焼き込んだ。
+`urchin_natural_v03_download` から、通常ウニの自然物ベース静止スプライト1枚を実行用pyxresへ焼き込んだ。v0.3では旧32px版を置き換え、黒い本体色を保持するため透過色を3へ変更した。
 
 |asset|frame|source rect|source_hash|
 |---|---|---|---|
-|`normal_urchin_idle_32`|`idle_00`|`(64,160,32,32)`|`a9e16f5b554a53f4492849cf05f937e3657a2b0aed64bd46f13357148f850d03`|
+|`normal_urchin_idle_64`|`idle_00`|`(64,160,64,64)`|`06fec2bbf7eeac8b6e8b9fab9e4ebc4584c2a364c2ba03d3e34ee41878b0dfa4`|
 
-canvas 32x32、colkey 0、anchor_px `(16,32)`、world_size `(20.0,20.0)`。制作正本として、同じ画素を `src/drift_with_me/assets/normal_urchin_idle_00.hex` に保持する。
+canvas 64x64、colkey 3、anchor_px `(32,60)`、world_size `(20.0,20.0)`。制作正本として、同じ画素を `src/drift_with_me/assets/normal_urchin_idle_00.hex` に保持する。色番号0は透明ではなく、不透明な黒として使う。
 
 このアセットは `enemy.kind == "normal"` の表示だけに使う。異常ウニの表示は別アセット `abnormal_urchin_inward_hands_64` で管理する。敵AI、接触半径、guard/barrier、capture、SEは変更していない。状態リングなどの演出は引き続きコード駆動であり、画像の再生完了や見た目にゲーム判定を依存させない。
 
@@ -163,7 +163,7 @@ canvas 64x64、colkey 0、anchor_px `(32,62)`、world_size `(20.0,20.0)`。制�
 
 ゲームではcompositeだけを描画する。body、hand_screen_left、hand_screen_rightを別々に重ねる経路は今回実装しない。左右手の名称は画面基準であり、左右反転や8方向化はしない。
 
-このアセットは `enemy.kind == "abnormal"` の表示だけに使う。通常ウニは `normal_urchin_idle_32` のまま維持し、敵AI、接触半径、bubble capture、discharge、guard/barrier、SEは変更していない。状態リング、突進予告線、捕獲リングなどの演出は引き続きコード駆動であり、画像の再生完了や見た目にゲーム判定を依存させない。
+このアセットは `enemy.kind == "abnormal"` の表示だけに使う。通常ウニは別アセット `normal_urchin_idle_64` で管理し、敵AI、接触半径、bubble capture、discharge、guard/barrier、SEは変更していない。状態リング、突進予告線、捕獲リングなどの演出は引き続きコード駆動であり、画像の再生完了や見た目にゲーム判定を依存させない。
 
 ## 5. エフェクト配置・描画規約
 
