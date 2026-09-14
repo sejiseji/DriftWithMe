@@ -256,7 +256,15 @@
     "ground_fallen_leaves_asset": "ground_fallen_leaves_64",
     "ground_crack_grass_asset": "ground_crack_grass_64",
     "ground_rubble_asset": "ground_rubble_64",
-    "fallback_to_primitives": true
+    "fallback_to_primitives": true,
+    "concrete_clean_a_asset": "concrete_clean_a_64",
+    "concrete_cracked_a_asset": "concrete_cracked_a_64",
+    "concrete_spalled_a_asset": "concrete_spalled_a_64",
+    "concrete_joint_grass_a_asset": "concrete_joint_grass_a_64",
+    "decal_stain_a_asset": "decal_stain_a_64",
+    "decal_crack_grass_a_asset": "decal_crack_grass_a_64",
+    "decal_rubble_a_asset": "decal_rubble_a_64",
+    "decal_broken_edge_a_asset": "decal_broken_edge_a_64"
   },
   "ui": {
     "locale": "ja",

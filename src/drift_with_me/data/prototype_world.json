@@ -566,5 +566,40 @@
         "A clear view. Observation recorded."
       ]
     }
-  }
+  },
+  "ground_surfaces": [
+    {
+      "id": "ground_review_clean",
+      "center_xz": [
+        96.0,
+        256.0
+      ],
+      "layers": [
+        "concrete_clean_a"
+      ]
+    },
+    {
+      "id": "ground_review_clean_crack_grass",
+      "center_xz": [
+        144.0,
+        256.0
+      ],
+      "layers": [
+        "concrete_clean_a",
+        "decal_crack_grass_a"
+      ]
+    },
+    {
+      "id": "ground_review_spalled_stain_rubble",
+      "center_xz": [
+        192.0,
+        256.0
+      ],
+      "layers": [
+        "concrete_spalled_a",
+        "decal_stain_a",
+        "decal_rubble_a"
+      ]
+    }
+  ]
 }

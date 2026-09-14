@@ -1322,6 +1322,238 @@
       "source_hash": "bd1d1394dc20ff381e380ea7b373a4056c0d4cb988abc9809614bcad59b35423",
       "render_mode": "ground_decal_source",
       "source_policy": "environment_wave1_v0_1_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "concrete_clean_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "concrete_clean_a.hex",
+          "source_hash": "e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640"
+        }
+      ],
+      "source_hash": "e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640",
+      "render_mode": "ground_material_source",
+      "source_policy": "ground_extracted_v0_2_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "concrete_cracked_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "concrete_cracked_a.hex",
+          "source_hash": "442d6e57264e39e5f3ac2718db6fb2ec8ae804748cf39b4922c967063b93658e"
+        }
+      ],
+      "source_hash": "442d6e57264e39e5f3ac2718db6fb2ec8ae804748cf39b4922c967063b93658e",
+      "render_mode": "ground_material_source",
+      "source_policy": "ground_extracted_v0_2_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "concrete_spalled_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "concrete_spalled_a.hex",
+          "source_hash": "bdfc8389a72a6e9cf8ba3ec68874e5e322204155c4dc9a93e7bfa21aec96ff31"
+        }
+      ],
+      "source_hash": "bdfc8389a72a6e9cf8ba3ec68874e5e322204155c4dc9a93e7bfa21aec96ff31",
+      "render_mode": "ground_material_source",
+      "source_policy": "ground_extracted_v0_2_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "concrete_joint_grass_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "concrete_joint_grass_a.hex",
+          "source_hash": "a759a7227455db825b88adfaf08399941dbd1bb6c1515d516b2174a6916a0514"
+        }
+      ],
+      "source_hash": "a759a7227455db825b88adfaf08399941dbd1bb6c1515d516b2174a6916a0514",
+      "render_mode": "ground_material_source",
+      "source_policy": "ground_extracted_v0_2_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "decal_stain_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "decal_stain_a.hex",
+          "source_hash": "01afbe6d0e3b35d3ce16cf6d26531dbb679072cb667f27004821be99a3669f66"
+        }
+      ],
+      "source_hash": "01afbe6d0e3b35d3ce16cf6d26531dbb679072cb667f27004821be99a3669f66",
+      "render_mode": "ground_decal_source",
+      "source_policy": "ground_extracted_v0_2_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "decal_crack_grass_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "decal_crack_grass_a.hex",
+          "source_hash": "10c2354747798a9237d874b9d085134d4327a1d6912d089afa55ca074ddbcdc7"
+        }
+      ],
+      "source_hash": "10c2354747798a9237d874b9d085134d4327a1d6912d089afa55ca074ddbcdc7",
+      "render_mode": "ground_decal_source",
+      "source_policy": "ground_extracted_v0_2_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "decal_rubble_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "decal_rubble_a.hex",
+          "source_hash": "2a2208d7ab8319fcde96af649212d55db8dfb05652b82b15a1ddfe1f1ce56329"
+        }
+      ],
+      "source_hash": "2a2208d7ab8319fcde96af649212d55db8dfb05652b82b15a1ddfe1f1ce56329",
+      "render_mode": "ground_decal_source",
+      "source_policy": "ground_extracted_v0_2_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "decal_broken_edge_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        32.0,
+        32.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "decal_broken_edge_a.hex",
+          "source_hash": "95ae5cf54fc533ce45a78d9c089c55da88b19d60b5708992c05e03346732368a"
+        }
+      ],
+      "source_hash": "95ae5cf54fc533ce45a78d9c089c55da88b19d60b5708992c05e03346732368a",
+      "render_mode": "ground_decal_source",
+      "source_policy": "ground_extracted_v0_2_hex"
     }
   ],
   "notes": [
@@ -1340,6 +1572,9 @@
     "Equipment extracted v0.2 replaces water_station_* and solar_station_* source HEX. These equipment assets use colkey 8, and color index 0 is visible black.",
     "Equipment and tree sprites use upright_height_billboard_v1. Water station width is adjusted to 36 world units to preserve the 96x128 pixel aspect at 48 world-unit height.",
     "Reactive grass uses upright low-billboard assets with square world_size because Pyxel blt scale is uniform.",
-    "Nature ground detail assets use ground_decal_source_v1 and are projected onto the X/Z ground plane. Ground material tiles from the Wave1 ground pack are intentionally not connected yet."
+    "Nature ground detail assets use ground_decal_source_v1 and are projected onto the X/Z ground plane. Ground material tiles from the Wave1 ground pack are intentionally not connected yet.",
+    "Ground extracted v0.2 source HEX assets are loaded as source_assets for review surfaces, not baked into jack_sprite.pyxres.",
+    "Ground extracted v0.2 concrete base tiles are opaque sources; runtime metadata uses colkey 8 because the current source-asset schema requires an integer colkey and those base sources contain no color index 8.",
+    "Ground extracted v0.2 decal sources use colkey 8, and color index 0 is visible black."
   ]
 }

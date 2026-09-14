@@ -65,6 +65,14 @@ class GroundDetail:
 
 
 @dataclass(frozen=True)
+class GroundSurface:
+    id: str
+    x: float
+    z: float
+    layers: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class StaticVisibilityQuery:
     chunk_ids: tuple[tuple[int, int], ...]
     objects: tuple[StaticObject, ...]
@@ -188,6 +196,9 @@ class WorldData:
         self._visual_index = self._build_visual_index()
         self._visual_chunk_heights = self._build_visual_chunk_heights()
         self.ground_details = self._build_ground_details()
+        self.ground_surfaces = tuple(
+            self._load_ground_surface(item) for item in raw.get("ground_surfaces", ())
+        )
 
     def _load_object(self, item: dict[str, Any]) -> StaticObject:
         position = item["position"]
@@ -272,6 +283,16 @@ class WorldData:
             pitch_deg=float(item["pitch_deg"]) if "pitch_deg" in item else None,
             blend_sec=float(item.get("blend_sec", 0.0)),
             hold_sec=float(item.get("hold_sec", 0.0)),
+        )
+
+    def _load_ground_surface(self, item: dict[str, Any]) -> GroundSurface:
+        center = item["center_xz"]
+        layers = tuple(str(layer) for layer in item["layers"])
+        return GroundSurface(
+            id=str(item["id"]),
+            x=float(center[0]),
+            z=float(center[1]),
+            layers=layers,
         )
 
     def object_by_id(self, object_id: str) -> StaticObject | None:

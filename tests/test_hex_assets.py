@@ -94,6 +94,14 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "ground_fallen_leaves": "9ee3c9b0ca1baf6a67a043e7650c7eab720b1b666ca886251b3452a21bc8c4aa",
     "ground_crack_grass": "fef48effd241c5d71ff9f7606dda45112e70ccdcd7a0ad1d519e3acc21fefa69",
     "ground_rubble": "bd1d1394dc20ff381e380ea7b373a4056c0d4cb988abc9809614bcad59b35423",
+    "concrete_clean_a": "e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640",
+    "concrete_cracked_a": "442d6e57264e39e5f3ac2718db6fb2ec8ae804748cf39b4922c967063b93658e",
+    "concrete_spalled_a": "bdfc8389a72a6e9cf8ba3ec68874e5e322204155c4dc9a93e7bfa21aec96ff31",
+    "concrete_joint_grass_a": "a759a7227455db825b88adfaf08399941dbd1bb6c1515d516b2174a6916a0514",
+    "decal_stain_a": "01afbe6d0e3b35d3ce16cf6d26531dbb679072cb667f27004821be99a3669f66",
+    "decal_crack_grass_a": "10c2354747798a9237d874b9d085134d4327a1d6912d089afa55ca074ddbcdc7",
+    "decal_rubble_a": "2a2208d7ab8319fcde96af649212d55db8dfb05652b82b15a1ddfe1f1ce56329",
+    "decal_broken_edge_a": "95ae5cf54fc533ce45a78d9c089c55da88b19d60b5708992c05e03346732368a",
 }
 ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "water_station_active": {
@@ -166,6 +174,14 @@ ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     },
     "tree_leafy_a": {"0", "1", "2", "3", "4", "5", "7", "9", "A", "B", "C", "D", "E", "F"},
     "tree_thin_b": {"0", "1", "2", "3", "4", "5", "9", "A", "B", "C", "D", "E", "F"},
+    "concrete_clean_a": {"1", "5", "7", "D", "F"},
+    "concrete_cracked_a": {"0", "1", "5", "7", "D", "F"},
+    "concrete_spalled_a": {"1", "5", "7", "D", "F"},
+    "concrete_joint_grass_a": {"0", "1", "4", "5", "7", "D", "F"},
+    "decal_stain_a": {"1", "4"},
+    "decal_crack_grass_a": {"0", "1", "4", "5", "9", "D", "F"},
+    "decal_rubble_a": {"0", "1", "4", "5", "7", "9", "D", "F"},
+    "decal_broken_edge_a": {"0", "1", "4", "5", "D", "F"},
 }
 
 
@@ -586,6 +602,14 @@ environment_asset_ids = {{
     "ground_fallen_leaves": "ground_fallen_leaves_64",
     "ground_crack_grass": "ground_crack_grass_64",
     "ground_rubble": "ground_rubble_64",
+    "concrete_clean_a": "concrete_clean_a_64",
+    "concrete_cracked_a": "concrete_cracked_a_64",
+    "concrete_spalled_a": "concrete_spalled_a_64",
+    "concrete_joint_grass_a": "concrete_joint_grass_a_64",
+    "decal_stain_a": "decal_stain_a_64",
+    "decal_crack_grass_a": "decal_crack_grass_a_64",
+    "decal_rubble_a": "decal_rubble_a_64",
+    "decal_broken_edge_a": "decal_broken_edge_a_64",
 }}
 environment_world_sizes = {{
     "water_station_active": (36.0, 48.0),
@@ -600,6 +624,14 @@ environment_world_sizes = {{
     "ground_fallen_leaves": (32.0, 32.0),
     "ground_crack_grass": (32.0, 32.0),
     "ground_rubble": (40.0, 32.0),
+    "concrete_clean_a": (32.0, 32.0),
+    "concrete_cracked_a": (32.0, 32.0),
+    "concrete_spalled_a": (32.0, 32.0),
+    "concrete_joint_grass_a": (32.0, 32.0),
+    "decal_stain_a": (32.0, 32.0),
+    "decal_crack_grass_a": (32.0, 32.0),
+    "decal_rubble_a": (32.0, 32.0),
+    "decal_broken_edge_a": (32.0, 32.0),
 }}
 environment_colkeys = {{
     "water_station_active": 8,
@@ -608,6 +640,14 @@ environment_colkeys = {{
     "solar_station_active": 8,
     "tree_leafy_a": 8,
     "tree_thin_b": 8,
+    "concrete_clean_a": 8,
+    "concrete_cracked_a": 8,
+    "concrete_spalled_a": 8,
+    "concrete_joint_grass_a": 8,
+    "decal_stain_a": 8,
+    "decal_crack_grass_a": 8,
+    "decal_rubble_a": 8,
+    "decal_broken_edge_a": 8,
 }}
 environment_anchors = {{
     "water_station_active": (48.0, 127.0),
@@ -616,6 +656,14 @@ environment_anchors = {{
     "solar_station_active": (48.0, 127.0),
     "tree_leafy_a": (48.0, 127.0),
     "tree_thin_b": (48.0, 127.0),
+    "concrete_clean_a": (32.0, 32.0),
+    "concrete_cracked_a": (32.0, 32.0),
+    "concrete_spalled_a": (32.0, 32.0),
+    "concrete_joint_grass_a": (32.0, 32.0),
+    "decal_stain_a": (32.0, 32.0),
+    "decal_crack_grass_a": (32.0, 32.0),
+    "decal_rubble_a": (32.0, 32.0),
+    "decal_broken_edge_a": (32.0, 32.0),
 }}
 fuse_frame = None
 for direction, expected_hash in fuse_assets.items():
@@ -650,12 +698,14 @@ for source_id, expected_hash in environment_hashes.items():
     if source_id in environment_colkeys:
         assert env_asset.definition.colkey == environment_colkeys[source_id]
         assert env_asset.definition.anchor_px == environment_anchors[source_id]
-    if source_id.startswith("ground_"):
+    if source_id.startswith(("ground_", "concrete_", "decal_")):
         assert env_asset.definition.projection_mode == "ground_decal_source_v1"
     else:
         assert env_asset.definition.projection_mode == "upright_height_billboard_v1"
 assert runtime.raw["assets"]["water_station_working_asset"] == "water_station_active_96"
 assert runtime.raw["assets"]["ground_rubble_asset"] == "ground_rubble_64"
+assert runtime.raw["assets"]["concrete_clean_a_asset"] == "concrete_clean_a_64"
+assert runtime.raw["assets"]["decal_crack_grass_a_asset"] == "decal_crack_grass_a_64"
 assert sound_snapshot() == before_sound
 assert music_snapshot() == before_music
 assert pyxel.tilemaps[0].pget(0, 0) == before_tile
@@ -695,6 +745,19 @@ assert renderer.object_sprite_asset(model, tree).definition.asset_id == "tree_th
 assert renderer.object_sprite_asset(model, grass).definition.asset_id == "reactive_grass_tall_64"
 detail = model.world.ground_details[0]
 assert renderer.ground_detail_sprite_asset(model, detail) is not None
+assert len(model.world.ground_surfaces) == 3
+surface = model.world.ground_surfaces[1]
+assert surface.layers == ("concrete_clean_a", "decal_crack_grass_a")
+assert renderer.ground_surface_sprite_asset(model, "concrete_clean_a").definition.asset_id == (
+    "concrete_clean_a_64"
+)
+pyxel.cls(3)
+renderer.draw_ground_surface(model, surface, camera)
+visible_pixels = 0
+for y in range(runtime.screen_height):
+    for x in range(runtime.screen_width):
+        visible_pixels += pyxel.pget(x, y) != 3
+assert visible_pixels > 0
 pyxel.cls(3)
 assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
 placement = renderer.player_sprite_placement(model, camera, presentation_time=0.0)

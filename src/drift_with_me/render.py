@@ -13,7 +13,7 @@ from drift_with_me.hex_assets import (
 )
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import GameModel
-from drift_with_me.world import GroundDetail, StaticObject, WorldData
+from drift_with_me.world import GroundDetail, GroundSurface, StaticObject, WorldData
 
 
 @dataclass(frozen=True)
@@ -97,6 +97,7 @@ class Renderer:
         pyxel = self.pyxel
         pyxel.cls(1)
         self.draw_ground(model.world, camera)
+        self.draw_ground_surfaces(model, camera)
         self.draw_safe_zones(model.world, camera)
         self.draw_auto_move_goal(model, camera, presentation_time)
         commands = self.world_commands(model, camera, presentation_time, effects)
@@ -319,6 +320,24 @@ class Renderer:
         self.pyxel.pset(x, y, detail.color)
         self.pyxel.line(x - 1, y, x - 1 + phase, y - 3, detail.color)
 
+    def draw_ground_surfaces(self, model: GameModel, camera: CameraState) -> None:
+        for surface in model.world.ground_surfaces:
+            self.draw_ground_surface(model, surface, camera)
+
+    def draw_ground_surface(
+        self, model: GameModel, surface: GroundSurface, camera: CameraState
+    ) -> None:
+        for visual in surface.layers:
+            asset = self.ground_surface_sprite_asset(model, visual)
+            if asset is None:
+                continue
+            self.draw_ground_source_asset(asset, camera, surface.x, surface.z)
+
+    def ground_surface_sprite_asset(
+        self, model: GameModel, visual: str
+    ) -> LoadedSpriteAsset | None:
+        return self.configured_sprite_asset(model, f"{visual}_asset")
+
     def draw_object_sprite(self, model: GameModel, obj: StaticObject, camera: CameraState) -> bool:
         asset = self.object_sprite_asset(model, obj)
         if asset is None:
@@ -367,6 +386,11 @@ class Renderer:
         self, model: GameModel, detail: GroundDetail, camera: CameraState
     ) -> bool:
         asset = self.ground_detail_sprite_asset(model, detail)
+        return self.draw_ground_source_asset(asset, camera, detail.x, detail.z)
+
+    def draw_ground_source_asset(
+        self, asset: LoadedSpriteAsset | None, camera: CameraState, x: float, z: float
+    ) -> bool:
         if asset is None or asset.definition.projection_mode != "ground_decal_source_v1":
             return False
         frame = asset.frame()
@@ -375,11 +399,11 @@ class Renderer:
             return False
         width_world, depth_world = asset.definition.world_size
         anchor_x, anchor_y = asset.definition.anchor_px
-        origin_x = detail.x - anchor_x * width_world / source.width
-        origin_z = detail.z - anchor_y * depth_world / source.height
+        origin_x = x - anchor_x * width_world / source.width
+        origin_z = z - anchor_y * depth_world / source.height
         step_x = width_world / source.width
         step_z = depth_world / source.height
-        draw_size = self.ground_decal_screen_pixel_size(camera, detail.x, detail.z, step_x, step_z)
+        draw_size = self.ground_decal_screen_pixel_size(camera, x, z, step_x, step_z)
         colkey_char = format(asset.definition.colkey, "X")
         for row_index, row in enumerate(source.rows):
             world_z = origin_z + (row_index + 0.5) * step_z
