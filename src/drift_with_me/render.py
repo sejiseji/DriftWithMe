@@ -126,7 +126,6 @@ class Renderer:
         pyxel = self.pyxel
         pyxel.cls(1)
         self.draw_ground(model.world, camera)
-        self.draw_baked_ground_backdrop_masks(model, camera)
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self.draw_ground_surfaces(model, camera)
         self.draw_safe_zones(model.world, camera)
@@ -404,27 +403,6 @@ class Renderer:
         self._active_baked_ground_patches = tuple(active)
         return self._active_baked_ground_patches
 
-    def draw_baked_ground_backdrop_masks(self, model: GameModel, camera: CameraState) -> None:
-        if not self.baked_ground_camera_supported(model, camera):
-            return
-        for patch in self.visible_baked_ground_patches(model, camera):
-            self.draw_ground_patch_quad(patch, camera, color=1)
-
-    def draw_ground_patch_quad(
-        self, patch: BakedGroundPatch, camera: CameraState, *, color: int
-    ) -> None:
-        corners = [
-            camera.project(Vec3(patch.min_x, 0.0, patch.min_z)),
-            camera.project(Vec3(patch.max_x, 0.0, patch.min_z)),
-            camera.project(Vec3(patch.max_x, 0.0, patch.max_z)),
-            camera.project(Vec3(patch.min_x, 0.0, patch.max_z)),
-        ]
-        if not all(point is not None for point in corners):
-            return
-        p0, p1, p2, p3 = corners
-        self.pyxel.tri(int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), color)
-        self.pyxel.tri(int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), color)
-
     def visible_baked_ground_patches(
         self, model: GameModel, camera: CameraState
     ) -> tuple[BakedGroundPatch, ...]:
@@ -452,25 +430,12 @@ class Renderer:
         self, model: GameModel, patch: BakedGroundPatch, camera: CameraState
     ) -> BakedGroundImage | None:
         bucket_x, bucket_z = self.baked_ground_camera_bucket(patch, camera)
-        key = (
-            patch.id,
-            patch.group,
-            round(bucket_x, 3),
-            round(bucket_z, 3),
-            camera.viewport_width,
-            camera.viewport_height,
-            round(camera.yaw_deg, 3),
-            round(camera.pitch_deg, 3),
-            round(camera.horizontal_fov_deg, 3),
-            round(camera.distance, 3),
-            round(camera.anchor_x, 3),
-            round(camera.anchor_y, 3),
-        )
+        key = self.baked_ground_cache_key(patch, camera, bucket_x, bucket_z)
         cached = self._baked_ground_cache.get(key)
         if cached is not None:
             return cached
         if self._baked_ground_builds_this_frame >= self.max_baked_ground_builds_per_frame:
-            return None
+            return self.fallback_baked_ground_image(patch, camera, bucket_x, bucket_z)
         self._baked_ground_builds_this_frame += 1
 
         reference_camera = CameraState(
@@ -533,6 +498,54 @@ class Renderer:
         )
         self._baked_ground_cache[key] = baked
         return baked
+
+    def baked_ground_cache_key(
+        self,
+        patch: BakedGroundPatch,
+        camera: CameraState,
+        bucket_x: float,
+        bucket_z: float,
+    ) -> tuple[object, ...]:
+        return (
+            patch.id,
+            patch.group,
+            round(bucket_x, 3),
+            round(bucket_z, 3),
+            camera.viewport_width,
+            camera.viewport_height,
+            round(camera.yaw_deg, 3),
+            round(camera.pitch_deg, 3),
+            round(camera.horizontal_fov_deg, 3),
+            round(camera.distance, 3),
+            round(camera.anchor_x, 3),
+            round(camera.anchor_y, 3),
+        )
+
+    def fallback_baked_ground_image(
+        self,
+        patch: BakedGroundPatch,
+        camera: CameraState,
+        bucket_x: float,
+        bucket_z: float,
+    ) -> BakedGroundImage | None:
+        best: tuple[float, BakedGroundImage] | None = None
+        profile = (
+            camera.viewport_width,
+            camera.viewport_height,
+            round(camera.yaw_deg, 3),
+            round(camera.pitch_deg, 3),
+            round(camera.horizontal_fov_deg, 3),
+            round(camera.distance, 3),
+            round(camera.anchor_x, 3),
+            round(camera.anchor_y, 3),
+        )
+        for key, baked in self._baked_ground_cache.items():
+            if key[0] != patch.id or key[1] != patch.group or key[4:] != profile:
+                continue
+            distance_sq = (baked.bucket_x - bucket_x) ** 2 + (baked.bucket_z - bucket_z) ** 2
+            if best is None or distance_sq < best[0]:
+                best = (distance_sq, baked)
+        return None if best is None else best[1]
 
     def baked_ground_camera_bucket(
         self, patch: BakedGroundPatch, camera: CameraState

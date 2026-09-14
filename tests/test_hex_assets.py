@@ -843,18 +843,6 @@ assert any(
     patch.contains(surface.x, surface.z, margin=patch.tile_world_size * 0.5)
     for patch in small_patches
 )
-pyxel.cls(3)
-renderer.draw_ground(model.world, camera)
-ground_color_count = 0
-for y in range(runtime.screen_height):
-    for x in range(runtime.screen_width):
-        ground_color_count += pyxel.pget(x, y) == 3
-assert ground_color_count > 0
-renderer.draw_baked_ground_backdrop_masks(model, camera)
-player_ground = camera.project(Vec3(model.player.x, 0.0, model.player.z))
-assert player_ground is not None
-assert pyxel.pget(int(player_ground.x), int(player_ground.y)) == 1
-pyxel.cls(3)
 for _ in range(9):
     active_patches = renderer.draw_baked_ground_patches(model, camera)
 assert len(active_patches) == 9
@@ -865,6 +853,17 @@ assert [patch.id for patch in active_patches[:3]] == [
 ]
 assert renderer.ground_surface_is_baked(surface)
 assert renderer.point_in_active_baked_ground_patch(detail.x, detail.z)
+shifted_camera = CameraState.from_config(
+    runtime.raw,
+    Vec3(model.player.x + 16.0, 0.0, model.player.z + 16.0),
+    runtime.screen_width,
+    runtime.screen_height,
+)
+renderer.max_baked_ground_builds_per_frame = 0
+fallback_patches = renderer.draw_baked_ground_patches(model, shifted_camera)
+assert len(fallback_patches) == 9
+assert len(renderer._baked_ground_cache) == 9
+renderer.max_baked_ground_builds_per_frame = 1
 visible_pixels = 0
 for y in range(runtime.screen_height):
     for x in range(runtime.screen_width):
