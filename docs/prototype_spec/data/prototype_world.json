@@ -570,6 +570,8 @@
   "baked_ground_patches": [
     {
       "id": "spawn_affine_ground_patch",
+      "group": "spawn_192_legacy_compare",
+      "enabled": false,
       "center_xz": [
         160.0,
         192.0
@@ -584,6 +586,7 @@
       ],
       "screen_overlap_px": 2,
       "screen_sample_px": 2,
+      "camera_bucket_world_size": 0.0,
       "tiles": [
         {
           "cell": [
@@ -753,6 +756,378 @@
           "cell": [
             5,
             5
+          ],
+          "layers": [
+            "concrete_joint_grass_a",
+            "decal_broken_edge_a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spawn64_0_0",
+      "group": "spawn_64_bucket16",
+      "enabled": true,
+      "center_xz": [
+        96.0,
+        128.0
+      ],
+      "size_xz": [
+        64.0,
+        64.0
+      ],
+      "tile_world_size": 32.0,
+      "default_layers": [
+        "concrete_clean_a"
+      ],
+      "screen_overlap_px": 3,
+      "screen_sample_px": 2,
+      "camera_bucket_world_size": 16.0,
+      "tiles": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "layers": [
+            "concrete_cracked_a"
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "layers": [
+            "concrete_clean_a",
+            "decal_stain_a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spawn64_1_0",
+      "group": "spawn_64_bucket16",
+      "enabled": true,
+      "center_xz": [
+        160.0,
+        128.0
+      ],
+      "size_xz": [
+        64.0,
+        64.0
+      ],
+      "tile_world_size": 32.0,
+      "default_layers": [
+        "concrete_clean_a"
+      ],
+      "screen_overlap_px": 3,
+      "screen_sample_px": 2,
+      "camera_bucket_world_size": 16.0,
+      "tiles": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "layers": [
+            "concrete_clean_a",
+            "decal_crack_grass_a"
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "layers": [
+            "concrete_cracked_a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spawn64_2_0",
+      "group": "spawn_64_bucket16",
+      "enabled": true,
+      "center_xz": [
+        224.0,
+        128.0
+      ],
+      "size_xz": [
+        64.0,
+        64.0
+      ],
+      "tile_world_size": 32.0,
+      "default_layers": [
+        "concrete_clean_a"
+      ],
+      "screen_overlap_px": 3,
+      "screen_sample_px": 2,
+      "camera_bucket_world_size": 16.0,
+      "tiles": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "layers": [
+            "concrete_joint_grass_a"
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "layers": [
+            "concrete_spalled_a",
+            "decal_rubble_a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spawn64_0_1",
+      "group": "spawn_64_bucket16",
+      "enabled": true,
+      "center_xz": [
+        96.0,
+        192.0
+      ],
+      "size_xz": [
+        64.0,
+        64.0
+      ],
+      "tile_world_size": 32.0,
+      "default_layers": [
+        "concrete_clean_a"
+      ],
+      "screen_overlap_px": 3,
+      "screen_sample_px": 2,
+      "camera_bucket_world_size": 16.0,
+      "tiles": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "layers": [
+            "concrete_clean_a",
+            "decal_broken_edge_a"
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "layers": [
+            "concrete_joint_grass_a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spawn64_1_1",
+      "group": "spawn_64_bucket16",
+      "enabled": true,
+      "center_xz": [
+        160.0,
+        192.0
+      ],
+      "size_xz": [
+        64.0,
+        64.0
+      ],
+      "tile_world_size": 32.0,
+      "default_layers": [
+        "concrete_clean_a"
+      ],
+      "screen_overlap_px": 3,
+      "screen_sample_px": 2,
+      "camera_bucket_world_size": 16.0,
+      "tiles": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "layers": [
+            "concrete_spalled_a",
+            "decal_stain_a"
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "layers": [
+            "concrete_clean_a",
+            "decal_stain_a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spawn64_2_1",
+      "group": "spawn_64_bucket16",
+      "enabled": true,
+      "center_xz": [
+        224.0,
+        192.0
+      ],
+      "size_xz": [
+        64.0,
+        64.0
+      ],
+      "tile_world_size": 32.0,
+      "default_layers": [
+        "concrete_clean_a"
+      ],
+      "screen_overlap_px": 3,
+      "screen_sample_px": 2,
+      "camera_bucket_world_size": 16.0,
+      "tiles": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "layers": [
+            "concrete_clean_a",
+            "decal_crack_grass_a"
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "layers": [
+            "concrete_cracked_a",
+            "decal_rubble_a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spawn64_0_2",
+      "group": "spawn_64_bucket16",
+      "enabled": true,
+      "center_xz": [
+        96.0,
+        256.0
+      ],
+      "size_xz": [
+        64.0,
+        64.0
+      ],
+      "tile_world_size": 32.0,
+      "default_layers": [
+        "concrete_clean_a"
+      ],
+      "screen_overlap_px": 3,
+      "screen_sample_px": 2,
+      "camera_bucket_world_size": 16.0,
+      "tiles": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "layers": [
+            "concrete_spalled_a"
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "layers": [
+            "concrete_cracked_a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spawn64_1_2",
+      "group": "spawn_64_bucket16",
+      "enabled": true,
+      "center_xz": [
+        160.0,
+        256.0
+      ],
+      "size_xz": [
+        64.0,
+        64.0
+      ],
+      "tile_world_size": 32.0,
+      "default_layers": [
+        "concrete_clean_a"
+      ],
+      "screen_overlap_px": 3,
+      "screen_sample_px": 2,
+      "camera_bucket_world_size": 16.0,
+      "tiles": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "layers": [
+            "concrete_clean_a",
+            "decal_crack_grass_a"
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
+          ],
+          "layers": [
+            "concrete_spalled_a",
+            "decal_rubble_a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spawn64_2_2",
+      "group": "spawn_64_bucket16",
+      "enabled": true,
+      "center_xz": [
+        224.0,
+        256.0
+      ],
+      "size_xz": [
+        64.0,
+        64.0
+      ],
+      "tile_world_size": 32.0,
+      "default_layers": [
+        "concrete_clean_a"
+      ],
+      "screen_overlap_px": 3,
+      "screen_sample_px": 2,
+      "camera_bucket_world_size": 16.0,
+      "tiles": [
+        {
+          "cell": [
+            0,
+            0
+          ],
+          "layers": [
+            "concrete_clean_a",
+            "decal_stain_a"
+          ]
+        },
+        {
+          "cell": [
+            1,
+            1
           ],
           "layers": [
             "concrete_joint_grass_a",

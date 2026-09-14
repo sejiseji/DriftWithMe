@@ -82,6 +82,8 @@ class BakedGroundImage:
     width: int
     height: int
     scale: int
+    bucket_x: float
+    bucket_z: float
     reference_center_x: float
     reference_center_y: float
 
@@ -106,6 +108,8 @@ class Renderer:
         ] = {}
         self._baked_ground_cache: dict[tuple[object, ...], BakedGroundImage] = {}
         self._active_baked_ground_patches: tuple[BakedGroundPatch, ...] = ()
+        self._baked_ground_builds_this_frame = 0
+        self.max_baked_ground_builds_per_frame = 1
         self.player_sprite_flipped_x = False
         self.player_sprite_view_name = "idle"
         self.buddy_sprite_view_name = "front_right"
@@ -371,7 +375,8 @@ class Renderer:
             self._active_baked_ground_patches = ()
             return ()
         active: list[BakedGroundPatch] = []
-        for patch in model.world.baked_ground_patches:
+        self._baked_ground_builds_this_frame = 0
+        for patch in self.visible_baked_ground_patches(model, camera):
             baked = self.baked_ground_image(model, patch, camera)
             if baked is None:
                 continue
@@ -398,6 +403,19 @@ class Renderer:
         self._active_baked_ground_patches = tuple(active)
         return self._active_baked_ground_patches
 
+    def visible_baked_ground_patches(
+        self, model: GameModel, camera: CameraState
+    ) -> tuple[BakedGroundPatch, ...]:
+        patches = [patch for patch in model.world.baked_ground_patches if patch.enabled]
+        patches.sort(
+            key=lambda patch: (
+                (patch.x - camera.target.x) * (patch.x - camera.target.x)
+                + (patch.z - camera.target.z) * (patch.z - camera.target.z),
+                patch.id,
+            )
+        )
+        return tuple(patches)
+
     def baked_ground_camera_supported(self, model: GameModel, camera: CameraState) -> bool:
         camera_config = model.config["camera"]
         return (
@@ -411,8 +429,12 @@ class Renderer:
     def baked_ground_image(
         self, model: GameModel, patch: BakedGroundPatch, camera: CameraState
     ) -> BakedGroundImage | None:
+        bucket_x, bucket_z = self.baked_ground_camera_bucket(patch, camera)
         key = (
             patch.id,
+            patch.group,
+            round(bucket_x, 3),
+            round(bucket_z, 3),
             camera.viewport_width,
             camera.viewport_height,
             round(camera.yaw_deg, 3),
@@ -425,9 +447,12 @@ class Renderer:
         cached = self._baked_ground_cache.get(key)
         if cached is not None:
             return cached
+        if self._baked_ground_builds_this_frame >= self.max_baked_ground_builds_per_frame:
+            return None
+        self._baked_ground_builds_this_frame += 1
 
         reference_camera = CameraState(
-            target=Vec3(patch.x, 0.0, patch.z),
+            target=Vec3(bucket_x, 0.0, bucket_z),
             yaw_deg=camera.yaw_deg,
             pitch_deg=camera.pitch_deg,
             horizontal_fov_deg=camera.horizontal_fov_deg,
@@ -479,11 +504,21 @@ class Renderer:
             width=width,
             height=height,
             scale=sample,
+            bucket_x=bucket_x,
+            bucket_z=bucket_z,
             reference_center_x=center.x,
             reference_center_y=center.y,
         )
         self._baked_ground_cache[key] = baked
         return baked
+
+    def baked_ground_camera_bucket(
+        self, patch: BakedGroundPatch, camera: CameraState
+    ) -> tuple[float, float]:
+        bucket = patch.camera_bucket_world_size
+        if bucket <= 1e-6:
+            return patch.x, patch.z
+        return round(camera.target.x / bucket) * bucket, round(camera.target.z / bucket) * bucket
 
     def baked_ground_color_at(
         self, model: GameModel, patch: BakedGroundPatch, x: float, z: float

@@ -828,14 +828,30 @@ for y in range(runtime.screen_height):
     for x in range(runtime.screen_width):
         visible_pixels += pyxel.pget(x, y) != 3
 assert visible_pixels > 0
-assert len(model.world.baked_ground_patches) == 1
-baked_patch = model.world.baked_ground_patches[0]
-assert baked_patch.id == "spawn_affine_ground_patch"
-assert baked_patch.contains(model.player.x, model.player.z)
-assert baked_patch.contains(surface.x, surface.z, margin=baked_patch.tile_world_size * 0.5)
+assert len(model.world.baked_ground_patches) == 10
+legacy_patch = model.world.baked_ground_patches[0]
+assert legacy_patch.id == "spawn_affine_ground_patch"
+assert legacy_patch.group == "spawn_192_legacy_compare"
+assert not legacy_patch.enabled
+small_patches = [patch for patch in model.world.baked_ground_patches if patch.enabled]
+assert len(small_patches) == 9
+assert {{patch.group for patch in small_patches}} == {{"spawn_64_bucket16"}}
+assert {{patch.width for patch in small_patches}} == {{64.0}}
+assert {{patch.camera_bucket_world_size for patch in small_patches}} == {{16.0}}
+assert any(patch.contains(model.player.x, model.player.z) for patch in small_patches)
+assert any(
+    patch.contains(surface.x, surface.z, margin=patch.tile_world_size * 0.5)
+    for patch in small_patches
+)
 pyxel.cls(3)
-active_patches = renderer.draw_baked_ground_patches(model, camera)
-assert [patch.id for patch in active_patches] == ["spawn_affine_ground_patch"]
+for _ in range(9):
+    active_patches = renderer.draw_baked_ground_patches(model, camera)
+assert len(active_patches) == 9
+assert [patch.id for patch in active_patches[:3]] == [
+    "spawn64_1_0",
+    "spawn64_1_1",
+    "spawn64_0_0",
+]
 assert renderer.ground_surface_is_baked(surface)
 assert renderer.point_in_active_baked_ground_patch(detail.x, detail.z)
 visible_pixels = 0
@@ -844,9 +860,9 @@ for y in range(runtime.screen_height):
         visible_pixels += pyxel.pget(x, y) != 3
 assert visible_pixels > 0
 renderer.draw_scene(model, camera, presentation_time=0.0, debug=False)
-assert renderer.last_stats.visible_baked_ground_patches == 1
+assert renderer.last_stats.visible_baked_ground_patches == 9
 assert renderer.last_stats.visible_ground_details == 0
-assert renderer.last_stats.baked_ground_cache_size == 1
+assert renderer.last_stats.baked_ground_cache_size == 9
 pyxel.cls(3)
 assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
 placement = renderer.player_sprite_placement(model, camera, presentation_time=0.0)

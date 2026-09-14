@@ -82,6 +82,8 @@ class GroundPatchTile:
 @dataclass(frozen=True)
 class BakedGroundPatch:
     id: str
+    group: str
+    enabled: bool
     x: float
     z: float
     width: float
@@ -91,6 +93,7 @@ class BakedGroundPatch:
     tiles: tuple[GroundPatchTile, ...]
     screen_overlap_px: int
     screen_sample_px: int
+    camera_bucket_world_size: float
 
     @property
     def min_x(self) -> float:
@@ -354,6 +357,8 @@ class WorldData:
         )
         return BakedGroundPatch(
             id=str(item["id"]),
+            group=str(item.get("group", "default")),
+            enabled=bool(item.get("enabled", True)),
             x=float(center[0]),
             z=float(center[1]),
             width=float(size[0]),
@@ -363,6 +368,7 @@ class WorldData:
             tiles=tiles,
             screen_overlap_px=int(item.get("screen_overlap_px", 2)),
             screen_sample_px=max(1, int(item.get("screen_sample_px", 1))),
+            camera_bucket_world_size=max(0.0, float(item.get("camera_bucket_world_size", 0.0))),
         )
 
     def _load_ground_detail(self, item: dict[str, Any], index: int) -> GroundDetail:
