@@ -20,12 +20,12 @@ Integrated the following DriftWithMe Environment Wave1 v0.1 HEX source assets:
 - `ground_crack_grass`
 - `ground_rubble`
 
-Tree assets were updated on 2026-09-14 from the tree fix v0.1 pack:
+Tree assets were updated again on 2026-09-14 from the extracted tree v0.2 pack:
 
-- `tree_leafy_a`: source hash `b2869ada09a121eaa379f0d79953a56b02690a8c3037b019386ff586c36f06c6`
-- `tree_thin_b`: source hash `f2dfa10bd7188dbf06beceab48ccca8f8f6a0b91e5030500512f5ca570b65229`
+- `tree_leafy_a`: source hash `a868d992db8472f81045ada9a39cb6893ad88d2d320aa226264868e3a5d8ffe4`
+- `tree_thin_b`: source hash `68de99d52511238f5ecbad7314e1cdeaa591dbf56916b17a86d0d00866a88e80`
 
-Both fixed tree sources use visible colors `1`, `3`, `4`, `5`, `B`, and `D`; `0` remains the only transparent color.
+Both extracted tree sources use `8` as the only transparent color. Color `0` is visible black and must not be treated as transparency. The billboard anchor is `(48, 127)`.
 
 The Wave1 `ground/` material and decal pack remains deferred. Those assets are ground material sources, not vertical billboards, and need a separate ground rendering review before connection.
 
@@ -44,7 +44,7 @@ This avoids overwriting existing image banks and keeps the Wave1 source pixels a
 
 ## World Size And Projection
 
-All transparent sprites use `colkey` 0.
+Transparent sprites use their asset-specific `colkey`. Most Wave1 transparent sprites use `0`; the extracted tree v0.2 assets use `8` so color `0` can remain visible black.
 
 | Asset group | Projection | Runtime world size |
 | --- | --- | --- |
