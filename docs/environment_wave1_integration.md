@@ -20,6 +20,15 @@ Integrated the following DriftWithMe Environment Wave1 v0.1 HEX source assets:
 - `ground_crack_grass`
 - `ground_rubble`
 
+Equipment assets were updated again on 2026-09-14 from the extracted equipment v0.2 pack:
+
+- `water_station_active`: source hash `0cd8570bfe0fd3d6dd1b96ab409c36a28f3bddaf6c42d2e1ef4521a87a94c0f1`
+- `water_station_stopped`: source hash `f5a8ae8eed5e4b5ec7d9f22b4abc76fe59860482efba1a91c775c5f48d3b0309`
+- `solar_station_idle`: source hash `f5a7fc5bb95ae14b0f3b7923327b8180a9430f240c37ebb15cd40e89d29dd7f1`
+- `solar_station_active`: source hash `748b9391dc51f2423ccdcd5424824391aeec83583e9ddcc3b46067b8f5492c3f`
+
+The extracted equipment sources use `8` as the only transparent color. Color `0` is visible black and must not be treated as transparency. The billboard anchor is `(48, 127)`.
+
 Tree assets were updated again on 2026-09-14 from the extracted tree v0.2 pack:
 
 - `tree_leafy_a`: source hash `a868d992db8472f81045ada9a39cb6893ad88d2d320aa226264868e3a5d8ffe4`
@@ -44,7 +53,7 @@ This avoids overwriting existing image banks and keeps the Wave1 source pixels a
 
 ## World Size And Projection
 
-Transparent sprites use their asset-specific `colkey`. Most Wave1 transparent sprites use `0`; the extracted tree v0.2 assets use `8` so color `0` can remain visible black.
+Transparent sprites use their asset-specific `colkey`. Most Wave1 transparent sprites use `0`; the extracted equipment v0.2 and tree v0.2 assets use `8` so color `0` can remain visible black.
 
 | Asset group | Projection | Runtime world size |
 | --- | --- | --- |

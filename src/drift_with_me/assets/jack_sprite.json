@@ -981,10 +981,10 @@
       "palette_id": "pyxel_default_16",
       "hex_width": 96,
       "hex_height": 128,
-      "colkey": 0,
+      "colkey": 8,
       "anchor_px": [
         48,
-        124
+        127
       ],
       "world_size": [
         36.0,
@@ -997,12 +997,12 @@
         {
           "id": "idle_00",
           "path": "water_station_active.hex",
-          "source_hash": "0cb1fde1142eeb4ed531b335c4d866b16f2e8498818bcad838f793228419643f"
+          "source_hash": "0cd8570bfe0fd3d6dd1b96ab409c36a28f3bddaf6c42d2e1ef4521a87a94c0f1"
         }
       ],
-      "source_hash": "0cb1fde1142eeb4ed531b335c4d866b16f2e8498818bcad838f793228419643f",
+      "source_hash": "0cd8570bfe0fd3d6dd1b96ab409c36a28f3bddaf6c42d2e1ef4521a87a94c0f1",
       "render_mode": "vertical_billboard",
-      "source_policy": "environment_wave1_v0_1_hex"
+      "source_policy": "equipment_extracted_v0_2_hex"
     },
     {
       "schema_version": 1,
@@ -1010,10 +1010,10 @@
       "palette_id": "pyxel_default_16",
       "hex_width": 96,
       "hex_height": 128,
-      "colkey": 0,
+      "colkey": 8,
       "anchor_px": [
         48,
-        124
+        127
       ],
       "world_size": [
         36.0,
@@ -1026,12 +1026,12 @@
         {
           "id": "idle_00",
           "path": "water_station_stopped.hex",
-          "source_hash": "d0165ea2ae70e0f34b54eab847267ac57cabb95910cf663e4fc0e71f756c14cc"
+          "source_hash": "f5a8ae8eed5e4b5ec7d9f22b4abc76fe59860482efba1a91c775c5f48d3b0309"
         }
       ],
-      "source_hash": "d0165ea2ae70e0f34b54eab847267ac57cabb95910cf663e4fc0e71f756c14cc",
+      "source_hash": "f5a8ae8eed5e4b5ec7d9f22b4abc76fe59860482efba1a91c775c5f48d3b0309",
       "render_mode": "vertical_billboard",
-      "source_policy": "environment_wave1_v0_1_hex"
+      "source_policy": "equipment_extracted_v0_2_hex"
     },
     {
       "schema_version": 1,
@@ -1039,10 +1039,10 @@
       "palette_id": "pyxel_default_16",
       "hex_width": 96,
       "hex_height": 128,
-      "colkey": 0,
+      "colkey": 8,
       "anchor_px": [
         48,
-        124
+        127
       ],
       "world_size": [
         36.0,
@@ -1055,12 +1055,12 @@
         {
           "id": "idle_00",
           "path": "solar_station_idle.hex",
-          "source_hash": "4e55dda3ed9904e3f7fbd8f0f848974480427ad2a67afe7ffac7bf81fd4fb430"
+          "source_hash": "f5a7fc5bb95ae14b0f3b7923327b8180a9430f240c37ebb15cd40e89d29dd7f1"
         }
       ],
-      "source_hash": "4e55dda3ed9904e3f7fbd8f0f848974480427ad2a67afe7ffac7bf81fd4fb430",
+      "source_hash": "f5a7fc5bb95ae14b0f3b7923327b8180a9430f240c37ebb15cd40e89d29dd7f1",
       "render_mode": "vertical_billboard",
-      "source_policy": "environment_wave1_v0_1_hex"
+      "source_policy": "equipment_extracted_v0_2_hex"
     },
     {
       "schema_version": 1,
@@ -1068,10 +1068,10 @@
       "palette_id": "pyxel_default_16",
       "hex_width": 96,
       "hex_height": 128,
-      "colkey": 0,
+      "colkey": 8,
       "anchor_px": [
         48,
-        124
+        127
       ],
       "world_size": [
         36.0,
@@ -1084,12 +1084,12 @@
         {
           "id": "idle_00",
           "path": "solar_station_active.hex",
-          "source_hash": "a5c9877948cb76a59447bb21f6fbbe954625feeea79bfd6d7f8756ea23546f18"
+          "source_hash": "748b9391dc51f2423ccdcd5424824391aeec83583e9ddcc3b46067b8f5492c3f"
         }
       ],
-      "source_hash": "a5c9877948cb76a59447bb21f6fbbe954625feeea79bfd6d7f8756ea23546f18",
+      "source_hash": "748b9391dc51f2423ccdcd5424824391aeec83583e9ddcc3b46067b8f5492c3f",
       "render_mode": "vertical_billboard",
-      "source_policy": "environment_wave1_v0_1_hex"
+      "source_policy": "equipment_extracted_v0_2_hex"
     },
     {
       "schema_version": 1,
@@ -1337,6 +1337,7 @@
     "Abnormal urchin v0.4.0 composite sprite is baked into bank 0 at (0,160,64,64), with source HEX parts preserved as abnormal_urchin_*_00.hex.",
     "Environment Wave1 v0.1 source HEX assets are loaded as source_assets, not baked into jack_sprite.pyxres.",
     "Tree extracted v0.2 replaces tree_leafy_a/tree_thin_b source HEX. These tree assets use colkey 8, and color index 0 is visible black.",
+    "Equipment extracted v0.2 replaces water_station_* and solar_station_* source HEX. These equipment assets use colkey 8, and color index 0 is visible black.",
     "Equipment and tree sprites use upright_height_billboard_v1. Water station width is adjusted to 36 world units to preserve the 96x128 pixel aspect at 48 world-unit height.",
     "Reactive grass uses upright low-billboard assets with square world_size because Pyxel blt scale is uniform.",
     "Nature ground detail assets use ground_decal_source_v1 and are projected onto the X/Z ground plane. Ground material tiles from the Wave1 ground pack are intentionally not connected yet."

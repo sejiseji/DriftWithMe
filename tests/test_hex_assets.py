@@ -82,10 +82,10 @@ FUSE_DIRECTION_RECTS = {
     "left": (176, 120, 48, 40),
 }
 ENVIRONMENT_WAVE1_SOURCE_HASHES = {
-    "water_station_active": "0cb1fde1142eeb4ed531b335c4d866b16f2e8498818bcad838f793228419643f",
-    "water_station_stopped": "d0165ea2ae70e0f34b54eab847267ac57cabb95910cf663e4fc0e71f756c14cc",
-    "solar_station_idle": "4e55dda3ed9904e3f7fbd8f0f848974480427ad2a67afe7ffac7bf81fd4fb430",
-    "solar_station_active": "a5c9877948cb76a59447bb21f6fbbe954625feeea79bfd6d7f8756ea23546f18",
+    "water_station_active": "0cd8570bfe0fd3d6dd1b96ab409c36a28f3bddaf6c42d2e1ef4521a87a94c0f1",
+    "water_station_stopped": "f5a8ae8eed5e4b5ec7d9f22b4abc76fe59860482efba1a91c775c5f48d3b0309",
+    "solar_station_idle": "f5a7fc5bb95ae14b0f3b7923327b8180a9430f240c37ebb15cd40e89d29dd7f1",
+    "solar_station_active": "748b9391dc51f2423ccdcd5424824391aeec83583e9ddcc3b46067b8f5492c3f",
     "tree_leafy_a": "a868d992db8472f81045ada9a39cb6893ad88d2d320aa226264868e3a5d8ffe4",
     "tree_thin_b": "68de99d52511238f5ecbad7314e1cdeaa591dbf56916b17a86d0d00866a88e80",
     "reactive_grass_tall": "4b8d853400e617c486a88468f5203906d3f1f5ef6972c132b7614c3fbdf5c8f7",
@@ -95,7 +95,75 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "ground_crack_grass": "fef48effd241c5d71ff9f7606dda45112e70ccdcd7a0ad1d519e3acc21fefa69",
     "ground_rubble": "bd1d1394dc20ff381e380ea7b373a4056c0d4cb988abc9809614bcad59b35423",
 }
-ENVIRONMENT_TREE_VISIBLE_COLORS = {
+ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
+    "water_station_active": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
+    "water_station_stopped": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
+    "solar_station_idle": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
+    "solar_station_active": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
     "tree_leafy_a": {"0", "1", "2", "3", "4", "5", "7", "9", "A", "B", "C", "D", "E", "F"},
     "tree_thin_b": {"0", "1", "2", "3", "4", "5", "9", "A", "B", "C", "D", "E", "F"},
 }
@@ -183,8 +251,8 @@ def test_environment_wave1_source_hex_preserves_received_pixels(asset_id: str) -
     assert len(rows) == expected_size
     assert {len(row) for row in rows} == {expected_width}
     assert pixel_hash(rows) == ENVIRONMENT_WAVE1_SOURCE_HASHES[asset_id]
-    if asset_id in ENVIRONMENT_TREE_VISIBLE_COLORS:
-        assert set("".join(rows)) - {"8"} == ENVIRONMENT_TREE_VISIBLE_COLORS[asset_id]
+    if asset_id in ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8:
+        assert set("".join(rows)) - {"8"} == ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8[asset_id]
 
 
 def valid_asset(asset_id: str = "jack_test", frame_path: str = "jack.hex") -> dict:
@@ -534,10 +602,18 @@ environment_world_sizes = {{
     "ground_rubble": (40.0, 32.0),
 }}
 environment_colkeys = {{
+    "water_station_active": 8,
+    "water_station_stopped": 8,
+    "solar_station_idle": 8,
+    "solar_station_active": 8,
     "tree_leafy_a": 8,
     "tree_thin_b": 8,
 }}
 environment_anchors = {{
+    "water_station_active": (48.0, 127.0),
+    "water_station_stopped": (48.0, 127.0),
+    "solar_station_idle": (48.0, 127.0),
+    "solar_station_active": (48.0, 127.0),
     "tree_leafy_a": (48.0, 127.0),
     "tree_thin_b": (48.0, 127.0),
 }}
