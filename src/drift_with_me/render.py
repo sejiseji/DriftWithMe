@@ -126,6 +126,7 @@ class Renderer:
         pyxel = self.pyxel
         pyxel.cls(1)
         self.draw_ground(model.world, camera)
+        self.draw_baked_ground_backdrop_masks(model, camera)
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self.draw_ground_surfaces(model, camera)
         self.draw_safe_zones(model.world, camera)
@@ -402,6 +403,27 @@ class Renderer:
             active.append(patch)
         self._active_baked_ground_patches = tuple(active)
         return self._active_baked_ground_patches
+
+    def draw_baked_ground_backdrop_masks(self, model: GameModel, camera: CameraState) -> None:
+        if not self.baked_ground_camera_supported(model, camera):
+            return
+        for patch in self.visible_baked_ground_patches(model, camera):
+            self.draw_ground_patch_quad(patch, camera, color=1)
+
+    def draw_ground_patch_quad(
+        self, patch: BakedGroundPatch, camera: CameraState, *, color: int
+    ) -> None:
+        corners = [
+            camera.project(Vec3(patch.min_x, 0.0, patch.min_z)),
+            camera.project(Vec3(patch.max_x, 0.0, patch.min_z)),
+            camera.project(Vec3(patch.max_x, 0.0, patch.max_z)),
+            camera.project(Vec3(patch.min_x, 0.0, patch.max_z)),
+        ]
+        if not all(point is not None for point in corners):
+            return
+        p0, p1, p2, p3 = corners
+        self.pyxel.tri(int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), color)
+        self.pyxel.tri(int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), color)
 
     def visible_baked_ground_patches(
         self, model: GameModel, camera: CameraState

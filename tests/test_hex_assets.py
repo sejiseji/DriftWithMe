@@ -844,6 +844,17 @@ assert any(
     for patch in small_patches
 )
 pyxel.cls(3)
+renderer.draw_ground(model.world, camera)
+ground_color_count = 0
+for y in range(runtime.screen_height):
+    for x in range(runtime.screen_width):
+        ground_color_count += pyxel.pget(x, y) == 3
+assert ground_color_count > 0
+renderer.draw_baked_ground_backdrop_masks(model, camera)
+player_ground = camera.project(Vec3(model.player.x, 0.0, model.player.z))
+assert player_ground is not None
+assert pyxel.pget(int(player_ground.x), int(player_ground.y)) == 1
+pyxel.cls(3)
 for _ in range(9):
     active_patches = renderer.draw_baked_ground_patches(model, camera)
 assert len(active_patches) == 9
