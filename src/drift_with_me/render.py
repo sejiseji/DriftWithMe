@@ -11,9 +11,15 @@ from drift_with_me.hex_assets import (
     draw_scaled_sprite,
     placement_for_upright_height_billboard,
 )
-from drift_with_me.math3d import CameraState, Vec3
+from drift_with_me.math3d import CameraState, Vec3, screen_to_ground_point
 from drift_with_me.model import GameModel
-from drift_with_me.world import GroundDetail, GroundSurface, StaticObject, WorldData
+from drift_with_me.world import (
+    BakedGroundPatch,
+    GroundDetail,
+    GroundSurface,
+    StaticObject,
+    WorldData,
+)
 
 
 @dataclass(frozen=True)
@@ -61,9 +67,23 @@ class RenderStats:
     candidate_static_objects: int = 0
     visible_static_objects: int = 0
     visible_ground_details: int = 0
+    visible_baked_ground_patches: int = 0
+    baked_ground_cache_size: int = 0
     draw_commands: int = 0
     active_enemies: int = 0
     dormant_enemies: int = 0
+
+
+@dataclass(frozen=True)
+class BakedGroundImage:
+    image: object
+    left: int
+    top: int
+    width: int
+    height: int
+    scale: int
+    reference_center_x: float
+    reference_center_y: float
 
 
 class Renderer:
@@ -84,6 +104,8 @@ class Renderer:
         self._ground_source_pixels: dict[
             tuple[str, str, int], tuple[tuple[int, int, str], ...]
         ] = {}
+        self._baked_ground_cache: dict[tuple[object, ...], BakedGroundImage] = {}
+        self._active_baked_ground_patches: tuple[BakedGroundPatch, ...] = ()
         self.player_sprite_flipped_x = False
         self.player_sprite_view_name = "idle"
         self.buddy_sprite_view_name = "front_right"
@@ -100,6 +122,7 @@ class Renderer:
         pyxel = self.pyxel
         pyxel.cls(1)
         self.draw_ground(model.world, camera)
+        self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self.draw_ground_surfaces(model, camera)
         self.draw_safe_zones(model.world, camera)
         self.draw_auto_move_goal(model, camera, presentation_time)
@@ -173,6 +196,7 @@ class Renderer:
             detail
             for detail in model.world.ground_details_for_chunks(visible_query.chunk_ids)
             if self.ground_detail_is_visible(detail, camera, margin)
+            and not self.point_in_active_baked_ground_patch(detail.x, detail.z)
         ]
         for detail in visible_details:
             anchor = camera.project(Vec3(detail.x, 0.0, detail.z))
@@ -264,6 +288,8 @@ class Renderer:
             candidate_static_objects=visible_query.candidate_object_count,
             visible_static_objects=len(visible_objects),
             visible_ground_details=len(visible_details),
+            visible_baked_ground_patches=len(self._active_baked_ground_patches),
+            baked_ground_cache_size=len(self._baked_ground_cache),
             draw_commands=len(commands),
             active_enemies=model.debug.active_enemies,
             dormant_enemies=model.debug.dormant_enemies,
@@ -325,6 +351,8 @@ class Renderer:
 
     def draw_ground_surfaces(self, model: GameModel, camera: CameraState) -> None:
         for surface in model.world.ground_surfaces:
+            if self.ground_surface_is_baked(surface):
+                continue
             self.draw_ground_surface(model, surface, camera)
 
     def draw_ground_surface(
@@ -335,6 +363,240 @@ class Renderer:
             if asset is None:
                 continue
             self.draw_ground_source_asset(asset, camera, surface.x, surface.z)
+
+    def draw_baked_ground_patches(
+        self, model: GameModel, camera: CameraState
+    ) -> tuple[BakedGroundPatch, ...]:
+        if not self.baked_ground_camera_supported(model, camera):
+            self._active_baked_ground_patches = ()
+            return ()
+        active: list[BakedGroundPatch] = []
+        for patch in model.world.baked_ground_patches:
+            baked = self.baked_ground_image(model, patch, camera)
+            if baked is None:
+                continue
+            current_center = camera.project(Vec3(patch.x, 0.0, patch.z))
+            if current_center is None:
+                continue
+            x = int(round(baked.left + current_center.x - baked.reference_center_x))
+            y = int(round(baked.top + current_center.y - baked.reference_center_y))
+            rect = ScreenRect(x, y, baked.width * baked.scale, baked.height * baked.scale)
+            if not self.screen_rect_visible(rect, camera, 2.0):
+                continue
+            self.pyxel.blt(
+                x,
+                y,
+                baked.image,
+                0,
+                0,
+                baked.width,
+                baked.height,
+                colkey=8,
+                scale=baked.scale,
+            )
+            active.append(patch)
+        self._active_baked_ground_patches = tuple(active)
+        return self._active_baked_ground_patches
+
+    def baked_ground_camera_supported(self, model: GameModel, camera: CameraState) -> bool:
+        camera_config = model.config["camera"]
+        return (
+            abs(camera.yaw_deg - float(camera_config["yaw_deg"])) <= 0.01
+            and abs(camera.pitch_deg - float(camera_config["pitch_deg"])) <= 0.01
+            and abs(camera.distance - float(camera_config["base_distance"])) <= 0.75
+            and abs(camera.anchor_x - float(camera_config["screen_anchor"][0])) <= 0.001
+            and abs(camera.anchor_y - float(camera_config["screen_anchor"][1])) <= 0.001
+        )
+
+    def baked_ground_image(
+        self, model: GameModel, patch: BakedGroundPatch, camera: CameraState
+    ) -> BakedGroundImage | None:
+        key = (
+            patch.id,
+            camera.viewport_width,
+            camera.viewport_height,
+            round(camera.yaw_deg, 3),
+            round(camera.pitch_deg, 3),
+            round(camera.horizontal_fov_deg, 3),
+            round(camera.distance, 3),
+            round(camera.anchor_x, 3),
+            round(camera.anchor_y, 3),
+        )
+        cached = self._baked_ground_cache.get(key)
+        if cached is not None:
+            return cached
+
+        reference_camera = CameraState(
+            target=Vec3(patch.x, 0.0, patch.z),
+            yaw_deg=camera.yaw_deg,
+            pitch_deg=camera.pitch_deg,
+            horizontal_fov_deg=camera.horizontal_fov_deg,
+            distance=camera.distance,
+            near=camera.near,
+            far=camera.far,
+            anchor_x=camera.anchor_x,
+            anchor_y=camera.anchor_y,
+            viewport_width=camera.viewport_width,
+            viewport_height=camera.viewport_height,
+        )
+        bounds = self.ground_source_screen_bounds(
+            reference_camera,
+            patch.min_x,
+            patch.min_z,
+            patch.width,
+            patch.depth,
+        )
+        center = reference_camera.project(Vec3(patch.x, 0.0, patch.z))
+        if bounds is None or center is None:
+            return None
+        overlap = max(0, patch.screen_overlap_px)
+        left = bounds.x - overlap
+        top = bounds.y - overlap
+        draw_width = bounds.width + overlap * 2
+        draw_height = bounds.height + overlap * 2
+        sample = max(1, patch.screen_sample_px)
+        width = math.ceil(draw_width / sample)
+        height = math.ceil(draw_height / sample)
+        if width <= 0 or height <= 0 or width > 1024 or height > 1024:
+            return None
+
+        image = self.pyxel.Image(width, height)
+        image.cls(8)
+        for py in range(height):
+            screen_y = top + (py + 0.5) * sample
+            for px in range(width):
+                screen_x = left + (px + 0.5) * sample
+                ground = screen_to_ground_point(reference_camera, screen_x, screen_y)
+                if ground is None or not patch.contains(ground.x, ground.y, margin=0.5):
+                    continue
+                color = self.baked_ground_color_at(model, patch, ground.x, ground.y)
+                if color is not None:
+                    image.pset(px, py, color)
+        baked = BakedGroundImage(
+            image=image,
+            left=left,
+            top=top,
+            width=width,
+            height=height,
+            scale=sample,
+            reference_center_x=center.x,
+            reference_center_y=center.y,
+        )
+        self._baked_ground_cache[key] = baked
+        return baked
+
+    def baked_ground_color_at(
+        self, model: GameModel, patch: BakedGroundPatch, x: float, z: float
+    ) -> int | None:
+        color: int | None = None
+        local_x = x - patch.min_x
+        local_z = z - patch.min_z
+        cell_x = int(math.floor(local_x / patch.tile_world_size))
+        cell_z = int(math.floor(local_z / patch.tile_world_size))
+        cell_x = max(0, min(int(math.ceil(patch.width / patch.tile_world_size)) - 1, cell_x))
+        cell_z = max(0, min(int(math.ceil(patch.depth / patch.tile_world_size)) - 1, cell_z))
+        tile_layers = self.baked_ground_tile_layers(patch, cell_x, cell_z)
+        tile_origin_x = patch.min_x + cell_x * patch.tile_world_size
+        tile_origin_z = patch.min_z + cell_z * patch.tile_world_size
+        for visual in tile_layers:
+            layer_color = self.sample_ground_layer_color(
+                model,
+                visual,
+                x,
+                z,
+                tile_origin_x,
+                tile_origin_z,
+                patch.tile_world_size,
+                patch.tile_world_size,
+            )
+            if layer_color is not None:
+                color = layer_color
+
+        for detail in model.world.ground_details:
+            if not patch.contains(detail.x, detail.z, margin=patch.tile_world_size):
+                continue
+            detail_color = self.sample_ground_detail_color(model, detail, x, z)
+            if detail_color is not None:
+                color = detail_color
+        return color
+
+    def baked_ground_tile_layers(
+        self, patch: BakedGroundPatch, cell_x: int, cell_z: int
+    ) -> tuple[str, ...]:
+        for tile in patch.tiles:
+            if tile.cell_x == cell_x and tile.cell_z == cell_z:
+                return tile.layers
+        return patch.default_layers
+
+    def sample_ground_layer_color(
+        self,
+        model: GameModel,
+        visual: str,
+        x: float,
+        z: float,
+        origin_x: float,
+        origin_z: float,
+        width_world: float,
+        depth_world: float,
+    ) -> int | None:
+        asset = self.ground_surface_sprite_asset(model, visual)
+        return self.sample_ground_asset_color(
+            asset, x, z, origin_x, origin_z, width_world, depth_world
+        )
+
+    def sample_ground_detail_color(
+        self, model: GameModel, detail: GroundDetail, x: float, z: float
+    ) -> int | None:
+        asset = self.ground_detail_sprite_asset(model, detail)
+        if asset is None:
+            return None
+        frame = asset.frame()
+        source = frame.source
+        if source is None:
+            return None
+        width_world, depth_world = asset.definition.world_size
+        anchor_x, anchor_y = asset.definition.anchor_px
+        origin_x = detail.x - anchor_x * width_world / source.width
+        origin_z = detail.z - anchor_y * depth_world / source.height
+        return self.sample_ground_asset_color(
+            asset, x, z, origin_x, origin_z, width_world, depth_world
+        )
+
+    def sample_ground_asset_color(
+        self,
+        asset: LoadedSpriteAsset | None,
+        x: float,
+        z: float,
+        origin_x: float,
+        origin_z: float,
+        width_world: float,
+        depth_world: float,
+    ) -> int | None:
+        if asset is None:
+            return None
+        frame = asset.frame()
+        source = frame.source
+        if source is None:
+            return None
+        if not (origin_x <= x < origin_x + width_world and origin_z <= z < origin_z + depth_world):
+            return None
+        src_x = int((x - origin_x) / width_world * source.width)
+        src_y = int((z - origin_z) / depth_world * source.height)
+        src_x = max(0, min(source.width - 1, src_x))
+        src_y = max(0, min(source.height - 1, src_y))
+        char = source.rows[src_y][src_x]
+        if int(char, 16) == asset.definition.colkey:
+            return None
+        return int(char, 16)
+
+    def ground_surface_is_baked(self, surface: GroundSurface) -> bool:
+        return any(
+            patch.contains(surface.x, surface.z, margin=patch.tile_world_size * 0.5)
+            for patch in self._active_baked_ground_patches
+        )
+
+    def point_in_active_baked_ground_patch(self, x: float, z: float) -> bool:
+        return any(patch.contains(x, z) for patch in self._active_baked_ground_patches)
 
     def ground_surface_sprite_asset(
         self, model: GameModel, visual: str

@@ -42,6 +42,18 @@ All clean nature v0.3 assets use `8` as the transparent color. Color `0` is visi
 
 After the initial v0.3 connection, the random per-chunk ground-detail generation was disabled (`visual_detail_per_chunk: 0`) because each 64 x 64 ground-projected source is expensive to project per frame in Pyxel Web. The authored one-each review placements remain active.
 
+On 2026-09-14, a first fixed-camera baked ground patch was added around the player spawn. It is intentionally a runtime-generated cache, not a new `.pyxres` or tilemap resource yet. The renderer samples the existing ground material/decal HEX sources into one pre-projected image for the normal FOLLOW camera and draws that image with a single `blt`. While the patch is active, the legacy per-pixel ground projections inside the same world area are skipped. This gives us a low-risk performance probe before committing to generated `.pyxres`/`bltm` assets.
+
+Current baked patch scope:
+
+- `spawn_affine_ground_patch`
+- Center `(160, 192)`, size `192 x 192` world units, 32 world-unit tile cells.
+- Uses `concrete_clean_a` as the default base and mixes `concrete_cracked_a`, `concrete_spalled_a`, `concrete_joint_grass_a`, `decal_stain_a`, `decal_crack_grass_a`, `decal_rubble_a`, and `decal_broken_edge_a`.
+- Also bakes the existing authored ground detail sprites when they fall inside the patch.
+- Active only when yaw/pitch/distance/anchor match the normal FOLLOW camera. Overview, focus, and zoomed event cameras fall back to the existing drawing paths.
+- Uses 2 logical px screen overlap around the baked image so adjacent-patch overlap can be tested later.
+- Samples the baked cache at 2 logical px increments and draws it scaled 2x, reducing one-time cache generation cost while preserving the fixed-camera performance test.
+
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
 - `concrete_clean_a`: source hash `e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640`

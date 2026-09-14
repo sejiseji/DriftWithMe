@@ -1111,7 +1111,8 @@ class DriftWithMeApp:
             if render_stats is not None:
                 chunks_text = (
                     f"chunks={render_stats.candidate_chunks}/64 "
-                    f"detail={render_stats.visible_ground_details}"
+                    f"detail={render_stats.visible_ground_details} "
+                    f"baked={render_stats.visible_baked_ground_patches}"
                 )
                 pyxel.text(
                     184,

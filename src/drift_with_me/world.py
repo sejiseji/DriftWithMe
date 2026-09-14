@@ -73,6 +73,49 @@ class GroundSurface:
 
 
 @dataclass(frozen=True)
+class GroundPatchTile:
+    cell_x: int
+    cell_z: int
+    layers: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class BakedGroundPatch:
+    id: str
+    x: float
+    z: float
+    width: float
+    depth: float
+    tile_world_size: float
+    default_layers: tuple[str, ...]
+    tiles: tuple[GroundPatchTile, ...]
+    screen_overlap_px: int
+    screen_sample_px: int
+
+    @property
+    def min_x(self) -> float:
+        return self.x - self.width * 0.5
+
+    @property
+    def max_x(self) -> float:
+        return self.x + self.width * 0.5
+
+    @property
+    def min_z(self) -> float:
+        return self.z - self.depth * 0.5
+
+    @property
+    def max_z(self) -> float:
+        return self.z + self.depth * 0.5
+
+    def contains(self, x: float, z: float, margin: float = 0.0) -> bool:
+        return (
+            self.min_x - margin <= x <= self.max_x + margin
+            and self.min_z - margin <= z <= self.max_z + margin
+        )
+
+
+@dataclass(frozen=True)
 class StaticVisibilityQuery:
     chunk_ids: tuple[tuple[int, int], ...]
     objects: tuple[StaticObject, ...]
@@ -199,6 +242,9 @@ class WorldData:
         self.ground_surfaces = tuple(
             self._load_ground_surface(item) for item in raw.get("ground_surfaces", ())
         )
+        self.baked_ground_patches = tuple(
+            self._load_baked_ground_patch(item) for item in raw.get("baked_ground_patches", ())
+        )
 
     def _load_object(self, item: dict[str, Any]) -> StaticObject:
         position = item["position"]
@@ -293,6 +339,30 @@ class WorldData:
             x=float(center[0]),
             z=float(center[1]),
             layers=layers,
+        )
+
+    def _load_baked_ground_patch(self, item: dict[str, Any]) -> BakedGroundPatch:
+        center = item["center_xz"]
+        size = item["size_xz"]
+        tiles = tuple(
+            GroundPatchTile(
+                cell_x=int(tile["cell"][0]),
+                cell_z=int(tile["cell"][1]),
+                layers=tuple(str(layer) for layer in tile["layers"]),
+            )
+            for tile in item.get("tiles", ())
+        )
+        return BakedGroundPatch(
+            id=str(item["id"]),
+            x=float(center[0]),
+            z=float(center[1]),
+            width=float(size[0]),
+            depth=float(size[1]),
+            tile_world_size=float(item.get("tile_world_size", self.cell_size)),
+            default_layers=tuple(str(layer) for layer in item["default_layers"]),
+            tiles=tiles,
+            screen_overlap_px=int(item.get("screen_overlap_px", 2)),
+            screen_sample_px=max(1, int(item.get("screen_sample_px", 1))),
         )
 
     def _load_ground_detail(self, item: dict[str, Any], index: int) -> GroundDetail:
