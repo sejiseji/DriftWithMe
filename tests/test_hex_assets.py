@@ -793,7 +793,7 @@ assert (
     renderer.object_sprite_asset(model, low_grass).definition.projection_mode
     == "ground_decal_source_v1"
 )
-assert len(model.world.ground_details) == 4
+assert len(model.world.ground_details) == 12
 detail = model.world.ground_details[0]
 assert detail.id == "nature_review_pebbles"
 assert renderer.ground_detail_sprite_asset(model, detail).definition.asset_id == "pebbles_a_64"
@@ -815,64 +815,32 @@ for y in range(runtime.screen_height):
     for x in range(runtime.screen_width):
         visible_pixels += pyxel.pget(x, y) != 3
 assert visible_pixels > 0
-assert len(model.world.ground_surfaces) == 3
-surface = model.world.ground_surfaces[1]
-assert surface.layers == ("concrete_clean_a", "decal_crack_grass_a")
+assert len(model.world.ground_surfaces) == 0
 assert renderer.ground_surface_sprite_asset(model, "concrete_clean_a").definition.asset_id == (
     "concrete_clean_a_64"
 )
-pyxel.cls(3)
-renderer.draw_ground_surface(model, surface, camera)
-visible_pixels = 0
-for y in range(runtime.screen_height):
-    for x in range(runtime.screen_width):
-        visible_pixels += pyxel.pget(x, y) != 3
-assert visible_pixels > 0
 assert len(model.world.baked_ground_patches) == 10
 legacy_patch = model.world.baked_ground_patches[0]
 assert legacy_patch.id == "spawn_affine_ground_patch"
 assert legacy_patch.group == "spawn_192_legacy_compare"
 assert not legacy_patch.enabled
-small_patches = [patch for patch in model.world.baked_ground_patches if patch.enabled]
-assert len(small_patches) == 9
-assert {{patch.group for patch in small_patches}} == {{"spawn_64_bucket16"}}
-assert {{patch.width for patch in small_patches}} == {{64.0}}
-assert {{patch.camera_bucket_world_size for patch in small_patches}} == {{16.0}}
-assert any(patch.contains(model.player.x, model.player.z) for patch in small_patches)
-assert any(
-    patch.contains(surface.x, surface.z, margin=patch.tile_world_size * 0.5)
-    for patch in small_patches
-)
-for _ in range(9):
-    active_patches = renderer.draw_baked_ground_patches(model, camera)
-assert len(active_patches) == 9
-assert [patch.id for patch in active_patches[:3]] == [
-    "spawn64_1_0",
-    "spawn64_1_1",
-    "spawn64_0_0",
+small_patches = [
+    patch for patch in model.world.baked_ground_patches if patch.group == "spawn_64_bucket16"
 ]
-assert renderer.ground_surface_is_baked(surface)
-assert renderer.point_in_active_baked_ground_patch(detail.x, detail.z)
-shifted_camera = CameraState.from_config(
-    runtime.raw,
-    Vec3(model.player.x + 16.0, 0.0, model.player.z + 16.0),
-    runtime.screen_width,
-    runtime.screen_height,
-)
-renderer.max_baked_ground_builds_per_frame = 0
-fallback_patches = renderer.draw_baked_ground_patches(model, shifted_camera)
-assert len(fallback_patches) == 9
-assert len(renderer._baked_ground_cache) == 9
-renderer.max_baked_ground_builds_per_frame = 1
+assert len(small_patches) == 9
+assert not any(patch.enabled for patch in model.world.baked_ground_patches)
+active_patches = renderer.draw_baked_ground_patches(model, camera)
+assert active_patches == ()
+assert not renderer.point_in_active_baked_ground_patch(detail.x, detail.z)
 visible_pixels = 0
 for y in range(runtime.screen_height):
     for x in range(runtime.screen_width):
         visible_pixels += pyxel.pget(x, y) != 3
 assert visible_pixels > 0
 renderer.draw_scene(model, camera, presentation_time=0.0, debug=False)
-assert renderer.last_stats.visible_baked_ground_patches == 9
-assert renderer.last_stats.visible_ground_details == 0
-assert renderer.last_stats.baked_ground_cache_size == 9
+assert renderer.last_stats.visible_baked_ground_patches == 0
+assert renderer.last_stats.visible_ground_details >= 4
+assert renderer.last_stats.baked_ground_cache_size == 0
 pyxel.cls(3)
 assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
 placement = renderer.player_sprite_placement(model, camera, presentation_time=0.0)

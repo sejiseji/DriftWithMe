@@ -146,6 +146,8 @@ class Renderer:
 
     def draw_ground(self, world: WorldData, camera: CameraState) -> None:
         pyxel = self.pyxel
+        ground_color = 13
+        border_color = 7
         corners = [
             camera.project(Vec3(0.0, 0.0, 0.0)),
             camera.project(Vec3(world.width, 0.0, 0.0)),
@@ -154,20 +156,27 @@ class Renderer:
         ]
         if all(point is not None for point in corners):
             p0, p1, p2, p3 = corners
-            pyxel.tri(int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), 3)
-            pyxel.tri(int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), 3)
+            pyxel.tri(
+                int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), ground_color
+            )
+            pyxel.tri(
+                int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), ground_color
+            )
 
-        for line in range(0, int(world.width) + 1, 128):
-            self.draw_world_line(camera, Vec3(line, 0.0, 0.0), Vec3(line, 0.0, world.depth), 11)
-            self.draw_world_line(camera, Vec3(0.0, 0.0, line), Vec3(world.width, 0.0, line), 11)
-        self.draw_world_line(camera, Vec3(0.0, 0.0, 0.0), Vec3(world.width, 0.0, 0.0), 7)
+        self.draw_world_line(camera, Vec3(0.0, 0.0, 0.0), Vec3(world.width, 0.0, 0.0), border_color)
         self.draw_world_line(
-            camera, Vec3(world.width, 0.0, 0.0), Vec3(world.width, 0.0, world.depth), 7
+            camera,
+            Vec3(world.width, 0.0, 0.0),
+            Vec3(world.width, 0.0, world.depth),
+            border_color,
         )
         self.draw_world_line(
-            camera, Vec3(world.width, 0.0, world.depth), Vec3(0.0, 0.0, world.depth), 7
+            camera,
+            Vec3(world.width, 0.0, world.depth),
+            Vec3(0.0, 0.0, world.depth),
+            border_color,
         )
-        self.draw_world_line(camera, Vec3(0.0, 0.0, world.depth), Vec3(0.0, 0.0, 0.0), 7)
+        self.draw_world_line(camera, Vec3(0.0, 0.0, world.depth), Vec3(0.0, 0.0, 0.0), border_color)
 
     def draw_safe_zones(self, world: WorldData, camera: CameraState) -> None:
         for zone in world.safe_zones:

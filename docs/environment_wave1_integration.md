@@ -46,26 +46,21 @@ On 2026-09-14, fixed-camera baked ground patch probes were added around the play
 
 The first `192 x 192` single patch proved very fast but visibly wrong: it reused one large projected ground image with screen-space translation only, so the internal perspective drifted and looked like a sliding board. That patch remains in data as `spawn_affine_ground_patch` with group `spawn_192_legacy_compare`, but it is disabled by default for comparison.
 
-Current active baked patch scope:
+The follow-up `64 x 64` patch split reduced the visible perspective error, but zoom, camera bucket changes, and patch rebuild latency still made the ground texture read as a separate projected layer. As a result, all baked ground patches are now disabled by default and kept only as a comparison experiment in data:
 
-- 9 enabled patches in group `spawn_64_bucket16`.
-- Each patch is `64 x 64` world units, covering a 3 x 3 area around the spawn.
-- The old `192 x 192` area is split into these smaller patches so each patch has less internal perspective error.
-- Uses `concrete_clean_a` as the default base and mixes `concrete_cracked_a`, `concrete_spalled_a`, `concrete_joint_grass_a`, `decal_stain_a`, `decal_crack_grass_a`, `decal_rubble_a`, and `decal_broken_edge_a`.
-- Also bakes the existing authored ground detail sprites when they fall inside the patch.
-- Active only when yaw/pitch/distance/anchor match the normal FOLLOW camera. Overview, focus, and zoomed event cameras fall back to the existing drawing paths.
-- Uses 3 logical px screen overlap around each baked image so adjacent-patch overlap can be tested.
-- Samples the baked cache at 2 logical px increments and draws it scaled 2x, reducing one-time cache generation cost while preserving the fixed-camera performance test.
-- Uses a 16 world-unit camera-target bucket in the cache key. Small camera motion reuses the same cache with screen translation; crossing a bucket produces a new projection cache.
-- Builds at most one missing baked patch per frame, prioritizing patches near the camera target, to avoid a startup or bucket-crossing generation spike.
+- `spawn_affine_ground_patch`, group `spawn_192_legacy_compare`, disabled.
+- 9 `64 x 64` patches in group `spawn_64_bucket16`, disabled.
+- Baked patch renderer code remains available for future experiments, but it is not the current visual baseline.
 
-Native headless reference measurements after the 64 patch split:
+Native headless reference measurements from the disabled 64 patch experiment:
 
 - 9 enabled patches, cache image sizes about `58 x 27` to `75 x 34`, drawn 2x.
 - First build total for 9 patches: about `107 ms`, spread across 9 frames by default.
 - Warm baked draw: about `0.15 ms/frame`.
 - Legacy review ground sources plus authored details: about `14.59 ms/frame`.
 - These are local headless measurements, not iPhone/Web runtime FPS guarantees.
+
+The current visual baseline is a single gray ground undercoat plus sparse, non-tile ground details. The broad `ground_surfaces` pavement review entries are disabled, and the authored `ground_details` list now carries small pebbles, fallen leaves, cracks with grass, and rubble around the spawn/station area. This avoids large projected pavement sheets while retaining local ground texture.
 
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
@@ -139,8 +134,8 @@ World data changes are limited to:
 
 - `visual` identifiers for trees and grass.
 - `sprite_world_size` for equipment and grass so visual culling matches the new sprites.
-- `ground_surfaces` review entries for the three non-collision ground material comparisons.
-- `ground_details` review entries for one each of pebbles, fallen leaves, crack sprout, and small rubble.
+- `ground_surfaces` is empty; large pavement review sheets are no longer active by default.
+- `ground_details` authored entries for sparse pebbles, fallen leaves, crack sprout, and small rubble.
 - `visual_detail_per_chunk` is `0`; random small-detail scatter is deferred until a cheaper tiling/sprite path is available.
 
 ## Deferred
