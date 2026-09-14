@@ -40,6 +40,8 @@ Nature and small ground-detail assets were updated on 2026-09-14 from the clean 
 
 All clean nature v0.3 assets use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. Existing runtime keys now resolve to these v0.3 assets: `reactive_grass_tall` -> `grass_tall_a`, `reactive_grass_low` -> `grass_low_a`, `ground_pebbles` -> `pebbles_a`, `ground_fallen_leaves` -> `fallen_leaves_a`, `ground_crack_grass` -> `crack_sprout_a`, and `ground_rubble` -> `rubble_small_a`.
 
+After the initial v0.3 connection, the random per-chunk ground-detail generation was disabled (`visual_detail_per_chunk: 0`) because each 64 x 64 ground-projected source is expensive to project per frame in Pyxel Web. The authored one-each review placements remain active.
+
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
 - `concrete_clean_a`: source hash `e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640`
@@ -114,6 +116,7 @@ World data changes are limited to:
 - `sprite_world_size` for equipment and grass so visual culling matches the new sprites.
 - `ground_surfaces` review entries for the three non-collision ground material comparisons.
 - `ground_details` review entries for one each of pebbles, fallen leaves, crack sprout, and small rubble.
+- `visual_detail_per_chunk` is `0`; random small-detail scatter is deferred until a cheaper tiling/sprite path is available.
 
 ## Deferred
 

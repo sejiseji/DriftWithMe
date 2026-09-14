@@ -793,6 +793,7 @@ assert (
     renderer.object_sprite_asset(model, low_grass).definition.projection_mode
     == "ground_decal_source_v1"
 )
+assert len(model.world.ground_details) == 4
 detail = model.world.ground_details[0]
 assert detail.id == "nature_review_pebbles"
 assert renderer.ground_detail_sprite_asset(model, detail).definition.asset_id == "pebbles_a_64"

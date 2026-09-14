@@ -81,6 +81,9 @@ class Renderer:
     def __init__(self, pyxel_module, sprite_assets: SpriteAssetLibrary | None = None) -> None:
         self.pyxel = pyxel_module
         self.sprite_assets = sprite_assets or SpriteAssetLibrary.empty()
+        self._ground_source_pixels: dict[
+            tuple[str, str, int], tuple[tuple[int, int, str], ...]
+        ] = {}
         self.player_sprite_flipped_x = False
         self.player_sprite_view_name = "idle"
         self.buddy_sprite_view_name = "front_right"
@@ -405,25 +408,74 @@ class Renderer:
         origin_z = z - anchor_y * depth_world / source.height
         step_x = width_world / source.width
         step_z = depth_world / source.height
+        bounds = self.ground_source_screen_bounds(
+            camera,
+            origin_x,
+            origin_z,
+            width_world,
+            depth_world,
+        )
+        if bounds is None or not self.screen_rect_visible(bounds, camera, 2.0):
+            return True
         draw_size = self.ground_decal_screen_pixel_size(camera, x, z, step_x, step_z)
-        colkey_char = format(asset.definition.colkey, "X")
-        for row_index, row in enumerate(source.rows):
+        sample_step = 2 if draw_size <= 1 else 1
+        pixel_size = max(draw_size, sample_step)
+        for col_index, row_index, char in self.ground_source_visible_pixels(asset, source):
+            if col_index % sample_step != 0 or row_index % sample_step != 0:
+                continue
             world_z = origin_z + (row_index + 0.5) * step_z
-            for col_index, char in enumerate(row):
-                if char == colkey_char:
-                    continue
-                world_x = origin_x + (col_index + 0.5) * step_x
-                point = camera.project(Vec3(world_x, 0.0, world_z))
-                if point is None:
-                    continue
-                x = int(point.x)
-                y = int(point.y)
-                color = int(char, 16)
-                if draw_size <= 1:
-                    self.pyxel.pset(x, y, color)
-                else:
-                    self.pyxel.rect(x, y, draw_size, draw_size, color)
+            world_x = origin_x + (col_index + 0.5) * step_x
+            point = camera.project(Vec3(world_x, 0.0, world_z))
+            if point is None:
+                continue
+            px = int(point.x)
+            py = int(point.y)
+            color = int(char, 16)
+            if pixel_size <= 1:
+                self.pyxel.pset(px, py, color)
+            else:
+                self.pyxel.rect(px, py, pixel_size, pixel_size, color)
         return True
+
+    def ground_source_visible_pixels(
+        self, asset: LoadedSpriteAsset, source
+    ) -> tuple[tuple[int, int, str], ...]:
+        key = (asset.definition.asset_id, source.frame_id, asset.definition.colkey)
+        cached = self._ground_source_pixels.get(key)
+        if cached is not None:
+            return cached
+        colkey_char = format(asset.definition.colkey, "X")
+        pixels = tuple(
+            (col_index, row_index, char)
+            for row_index, row in enumerate(source.rows)
+            for col_index, char in enumerate(row)
+            if char != colkey_char
+        )
+        self._ground_source_pixels[key] = pixels
+        return pixels
+
+    def ground_source_screen_bounds(
+        self,
+        camera: CameraState,
+        origin_x: float,
+        origin_z: float,
+        width_world: float,
+        depth_world: float,
+    ) -> ScreenRect | None:
+        corners = [
+            camera.project(Vec3(origin_x, 0.0, origin_z)),
+            camera.project(Vec3(origin_x + width_world, 0.0, origin_z)),
+            camera.project(Vec3(origin_x + width_world, 0.0, origin_z + depth_world)),
+            camera.project(Vec3(origin_x, 0.0, origin_z + depth_world)),
+        ]
+        points = [point for point in corners if point is not None]
+        if not points:
+            return None
+        min_x = math.floor(min(point.x for point in points)) - 2
+        min_y = math.floor(min(point.y for point in points)) - 2
+        max_x = math.ceil(max(point.x for point in points)) + 2
+        max_y = math.ceil(max(point.y for point in points)) + 2
+        return ScreenRect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
 
     def ground_decal_screen_pixel_size(
         self, camera: CameraState, x: float, z: float, step_x: float, step_z: float
