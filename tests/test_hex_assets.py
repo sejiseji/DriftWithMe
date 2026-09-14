@@ -102,6 +102,12 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "decal_crack_grass_a": "10c2354747798a9237d874b9d085134d4327a1d6912d089afa55ca074ddbcdc7",
     "decal_rubble_a": "2a2208d7ab8319fcde96af649212d55db8dfb05652b82b15a1ddfe1f1ce56329",
     "decal_broken_edge_a": "95ae5cf54fc533ce45a78d9c089c55da88b19d60b5708992c05e03346732368a",
+    "grass_tall_a": "6d0a65997436af94a5b16727f167e81eb26e249887083e9819cad312bb65c243",
+    "grass_low_a": "c117cebf842445c61510bfbf3192997cea3449f2e16e701bad96e64099939964",
+    "pebbles_a": "aef2501b657821f6324812832795d68e136f2295230226e4e8388c135cca3966",
+    "fallen_leaves_a": "f1b36b299cbd6bf2f1dbcb45e514d5603ba5f50e3c177594e1d0bb09dd0684cd",
+    "crack_sprout_a": "31afbd889e88698f704b94d06542c1196eb2be6ccdaa8543ae4bbc057afea7b7",
+    "rubble_small_a": "ba84a6adb25c1272dc677101cbc3e941f629403bd9c9d4ffd980e5ff8e6a590e",
 }
 ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "water_station_active": {
@@ -182,6 +188,12 @@ ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "decal_crack_grass_a": {"0", "1", "4", "5", "9", "D", "F"},
     "decal_rubble_a": {"0", "1", "4", "5", "7", "9", "D", "F"},
     "decal_broken_edge_a": {"0", "1", "4", "5", "D", "F"},
+    "grass_tall_a": {"0", "1", "2", "3", "4", "5", "9", "A", "B", "D", "E", "F"},
+    "grass_low_a": {"0", "1", "2", "3", "4", "5", "9", "A", "B", "D", "E", "F"},
+    "pebbles_a": {"0", "1", "2", "4", "5", "7", "9", "D", "E", "F"},
+    "fallen_leaves_a": {"0", "1", "2", "4", "5", "9", "A", "C", "D", "E", "F"},
+    "crack_sprout_a": {"0", "1", "2", "3", "4", "5", "9", "A", "D", "E", "F"},
+    "rubble_small_a": {"0", "1", "2", "4", "5", "7", "9", "A", "D", "E", "F"},
 }
 
 
@@ -610,6 +622,12 @@ environment_asset_ids = {{
     "decal_crack_grass_a": "decal_crack_grass_a_64",
     "decal_rubble_a": "decal_rubble_a_64",
     "decal_broken_edge_a": "decal_broken_edge_a_64",
+    "grass_tall_a": "grass_tall_a_64",
+    "grass_low_a": "grass_low_a_64",
+    "pebbles_a": "pebbles_a_64",
+    "fallen_leaves_a": "fallen_leaves_a_64",
+    "crack_sprout_a": "crack_sprout_a_64",
+    "rubble_small_a": "rubble_small_a_64",
 }}
 environment_world_sizes = {{
     "water_station_active": (36.0, 48.0),
@@ -632,6 +650,12 @@ environment_world_sizes = {{
     "decal_crack_grass_a": (32.0, 32.0),
     "decal_rubble_a": (32.0, 32.0),
     "decal_broken_edge_a": (32.0, 32.0),
+    "grass_tall_a": (28.0, 28.0),
+    "grass_low_a": (28.0, 18.0),
+    "pebbles_a": (22.0, 14.0),
+    "fallen_leaves_a": (26.0, 16.0),
+    "crack_sprout_a": (28.0, 18.0),
+    "rubble_small_a": (32.0, 20.0),
 }}
 environment_colkeys = {{
     "water_station_active": 8,
@@ -648,6 +672,12 @@ environment_colkeys = {{
     "decal_crack_grass_a": 8,
     "decal_rubble_a": 8,
     "decal_broken_edge_a": 8,
+    "grass_tall_a": 8,
+    "grass_low_a": 8,
+    "pebbles_a": 8,
+    "fallen_leaves_a": 8,
+    "crack_sprout_a": 8,
+    "rubble_small_a": 8,
 }}
 environment_anchors = {{
     "water_station_active": (48.0, 127.0),
@@ -664,6 +694,12 @@ environment_anchors = {{
     "decal_crack_grass_a": (32.0, 32.0),
     "decal_rubble_a": (32.0, 32.0),
     "decal_broken_edge_a": (32.0, 32.0),
+    "grass_tall_a": (32.0, 63.0),
+    "grass_low_a": (32.0, 63.0),
+    "pebbles_a": (32.0, 63.0),
+    "fallen_leaves_a": (32.0, 63.0),
+    "crack_sprout_a": (32.0, 63.0),
+    "rubble_small_a": (32.0, 63.0),
 }}
 fuse_frame = None
 for direction, expected_hash in fuse_assets.items():
@@ -698,12 +734,20 @@ for source_id, expected_hash in environment_hashes.items():
     if source_id in environment_colkeys:
         assert env_asset.definition.colkey == environment_colkeys[source_id]
         assert env_asset.definition.anchor_px == environment_anchors[source_id]
-    if source_id.startswith(("ground_", "concrete_", "decal_")):
+    if source_id.startswith(("ground_", "concrete_", "decal_")) or source_id in {{
+        "grass_low_a",
+        "pebbles_a",
+        "fallen_leaves_a",
+        "crack_sprout_a",
+        "rubble_small_a",
+    }}:
         assert env_asset.definition.projection_mode == "ground_decal_source_v1"
     else:
         assert env_asset.definition.projection_mode == "upright_height_billboard_v1"
 assert runtime.raw["assets"]["water_station_working_asset"] == "water_station_active_96"
-assert runtime.raw["assets"]["ground_rubble_asset"] == "ground_rubble_64"
+assert runtime.raw["assets"]["reactive_grass_tall_asset"] == "grass_tall_a_64"
+assert runtime.raw["assets"]["reactive_grass_low_asset"] == "grass_low_a_64"
+assert runtime.raw["assets"]["ground_rubble_asset"] == "rubble_small_a_64"
 assert runtime.raw["assets"]["concrete_clean_a_asset"] == "concrete_clean_a_64"
 assert runtime.raw["assets"]["decal_crack_grass_a_asset"] == "decal_crack_grass_a_64"
 assert sound_snapshot() == before_sound
@@ -724,8 +768,9 @@ stopped_tap = model.world.object_by_id("tap_stopped")
 solar = model.world.object_by_id("solar_start")
 tree = model.world.object_by_id("tree_02")
 grass = model.world.object_by_id("grass_01")
+low_grass = model.world.object_by_id("grass_02")
 assert tap is not None and stopped_tap is not None and solar is not None
-assert tree is not None and grass is not None
+assert tree is not None and grass is not None and low_grass is not None
 assert renderer.object_sprite_asset(model, tap).definition.asset_id == "water_station_active_96"
 assert (
     renderer.object_sprite_asset(model, stopped_tap).definition.asset_id
@@ -742,9 +787,33 @@ model.interaction = InteractionState(
 assert renderer.object_sprite_asset(model, solar).definition.asset_id == "solar_station_active_96"
 model.interaction = None
 assert renderer.object_sprite_asset(model, tree).definition.asset_id == "tree_thin_b_96"
-assert renderer.object_sprite_asset(model, grass).definition.asset_id == "reactive_grass_tall_64"
+assert renderer.object_sprite_asset(model, grass).definition.asset_id == "grass_tall_a_64"
+assert renderer.object_sprite_asset(model, low_grass).definition.asset_id == "grass_low_a_64"
+assert (
+    renderer.object_sprite_asset(model, low_grass).definition.projection_mode
+    == "ground_decal_source_v1"
+)
 detail = model.world.ground_details[0]
-assert renderer.ground_detail_sprite_asset(model, detail) is not None
+assert detail.id == "nature_review_pebbles"
+assert renderer.ground_detail_sprite_asset(model, detail).definition.asset_id == "pebbles_a_64"
+authored_detail_assets = [
+    renderer.ground_detail_sprite_asset(model, item).definition.asset_id
+    for item in model.world.ground_details[:4]
+]
+assert authored_detail_assets == [
+    "pebbles_a_64",
+    "fallen_leaves_a_64",
+    "crack_sprout_a_64",
+    "rubble_small_a_64",
+]
+pyxel.cls(3)
+for item in model.world.ground_details[:4]:
+    assert renderer.draw_ground_detail_sprite(model, item, camera)
+visible_pixels = 0
+for y in range(runtime.screen_height):
+    for x in range(runtime.screen_width):
+        visible_pixels += pyxel.pget(x, y) != 3
+assert visible_pixels > 0
 assert len(model.world.ground_surfaces) == 3
 surface = model.world.ground_surfaces[1]
 assert surface.layers == ("concrete_clean_a", "decal_crack_grass_a")

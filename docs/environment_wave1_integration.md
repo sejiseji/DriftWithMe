@@ -29,6 +29,17 @@ Equipment assets were updated again on 2026-09-14 from the extracted equipment v
 
 The extracted equipment sources use `8` as the only transparent color. Color `0` is visible black and must not be treated as transparency. The billboard anchor is `(48, 127)`.
 
+Nature and small ground-detail assets were updated on 2026-09-14 from the clean nature v0.3 pack. These are preferred over the earlier Wave1 small nature sources:
+
+- `grass_tall_a`: source hash `6d0a65997436af94a5b16727f167e81eb26e249887083e9819cad312bb65c243`
+- `grass_low_a`: source hash `c117cebf842445c61510bfbf3192997cea3449f2e16e701bad96e64099939964`
+- `pebbles_a`: source hash `aef2501b657821f6324812832795d68e136f2295230226e4e8388c135cca3966`
+- `fallen_leaves_a`: source hash `f1b36b299cbd6bf2f1dbcb45e514d5603ba5f50e3c177594e1d0bb09dd0684cd`
+- `crack_sprout_a`: source hash `31afbd889e88698f704b94d06542c1196eb2be6ccdaa8543ae4bbc057afea7b7`
+- `rubble_small_a`: source hash `ba84a6adb25c1272dc677101cbc3e941f629403bd9c9d4ffd980e5ff8e6a590e`
+
+All clean nature v0.3 assets use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. Existing runtime keys now resolve to these v0.3 assets: `reactive_grass_tall` -> `grass_tall_a`, `reactive_grass_low` -> `grass_low_a`, `ground_pebbles` -> `pebbles_a`, `ground_fallen_leaves` -> `fallen_leaves_a`, `ground_crack_grass` -> `crack_sprout_a`, and `ground_rubble` -> `rubble_small_a`.
+
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
 - `concrete_clean_a`: source hash `e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640`
@@ -72,22 +83,24 @@ This avoids overwriting existing image banks and keeps the Wave1 source pixels a
 
 ## World Size And Projection
 
-Transparent sprites use their asset-specific `colkey`. Most Wave1 transparent sprites use `0`; the extracted equipment v0.2, tree v0.2, and ground decal v0.2 assets use `8` so color `0` can remain visible black.
+Transparent sprites use their asset-specific `colkey`. Most Wave1 transparent sprites use `0`; the extracted equipment v0.2, tree v0.2, clean nature v0.3, and ground decal v0.2 assets use `8` so color `0` can remain visible black.
 
 | Asset group | Projection | Runtime world size |
 | --- | --- | --- |
 | Water stations | `upright_height_billboard_v1` | 36 x 48 |
 | Solar stations | `upright_height_billboard_v1` | 36 x 48 |
 | Trees | `upright_height_billboard_v1` | 48 x 64 |
-| Tall grass | `upright_height_billboard_v1` | 24 x 24 |
-| Low grass | `upright_height_billboard_v1` | 28 x 28 |
-| Ground pebbles/leaves/crack grass | `ground_decal_source_v1` | 32 x 32 |
-| Ground rubble | `ground_decal_source_v1` | 40 x 32 |
+| Tall grass v0.3 | `upright_height_billboard_v1` | 28 x 28 |
+| Low grass v0.3 | `ground_decal_source_v1` | 28 x 18 |
+| Pebbles v0.3 | `ground_decal_source_v1` | 22 x 14 |
+| Fallen leaves v0.3 | `ground_decal_source_v1` | 26 x 16 |
+| Crack sprout v0.3 | `ground_decal_source_v1` | 28 x 18 |
+| Small rubble v0.3 | `ground_decal_source_v1` | 32 x 20 |
 | Ground v0.2 concrete/decal review surfaces | `ground_decal_source_v1` | 32 x 32 |
 
 Water station source art is 96 x 128. The supplied recommendation was 32 x 48, but the runtime uses 36 x 48 to preserve the source aspect ratio under Pyxel's uniform `blt` scale.
 
-Grass recommendations were non-square, but the current billboard path is also uniform scale. Tall grass uses 24 x 24 and low grass uses 28 x 28 as a first review size rather than anisotropically stretching the pixels.
+Tall grass remains an upright billboard. Low grass and the small nature props are ground-projected decals so their non-square recommended world sizes can be preserved without stretching an upright billboard.
 
 Ground small objects and the v0.2 review surfaces use `ground_decal_source_v1`, which samples opaque HEX pixels and projects them onto the X/Z ground plane. This is intentionally separate from the vertical billboard path.
 
@@ -100,6 +113,7 @@ World data changes are limited to:
 - `visual` identifiers for trees and grass.
 - `sprite_world_size` for equipment and grass so visual culling matches the new sprites.
 - `ground_surfaces` review entries for the three non-collision ground material comparisons.
+- `ground_details` review entries for one each of pebbles, fallen leaves, crack sprout, and small rubble.
 
 ## Deferred
 

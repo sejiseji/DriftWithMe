@@ -295,6 +295,20 @@ class WorldData:
             layers=layers,
         )
 
+    def _load_ground_detail(self, item: dict[str, Any], index: int) -> GroundDetail:
+        center = item["center_xz"]
+        x = float(center[0])
+        z = float(center[1])
+        return GroundDetail(
+            id=str(item.get("id", f"authored_detail_{index}")),
+            chunk_id=(self._chunk_x(x), self._chunk_z(z)),
+            x=x,
+            z=z,
+            visual=str(item["visual"]),
+            phase=int(item.get("phase", index % 4)),
+            color=int(item.get("color", 11)),
+        )
+
     def object_by_id(self, object_id: str) -> StaticObject | None:
         for obj in self.objects:
             if obj.id == object_id:
@@ -370,6 +384,8 @@ class WorldData:
 
     def _build_ground_details(self) -> tuple[GroundDetail, ...]:
         details: list[GroundDetail] = []
+        for index, item in enumerate(self.raw.get("ground_details", ())):
+            details.append(self._load_ground_detail(item, index))
         visuals = (
             "ground_pebbles",
             "ground_fallen_leaves",

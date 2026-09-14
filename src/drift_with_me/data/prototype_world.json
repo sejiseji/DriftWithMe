@@ -601,5 +601,47 @@
         "decal_rubble_a"
       ]
     }
+  ],
+  "ground_details": [
+    {
+      "id": "nature_review_pebbles",
+      "center_xz": [
+        112.0,
+        224.0
+      ],
+      "visual": "ground_pebbles",
+      "phase": 0,
+      "color": 11
+    },
+    {
+      "id": "nature_review_leaves",
+      "center_xz": [
+        144.0,
+        224.0
+      ],
+      "visual": "ground_fallen_leaves",
+      "phase": 1,
+      "color": 11
+    },
+    {
+      "id": "nature_review_crack_sprout",
+      "center_xz": [
+        176.0,
+        224.0
+      ],
+      "visual": "ground_crack_grass",
+      "phase": 2,
+      "color": 11
+    },
+    {
+      "id": "nature_review_rubble",
+      "center_xz": [
+        208.0,
+        224.0
+      ],
+      "visual": "ground_rubble",
+      "phase": 3,
+      "color": 11
+    }
   ]
 }

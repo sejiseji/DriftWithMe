@@ -1554,6 +1554,180 @@
       "source_hash": "95ae5cf54fc533ce45a78d9c089c55da88b19d60b5708992c05e03346732368a",
       "render_mode": "ground_decal_source",
       "source_policy": "ground_extracted_v0_2_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "grass_tall_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        63
+      ],
+      "world_size": [
+        28.0,
+        28.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "grass_tall_a.hex",
+          "source_hash": "6d0a65997436af94a5b16727f167e81eb26e249887083e9819cad312bb65c243"
+        }
+      ],
+      "source_hash": "6d0a65997436af94a5b16727f167e81eb26e249887083e9819cad312bb65c243",
+      "render_mode": "sprite_prop_billboard",
+      "source_policy": "nature_clean_v0_3_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "grass_low_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        63
+      ],
+      "world_size": [
+        28.0,
+        18.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "grass_low_a.hex",
+          "source_hash": "c117cebf842445c61510bfbf3192997cea3449f2e16e701bad96e64099939964"
+        }
+      ],
+      "source_hash": "c117cebf842445c61510bfbf3192997cea3449f2e16e701bad96e64099939964",
+      "render_mode": "ground_decal_prop",
+      "source_policy": "nature_clean_v0_3_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "pebbles_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        63
+      ],
+      "world_size": [
+        22.0,
+        14.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "pebbles_a.hex",
+          "source_hash": "aef2501b657821f6324812832795d68e136f2295230226e4e8388c135cca3966"
+        }
+      ],
+      "source_hash": "aef2501b657821f6324812832795d68e136f2295230226e4e8388c135cca3966",
+      "render_mode": "ground_decal_prop",
+      "source_policy": "nature_clean_v0_3_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "fallen_leaves_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        63
+      ],
+      "world_size": [
+        26.0,
+        16.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "fallen_leaves_a.hex",
+          "source_hash": "f1b36b299cbd6bf2f1dbcb45e514d5603ba5f50e3c177594e1d0bb09dd0684cd"
+        }
+      ],
+      "source_hash": "f1b36b299cbd6bf2f1dbcb45e514d5603ba5f50e3c177594e1d0bb09dd0684cd",
+      "render_mode": "ground_decal_prop",
+      "source_policy": "nature_clean_v0_3_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "crack_sprout_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        63
+      ],
+      "world_size": [
+        28.0,
+        18.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "crack_sprout_a.hex",
+          "source_hash": "31afbd889e88698f704b94d06542c1196eb2be6ccdaa8543ae4bbc057afea7b7"
+        }
+      ],
+      "source_hash": "31afbd889e88698f704b94d06542c1196eb2be6ccdaa8543ae4bbc057afea7b7",
+      "render_mode": "ground_decal_prop",
+      "source_policy": "nature_clean_v0_3_hex"
+    },
+    {
+      "schema_version": 1,
+      "id": "rubble_small_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        63
+      ],
+      "world_size": [
+        32.0,
+        20.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "rubble_small_a.hex",
+          "source_hash": "ba84a6adb25c1272dc677101cbc3e941f629403bd9c9d4ffd980e5ff8e6a590e"
+        }
+      ],
+      "source_hash": "ba84a6adb25c1272dc677101cbc3e941f629403bd9c9d4ffd980e5ff8e6a590e",
+      "render_mode": "ground_decal_prop",
+      "source_policy": "nature_clean_v0_3_hex"
     }
   ],
   "notes": [
@@ -1571,10 +1745,12 @@
     "Tree extracted v0.2 replaces tree_leafy_a/tree_thin_b source HEX. These tree assets use colkey 8, and color index 0 is visible black.",
     "Equipment extracted v0.2 replaces water_station_* and solar_station_* source HEX. These equipment assets use colkey 8, and color index 0 is visible black.",
     "Equipment and tree sprites use upright_height_billboard_v1. Water station width is adjusted to 36 world units to preserve the 96x128 pixel aspect at 48 world-unit height.",
-    "Reactive grass uses upright low-billboard assets with square world_size because Pyxel blt scale is uniform.",
-    "Nature ground detail assets use ground_decal_source_v1 and are projected onto the X/Z ground plane. Ground material tiles from the Wave1 ground pack are intentionally not connected yet.",
+    "Clean nature v0.3 tall grass uses upright_height_billboard_v1; low grass and small ground details use ground_decal_source_v1 so non-square world sizes can be preserved.",
+    "Nature ground detail assets use ground_decal_source_v1 and are projected onto the X/Z ground plane. Ground material tiles are connected only as review surfaces, not full-map tiling.",
     "Ground extracted v0.2 source HEX assets are loaded as source_assets for review surfaces, not baked into jack_sprite.pyxres.",
     "Ground extracted v0.2 concrete base tiles are opaque sources; runtime metadata uses colkey 8 because the current source-asset schema requires an integer colkey and those base sources contain no color index 8.",
-    "Ground extracted v0.2 decal sources use colkey 8, and color index 0 is visible black."
+    "Ground extracted v0.2 decal sources use colkey 8, and color index 0 is visible black.",
+    "Nature clean v0.3 source HEX assets are loaded as source_assets and are preferred for reactive grass and small ground details.",
+    "Nature clean v0.3 uses colkey 8 for all six sprites, and color index 0 is visible black."
   ]
 }

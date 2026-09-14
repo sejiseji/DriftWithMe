@@ -342,6 +342,8 @@ class Renderer:
         asset = self.object_sprite_asset(model, obj)
         if asset is None:
             return False
+        if asset.definition.projection_mode == "ground_decal_source_v1":
+            return self.draw_ground_source_asset(asset, camera, obj.x, obj.z)
         placement = placement_for_upright_height_billboard(
             camera,
             asset.definition,
