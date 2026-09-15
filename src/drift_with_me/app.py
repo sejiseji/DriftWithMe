@@ -7,6 +7,7 @@ from enum import Enum, auto
 
 from drift_with_me import config
 from drift_with_me.audio import AudioEngine
+from drift_with_me.build_info import BUILD_LABEL
 from drift_with_me.camera import CameraController
 from drift_with_me.effects import EffectSystem
 from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
@@ -1004,6 +1005,19 @@ class DriftWithMeApp:
             self.draw_pause()
         else:
             self.draw_play()
+        self.draw_build_label()
+
+    def draw_build_label(self) -> None:
+        text = BUILD_LABEL.upper()
+        scale = 1
+        text_width, text_height = pixel_text_size(text, scale)
+        box_width = text_width + 6
+        box_height = text_height + 5
+        x = self.runtime.screen_width - box_width - 4
+        y = 42
+        self.pyxel.rect(x, y, box_width, box_height, 0)
+        self.pyxel.rectb(x, y, box_width, box_height, 13)
+        draw_pixel_text(self.pyxel, x + 3, y + 2, text, 7, scale=scale)
 
     def draw_start(self) -> None:
         pyxel = self.pyxel

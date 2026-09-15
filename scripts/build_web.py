@@ -15,6 +15,7 @@ FIXED_ZIP_DATE = (1980, 1, 1, 0, 0, 0)
 DEFAULT_OUTPUTS = ("index.html", "docs/index.html", "web/index.html")
 DISABLED_GAMEPAD = 'gamepad: "disabled"'
 WEB_HASH_LENGTH = 12
+BUILD_INFO_RELATIVE_PATH = Path("src") / "drift_with_me" / "build_info.py"
 
 
 HOST_CSS = """:root {
@@ -252,6 +253,34 @@ def runtime_files(app_dir: Path) -> list[Path]:
     return sorted(path for path in app_dir.rglob("*") if path.is_file())
 
 
+def source_build_id(app_dir: Path) -> str:
+    digest = hashlib.sha256()
+    for path in runtime_files(app_dir):
+        relative = path.relative_to(app_dir)
+        if relative == BUILD_INFO_RELATIVE_PATH:
+            continue
+        digest.update(str(relative).replace("\\", "/").encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()[:WEB_HASH_LENGTH]
+
+
+def build_info_text(build_id: str) -> str:
+    return (
+        "from __future__ import annotations\n\n"
+        f"BUILD_ID = {build_id!r}\n"
+        'BUILD_LABEL = f"build {BUILD_ID}"\n'
+    )
+
+
+def write_build_info(app_dir: Path) -> str:
+    build_id = source_build_id(app_dir)
+    target = app_dir / BUILD_INFO_RELATIVE_PATH
+    target.write_text(build_info_text(build_id), encoding="utf-8")
+    return build_id
+
+
 def write_zip_text(zf: zipfile.ZipFile, arcname: str, text: str) -> None:
     info = zipfile.ZipInfo(arcname, FIXED_ZIP_DATE)
     info.compress_type = zipfile.ZIP_DEFLATED
@@ -362,6 +391,7 @@ def build_web(root: Path, outputs: list[Path]) -> tuple[Path, ...]:
     app_dir = build_dir / APP_NAME
     build_dir.mkdir(parents=True, exist_ok=True)
     copy_runtime_files(root, app_dir)
+    write_build_info(app_dir)
 
     pyxapp = build_dir / f"{APP_NAME}.pyxapp"
     pyxapp.unlink(missing_ok=True)
