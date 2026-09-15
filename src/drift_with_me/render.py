@@ -142,6 +142,7 @@ class Renderer:
         self.draw_action_marker(model, camera)
         self.draw_effects(model, camera, effects)
         if debug:
+            self.draw_affine_debug_grid(model, camera)
             self.draw_debug_world(model, camera)
 
     def draw_ground(self, world: WorldData, camera: CameraState) -> None:
@@ -426,6 +427,8 @@ class Renderer:
         return tuple(patches)
 
     def baked_ground_camera_supported(self, model: GameModel, camera: CameraState) -> bool:
+        if getattr(camera, "projection_kind", "perspective") == "affine":
+            return False
         camera_config = model.config["camera"]
         return (
             abs(camera.yaw_deg - float(camera_config["yaw_deg"])) <= 0.01
@@ -1313,6 +1316,23 @@ class Renderer:
         if a is None or b is None:
             return
         self.pyxel.line(int(a.x), int(a.y), int(b.x), int(b.y), color)
+
+    def draw_affine_debug_grid(self, model: GameModel, camera: CameraState) -> None:
+        if getattr(camera, "projection_kind", "perspective") != "affine":
+            return
+        step = float(
+            model.config.get("projection", {}).get("affine", {}).get("debug_grid_world", 32.0)
+        )
+        if step <= 1e-6 or not math.isfinite(step):
+            return
+        cols = int(math.floor(model.world.width / step))
+        rows = int(math.floor(model.world.depth / step))
+        for index in range(cols + 1):
+            x = min(model.world.width, index * step)
+            self.draw_world_line(camera, Vec3(x, 0.0, 0.0), Vec3(x, 0.0, model.world.depth), 5)
+        for index in range(rows + 1):
+            z = min(model.world.depth, index * step)
+            self.draw_world_line(camera, Vec3(0.0, 0.0, z), Vec3(model.world.width, 0.0, z), 6)
 
     def draw_debug_world(self, model: GameModel, camera: CameraState) -> None:
         point = camera.project(Vec3(model.player.x, 0.0, model.player.z))

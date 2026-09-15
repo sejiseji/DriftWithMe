@@ -141,6 +141,43 @@
     "focus_blend_sec": 0.35,
     "return_blend_sec": 0.5
   },
+  "projection": {
+    "mode": "perspective",
+    "affine": {
+      "profile_id": "follow_spawn_medium_v1",
+      "calibration_source": "HEAD 531f365 FOLLOW camera at spawn",
+      "reference_viewport": [
+        512,
+        236
+      ],
+      "reference_world": [
+        160.0,
+        0.0,
+        160.0
+      ],
+      "sample_world_step": 32.0,
+      "basis_x": [
+        1.4260326034001523,
+        -0.21935300205457775
+      ],
+      "basis_y": [
+        0.0,
+        -1.4444892674936258
+      ],
+      "basis_z": [
+        -0.5012972526056361,
+        -0.5820733498680366
+      ],
+      "fixed_forward": [
+        0.30997551921944466,
+        -0.42261826174069944,
+        0.8516507396391465
+      ],
+      "reference_depth": 480.0,
+      "debug_grid_world": 32.0,
+      "ground_epsilon": 1e-9
+    }
+  },
   "resources": {
     "water_max": 100.0,
     "water_start": 100.0,

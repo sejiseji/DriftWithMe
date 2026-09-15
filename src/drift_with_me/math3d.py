@@ -37,6 +37,74 @@ class ProjectedPoint:
 
 
 @dataclass(frozen=True)
+class AffineProjectionProfile:
+    profile_id: str
+    basis_x: Vec2
+    basis_y: Vec2
+    basis_z: Vec2
+    fixed_forward: Vec3
+    reference_viewport_width: int
+    reference_viewport_height: int
+    reference_depth: float
+    ground_epsilon: float = 1e-9
+
+    @classmethod
+    def from_config(cls, raw_config: dict) -> AffineProjectionProfile:
+        projection = raw_config.get("projection", {})
+        affine = projection.get("affine", {})
+        viewport = affine.get("reference_viewport", [512, 236])
+        return cls(
+            profile_id=str(affine.get("profile_id", "follow_spawn_medium_v1")),
+            basis_x=vec2_from_sequence(affine["basis_x"]),
+            basis_y=vec2_from_sequence(affine["basis_y"]),
+            basis_z=vec2_from_sequence(affine["basis_z"]),
+            fixed_forward=vec3_from_sequence(affine["fixed_forward"]),
+            reference_viewport_width=int(viewport[0]),
+            reference_viewport_height=int(viewport[1]),
+            reference_depth=float(
+                affine.get("reference_depth", raw_config["camera"]["base_distance"])
+            ),
+            ground_epsilon=float(affine.get("ground_epsilon", 1e-9)),
+        )
+
+    @property
+    def ground_determinant(self) -> float:
+        return self.basis_x.x * self.basis_z.y - self.basis_z.x * self.basis_x.y
+
+    def viewport_scale(self, viewport_width: int) -> float:
+        if self.reference_viewport_width <= 0:
+            return 1.0
+        return viewport_width / float(self.reference_viewport_width)
+
+
+@dataclass(frozen=True)
+class AffineCameraState:
+    target: Vec3
+    profile: AffineProjectionProfile
+    zoom: float
+    anchor_x: float
+    anchor_y: float
+    viewport_width: int
+    viewport_height: int
+    fx_offset_x: float = 0.0
+    fx_offset_y: float = 0.0
+    yaw_deg: float = 20.0
+    pitch_deg: float = 25.0
+    horizontal_fov_deg: float = 38.0
+    distance: float = 480.0
+    near: float = 8.0
+    far: float = 1800.0
+    projection_kind: str = "affine"
+
+    @property
+    def effective_scale(self) -> float:
+        return self.profile.viewport_scale(self.viewport_width) * self.zoom
+
+    def project(self, point: Vec3) -> ProjectedPoint | None:
+        return project_affine(self, point)
+
+
+@dataclass(frozen=True)
 class CameraState:
     target: Vec3
     yaw_deg: float
@@ -110,6 +178,135 @@ class CameraState:
         if not math.isfinite(x) or not math.isfinite(y):
             return None
         return ProjectedPoint(x, y, depth)
+
+
+def vec2_from_sequence(value: object) -> Vec2:
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise ValueError(f"expected 2-number sequence, got {value!r}")
+    x = float(value[0])
+    y = float(value[1])
+    if not math.isfinite(x) or not math.isfinite(y):
+        raise ValueError(f"expected finite Vec2 values, got {value!r}")
+    return Vec2(x, y)
+
+
+def vec3_from_sequence(value: object) -> Vec3:
+    if not isinstance(value, (list, tuple)) or len(value) != 3:
+        raise ValueError(f"expected 3-number sequence, got {value!r}")
+    x = float(value[0])
+    y = float(value[1])
+    z = float(value[2])
+    if not math.isfinite(x) or not math.isfinite(y) or not math.isfinite(z):
+        raise ValueError(f"expected finite Vec3 values, got {value!r}")
+    return Vec3(x, y, z)
+
+
+def affine_camera_from_perspective(
+    camera: CameraState,
+    profile: AffineProjectionProfile,
+    *,
+    base_distance: float,
+    fx_offset_x: float = 0.0,
+    fx_offset_y: float = 0.0,
+) -> AffineCameraState:
+    if camera.distance <= 1e-9 or not math.isfinite(camera.distance):
+        zoom = 1.0
+    else:
+        zoom = base_distance / camera.distance
+    return AffineCameraState(
+        target=camera.target,
+        profile=profile,
+        zoom=zoom,
+        anchor_x=camera.anchor_x,
+        anchor_y=camera.anchor_y,
+        viewport_width=camera.viewport_width,
+        viewport_height=camera.viewport_height,
+        fx_offset_x=fx_offset_x,
+        fx_offset_y=fx_offset_y,
+        yaw_deg=camera.yaw_deg,
+        pitch_deg=camera.pitch_deg,
+        horizontal_fov_deg=camera.horizontal_fov_deg,
+        distance=camera.distance,
+        near=camera.near,
+        far=camera.far,
+    )
+
+
+def project_affine(camera: AffineCameraState, point: Vec3) -> ProjectedPoint | None:
+    dx = point.x - camera.target.x
+    dy = point.y - camera.target.y
+    dz = point.z - camera.target.z
+    scale = camera.effective_scale
+    x = (
+        camera.anchor_x * camera.viewport_width
+        + scale
+        * (
+            dx * camera.profile.basis_x.x
+            + dy * camera.profile.basis_y.x
+            + dz * camera.profile.basis_z.x
+        )
+        + camera.fx_offset_x
+    )
+    y = (
+        camera.anchor_y * camera.viewport_height
+        + scale
+        * (
+            dx * camera.profile.basis_x.y
+            + dy * camera.profile.basis_y.y
+            + dz * camera.profile.basis_z.y
+        )
+        + camera.fx_offset_y
+    )
+    depth = camera.profile.reference_depth + dot(
+        point - camera.target, camera.profile.fixed_forward
+    )
+    if (
+        not math.isfinite(x)
+        or not math.isfinite(y)
+        or not math.isfinite(depth)
+        or depth < camera.near
+        or depth > camera.far
+    ):
+        return None
+    return ProjectedPoint(x, y, depth)
+
+
+def screen_to_ground_affine(
+    camera: AffineCameraState, screen_x: float, screen_y: float
+) -> Vec2 | None:
+    scale = camera.effective_scale
+    det = camera.profile.ground_determinant
+    if (
+        abs(scale) <= camera.profile.ground_epsilon
+        or abs(det) <= camera.profile.ground_epsilon
+        or not math.isfinite(scale)
+        or not math.isfinite(det)
+    ):
+        return None
+
+    y_delta = -camera.target.y
+    qx = (
+        screen_x
+        - camera.anchor_x * camera.viewport_width
+        - camera.fx_offset_x
+        - scale * y_delta * camera.profile.basis_y.x
+    ) / scale
+    qy = (
+        screen_y
+        - camera.anchor_y * camera.viewport_height
+        - camera.fx_offset_y
+        - scale * y_delta * camera.profile.basis_y.y
+    ) / scale
+    if not math.isfinite(qx) or not math.isfinite(qy):
+        return None
+
+    dx = (camera.profile.basis_z.y * qx - camera.profile.basis_z.x * qy) / det
+    dz = (-camera.profile.basis_x.y * qx + camera.profile.basis_x.x * qy) / det
+    x = camera.target.x + dx
+    z = camera.target.z + dz
+    if not math.isfinite(x) or not math.isfinite(z):
+        return None
+    return Vec2(x, z)
 
 
 def dot(a: Vec3, b: Vec3) -> float:

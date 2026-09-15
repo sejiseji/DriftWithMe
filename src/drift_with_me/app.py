@@ -11,7 +11,15 @@ from drift_with_me.camera import CameraController
 from drift_with_me.effects import EffectSystem
 from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
 from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput, Rect
-from drift_with_me.math3d import CameraState, Vec3, normalize2, screen_to_ground_point
+from drift_with_me.math3d import (
+    AffineCameraState,
+    AffineProjectionProfile,
+    CameraState,
+    Vec3,
+    affine_camera_from_perspective,
+    normalize2,
+    screen_to_ground_point,
+)
 from drift_with_me.model import GameModel, InputIntent, merge_intents
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
@@ -60,6 +68,8 @@ class DriftWithMeApp:
         self.sprite_assets: SpriteAssetLibrary | None = None
         self.screen = AppScreen.START
         self.debug_enabled = False
+        self.projection_mode = self.initial_projection_mode()
+        self.affine_projection_profile = AffineProjectionProfile.from_config(self.runtime.raw)
         self.presentation_time = 0.0
         self.accumulator = 0.0
         self.hitstop_remaining = 0.0
@@ -114,6 +124,16 @@ class DriftWithMeApp:
     def camera(self) -> CameraState:
         return self.camera_controller.current
 
+    def initial_projection_mode(self) -> str:
+        mode = str(self.runtime.raw.get("projection", {}).get("mode", "perspective"))
+        return mode if mode in {"perspective", "affine"} else "perspective"
+
+    def handle_projection_mode_shortcut(self) -> None:
+        toggle_key = getattr(self.pyxel, "KEY_V", None)
+        if toggle_key is None or not self.pyxel.btnp(toggle_key):
+            return
+        self.projection_mode = "affine" if self.projection_mode == "perspective" else "perspective"
+
     def update(self) -> None:
         pyxel = self.pyxel
         elapsed = self.consume_elapsed()
@@ -124,6 +144,7 @@ class DriftWithMeApp:
         f1_key = getattr(pyxel, "KEY_F1", None)
         if f1_key is not None and pyxel.btnp(f1_key):
             self.debug_enabled = not self.debug_enabled
+        self.handle_projection_mode_shortcut()
         if pyxel.btnp(pyxel.KEY_M):
             self.audio.toggle_mute()
 
@@ -974,12 +995,22 @@ class DriftWithMeApp:
     def draw_play(self) -> None:
         assert self.renderer is not None
         render_camera = self.presentation_camera(self.camera())
+        scene_camera = self.scene_camera(render_camera)
         self.renderer.draw_scene(
-            self.model, render_camera, self.presentation_time, self.debug_enabled, self.effects
+            self.model, scene_camera, self.presentation_time, self.debug_enabled, self.effects
         )
         self.draw_hud()
         if self.model.interaction is not None:
             self.draw_interaction_chip()
+
+    def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
+        if self.projection_mode != "affine":
+            return camera
+        return affine_camera_from_perspective(
+            camera,
+            self.affine_projection_profile,
+            base_distance=float(self.runtime.raw["camera"]["base_distance"]),
+        )
 
     def presentation_camera(self, camera: CameraState) -> CameraState:
         if not self.combat_camera_reactions_allowed():
@@ -1133,6 +1164,7 @@ class DriftWithMeApp:
                     7,
                 )
             pyxel.text(8, 158, "F focus / P pan", 7)
+            pyxel.text(8, 168, f"proj={self.projection_mode} / V toggle", 7)
 
     def draw_meter(
         self, x: int, y: int, width: int, height: int, value: float, maximum: float, color: int
