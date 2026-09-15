@@ -273,7 +273,10 @@ class CameraController:
         )
         desired_x = clamp(player_x + self.lookahead_offset.x, 0.0, self.world.width)
         desired_z = clamp(player_z + self.lookahead_offset.y, 0.0, self.world.depth)
-        alpha = smoothing_alpha(dt, float(self.camera_config["follow_tau_sec"]))
+        follow_tau = float(
+            self.camera_config.get("lookahead_follow_tau_sec", self.camera_config["follow_tau_sec"])
+        )
+        alpha = smoothing_alpha(dt, follow_tau)
         self.follow_target = Vec3(
             clamp(
                 self.follow_target.x + (desired_x - self.follow_target.x) * alpha,
@@ -324,6 +327,14 @@ class CameraController:
             desired_offset.x * self.lookahead_offset.x + desired_offset.y * self.lookahead_offset.y
         )
         direction_dot = dot_value / (desired_length * current_length)
+        reverse_threshold = float(self.camera_config.get("lookahead_reverse_dot_threshold", -1.0))
+        if direction_dot < reverse_threshold:
+            return float(
+                self.camera_config.get(
+                    "lookahead_reverse_smooth_sec",
+                    self.camera_config.get("lookahead_turn_smooth_sec", 0.4),
+                )
+            )
         turn_threshold = float(self.camera_config.get("lookahead_turn_dot_threshold", 0.0))
         if direction_dot < turn_threshold:
             return float(self.camera_config.get("lookahead_turn_smooth_sec", 0.4))
