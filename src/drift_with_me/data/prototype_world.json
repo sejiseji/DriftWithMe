@@ -716,9 +716,9 @@
       "id": "grassland_tall_a_02",
       "kind": "reactive_prop",
       "position": [
-        560.0,
+        304.0,
         0.0,
-        688.0
+        640.0
       ],
       "visual": "grass_patch_tall_a",
       "sprite_world_size": [
@@ -733,9 +733,9 @@
       "id": "grassland_tall_b_02",
       "kind": "reactive_prop",
       "position": [
-        720.0,
+        992.0,
         0.0,
-        784.0
+        672.0
       ],
       "visual": "grass_patch_tall_b",
       "sprite_world_size": [
@@ -767,9 +767,9 @@
       "id": "grass_low_04",
       "kind": "reactive_prop",
       "position": [
-        432.0,
+        480.0,
         0.0,
-        544.0
+        480.0
       ],
       "visual": "reactive_grass_low",
       "sprite_world_size": [
@@ -784,9 +784,9 @@
       "id": "grass_low_05",
       "kind": "reactive_prop",
       "position": [
-        608.0,
+        736.0,
         0.0,
-        624.0
+        560.0
       ],
       "visual": "reactive_grass_low",
       "sprite_world_size": [
@@ -801,9 +801,9 @@
       "id": "grass_low_06",
       "kind": "reactive_prop",
       "position": [
-        768.0,
+        992.0,
         0.0,
-        704.0
+        760.0
       ],
       "visual": "reactive_grass_low",
       "sprite_world_size": [
@@ -818,9 +818,9 @@
       "id": "grass_low_07",
       "kind": "reactive_prop",
       "position": [
-        880.0,
+        384.0,
         0.0,
-        832.0
+        800.0
       ],
       "visual": "reactive_grass_low",
       "sprite_world_size": [
@@ -835,9 +835,9 @@
       "id": "grassland_tall_a_03",
       "kind": "reactive_prop",
       "position": [
-        448.0,
+        272.0,
         0.0,
-        608.0
+        704.0
       ],
       "visual": "grass_patch_tall_a",
       "sprite_world_size": [
@@ -852,9 +852,9 @@
       "id": "grassland_tall_b_03",
       "kind": "reactive_prop",
       "position": [
-        640.0,
+        432.0,
         0.0,
-        736.0
+        752.0
       ],
       "visual": "grass_patch_tall_b",
       "sprite_world_size": [
@@ -869,9 +869,9 @@
       "id": "grassland_tall_a_04",
       "kind": "reactive_prop",
       "position": [
-        896.0,
+        960.0,
         0.0,
-        576.0
+        560.0
       ],
       "visual": "grass_patch_tall_a",
       "sprite_world_size": [

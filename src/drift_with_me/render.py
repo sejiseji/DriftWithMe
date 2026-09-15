@@ -431,6 +431,7 @@ class Renderer:
         base_color = self.clamped_palette_color(area.get("base_color", config.get("base_color", 3)))
         self.pyxel.tri(int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), base_color)
         self.pyxel.tri(int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), base_color)
+        self.draw_grassland_micro_base_variation(camera, corners, bounds, rect, area, config)
         self.draw_grassland_micro_pattern(camera, corners, bounds, rect, area, config)
         return True
 
@@ -497,6 +498,13 @@ class Renderer:
             ),
         )
         jitter_seed = int(area.get("phase", config.get("phase", 0)))
+        min_blades = max(
+            1, int(area.get("min_blades_per_cell", config.get("min_blades_per_cell", 1)))
+        )
+        max_blades = max(
+            min_blades,
+            int(area.get("max_blades_per_cell", config.get("max_blades_per_cell", 4))),
+        )
         cell_min_x = math.floor(x0 / cell_world)
         cell_max_x = math.ceil(x1 / cell_world)
         cell_min_z = math.floor(z0 / cell_world)
@@ -507,11 +515,20 @@ class Renderer:
             origin_z = cell_z * cell_world
             for cell_x in range(cell_min_x, cell_max_x):
                 origin_x = cell_x * cell_world
-                pattern_index = (cell_x * 17 + cell_z * 31 + jitter_seed) % len(
-                    GRASSLAND_MICRO_CLUMP_PATTERNS
+                blade_count = min_blades + self.grassland_hash(cell_x, cell_z, 0, jitter_seed) % (
+                    max_blades - min_blades + 1
                 )
-                pattern = GRASSLAND_MICRO_CLUMP_PATTERNS[pattern_index]
-                for rel_x, rel_z, height, color_index in pattern:
+                for blade_index in range(blade_count):
+                    salt = blade_index * 7
+                    rel_x = 0.08 + self.grassland_unit(cell_x, cell_z, salt + 1, jitter_seed) * 0.84
+                    rel_z = 0.08 + self.grassland_unit(cell_x, cell_z, salt + 2, jitter_seed) * 0.84
+                    height = 3 + int(
+                        self.grassland_unit(cell_x, cell_z, salt + 3, jitter_seed) * 4.0
+                    )
+                    color_index = int(
+                        self.grassland_unit(cell_x, cell_z, salt + 4, jitter_seed) * len(colors)
+                    )
+                    lean = int(self.grassland_unit(cell_x, cell_z, salt + 5, jitter_seed) * 3.0) - 1
                     world_x = origin_x + rel_x * cell_world
                     world_z = origin_z + rel_z * cell_world
                     if world_x < x0 or world_x > x1 or world_z < z0 or world_z > z1:
@@ -533,10 +550,128 @@ class Renderer:
                         max(3, min(6, height)),
                         colors[color_index % len(colors)],
                         colors[1],
+                        lean,
                     )
                     drawn += 1
                     if drawn >= max_visible:
                         return
+
+    def draw_grassland_micro_base_variation(
+        self,
+        camera: CameraState,
+        corners: tuple[ProjectedPoint | None, ...],
+        bounds: ScreenRect,
+        rect: tuple[float, float, float, float],
+        area: dict,
+        config: dict,
+    ) -> None:
+        if not bool(
+            area.get(
+                "base_variation_enabled",
+                config.get("base_variation_enabled", False),
+            )
+        ):
+            return
+        tile_world = max(
+            32.0,
+            float(
+                area.get("base_variation_cell_world", config.get("base_variation_cell_world", 96.0))
+            ),
+        )
+        max_patches = max(
+            0,
+            int(area.get("max_visible_base_patches", config.get("max_visible_base_patches", 48))),
+        )
+        if max_patches <= 0:
+            return
+        x0, z0, x1, z1 = rect
+        visible_rect = self.grassland_micro_visible_world_rect(camera, margin_px=24.0)
+        if visible_rect is not None:
+            vx0, vz0, vx1, vz1 = visible_rect
+            x0 = max(x0, vx0 - tile_world)
+            z0 = max(z0, vz0 - tile_world)
+            x1 = min(x1, vx1 + tile_world)
+            z1 = min(z1, vz1 + tile_world)
+            if x0 >= x1 or z0 >= z1:
+                return
+        color = self.clamped_palette_color(
+            area.get("base_variation_color", config.get("base_variation_color", 13))
+        )
+        phase = int(area.get("phase", config.get("phase", 0)))
+        cell_min_x = math.floor(x0 / tile_world)
+        cell_max_x = math.ceil(x1 / tile_world)
+        cell_min_z = math.floor(z0 / tile_world)
+        cell_max_z = math.ceil(z1 / tile_world)
+        drawn = 0
+        for cell_z in range(cell_min_z, cell_max_z):
+            origin_z = cell_z * tile_world
+            for cell_x in range(cell_min_x, cell_max_x):
+                origin_x = cell_x * tile_world
+                if self.grassland_hash(cell_x, cell_z, 71, phase) % 100 >= 26:
+                    continue
+                inset_x0 = tile_world * (
+                    0.08 + self.grassland_unit(cell_x, cell_z, 72, phase) * 0.18
+                )
+                inset_z0 = tile_world * (
+                    0.08 + self.grassland_unit(cell_x, cell_z, 73, phase) * 0.18
+                )
+                inset_x1 = tile_world * (
+                    0.08 + self.grassland_unit(cell_x, cell_z, 74, phase) * 0.22
+                )
+                inset_z1 = tile_world * (
+                    0.08 + self.grassland_unit(cell_x, cell_z, 75, phase) * 0.22
+                )
+                px0 = max(x0, origin_x)
+                pz0 = max(z0, origin_z)
+                px1 = min(x1, origin_x + tile_world)
+                pz1 = min(z1, origin_z + tile_world)
+                vx0 = min(px1, px0 + inset_x0)
+                vz0 = min(pz1, pz0 + inset_z0)
+                vx1 = max(px0, px1 - inset_x1)
+                vz1 = max(pz0, pz1 - inset_z1)
+                if vx1 - vx0 < 12.0 or vz1 - vz0 < 12.0:
+                    continue
+                patch_corners = (
+                    camera.project(Vec3(vx0, 0.0, vz0)),
+                    camera.project(Vec3(vx1, 0.0, vz0)),
+                    camera.project(Vec3(vx1, 0.0, vz1)),
+                    camera.project(Vec3(vx0, 0.0, vz1)),
+                )
+                if any(point is None for point in patch_corners):
+                    continue
+                patch_bounds = self.projected_quad_bounds(patch_corners)
+                if patch_bounds is None or not patch_bounds.overlaps(bounds):
+                    continue
+                q0, q1, q2, q3 = patch_corners
+                if not self.screen_rect_visible(patch_bounds, camera, 2.0):
+                    continue
+                if not any(
+                    self.point_in_projected_quad(point.x, point.y, corners)
+                    for point in patch_corners
+                    if point is not None
+                ):
+                    continue
+                self.pyxel.tri(
+                    int(q0.x),
+                    int(q0.y),
+                    int(q1.x),
+                    int(q1.y),
+                    int(q2.x),
+                    int(q2.y),
+                    color,
+                )
+                self.pyxel.tri(
+                    int(q0.x),
+                    int(q0.y),
+                    int(q2.x),
+                    int(q2.y),
+                    int(q3.x),
+                    int(q3.y),
+                    color,
+                )
+                drawn += 1
+                if drawn >= max_patches:
+                    return
 
     def grassland_micro_visible_world_rect(
         self, camera: CameraState, margin_px: float
@@ -565,13 +700,32 @@ class Renderer:
         return min_x, min_z, max_x, max_z
 
     def draw_micro_grass_blade(
-        self, root_x: int, root_y: int, height: int, color: int, shadow_color: int
+        self,
+        root_x: int,
+        root_y: int,
+        height: int,
+        color: int,
+        shadow_color: int,
+        lean: int = 1,
     ) -> None:
         tip_y = root_y - height
+        tip_x = root_x + max(-1, min(1, lean))
         self.pyxel.line(root_x, root_y, root_x - 1, tip_y + 1, shadow_color)
-        self.pyxel.line(root_x, root_y, root_x + 1, tip_y, color)
+        self.pyxel.line(root_x, root_y, tip_x, tip_y, color)
         if height >= 5:
-            self.pyxel.pset(root_x, tip_y, color)
+            self.pyxel.pset(tip_x, tip_y, color)
+
+    def grassland_hash(self, cell_x: int, cell_z: int, salt: int, seed: int = 0) -> int:
+        value = (
+            cell_x * 73_856_093 ^ cell_z * 19_349_663 ^ salt * 83_492_791 ^ seed * 2_654_435_761
+        ) & 0xFFFFFFFF
+        value ^= value >> 13
+        value = (value * 1_274_126_177) & 0xFFFFFFFF
+        value ^= value >> 16
+        return value & 0xFFFFFFFF
+
+    def grassland_unit(self, cell_x: int, cell_z: int, salt: int, seed: int = 0) -> float:
+        return self.grassland_hash(cell_x, cell_z, salt, seed) / 0xFFFFFFFF
 
     def point_in_projected_quad(
         self, x: float, y: float, corners: tuple[ProjectedPoint | None, ...]

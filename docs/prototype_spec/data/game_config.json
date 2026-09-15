@@ -218,13 +218,19 @@
     "blade_shadow_color": 3,
     "blade_accent_color": 10,
     "cell_world": 24.0,
-    "max_visible_clumps": 760,
+    "max_visible_clumps": 900,
+    "min_blades_per_cell": 1,
+    "max_blades_per_cell": 5,
+    "base_variation_enabled": true,
+    "base_variation_color": 13,
+    "base_variation_cell_world": 96.0,
+    "max_visible_base_patches": 48,
     "areas": [
       {
         "id": "spawn_grassland_micro",
         "rect_xz": [
           0.0,
-          256.0,
+          0.0,
           1024.0,
           1024.0
         ],

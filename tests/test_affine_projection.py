@@ -195,6 +195,10 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["enabled"] is True
     assert config["affine_only"] is True
     assert config["cell_world"] == pytest.approx(24.0)
+    assert config["min_blades_per_cell"] == 1
+    assert config["max_blades_per_cell"] == 5
+    assert config["base_variation_enabled"] is True
+    assert config["areas"][0]["rect_xz"] == [0.0, 0.0, 1024.0, 1024.0]
     assert renderer.draw_grassland_micro_layer(model, perspective) == 0
 
     assert renderer.draw_grassland_micro_layer(model, affine) == 1
