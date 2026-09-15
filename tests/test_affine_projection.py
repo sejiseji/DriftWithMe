@@ -175,3 +175,69 @@ def test_affine_fallback_screen_radii_do_not_depend_on_depth() -> None:
     far = renderer.depth_scaled_radius(affine, 900.0, numerator=1200.0, minimum=3)
 
     assert near == far == 3
+
+
+def test_affine_solid_box_expands_to_depth_sorted_face_commands() -> None:
+    _runtime, world, _perspective, _profile, affine = make_affine_camera()
+    renderer = Renderer(None)
+    wall = world.object_by_id("wall_01")
+    assert wall is not None
+
+    commands = renderer.solid_box_face_commands(wall, affine)
+    stable_ids = {command.stable_id for command in commands}
+
+    assert len(commands) == 5
+    assert stable_ids == {
+        "wall_01:top",
+        "wall_01:north",
+        "wall_01:east",
+        "wall_01:south",
+        "wall_01:west",
+    }
+    assert all(math.isfinite(command.depth) for command in commands)
+    assert len({command.depth for command in commands}) > 1
+
+
+def test_affine_world_commands_split_solid_boxes_but_perspective_keeps_single_box() -> None:
+    runtime, world, _perspective, profile, _affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+    renderer = Renderer(None)
+    target = Vec3(320.0, 0.0, 320.0)
+    perspective = CameraState.from_config(
+        runtime.raw,
+        target,
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    affine = affine_camera_from_perspective(
+        perspective,
+        profile,
+        base_distance=float(runtime.raw["camera"]["base_distance"]),
+    )
+
+    perspective_ids = {
+        command.stable_id for command in renderer.world_commands(model, perspective, 0.0)
+    }
+    affine_ids = {command.stable_id for command in renderer.world_commands(model, affine, 0.0)}
+
+    assert "wall_01" in perspective_ids
+    assert "wall_01:top" not in perspective_ids
+    assert "wall_01" not in affine_ids
+    assert {"wall_01:top", "wall_01:north", "wall_01:east"}.issubset(affine_ids)
+
+
+def test_affine_solid_box_occludes_player_with_projected_bounds() -> None:
+    runtime, world, _perspective, _profile, affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+    renderer = Renderer(None)
+
+    model.player.x = 272.0
+    model.player.z = 288.0
+    assert not world.collides_player(
+        model.player.x,
+        model.player.z,
+        model.player_half_x,
+        model.player_half_z,
+    )
+
+    assert renderer.player_is_occluded(model, affine, 0.0)

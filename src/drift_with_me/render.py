@@ -11,7 +11,7 @@ from drift_with_me.hex_assets import (
     draw_scaled_sprite,
     placement_for_upright_height_billboard,
 )
-from drift_with_me.math3d import CameraState, Vec3, screen_to_ground_point
+from drift_with_me.math3d import CameraState, ProjectedPoint, Vec3, screen_to_ground_point
 from drift_with_me.model import GameModel
 from drift_with_me.world import (
     BakedGroundPatch,
@@ -227,6 +227,9 @@ class Renderer:
                 )
             )
         for obj in visible_objects:
+            if self.camera_is_affine(camera) and self.object_uses_box_geometry(obj):
+                commands.extend(self.solid_box_face_commands(obj, camera))
+                continue
             anchor = camera.project(Vec3(obj.x, 0.0, obj.z))
             if anchor is None:
                 continue
@@ -318,7 +321,7 @@ class Renderer:
             return
         if obj.solid:
             height = obj.height if obj.height > 0 else 24.0
-            color = 5 if obj.kind == "obstacle" else 4
+            color = self.solid_box_color(obj)
             self.draw_box(camera, obj.x, obj.z, obj.half_x, obj.half_z, height, 0.0, color)
             return
         point = camera.project(Vec3(obj.x, 0.0, obj.z))
@@ -1263,6 +1266,36 @@ class Renderer:
     def camera_is_affine(self, camera: CameraState) -> bool:
         return getattr(camera, "projection_kind", "perspective") == "affine"
 
+    def object_uses_box_geometry(self, obj: StaticObject) -> bool:
+        return obj.solid and obj.kind != "sprite_prop"
+
+    def solid_box_color(self, obj: StaticObject) -> int:
+        return 5 if obj.kind == "obstacle" else 4
+
+    def solid_box_face_commands(self, obj: StaticObject, camera: CameraState) -> list[DrawCommand]:
+        height = obj.height if obj.height > 0.0 else 24.0
+        projected_faces = self.project_box_faces(
+            camera,
+            obj.x,
+            obj.z,
+            obj.half_x,
+            obj.half_z,
+            height,
+            0.0,
+            self.solid_box_color(obj),
+        )
+        return [
+            DrawCommand(
+                depth=depth,
+                layer_bias=0,
+                stable_id=f"{obj.id}:{name}",
+                draw=lambda points=points, face_color=face_color: self.draw_projected_box_face(
+                    points, face_color
+                ),
+            )
+            for depth, name, points, face_color in projected_faces
+        ]
+
     def draw_box(
         self,
         camera: CameraState,
@@ -1274,6 +1307,23 @@ class Renderer:
         y_offset: float,
         color: int,
     ) -> None:
+        projected_faces = self.project_box_faces(
+            camera, x, z, half_x, half_z, height, y_offset, color
+        )
+        for _depth, _name, points, face_color in sorted(projected_faces, key=lambda item: -item[0]):
+            self.draw_projected_box_face(points, face_color)
+
+    def project_box_faces(
+        self,
+        camera: CameraState,
+        x: float,
+        z: float,
+        half_x: float,
+        half_z: float,
+        height: float,
+        y_offset: float,
+        color: int,
+    ) -> list[tuple[float, str, list[ProjectedPoint], int]]:
         bottom = y_offset
         top = y_offset + height
         vertices = {
@@ -1302,16 +1352,14 @@ class Renderer:
                 projected
             )
             projected_faces.append((avg_depth, name, projected, face_color))
-        for _depth, _name, points, face_color in sorted(projected_faces, key=lambda item: -item[0]):
-            p0, p1, p2, p3 = points
-            self.pyxel.tri(
-                int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), face_color
-            )
-            self.pyxel.tri(
-                int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), face_color
-            )
-            for start, end in ((p0, p1), (p1, p2), (p2, p3), (p3, p0)):
-                self.pyxel.line(int(start.x), int(start.y), int(end.x), int(end.y), 0)
+        return projected_faces
+
+    def draw_projected_box_face(self, points: list[ProjectedPoint], face_color: int) -> None:
+        p0, p1, p2, p3 = points
+        self.pyxel.tri(int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), face_color)
+        self.pyxel.tri(int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), face_color)
+        for start, end in ((p0, p1), (p1, p2), (p2, p3), (p3, p0)):
+            self.pyxel.line(int(start.x), int(start.y), int(end.x), int(end.y), 0)
 
     def draw_world_circle(
         self, camera: CameraState, x: float, z: float, radius: float, color: int
@@ -1621,15 +1669,45 @@ class Renderer:
         if player_anchor is None or player_bounds is None:
             return False
         for obj in model.world.objects:
-            if not obj.occludes_player:
+            if not self.object_can_occlude_player(obj):
                 continue
-            obj_anchor = camera.project(Vec3(obj.x, 0.0, obj.z))
-            if obj_anchor is None or obj_anchor.depth >= player_anchor.depth:
+            obj_depth = self.object_occlusion_depth(obj, camera)
+            if obj_depth is None or obj_depth >= player_anchor.depth:
                 continue
-            obj_bounds = self.sprite_prop_bounds(obj, camera)
+            obj_bounds = self.object_occlusion_bounds(obj, camera)
             if obj_bounds is not None and obj_bounds.overlaps(player_bounds):
                 return True
         return False
+
+    def object_can_occlude_player(self, obj: StaticObject) -> bool:
+        return obj.occludes_player or self.object_uses_box_geometry(obj)
+
+    def object_occlusion_depth(self, obj: StaticObject, camera: CameraState) -> float | None:
+        if self.object_uses_box_geometry(obj):
+            height = obj.height if obj.height > 0.0 else 24.0
+            projected_faces = self.project_box_faces(
+                camera,
+                obj.x,
+                obj.z,
+                obj.half_x,
+                obj.half_z,
+                height,
+                0.0,
+                self.solid_box_color(obj),
+            )
+            if not projected_faces:
+                return None
+            return min(depth for depth, _name, _points, _face_color in projected_faces)
+        anchor = camera.project(Vec3(obj.x, 0.0, obj.z))
+        return None if anchor is None else anchor.depth
+
+    def object_occlusion_bounds(self, obj: StaticObject, camera: CameraState) -> ScreenRect | None:
+        if self.object_uses_box_geometry(obj):
+            height = obj.height if obj.height > 0.0 else 24.0
+            return self.project_box_bounds(
+                camera, obj.x, obj.z, obj.half_x, obj.half_z, height, 0.0
+            )
+        return self.sprite_prop_bounds(obj, camera)
 
     def draw_player_outline(
         self, model: GameModel, camera: CameraState, presentation_time: float | None = None
