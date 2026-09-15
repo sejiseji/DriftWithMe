@@ -277,6 +277,10 @@ def cache_busted_name(pyxapp: Path) -> str:
     return f"{APP_NAME}-{digest}.pyxapp"
 
 
+def cache_busted_version(pyxapp: Path) -> str:
+    return cache_busted_name(pyxapp).removesuffix(".pyxapp")
+
+
 def default_screen_size(root: Path) -> tuple[int, int]:
     config_path = root / "src" / "drift_with_me" / "data" / "game_config.json"
     runtime = json.loads(config_path.read_text(encoding="utf-8"))
@@ -285,17 +289,14 @@ def default_screen_size(root: Path) -> tuple[int, int]:
     return int(width), int(height)
 
 
-def write_host_assets(output_dir: Path) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "host.css").write_text(HOST_CSS, encoding="utf-8")
-    (output_dir / "host.js").write_text(HOST_JS, encoding="utf-8")
-    (output_dir / "manifest.webmanifest").write_text(
+def manifest_text(start_url: str) -> str:
+    return (
         json.dumps(
             {
                 "name": "DriftWithMe P0",
                 "short_name": "DriftWithMe",
                 "description": "DriftWithMe Jack World P0 Pyxel prototype.",
-                "start_url": "./index.html",
+                "start_url": start_url,
                 "scope": "./",
                 "display": "fullscreen",
                 "display_override": ["fullscreen", "standalone"],
@@ -305,15 +306,23 @@ def write_host_assets(output_dir: Path) -> None:
             },
             indent=2,
         )
-        + "\n",
-        encoding="utf-8",
+        + "\n"
     )
 
 
-def write_html(root: Path, pyxapp: Path, output: Path) -> None:
+def write_host_assets(output_dir: Path, web_manifest: str) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "host.css").write_text(HOST_CSS, encoding="utf-8")
+    (output_dir / "host.js").write_text(HOST_JS, encoding="utf-8")
+    (output_dir / "manifest.webmanifest").write_text(web_manifest, encoding="utf-8")
+
+
+def write_html(root: Path, pyxapp: Path, output: Path, web_manifest: str) -> None:
     base64_string = base64.b64encode(pyxapp.read_bytes()).decode("ascii")
     pyxapp_name = json.dumps(cache_busted_name(pyxapp), ensure_ascii=True)
     css_version = hashlib.sha256(HOST_CSS.encode("utf-8")).hexdigest()[:WEB_HASH_LENGTH]
+    js_version = hashlib.sha256(HOST_JS.encode("utf-8")).hexdigest()[:WEB_HASH_LENGTH]
+    manifest_version = hashlib.sha256(web_manifest.encode("utf-8")).hexdigest()[:WEB_HASH_LENGTH]
     screen_width, screen_height = default_screen_size(root)
     logical_size = json.dumps({"width": screen_width, "height": screen_height})
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -328,7 +337,7 @@ def write_html(root: Path, pyxapp: Path, output: Path) -> None:
         '<meta name="apple-mobile-web-app-title" content="DriftWithMe">\n'
         '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
         '<meta name="mobile-web-app-capable" content="yes">\n'
-        '<link rel="manifest" href="./manifest.webmanifest">\n'
+        f'<link rel="manifest" href="./manifest.webmanifest?v={manifest_version}">\n'
         f'<link rel="stylesheet" href="./host.css?v={css_version}">\n'
         f'<script src="https://cdn.jsdelivr.net/gh/kitao/pyxel@{pyxel.VERSION}/wasm/pyxel.js"></script>\n'
         "</head>\n"
@@ -337,7 +346,7 @@ def write_html(root: Path, pyxapp: Path, output: Path) -> None:
         "横向き推奨です。画面ロックを解除して端末を横にしてください。"
         "</div>\n"
         f"<script>window.__driftWithMeLogicalSize = {logical_size};</script>\n"
-        '<script src="./host.js"></script>\n'
+        f'<script src="./host.js?v={js_version}"></script>\n'
         "<script>\n"
         f'launchPyxel({{ command: "play", name: {pyxapp_name}, '
         f'{DISABLED_GAMEPAD}, base64: "{base64_string}" }});\n'
@@ -357,11 +366,12 @@ def build_web(root: Path, outputs: list[Path]) -> tuple[Path, ...]:
     pyxapp = build_dir / f"{APP_NAME}.pyxapp"
     pyxapp.unlink(missing_ok=True)
     write_pyxapp(app_dir, pyxapp)
+    web_manifest = manifest_text(f"./index.html?v={cache_busted_version(pyxapp)}")
     resolved_outputs = []
     for output in outputs:
         resolved = output if output.is_absolute() else root / output
-        write_host_assets(resolved.parent)
-        write_html(root, pyxapp, resolved)
+        write_host_assets(resolved.parent, web_manifest)
+        write_html(root, pyxapp, resolved, web_manifest)
         resolved_outputs.append(resolved)
     return tuple(resolved_outputs)
 
