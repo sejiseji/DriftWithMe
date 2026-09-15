@@ -46,14 +46,22 @@ ATMOSPHERE_BAYER_4X4 = (
     (3, 11, 1, 9),
     (15, 7, 13, 5),
 )
-ATMOSPHERE_MID_DITHER_CELLS = 4
-ATMOSPHERE_FAR_DITHER_CELLS = 8
+ATMOSPHERE_MID_DITHER_CELLS = 5
+ATMOSPHERE_FAR_DITHER_CELLS = 10
 ATMOSPHERE_DITHER_MIN_STRENGTH = 0.5
 ATMOSPHERE_DITHER_FOG_COLOR = 13
 ATMOSPHERE_SHADOW_NEAR_CELLS = 12
 ATMOSPHERE_SHADOW_MID_CELLS = 8
 ATMOSPHERE_SHADOW_FAR_CELLS = 4
 ATMOSPHERE_SHADOW_IMPORTANT_MIN_CELLS = 6
+ATMOSPHERE_GROUND_DETAIL_STRENGTH = 1.0
+ATMOSPHERE_NATURE_PROP_STRENGTH = 1.0
+ATMOSPHERE_EQUIPMENT_STRENGTH = 0.7
+ATMOSPHERE_SOLID_STRENGTH = 0.8
+ATMOSPHERE_DEFAULT_STATIC_STRENGTH = 0.5
+ATMOSPHERE_ENEMY_STRENGTH = 0.35
+ATMOSPHERE_BUDDY_STRENGTH = 0.15
+ATMOSPHERE_PLAYER_STRENGTH = 0.1
 
 
 @dataclass(frozen=True)
@@ -265,7 +273,9 @@ class Renderer:
                     draw=lambda detail=detail: self.draw_ground_detail(
                         model, detail, camera, model.world_tick
                     ),
-                    atmosphere_strength=1.0,
+                    atmosphere_strength=self.atmosphere_strength_config(
+                        "ground_detail_strength", ATMOSPHERE_GROUND_DETAIL_STRENGTH
+                    ),
                 )
             )
         for obj in visible_objects:
@@ -294,7 +304,9 @@ class Renderer:
                     layer_bias=0,
                     stable_id=enemy.id,
                     draw=lambda enemy=enemy: self.draw_enemy(model, enemy, camera),
-                    atmosphere_strength=0.35,
+                    atmosphere_strength=self.atmosphere_strength_config(
+                        "enemy_strength", ATMOSPHERE_ENEMY_STRENGTH
+                    ),
                 )
             )
         if effects is not None:
@@ -310,7 +322,9 @@ class Renderer:
                         draw=lambda snapshot=snapshot: self.draw_enemy_snapshot(
                             model, snapshot, camera
                         ),
-                        atmosphere_strength=0.35,
+                        atmosphere_strength=self.atmosphere_strength_config(
+                            "enemy_strength", ATMOSPHERE_ENEMY_STRENGTH
+                        ),
                     )
                 )
         if model.bubble is not None:
@@ -333,7 +347,9 @@ class Renderer:
                     layer_bias=0,
                     stable_id="buddy",
                     draw=lambda: self.draw_buddy(model, camera, presentation_time),
-                    atmosphere_strength=0.15,
+                    atmosphere_strength=self.atmosphere_strength_config(
+                        "buddy_strength", ATMOSPHERE_BUDDY_STRENGTH
+                    ),
                 )
             )
         player_anchor = camera.project(Vec3(model.player.x, 0.0, model.player.z))
@@ -344,7 +360,9 @@ class Renderer:
                     layer_bias=0,
                     stable_id="player",
                     draw=lambda: self.draw_player(model, camera, presentation_time),
-                    atmosphere_strength=0.1,
+                    atmosphere_strength=self.atmosphere_strength_config(
+                        "player_strength", ATMOSPHERE_PLAYER_STRENGTH
+                    ),
                 )
             )
         self.last_stats = RenderStats(
@@ -1354,12 +1372,28 @@ class Renderer:
 
     def object_atmosphere_strength(self, obj: StaticObject) -> float:
         if obj.kind in {"sprite_prop", "reactive_prop"}:
-            return 1.0
+            return self.atmosphere_strength_config(
+                "nature_prop_strength", ATMOSPHERE_NATURE_PROP_STRENGTH
+            )
         if obj.kind in {"water_station", "solar_station", "ambient_maintenance"}:
-            return 0.7
+            return self.atmosphere_strength_config(
+                "equipment_strength", ATMOSPHERE_EQUIPMENT_STRENGTH
+            )
         if obj.solid:
-            return 0.8
-        return 0.5
+            return self.atmosphere_strength_config("solid_strength", ATMOSPHERE_SOLID_STRENGTH)
+        return self.atmosphere_strength_config(
+            "default_static_strength", ATMOSPHERE_DEFAULT_STATIC_STRENGTH
+        )
+
+    def atmosphere_strength_config(self, key: str, default: float) -> float:
+        value = self._atmosphere_config.get(key, default)
+        try:
+            strength = float(value)
+        except (TypeError, ValueError):
+            strength = default
+        if not math.isfinite(strength):
+            strength = default
+        return max(0.0, min(1.0, strength))
 
     @contextmanager
     def atmosphere_depth_effects(self, camera: CameraState, depth: float, strength: float):

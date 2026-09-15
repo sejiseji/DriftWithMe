@@ -20,14 +20,21 @@ from drift_with_me.math3d import (
 )
 from drift_with_me.model import GameModel
 from drift_with_me.render import (
+    ATMOSPHERE_BUDDY_STRENGTH,
     ATMOSPHERE_DITHER_FOG_COLOR,
+    ATMOSPHERE_ENEMY_STRENGTH,
+    ATMOSPHERE_EQUIPMENT_STRENGTH,
     ATMOSPHERE_FAR_DITHER_CELLS,
     ATMOSPHERE_FAR_PALETTE,
+    ATMOSPHERE_GROUND_DETAIL_STRENGTH,
     ATMOSPHERE_MID_DITHER_CELLS,
+    ATMOSPHERE_NATURE_PROP_STRENGTH,
+    ATMOSPHERE_PLAYER_STRENGTH,
     ATMOSPHERE_SHADOW_FAR_CELLS,
     ATMOSPHERE_SHADOW_IMPORTANT_MIN_CELLS,
     ATMOSPHERE_SHADOW_MID_CELLS,
     ATMOSPHERE_SHADOW_NEAR_CELLS,
+    ATMOSPHERE_SOLID_STRENGTH,
     ATMOSPHERE_WEAK_PALETTE,
     Renderer,
 )
@@ -354,6 +361,34 @@ def test_affine_atmosphere_shadow_attenuates_by_depth() -> None:
     )
 
 
+def test_affine_atmosphere_tuning_keeps_gameplay_entities_readable() -> None:
+    runtime, world, _perspective, _profile, affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+    renderer = Renderer(None)
+    renderer._atmosphere_config = runtime.raw["atmosphere"]
+
+    tree = world.object_by_id("tree_01")
+    station = world.object_by_id("tap_start")
+    wall = world.object_by_id("wall_01")
+    assert tree is not None and station is not None and wall is not None
+
+    assert renderer.object_atmosphere_strength(tree) == ATMOSPHERE_NATURE_PROP_STRENGTH
+    assert renderer.object_atmosphere_strength(station) == ATMOSPHERE_EQUIPMENT_STRENGTH
+    assert renderer.object_atmosphere_strength(wall) == ATMOSPHERE_SOLID_STRENGTH
+
+    commands = renderer.world_commands(model, affine, 0.0)
+    strengths = {command.stable_id: command.atmosphere_strength for command in commands}
+    enemy_id = next(enemy.id for enemy in model.enemies)
+    detail_id = model.world.ground_details[0].id
+
+    assert strengths["player"] == ATMOSPHERE_PLAYER_STRENGTH
+    assert strengths["buddy"] == ATMOSPHERE_BUDDY_STRENGTH
+    assert strengths[enemy_id] == ATMOSPHERE_ENEMY_STRENGTH
+    assert strengths[detail_id] == ATMOSPHERE_GROUND_DETAIL_STRENGTH
+    assert strengths["player"] < strengths[enemy_id] < renderer.object_atmosphere_strength(tree)
+    assert strengths["buddy"] < strengths[enemy_id]
+
+
 def test_atmosphere_dither_frame_preserves_colkey_and_reuses_cache() -> None:
     source = FakeImage(4, 4)
     for y in range(4):
@@ -392,7 +427,7 @@ def test_atmosphere_dither_frame_preserves_colkey_and_reuses_cache() -> None:
     derived = renderer.atmospheric_sprite_frame(asset, frame)
     assert derived is renderer.atmospheric_sprite_frame(asset, frame)
     assert derived.image.pget(0, 0) == ATMOSPHERE_DITHER_FOG_COLOR
-    assert derived.image.pget(1, 0) == 2
+    assert derived.image.pget(3, 0) == 2
     assert derived.image.pget(0, 1) == 8
 
 
