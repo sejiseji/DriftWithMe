@@ -110,6 +110,23 @@ def test_directional_lookahead_updates_follow_target_ahead_of_player() -> None:
     assert controller.follow_target.z == pytest.approx(model.player.z)
 
 
+def test_directional_lookahead_keeps_player_in_default_perspective_view() -> None:
+    controller, model = make_controller()
+    margin_px = 16.0
+
+    for direction_x, direction_z in [(1.0, 0.0), (0.0, 1.0), (-1.0, 0.0), (0.0, -1.0)]:
+        controller.reset(Vec3(model.player.x, 0.0, model.player.z))
+        for _ in range(120):
+            camera = controller.update(
+                1.0 / 60.0, model.player.x, model.player.z, direction_x, direction_z
+            )
+        projected = camera.project(Vec3(model.player.x, 0.0, model.player.z))
+
+        assert projected is not None
+        assert margin_px <= projected.x <= controller.viewport_width - margin_px
+        assert margin_px <= projected.y <= controller.viewport_height - margin_px
+
+
 def test_buddy_follows_camera_relative_goal_without_affecting_movement() -> None:
     controller, model = make_controller()
     start_x = model.player.x
