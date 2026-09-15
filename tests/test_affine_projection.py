@@ -188,14 +188,20 @@ def test_affine_xz_screen_vectors_are_position_invariant() -> None:
 
 def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -> None:
     runtime, world, perspective, _profile, affine = make_affine_camera()
-    model = GameModel(runtime.raw, world)
     pyxel = RecordingPyxel()
     renderer = Renderer(pyxel)
     config = runtime.raw["grassland_micro"]
 
-    assert config["enabled"] is True
+    assert config["enabled"] is False
     assert config["affine_only"] is True
     assert config["cell_world"] == pytest.approx(24.0)
+    assert renderer.draw_grassland_micro_layer(GameModel(runtime.raw, world), affine) == 0
+
+    enabled_config = dict(config)
+    enabled_config["enabled"] = True
+    enabled_raw = dict(runtime.raw)
+    enabled_raw["grassland_micro"] = enabled_config
+    model = GameModel(enabled_raw, world)
     assert renderer.draw_grassland_micro_layer(model, perspective) == 0
 
     assert renderer.draw_grassland_micro_layer(model, affine) == 1
