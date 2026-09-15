@@ -5,6 +5,12 @@ import math
 import pytest
 
 from drift_with_me.config import load_runtime_config
+from drift_with_me.hex_assets import (
+    LoadedSpriteAsset,
+    LoadedSpriteFrame,
+    SpriteDefinition,
+    SpriteFrameDefinition,
+)
 from drift_with_me.math3d import (
     AffineProjectionProfile,
     CameraState,
@@ -13,8 +19,36 @@ from drift_with_me.math3d import (
     screen_to_ground_affine,
 )
 from drift_with_me.model import GameModel
-from drift_with_me.render import ATMOSPHERE_FAR_PALETTE, ATMOSPHERE_WEAK_PALETTE, Renderer
+from drift_with_me.render import (
+    ATMOSPHERE_DITHER_FOG_COLOR,
+    ATMOSPHERE_FAR_DITHER_CELLS,
+    ATMOSPHERE_FAR_PALETTE,
+    ATMOSPHERE_MID_DITHER_CELLS,
+    ATMOSPHERE_WEAK_PALETTE,
+    Renderer,
+)
 from drift_with_me.world import load_world_data
+
+
+class FakeImage:
+    def __init__(self, width: int, height: int) -> None:
+        self.width = width
+        self.height = height
+        self._pixels = [[0 for _x in range(width)] for _y in range(height)]
+
+    def pget(self, x: int, y: int) -> int:
+        return self._pixels[y][x]
+
+    def pset(self, x: int, y: int, color: int) -> None:
+        self._pixels[y][x] = color
+
+
+class FakePyxel:
+    def __init__(self) -> None:
+        self.images: list[FakeImage] = []
+
+    def Image(self, width: int, height: int) -> FakeImage:
+        return FakeImage(width, height)
 
 
 def make_affine_camera():
@@ -267,6 +301,68 @@ def test_affine_atmosphere_palette_has_near_mid_far_bands() -> None:
     assert renderer.atmosphere_palette_mappings(
         affine, reference + 96.0, 1.0
     ) != renderer.atmosphere_palette_mappings(affine, reference + 220.0, 1.0)
+
+
+def test_affine_atmosphere_dither_has_near_mid_far_bands() -> None:
+    runtime, _world, perspective, _profile, affine = make_affine_camera()
+    renderer = Renderer(None)
+    renderer._atmosphere_config = runtime.raw["atmosphere"]
+    reference = affine.profile.reference_depth
+
+    assert renderer.atmosphere_dither_cells(perspective, reference + 220.0, 1.0) == 0
+    assert renderer.atmosphere_dither_cells(affine, reference + 32.0, 1.0) == 0
+    assert (
+        renderer.atmosphere_dither_cells(affine, reference + 96.0, 1.0)
+        == ATMOSPHERE_MID_DITHER_CELLS
+    )
+    assert (
+        renderer.atmosphere_dither_cells(affine, reference + 220.0, 1.0)
+        == ATMOSPHERE_FAR_DITHER_CELLS
+    )
+    assert renderer.atmosphere_dither_cells(affine, reference + 220.0, 0.7) == 3
+    assert renderer.atmosphere_dither_cells(affine, reference + 220.0, 0.35) == 0
+
+
+def test_atmosphere_dither_frame_preserves_colkey_and_reuses_cache() -> None:
+    source = FakeImage(4, 4)
+    for y in range(4):
+        for x in range(4):
+            source.pset(x, y, 2)
+    source.pset(0, 1, 8)
+    frame = LoadedSpriteFrame(
+        frame_id="idle_00",
+        image=source,
+        source=None,
+        u=0,
+        v=0,
+        width=4,
+        height=4,
+        source_hash="source-hash",
+    )
+    definition = SpriteDefinition(
+        asset_id="tree_test",
+        palette_id="pyxel_default_16",
+        hex_width=4,
+        hex_height=4,
+        colkey=8,
+        anchor_px=(2.0, 4.0),
+        world_size=(4.0, 4.0),
+        projection_mode="upright_height_billboard_v1",
+        flip_policy="none",
+        animation="static",
+        frames=(SpriteFrameDefinition(frame_id="idle_00"),),
+        source_hash="source-hash",
+    )
+    asset = LoadedSpriteAsset(definition=definition, frames={"idle_00": frame})
+    renderer = Renderer(FakePyxel())
+    renderer._active_atmosphere_dither_cells = ATMOSPHERE_FAR_DITHER_CELLS
+    renderer._active_atmosphere_dither_fog_color = ATMOSPHERE_DITHER_FOG_COLOR
+
+    derived = renderer.atmospheric_sprite_frame(asset, frame)
+    assert derived is renderer.atmospheric_sprite_frame(asset, frame)
+    assert derived.image.pget(0, 0) == ATMOSPHERE_DITHER_FOG_COLOR
+    assert derived.image.pget(1, 0) == 2
+    assert derived.image.pget(0, 1) == 8
 
 
 def test_affine_camera_ignores_source_yaw_pitch_but_keeps_target_anchor_and_zoom() -> None:

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from drift_with_me.effects import EffectSystem, EnemySnapshot
 from drift_with_me.hex_assets import (
     LoadedSpriteAsset,
+    LoadedSpriteFrame,
     SpriteAssetLibrary,
     draw_scaled_sprite,
     placement_for_upright_height_billboard,
@@ -39,6 +40,16 @@ ATMOSPHERE_FAR_PALETTE = (
     (14, 13),
     (15, 13),
 )
+ATMOSPHERE_BAYER_4X4 = (
+    (0, 8, 2, 10),
+    (12, 4, 14, 6),
+    (3, 11, 1, 9),
+    (15, 7, 13, 5),
+)
+ATMOSPHERE_MID_DITHER_CELLS = 2
+ATMOSPHERE_FAR_DITHER_CELLS = 4
+ATMOSPHERE_DITHER_MIN_STRENGTH = 0.5
+ATMOSPHERE_DITHER_FOG_COLOR = 13
 
 
 @dataclass(frozen=True)
@@ -134,6 +145,9 @@ class Renderer:
         self.player_sprite_view_name = "idle"
         self.buddy_sprite_view_name = "front_right"
         self._atmosphere_config: dict = {}
+        self._active_atmosphere_dither_cells = 0
+        self._active_atmosphere_dither_fog_color = ATMOSPHERE_DITHER_FOG_COLOR
+        self._atmosphere_dither_cache: dict[tuple[str, str, str, int, int], LoadedSpriteFrame] = {}
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -156,7 +170,7 @@ class Renderer:
         for command in sorted(
             commands, key=lambda item: (-item.depth, item.layer_bias, item.stable_id)
         ):
-            with self.atmosphere_palette(camera, command.depth, command.atmosphere_strength):
+            with self.atmosphere_depth_effects(camera, command.depth, command.atmosphere_strength):
                 command.draw()
         self.draw_barrier(model, camera)
         if self.player_is_occluded(model, camera, presentation_time):
@@ -731,7 +745,7 @@ class Renderer:
         )
         if placement is None:
             return False
-        draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
+        self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
 
     def object_sprite_asset(self, model: GameModel, obj: StaticObject) -> LoadedSpriteAsset | None:
@@ -808,6 +822,9 @@ class Renderer:
             px = int(point.x)
             py = int(point.y)
             color = int(char, 16)
+            color = self.atmosphere_dither_color(
+                color, col_index, row_index, asset.definition.colkey
+            )
             if pixel_size <= 1:
                 self.pyxel.pset(px, py, color)
             else:
@@ -978,7 +995,7 @@ class Renderer:
         asset = self.enemy_sprite_asset(model, enemy)
         if asset is None:
             return None
-        draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
+        self.draw_atmospheric_scaled_sprite(asset, placement)
         return placement
 
     def draw_enemy_snapshot(
@@ -996,7 +1013,7 @@ class Renderer:
             )
             if placement is None:
                 return
-            draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
+            self.draw_atmospheric_scaled_sprite(asset, placement)
             left, top, width, height = placement.rect
             x = left + width // 2
             y = top + height // 2
@@ -1261,7 +1278,7 @@ class Renderer:
         placement = self.player_sprite_placement(model, camera, presentation_time)
         if placement is None:
             return False
-        draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
+        self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
 
     def draw_buddy(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:
@@ -1306,7 +1323,7 @@ class Renderer:
         placement = self.buddy_sprite_placement(model, camera, bob)
         if placement is None:
             return False
-        draw_scaled_sprite(self.pyxel, asset.frame(), asset.definition, placement)
+        self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
 
     def draw_barrier(self, model: GameModel, camera: CameraState) -> None:
@@ -1341,10 +1358,18 @@ class Renderer:
         return 0.5
 
     @contextmanager
-    def atmosphere_palette(self, camera: CameraState, depth: float, strength: float):
+    def atmosphere_depth_effects(self, camera: CameraState, depth: float, strength: float):
         mappings = self.atmosphere_palette_mappings(camera, depth, strength)
+        previous_dither_cells = self._active_atmosphere_dither_cells
+        previous_dither_fog = self._active_atmosphere_dither_fog_color
+        self._active_atmosphere_dither_cells = self.atmosphere_dither_cells(camera, depth, strength)
+        self._active_atmosphere_dither_fog_color = self.atmosphere_dither_fog_color()
         if not mappings or self.pyxel is None:
-            yield
+            try:
+                yield
+            finally:
+                self._active_atmosphere_dither_cells = previous_dither_cells
+                self._active_atmosphere_dither_fog_color = previous_dither_fog
             return
         for source, target in mappings:
             self.pyxel.pal(source, target)
@@ -1352,6 +1377,8 @@ class Renderer:
             yield
         finally:
             self.pyxel.pal()
+            self._active_atmosphere_dither_cells = previous_dither_cells
+            self._active_atmosphere_dither_fog_color = previous_dither_fog
 
     def atmosphere_palette_mappings(
         self, camera: CameraState, depth: float, strength: float
@@ -1385,6 +1412,102 @@ class Renderer:
         if effective_stage < 1.5:
             return ATMOSPHERE_MID_PALETTE
         return ATMOSPHERE_FAR_PALETTE
+
+    def atmosphere_dither_cells(self, camera: CameraState, depth: float, strength: float) -> int:
+        config = self._atmosphere_config
+        if not bool(config.get("enabled", False)):
+            return 0
+        if not bool(config.get("dither_enabled", True)):
+            return 0
+        if bool(config.get("affine_only", True)) and not self.camera_is_affine(camera):
+            return 0
+        if (
+            strength < float(config.get("dither_min_strength", ATMOSPHERE_DITHER_MIN_STRENGTH))
+            or not math.isfinite(strength)
+            or not math.isfinite(depth)
+        ):
+            return 0
+
+        reference_depth = float(
+            config.get(
+                "reference_depth",
+                getattr(getattr(camera, "profile", None), "reference_depth", 480.0),
+            )
+        )
+        near_offset = float(config.get("near_depth_offset", 64.0))
+        far_offset = float(config.get("far_depth_offset", 176.0))
+        relative_depth = depth - reference_depth
+        if relative_depth < near_offset:
+            return 0
+
+        if relative_depth < far_offset:
+            base_cells = int(config.get("mid_dither_cells", ATMOSPHERE_MID_DITHER_CELLS))
+        else:
+            base_cells = int(config.get("far_dither_cells", ATMOSPHERE_FAR_DITHER_CELLS))
+        return max(0, min(16, int(round(base_cells * strength))))
+
+    def atmosphere_dither_fog_color(self) -> int:
+        color = int(self._atmosphere_config.get("dither_fog_color", ATMOSPHERE_DITHER_FOG_COLOR))
+        return max(0, min(15, color))
+
+    def atmospheric_sprite_frame(
+        self, asset: LoadedSpriteAsset, frame: LoadedSpriteFrame
+    ) -> LoadedSpriteFrame:
+        cells = self._active_atmosphere_dither_cells
+        fog_color = self._active_atmosphere_dither_fog_color
+        colkey = asset.definition.colkey
+        if cells <= 0 or self.pyxel is None or fog_color == colkey:
+            return frame
+        key = (asset.definition.asset_id, frame.frame_id, frame.source_hash, cells, fog_color)
+        cached = self._atmosphere_dither_cache.get(key)
+        if cached is not None:
+            return cached
+
+        image = self.pyxel.Image(frame.width, frame.height)
+        for y in range(frame.height):
+            for x in range(frame.width):
+                color = self.sprite_frame_pixel(frame, x, y)
+                color = self.atmosphere_dither_color(color, x, y, colkey)
+                image.pset(x, y, color)
+        derived = LoadedSpriteFrame(
+            frame_id=frame.frame_id,
+            image=image,
+            source=frame.source,
+            u=0,
+            v=0,
+            width=frame.width,
+            height=frame.height,
+            source_hash=frame.source_hash,
+        )
+        self._atmosphere_dither_cache[key] = derived
+        return derived
+
+    def sprite_frame_pixel(self, frame: LoadedSpriteFrame, x: int, y: int) -> int:
+        if isinstance(frame.image, int):
+            return int(self.pyxel.images[frame.image].pget(frame.u + x, frame.v + y))
+        return int(frame.image.pget(frame.u + x, frame.v + y))
+
+    def atmosphere_dither_color(self, color: int, local_x: int, local_y: int, colkey: int) -> int:
+        if color == colkey:
+            return color
+        cells = self._active_atmosphere_dither_cells
+        if cells <= 0:
+            return color
+        threshold = ATMOSPHERE_BAYER_4X4[local_y % 4][local_x % 4]
+        if threshold < cells:
+            return self._active_atmosphere_dither_fog_color
+        return color
+
+    def draw_atmospheric_scaled_sprite(
+        self, asset: LoadedSpriteAsset, placement, frame: LoadedSpriteFrame | None = None
+    ) -> None:
+        base_frame = frame or asset.frame()
+        draw_scaled_sprite(
+            self.pyxel,
+            self.atmospheric_sprite_frame(asset, base_frame),
+            asset.definition,
+            placement,
+        )
 
     def object_uses_box_geometry(self, obj: StaticObject) -> bool:
         return obj.solid and obj.kind != "sprite_prop"
