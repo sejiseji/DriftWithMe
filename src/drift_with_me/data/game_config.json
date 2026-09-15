@@ -150,7 +150,7 @@
     "return_blend_sec": 0.5
   },
   "projection": {
-    "mode": "perspective",
+    "mode": "affine",
     "affine": {
       "profile_id": "follow_spawn_medium_v1",
       "calibration_source": "HEAD 531f365 FOLLOW camera at spawn",
@@ -209,6 +209,28 @@
     "enemy_strength": 0.35,
     "buddy_strength": 0.15,
     "player_strength": 0.1
+  },
+  "grassland_micro": {
+    "enabled": true,
+    "affine_only": true,
+    "base_color": 3,
+    "blade_color": 11,
+    "blade_shadow_color": 3,
+    "blade_accent_color": 10,
+    "tile_width_px": 32,
+    "tile_height_px": 24,
+    "areas": [
+      {
+        "id": "spawn_grassland_micro",
+        "rect_xz": [
+          64.0,
+          256.0,
+          768.0,
+          864.0
+        ],
+        "phase": 0
+      }
+    ]
   },
   "resources": {
     "water_max": 100.0,

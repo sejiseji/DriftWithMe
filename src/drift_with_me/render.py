@@ -68,6 +68,11 @@ ATMOSPHERE_DEFAULT_STATIC_STRENGTH = 0.5
 ATMOSPHERE_ENEMY_STRENGTH = 0.35
 ATMOSPHERE_BUDDY_STRENGTH = 0.15
 ATMOSPHERE_PLAYER_STRENGTH = 0.1
+GRASSLAND_MICRO_PATTERNS = (
+    ((4, 18, 5, 0), (13, 9, 4, 1), (23, 16, 6, 0), (29, 21, 4, 2)),
+    ((7, 12, 4, 1), (16, 19, 6, 0), (24, 8, 5, 2), (31, 17, 4, 0)),
+    ((3, 8, 5, 2), (11, 20, 4, 0), (19, 13, 6, 1), (28, 22, 5, 0)),
+)
 
 
 @dataclass(frozen=True)
@@ -116,6 +121,7 @@ class RenderStats:
     candidate_static_objects: int = 0
     visible_static_objects: int = 0
     visible_ground_details: int = 0
+    visible_grassland_micro_areas: int = 0
     visible_baked_ground_patches: int = 0
     baked_ground_cache_size: int = 0
     draw_commands: int = 0
@@ -166,6 +172,7 @@ class Renderer:
         self._active_atmosphere_dither_cells = 0
         self._active_atmosphere_dither_fog_color = ATMOSPHERE_DITHER_FOG_COLOR
         self._atmosphere_dither_cache: dict[tuple[str, str, str, int, int], LoadedSpriteFrame] = {}
+        self._visible_grassland_micro_areas = 0
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -181,6 +188,7 @@ class Renderer:
         pyxel.cls(1)
         self.draw_ground(model.world, camera)
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
+        self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
         self.draw_ground_surfaces(model, camera)
         self.draw_safe_zones(model.world, camera)
         self.draw_auto_move_goal(model, camera, presentation_time)
@@ -377,6 +385,7 @@ class Renderer:
             candidate_static_objects=visible_query.candidate_object_count,
             visible_static_objects=len(visible_objects),
             visible_ground_details=len(visible_details),
+            visible_grassland_micro_areas=self._visible_grassland_micro_areas,
             visible_baked_ground_patches=len(self._active_baked_ground_patches),
             baked_ground_cache_size=len(self._baked_ground_cache),
             draw_commands=len(commands),
@@ -384,6 +393,182 @@ class Renderer:
             dormant_enemies=model.debug.dormant_enemies,
         )
         return commands
+
+    def draw_grassland_micro_layer(self, model: GameModel, camera: CameraState) -> int:
+        config = model.config.get("grassland_micro", {})
+        if not bool(config.get("enabled", False)):
+            return 0
+        if bool(config.get("affine_only", True)) and not self.camera_is_affine(camera):
+            return 0
+        areas = config.get("areas", ())
+        if not isinstance(areas, (list, tuple)):
+            return 0
+        visible_count = 0
+        for area in areas:
+            if isinstance(area, dict) and self.draw_grassland_micro_area(camera, area, config):
+                visible_count += 1
+        return visible_count
+
+    def draw_grassland_micro_area(self, camera: CameraState, area: dict, config: dict) -> bool:
+        rect = self.grassland_micro_world_rect(area)
+        if rect is None:
+            return False
+        x0, z0, x1, z1 = rect
+        corners = (
+            camera.project(Vec3(x0, 0.0, z0)),
+            camera.project(Vec3(x1, 0.0, z0)),
+            camera.project(Vec3(x1, 0.0, z1)),
+            camera.project(Vec3(x0, 0.0, z1)),
+        )
+        if any(point is None for point in corners):
+            return False
+        p0, p1, p2, p3 = corners
+        bounds = self.projected_quad_bounds(corners)
+        if bounds is None or not self.screen_rect_visible(bounds, camera, 2.0):
+            return False
+
+        base_color = self.clamped_palette_color(area.get("base_color", config.get("base_color", 3)))
+        self.pyxel.tri(int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), base_color)
+        self.pyxel.tri(int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), base_color)
+        self.draw_grassland_micro_pattern(camera, corners, bounds, area, config)
+        return True
+
+    def grassland_micro_world_rect(self, area: dict) -> tuple[float, float, float, float] | None:
+        raw_rect = area.get("rect_xz")
+        if not isinstance(raw_rect, (list, tuple)) or len(raw_rect) != 4:
+            return None
+        x0, z0, x1, z1 = (float(value) for value in raw_rect)
+        if not all(math.isfinite(value) for value in (x0, z0, x1, z1)):
+            return None
+        if abs(x1 - x0) <= 1e-6 or abs(z1 - z0) <= 1e-6:
+            return None
+        return min(x0, x1), min(z0, z1), max(x0, x1), max(z0, z1)
+
+    def projected_quad_bounds(self, points: tuple[ProjectedPoint | None, ...]) -> ScreenRect | None:
+        projected = [point for point in points if point is not None]
+        if len(projected) != 4:
+            return None
+        min_x = math.floor(min(point.x for point in projected))
+        max_x = math.ceil(max(point.x for point in projected))
+        min_y = math.floor(min(point.y for point in projected))
+        max_y = math.ceil(max(point.y for point in projected))
+        if not all(math.isfinite(value) for value in (min_x, max_x, min_y, max_y)):
+            return None
+        return ScreenRect(
+            int(min_x),
+            int(min_y),
+            max(1, int(max_x - min_x)),
+            max(1, int(max_y - min_y)),
+        )
+
+    def draw_grassland_micro_pattern(
+        self,
+        camera: CameraState,
+        corners: tuple[ProjectedPoint | None, ...],
+        bounds: ScreenRect,
+        area: dict,
+        config: dict,
+    ) -> None:
+        tile_w = max(8, int(area.get("tile_width_px", config.get("tile_width_px", 32))))
+        tile_h = max(8, int(area.get("tile_height_px", config.get("tile_height_px", 24))))
+        phase_x, phase_y = self.grassland_micro_phase(camera, tile_w, tile_h)
+        min_x = max(-tile_w, bounds.x)
+        max_x = min(camera.viewport_width + tile_w, bounds.max_x)
+        min_y = max(-tile_h, bounds.y)
+        max_y = min(camera.viewport_height + tile_h, bounds.max_y)
+        start_x = phase_x + math.floor((min_x - phase_x) / tile_w) * tile_w - tile_w
+        start_y = phase_y + math.floor((min_y - phase_y) / tile_h) * tile_h - tile_h
+        colors = (
+            self.clamped_palette_color(area.get("blade_color", config.get("blade_color", 11))),
+            self.clamped_palette_color(
+                area.get("blade_shadow_color", config.get("blade_shadow_color", 3))
+            ),
+            self.clamped_palette_color(
+                area.get("blade_accent_color", config.get("blade_accent_color", 10))
+            ),
+        )
+        jitter_seed = int(area.get("phase", config.get("phase", 0)))
+        y = start_y
+        tile_row = 0
+        while y <= max_y:
+            x = start_x
+            tile_col = 0
+            while x <= max_x:
+                pattern_index = (tile_col + tile_row * 2 + jitter_seed) % len(
+                    GRASSLAND_MICRO_PATTERNS
+                )
+                self.draw_grassland_micro_tile(
+                    int(round(x)),
+                    int(round(y)),
+                    GRASSLAND_MICRO_PATTERNS[pattern_index],
+                    corners,
+                    colors,
+                )
+                x += tile_w
+                tile_col += 1
+            y += tile_h
+            tile_row += 1
+
+    def grassland_micro_phase(
+        self, camera: CameraState, tile_w: int, tile_h: int
+    ) -> tuple[float, float]:
+        origin = camera.project(Vec3(0.0, 0.0, 0.0))
+        if origin is None:
+            return 0.0, 0.0
+        return origin.x % max(1, tile_w), origin.y % max(1, tile_h)
+
+    def draw_grassland_micro_tile(
+        self,
+        origin_x: int,
+        origin_y: int,
+        pattern: tuple[tuple[int, int, int, int], ...],
+        corners: tuple[ProjectedPoint | None, ...],
+        colors: tuple[int, int, int],
+    ) -> None:
+        for offset_x, offset_y, height, color_index in pattern:
+            root_x = origin_x + offset_x
+            root_y = origin_y + offset_y
+            if not self.point_in_projected_quad(root_x, root_y, corners):
+                continue
+            self.draw_micro_grass_blade(
+                root_x,
+                root_y,
+                max(3, min(6, height)),
+                colors[color_index % len(colors)],
+                colors[1],
+            )
+
+    def draw_micro_grass_blade(
+        self, root_x: int, root_y: int, height: int, color: int, shadow_color: int
+    ) -> None:
+        tip_y = root_y - height
+        self.pyxel.line(root_x, root_y, root_x - 1, tip_y + 1, shadow_color)
+        self.pyxel.line(root_x, root_y, root_x + 1, tip_y, color)
+        if height >= 5:
+            self.pyxel.pset(root_x, tip_y, color)
+
+    def point_in_projected_quad(
+        self, x: float, y: float, corners: tuple[ProjectedPoint | None, ...]
+    ) -> bool:
+        projected = [point for point in corners if point is not None]
+        if len(projected) != 4:
+            return False
+        signs: list[float] = []
+        for index, point in enumerate(projected):
+            next_point = projected[(index + 1) % len(projected)]
+            cross = (next_point.x - point.x) * (y - point.y) - (next_point.y - point.y) * (
+                x - point.x
+            )
+            if abs(cross) > 1e-6:
+                signs.append(cross)
+        return not signs or all(value >= 0 for value in signs) or all(value <= 0 for value in signs)
+
+    def clamped_palette_color(self, value: object) -> int:
+        try:
+            color = int(value)
+        except (TypeError, ValueError):
+            color = 0
+        return max(0, min(15, color))
 
     def draw_object(
         self,

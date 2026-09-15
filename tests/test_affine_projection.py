@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 
 import pytest
 
@@ -60,6 +61,21 @@ class FakePyxel:
 
     def Image(self, width: int, height: int) -> FakeImage:
         return FakeImage(width, height)
+
+
+class RecordingPyxel(FakePyxel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls: list[tuple] = []
+
+    def tri(self, *args) -> None:
+        self.calls.append(("tri", *args))
+
+    def line(self, *args) -> None:
+        self.calls.append(("line", *args))
+
+    def pset(self, *args) -> None:
+        self.calls.append(("pset", *args))
 
 
 def make_affine_camera():
@@ -168,6 +184,36 @@ def test_affine_xz_screen_vectors_are_position_invariant() -> None:
     assert comparison_x.y - comparison_root.y == pytest.approx(base_x.y - base_root.y)
     assert comparison_z.x - comparison_root.x == pytest.approx(base_z.x - base_root.x)
     assert comparison_z.y - comparison_root.y == pytest.approx(base_z.y - base_root.y)
+
+
+def test_grassland_micro_layer_uses_affine_phase_and_is_affine_only() -> None:
+    runtime, world, perspective, _profile, affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+    pyxel = RecordingPyxel()
+    renderer = Renderer(pyxel)
+    config = runtime.raw["grassland_micro"]
+
+    assert config["enabled"] is True
+    assert config["affine_only"] is True
+    assert renderer.draw_grassland_micro_layer(model, perspective) == 0
+
+    origin = affine.project(Vec3(0.0, 0.0, 0.0))
+    assert origin is not None
+    assert renderer.grassland_micro_phase(affine, 32, 24) == pytest.approx(
+        (origin.x % 32, origin.y % 24)
+    )
+
+    shifted = replace(
+        affine,
+        target=Vec3(affine.target.x + 32.0, affine.target.y, affine.target.z),
+    )
+    assert renderer.grassland_micro_phase(shifted, 32, 24) != pytest.approx(
+        renderer.grassland_micro_phase(affine, 32, 24)
+    )
+
+    assert renderer.draw_grassland_micro_layer(model, affine) == 1
+    assert any(call[0] == "tri" and call[-1] == config["base_color"] for call in pyxel.calls)
+    assert any(call[0] == "line" for call in pyxel.calls)
 
 
 def test_affine_height_projects_straight_up_for_actor_roots() -> None:
