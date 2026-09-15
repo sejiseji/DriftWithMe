@@ -316,12 +316,16 @@ class CameraController:
         return Vec2(dx * world_distance, dz * world_distance)
 
     def directional_lookahead_smoothing_tau(self, desired_offset: Vec2) -> float:
-        if desired_offset.length() <= 1e-6 or self.lookahead_offset.length() <= 1e-6:
+        desired_length = desired_offset.length()
+        current_length = self.lookahead_offset.length()
+        if desired_length <= 1e-6 or current_length <= 1e-6:
             return float(self.camera_config.get("lookahead_smooth_sec", 0.3))
         dot_value = (
             desired_offset.x * self.lookahead_offset.x + desired_offset.y * self.lookahead_offset.y
         )
-        if dot_value < 0.0:
+        direction_dot = dot_value / (desired_length * current_length)
+        turn_threshold = float(self.camera_config.get("lookahead_turn_dot_threshold", 0.0))
+        if direction_dot < turn_threshold:
             return float(self.camera_config.get("lookahead_turn_smooth_sec", 0.4))
         return float(self.camera_config.get("lookahead_smooth_sec", 0.3))
 

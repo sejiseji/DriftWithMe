@@ -110,6 +110,16 @@ def test_directional_lookahead_updates_follow_target_ahead_of_player() -> None:
     assert controller.follow_target.z == pytest.approx(model.player.z)
 
 
+def test_directional_lookahead_uses_turn_smoothing_for_right_angle_changes() -> None:
+    controller, _model = make_controller()
+    controller.lookahead_offset = controller.directional_lookahead_offset(1.0, 0.0)
+    desired_offset = controller.directional_lookahead_offset(0.0, 1.0)
+
+    assert controller.directional_lookahead_smoothing_tau(desired_offset) == pytest.approx(
+        float(controller.camera_config["lookahead_turn_smooth_sec"])
+    )
+
+
 def test_directional_lookahead_keeps_player_in_default_perspective_view() -> None:
     controller, model = make_controller()
     margin_px = 16.0
