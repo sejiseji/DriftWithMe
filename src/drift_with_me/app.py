@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum, auto
 
 from drift_with_me import config
@@ -901,7 +901,7 @@ class DriftWithMeApp:
         return self.clamp_ui_rect(Rect(x, y, width, height), margin=4.0)
 
     def progress_target_screen_rect(self, interaction) -> Rect | None:
-        camera = self.camera()
+        camera = self.scene_camera(self.camera())
         if interaction.kind == "energy_refill":
             point = camera.project(self.buddy_focus_point())
             half_w = 14.0
@@ -994,8 +994,7 @@ class DriftWithMeApp:
 
     def draw_play(self) -> None:
         assert self.renderer is not None
-        render_camera = self.presentation_camera(self.camera())
-        scene_camera = self.scene_camera(render_camera)
+        scene_camera = self.scene_camera(self.camera())
         self.renderer.draw_scene(
             self.model, scene_camera, self.presentation_time, self.debug_enabled, self.effects
         )
@@ -1005,11 +1004,31 @@ class DriftWithMeApp:
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
         if self.projection_mode != "affine":
-            return camera
-        return affine_camera_from_perspective(
+            return self.presentation_camera(camera)
+        return self.affine_scene_camera(camera)
+
+    def affine_scene_camera(self, camera: CameraState) -> AffineCameraState:
+        transform = self.effects.camera_transform(camera.viewport_width, camera.viewport_height)
+        if not self.combat_camera_reactions_allowed():
+            transform = type(transform)()
+        camera_config = self.runtime.raw["camera"]
+        base_distance = float(camera_config["base_distance"])
+        current_zoom = base_distance / camera.distance
+        target_zoom = min(
+            float(camera_config["zoom_max"]),
+            max(float(camera_config["zoom_min"]), current_zoom * transform.zoom_multiplier),
+        )
+        affine_camera = affine_camera_from_perspective(
             camera,
             self.affine_projection_profile,
-            base_distance=float(self.runtime.raw["camera"]["base_distance"]),
+            base_distance=base_distance,
+            fx_offset_x=transform.offset_x,
+            fx_offset_y=transform.offset_y,
+        )
+        return replace(
+            affine_camera,
+            zoom=target_zoom,
+            distance=base_distance / target_zoom,
         )
 
     def presentation_camera(self, camera: CameraState) -> CameraState:

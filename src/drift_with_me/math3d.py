@@ -213,6 +213,7 @@ def affine_camera_from_perspective(
         zoom = 1.0
     else:
         zoom = base_distance / camera.distance
+    yaw_deg, pitch_deg = yaw_pitch_from_forward(profile.fixed_forward)
     return AffineCameraState(
         target=camera.target,
         profile=profile,
@@ -223,13 +224,25 @@ def affine_camera_from_perspective(
         viewport_height=camera.viewport_height,
         fx_offset_x=fx_offset_x,
         fx_offset_y=fx_offset_y,
-        yaw_deg=camera.yaw_deg,
-        pitch_deg=camera.pitch_deg,
+        yaw_deg=yaw_deg,
+        pitch_deg=pitch_deg,
         horizontal_fov_deg=camera.horizontal_fov_deg,
         distance=camera.distance,
         near=camera.near,
         far=camera.far,
     )
+
+
+def yaw_pitch_from_forward(forward: Vec3) -> tuple[float, float]:
+    length = math.sqrt(forward.x * forward.x + forward.y * forward.y + forward.z * forward.z)
+    if length <= 1e-9 or not math.isfinite(length):
+        return 0.0, 0.0
+    x = forward.x / length
+    y = forward.y / length
+    z = forward.z / length
+    yaw_deg = math.degrees(math.atan2(x, z))
+    pitch_deg = math.degrees(math.asin(max(-1.0, min(1.0, -y))))
+    return yaw_deg, pitch_deg
 
 
 def project_affine(camera: AffineCameraState, point: Vec3) -> ProjectedPoint | None:

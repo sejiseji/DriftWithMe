@@ -241,3 +241,30 @@ def test_affine_solid_box_occludes_player_with_projected_bounds() -> None:
     )
 
     assert renderer.player_is_occluded(model, affine, 0.0)
+
+
+def test_affine_camera_ignores_source_yaw_pitch_but_keeps_target_anchor_and_zoom() -> None:
+    runtime, _world, _perspective, profile, _affine = make_affine_camera()
+    base_distance = float(runtime.raw["camera"]["base_distance"])
+    source = CameraState(
+        target=Vec3(768.0, 0.0, 768.0),
+        yaw_deg=35.0,
+        pitch_deg=10.0,
+        horizontal_fov_deg=float(runtime.raw["camera"]["horizontal_fov_deg"]),
+        distance=base_distance / 0.7,
+        near=float(runtime.raw["camera"]["near"]),
+        far=float(runtime.raw["camera"]["far"]),
+        anchor_x=0.42,
+        anchor_y=0.61,
+        viewport_width=runtime.screen_width,
+        viewport_height=runtime.screen_height,
+    )
+
+    affine = affine_camera_from_perspective(source, profile, base_distance=base_distance)
+
+    assert affine.target == source.target
+    assert affine.anchor_x == pytest.approx(source.anchor_x)
+    assert affine.anchor_y == pytest.approx(source.anchor_y)
+    assert affine.zoom == pytest.approx(0.7)
+    assert affine.yaw_deg == pytest.approx(float(runtime.raw["camera"]["yaw_deg"]))
+    assert affine.pitch_deg == pytest.approx(float(runtime.raw["camera"]["pitch_deg"]))

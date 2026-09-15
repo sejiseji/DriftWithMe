@@ -10,7 +10,7 @@ from drift_with_me.camera import CameraController
 from drift_with_me.config import load_runtime_config
 from drift_with_me.effects import EffectSystem
 from drift_with_me.events import GameEvent
-from drift_with_me.math3d import CameraState, Vec3
+from drift_with_me.math3d import AffineCameraState, AffineProjectionProfile, CameraState, Vec3
 from drift_with_me.model import GameModel
 from drift_with_me.world import load_world_data
 
@@ -121,6 +121,58 @@ def test_presentation_camera_changes_render_only_and_respects_focus_mode() -> No
     app.camera_controller.start_focus_point(Vec3(model.player.x, 8.0, model.player.z))
 
     assert app.presentation_camera(base_camera) is base_camera
+
+
+def test_affine_scene_camera_applies_reactions_as_zoom_and_fx_offset() -> None:
+    raw = make_runtime_raw(shake=True, pulse=True)
+    model = make_model(raw)
+    app = make_app(raw, model)
+    app.projection_mode = "affine"
+    app.affine_projection_profile = AffineProjectionProfile.from_config(raw)
+    base_camera = camera_for_model(raw, model)
+    app.effects.process_events([make_event(model, "discharge_succeeded")], model)
+    app.effects.update(0.06, model)
+
+    scene_camera = app.scene_camera(base_camera)
+
+    assert isinstance(scene_camera, AffineCameraState)
+    assert scene_camera.zoom > 1.0
+    assert abs(scene_camera.fx_offset_x) > 0.0 or abs(scene_camera.fx_offset_y) > 0.0
+    assert scene_camera.anchor_x == pytest.approx(base_camera.anchor_x)
+    assert scene_camera.anchor_y == pytest.approx(base_camera.anchor_y)
+    assert scene_camera.yaw_deg == pytest.approx(float(raw["camera"]["yaw_deg"]))
+    assert scene_camera.pitch_deg == pytest.approx(float(raw["camera"]["pitch_deg"]))
+
+
+def test_affine_scene_camera_keeps_projection_fixed_for_overview_like_camera() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    app.projection_mode = "affine"
+    app.affine_projection_profile = AffineProjectionProfile.from_config(raw)
+    runtime = load_runtime_config("medium")
+    base_distance = float(raw["camera"]["base_distance"])
+    overview_like = CameraState(
+        target=Vec3(768.0, 0.0, 768.0),
+        yaw_deg=35.0,
+        pitch_deg=25.0,
+        horizontal_fov_deg=float(raw["camera"]["horizontal_fov_deg"]),
+        distance=base_distance / 0.7,
+        near=float(raw["camera"]["near"]),
+        far=float(raw["camera"]["far"]),
+        anchor_x=float(raw["camera"]["screen_anchor"][0]),
+        anchor_y=float(raw["camera"]["screen_anchor"][1]),
+        viewport_width=runtime.screen_width,
+        viewport_height=runtime.screen_height,
+    )
+
+    scene_camera = app.scene_camera(overview_like)
+
+    assert isinstance(scene_camera, AffineCameraState)
+    assert scene_camera.target == overview_like.target
+    assert scene_camera.zoom == pytest.approx(0.7)
+    assert scene_camera.yaw_deg == pytest.approx(float(raw["camera"]["yaw_deg"]))
+    assert scene_camera.pitch_deg == pytest.approx(float(raw["camera"]["pitch_deg"]))
 
 
 def test_enemy_inspection_event_starts_focus_on_enemy_position() -> None:
