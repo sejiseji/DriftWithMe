@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from drift_with_me.app import DriftWithMeApp, PointerSnapshot
+from drift_with_me.camera import CameraController
 from drift_with_me.config import load_runtime_config
 from drift_with_me.input import DoubleTapMoveRecognizer
 from drift_with_me.math3d import (
@@ -37,6 +38,13 @@ def make_app_shell() -> tuple[DriftWithMeApp, CameraState]:
     app.runtime = runtime
     app.world = world
     app.model = GameModel(runtime.raw, world)
+    app.camera_controller = CameraController(
+        runtime.raw,
+        world,
+        runtime.screen_width,
+        runtime.screen_height,
+        Vec3(app.model.player.x, 0.0, app.model.player.z),
+    )
     app.renderer = Renderer(None)
     app.last_denied_reason = ""
     app.hitstop_remaining = 0.0
@@ -57,6 +65,17 @@ def make_app_shell() -> tuple[DriftWithMeApp, CameraState]:
         runtime.screen_height,
     )
     return app, camera
+
+
+def test_camera_lookahead_direction_runs_in_default_perspective_mode() -> None:
+    app, _camera = make_app_shell()
+    app.projection_mode = "perspective"
+    app.model.auto_move_path = [(app.model.player.x + 64.0, app.model.player.z)]
+
+    lookahead_x, lookahead_z = app.camera_lookahead_direction()
+
+    assert lookahead_x == pytest.approx(64.0)
+    assert lookahead_z == pytest.approx(0.0)
 
 
 def affine_camera(camera: CameraState):

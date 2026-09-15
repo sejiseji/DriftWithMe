@@ -137,8 +137,6 @@ class DriftWithMeApp:
         )
 
     def camera_lookahead_direction(self) -> tuple[float | None, float | None]:
-        if self.projection_mode != "affine":
-            return None, None
         if (
             self.camera_controller.focus is not None
             or self.camera_controller.sequence is not None
