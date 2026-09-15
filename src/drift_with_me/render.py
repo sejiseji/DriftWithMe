@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 from drift_with_me.effects import EffectSystem, EnemySnapshot
@@ -21,6 +22,24 @@ from drift_with_me.world import (
     WorldData,
 )
 
+ATMOSPHERE_WEAK_PALETTE = ((0, 1), (1, 5))
+ATMOSPHERE_MID_PALETTE = ((0, 1), (1, 5), (2, 5), (4, 5), (8, 5))
+ATMOSPHERE_FAR_PALETTE = (
+    (0, 5),
+    (1, 5),
+    (2, 5),
+    (3, 11),
+    (4, 5),
+    (5, 13),
+    (8, 5),
+    (9, 13),
+    (10, 13),
+    (11, 12),
+    (12, 13),
+    (14, 13),
+    (15, 13),
+)
+
 
 @dataclass(frozen=True)
 class DrawCommand:
@@ -28,6 +47,7 @@ class DrawCommand:
     layer_bias: int
     stable_id: str
     draw: Callable[[], None]
+    atmosphere_strength: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -113,6 +133,7 @@ class Renderer:
         self.player_sprite_flipped_x = False
         self.player_sprite_view_name = "idle"
         self.buddy_sprite_view_name = "front_right"
+        self._atmosphere_config: dict = {}
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -124,6 +145,7 @@ class Renderer:
         effects: EffectSystem | None = None,
     ) -> None:
         pyxel = self.pyxel
+        self._atmosphere_config = model.config.get("atmosphere", {})
         pyxel.cls(1)
         self.draw_ground(model.world, camera)
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
@@ -134,7 +156,8 @@ class Renderer:
         for command in sorted(
             commands, key=lambda item: (-item.depth, item.layer_bias, item.stable_id)
         ):
-            command.draw()
+            with self.atmosphere_palette(camera, command.depth, command.atmosphere_strength):
+                command.draw()
         self.draw_barrier(model, camera)
         if self.player_is_occluded(model, camera, presentation_time):
             self.draw_player_outline(model, camera, presentation_time)
@@ -224,6 +247,7 @@ class Renderer:
                     draw=lambda detail=detail: self.draw_ground_detail(
                         model, detail, camera, model.world_tick
                     ),
+                    atmosphere_strength=1.0,
                 )
             )
         for obj in visible_objects:
@@ -239,6 +263,7 @@ class Renderer:
                     layer_bias=0,
                     stable_id=obj.id,
                     draw=lambda obj=obj: self.draw_object(model, obj, camera),
+                    atmosphere_strength=self.object_atmosphere_strength(obj),
                 )
             )
         for enemy in model.enemies:
@@ -251,6 +276,7 @@ class Renderer:
                     layer_bias=0,
                     stable_id=enemy.id,
                     draw=lambda enemy=enemy: self.draw_enemy(model, enemy, camera),
+                    atmosphere_strength=0.35,
                 )
             )
         if effects is not None:
@@ -266,6 +292,7 @@ class Renderer:
                         draw=lambda snapshot=snapshot: self.draw_enemy_snapshot(
                             model, snapshot, camera
                         ),
+                        atmosphere_strength=0.35,
                     )
                 )
         if model.bubble is not None:
@@ -277,6 +304,7 @@ class Renderer:
                         layer_bias=-1,
                         stable_id="bubble",
                         draw=lambda: self.draw_bubble(model, camera),
+                        atmosphere_strength=0.0,
                     )
                 )
         buddy_anchor = camera.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
@@ -287,6 +315,7 @@ class Renderer:
                     layer_bias=0,
                     stable_id="buddy",
                     draw=lambda: self.draw_buddy(model, camera, presentation_time),
+                    atmosphere_strength=0.15,
                 )
             )
         player_anchor = camera.project(Vec3(model.player.x, 0.0, model.player.z))
@@ -297,6 +326,7 @@ class Renderer:
                     layer_bias=0,
                     stable_id="player",
                     draw=lambda: self.draw_player(model, camera, presentation_time),
+                    atmosphere_strength=0.1,
                 )
             )
         self.last_stats = RenderStats(
@@ -1266,6 +1296,61 @@ class Renderer:
     def camera_is_affine(self, camera: CameraState) -> bool:
         return getattr(camera, "projection_kind", "perspective") == "affine"
 
+    def object_atmosphere_strength(self, obj: StaticObject) -> float:
+        if obj.kind in {"sprite_prop", "reactive_prop"}:
+            return 1.0
+        if obj.kind in {"water_station", "solar_station", "ambient_maintenance"}:
+            return 0.7
+        if obj.solid:
+            return 0.8
+        return 0.5
+
+    @contextmanager
+    def atmosphere_palette(self, camera: CameraState, depth: float, strength: float):
+        mappings = self.atmosphere_palette_mappings(camera, depth, strength)
+        if not mappings or self.pyxel is None:
+            yield
+            return
+        for source, target in mappings:
+            self.pyxel.pal(source, target)
+        try:
+            yield
+        finally:
+            self.pyxel.pal()
+
+    def atmosphere_palette_mappings(
+        self, camera: CameraState, depth: float, strength: float
+    ) -> tuple[tuple[int, int], ...]:
+        config = self._atmosphere_config
+        if not bool(config.get("enabled", False)):
+            return ()
+        if bool(config.get("affine_only", True)) and not self.camera_is_affine(camera):
+            return ()
+        if strength <= 0.0 or not math.isfinite(strength) or not math.isfinite(depth):
+            return ()
+
+        reference_depth = float(
+            config.get(
+                "reference_depth",
+                getattr(getattr(camera, "profile", None), "reference_depth", 480.0),
+            )
+        )
+        near_offset = float(config.get("near_depth_offset", 64.0))
+        far_offset = float(config.get("far_depth_offset", 176.0))
+        relative_depth = depth - reference_depth
+        if relative_depth < near_offset:
+            return ()
+
+        base_stage = 1.0 if relative_depth < far_offset else 2.0
+        effective_stage = base_stage * strength
+        if effective_stage < 0.25:
+            return ()
+        if effective_stage < 0.75:
+            return ATMOSPHERE_WEAK_PALETTE
+        if effective_stage < 1.5:
+            return ATMOSPHERE_MID_PALETTE
+        return ATMOSPHERE_FAR_PALETTE
+
     def object_uses_box_geometry(self, obj: StaticObject) -> bool:
         return obj.solid and obj.kind != "sprite_prop"
 
@@ -1292,6 +1377,7 @@ class Renderer:
                 draw=lambda points=points, face_color=face_color: self.draw_projected_box_face(
                     points, face_color
                 ),
+                atmosphere_strength=self.object_atmosphere_strength(obj),
             )
             for depth, name, points, face_color in projected_faces
         ]

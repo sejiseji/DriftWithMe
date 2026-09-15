@@ -182,6 +182,12 @@
       "ground_epsilon": 1e-9
     }
   },
+  "atmosphere": {
+    "enabled": true,
+    "affine_only": true,
+    "near_depth_offset": 64.0,
+    "far_depth_offset": 176.0
+  },
   "resources": {
     "water_max": 100.0,
     "water_start": 100.0,

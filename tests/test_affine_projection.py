@@ -13,7 +13,7 @@ from drift_with_me.math3d import (
     screen_to_ground_affine,
 )
 from drift_with_me.model import GameModel
-from drift_with_me.render import Renderer
+from drift_with_me.render import ATMOSPHERE_FAR_PALETTE, ATMOSPHERE_WEAK_PALETTE, Renderer
 from drift_with_me.world import load_world_data
 
 
@@ -241,6 +241,32 @@ def test_affine_solid_box_occludes_player_with_projected_bounds() -> None:
     )
 
     assert renderer.player_is_occluded(model, affine, 0.0)
+
+
+def test_affine_atmosphere_palette_depth_preserves_gameplay_entities() -> None:
+    runtime, _world, perspective, _profile, affine = make_affine_camera()
+    renderer = Renderer(None)
+    renderer._atmosphere_config = runtime.raw["atmosphere"]
+    far_depth = affine.profile.reference_depth + 220.0
+
+    assert renderer.atmosphere_palette_mappings(perspective, far_depth, 1.0) == ()
+    assert renderer.atmosphere_palette_mappings(affine, far_depth, 0.1) == ()
+    assert renderer.atmosphere_palette_mappings(affine, far_depth, 0.35) == ATMOSPHERE_WEAK_PALETTE
+    assert renderer.atmosphere_palette_mappings(affine, far_depth, 1.0) == ATMOSPHERE_FAR_PALETTE
+
+
+def test_affine_atmosphere_palette_has_near_mid_far_bands() -> None:
+    runtime, _world, _perspective, _profile, affine = make_affine_camera()
+    renderer = Renderer(None)
+    renderer._atmosphere_config = runtime.raw["atmosphere"]
+    reference = affine.profile.reference_depth
+
+    assert renderer.atmosphere_palette_mappings(affine, reference + 32.0, 1.0) == ()
+    assert renderer.atmosphere_palette_mappings(affine, reference + 96.0, 1.0)
+    assert renderer.atmosphere_palette_mappings(affine, reference + 220.0, 1.0)
+    assert renderer.atmosphere_palette_mappings(
+        affine, reference + 96.0, 1.0
+    ) != renderer.atmosphere_palette_mappings(affine, reference + 220.0, 1.0)
 
 
 def test_affine_camera_ignores_source_yaw_pitch_but_keeps_target_anchor_and_zoom() -> None:
