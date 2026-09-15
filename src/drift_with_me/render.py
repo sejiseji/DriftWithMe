@@ -13,7 +13,13 @@ from drift_with_me.hex_assets import (
     draw_scaled_sprite,
     placement_for_upright_height_billboard,
 )
-from drift_with_me.math3d import CameraState, ProjectedPoint, Vec3, screen_to_ground_point
+from drift_with_me.math3d import (
+    CameraState,
+    ProjectedPoint,
+    Vec3,
+    screen_to_ground_affine,
+    screen_to_ground_point,
+)
 from drift_with_me.model import GameModel
 from drift_with_me.world import (
     BakedGroundPatch,
@@ -485,7 +491,12 @@ class Renderer:
     def visible_baked_ground_patches(
         self, model: GameModel, camera: CameraState
     ) -> tuple[BakedGroundPatch, ...]:
-        patches = [patch for patch in model.world.baked_ground_patches if patch.enabled]
+        projection_kind = "affine" if self.camera_is_affine(camera) else "perspective"
+        patches = [
+            patch
+            for patch in model.world.baked_ground_patches
+            if patch.enabled and patch.projection_kind == projection_kind
+        ]
         patches.sort(
             key=lambda patch: (
                 (patch.x - camera.target.x) * (patch.x - camera.target.x)
@@ -496,8 +507,8 @@ class Renderer:
         return tuple(patches)
 
     def baked_ground_camera_supported(self, model: GameModel, camera: CameraState) -> bool:
-        if getattr(camera, "projection_kind", "perspective") == "affine":
-            return False
+        if self.camera_is_affine(camera):
+            return True
         camera_config = model.config["camera"]
         return (
             abs(camera.yaw_deg - float(camera_config["yaw_deg"])) <= 0.01
@@ -519,19 +530,7 @@ class Renderer:
             return self.fallback_baked_ground_image(patch, camera, bucket_x, bucket_z)
         self._baked_ground_builds_this_frame += 1
 
-        reference_camera = CameraState(
-            target=Vec3(bucket_x, 0.0, bucket_z),
-            yaw_deg=camera.yaw_deg,
-            pitch_deg=camera.pitch_deg,
-            horizontal_fov_deg=camera.horizontal_fov_deg,
-            distance=camera.distance,
-            near=camera.near,
-            far=camera.far,
-            anchor_x=camera.anchor_x,
-            anchor_y=camera.anchor_y,
-            viewport_width=camera.viewport_width,
-            viewport_height=camera.viewport_height,
-        )
+        reference_camera = self.baked_ground_reference_camera(camera, bucket_x, bucket_z)
         bounds = self.ground_source_screen_bounds(
             reference_camera,
             patch.min_x,
@@ -559,7 +558,7 @@ class Renderer:
             screen_y = top + (py + 0.5) * sample
             for px in range(width):
                 screen_x = left + (px + 0.5) * sample
-                ground = screen_to_ground_point(reference_camera, screen_x, screen_y)
+                ground = self.baked_ground_screen_to_ground(reference_camera, screen_x, screen_y)
                 if ground is None or not patch.contains(ground.x, ground.y, margin=0.5):
                     continue
                 color = self.baked_ground_color_at(model, patch, ground.x, ground.y)
@@ -580,6 +579,30 @@ class Renderer:
         self._baked_ground_cache[key] = baked
         return baked
 
+    def baked_ground_reference_camera(
+        self, camera: CameraState, bucket_x: float, bucket_z: float
+    ) -> CameraState:
+        if self.camera_is_affine(camera):
+            return camera
+        return CameraState(
+            target=Vec3(bucket_x, 0.0, bucket_z),
+            yaw_deg=camera.yaw_deg,
+            pitch_deg=camera.pitch_deg,
+            horizontal_fov_deg=camera.horizontal_fov_deg,
+            distance=camera.distance,
+            near=camera.near,
+            far=camera.far,
+            anchor_x=camera.anchor_x,
+            anchor_y=camera.anchor_y,
+            viewport_width=camera.viewport_width,
+            viewport_height=camera.viewport_height,
+        )
+
+    def baked_ground_screen_to_ground(self, camera: CameraState, screen_x: float, screen_y: float):
+        if self.camera_is_affine(camera):
+            return screen_to_ground_affine(camera, screen_x, screen_y)
+        return screen_to_ground_point(camera, screen_x, screen_y)
+
     def baked_ground_cache_key(
         self,
         patch: BakedGroundPatch,
@@ -587,6 +610,20 @@ class Renderer:
         bucket_x: float,
         bucket_z: float,
     ) -> tuple[object, ...]:
+        if self.camera_is_affine(camera):
+            profile = getattr(camera, "profile", None)
+            return (
+                patch.id,
+                patch.group,
+                "affine",
+                getattr(profile, "profile_id", "unknown"),
+                camera.viewport_width,
+                camera.viewport_height,
+                round(getattr(camera, "effective_scale", 1.0), 4),
+                patch.tile_world_size,
+                patch.default_layers,
+                tuple((tile.cell_x, tile.cell_z, tile.layers) for tile in patch.tiles),
+            )
         return (
             patch.id,
             patch.group,
@@ -610,6 +647,8 @@ class Renderer:
         bucket_z: float,
     ) -> BakedGroundImage | None:
         best: tuple[float, BakedGroundImage] | None = None
+        if self.camera_is_affine(camera):
+            return None
         profile = (
             camera.viewport_width,
             camera.viewport_height,
@@ -631,6 +670,8 @@ class Renderer:
     def baked_ground_camera_bucket(
         self, patch: BakedGroundPatch, camera: CameraState
     ) -> tuple[float, float]:
+        if self.camera_is_affine(camera):
+            return patch.x, patch.z
         bucket = patch.camera_bucket_world_size
         if bucket <= 1e-6:
             return patch.x, patch.z

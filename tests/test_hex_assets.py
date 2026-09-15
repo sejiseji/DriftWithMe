@@ -502,7 +502,12 @@ import pyxel
 
 from drift_with_me.config import load_runtime_config
 from drift_with_me.hex_assets import load_runtime_sprite_library
-from drift_with_me.math3d import CameraState, Vec3
+from drift_with_me.math3d import (
+    AffineProjectionProfile,
+    CameraState,
+    Vec3,
+    affine_camera_from_perspective,
+)
 from drift_with_me.model import GameModel, InteractionState
 from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
@@ -819,16 +824,22 @@ assert len(model.world.ground_surfaces) == 0
 assert renderer.ground_surface_sprite_asset(model, "concrete_clean_a").definition.asset_id == (
     "concrete_clean_a_64"
 )
-assert len(model.world.baked_ground_patches) == 10
+assert len(model.world.baked_ground_patches) == 14
 legacy_patch = model.world.baked_ground_patches[0]
 assert legacy_patch.id == "spawn_affine_ground_patch"
 assert legacy_patch.group == "spawn_192_legacy_compare"
 assert not legacy_patch.enabled
+affine_patches = [
+    patch for patch in model.world.baked_ground_patches if patch.group == "affine_static_128"
+]
+assert len(affine_patches) == 4
+assert all(patch.enabled and patch.projection_kind == "affine" for patch in affine_patches)
+assert all(patch.width == 128.0 for patch in affine_patches)
 small_patches = [
     patch for patch in model.world.baked_ground_patches if patch.group == "spawn_64_bucket16"
 ]
 assert len(small_patches) == 9
-assert not any(patch.enabled for patch in model.world.baked_ground_patches)
+assert not any(patch.enabled for patch in [legacy_patch, *small_patches])
 active_patches = renderer.draw_baked_ground_patches(model, camera)
 assert active_patches == ()
 assert not renderer.point_in_active_baked_ground_patch(detail.x, detail.z)
@@ -841,6 +852,42 @@ renderer.draw_scene(model, camera, presentation_time=0.0, debug=False)
 assert renderer.last_stats.visible_baked_ground_patches == 0
 assert renderer.last_stats.visible_ground_details >= 4
 assert renderer.last_stats.baked_ground_cache_size == 0
+profile = AffineProjectionProfile.from_config(runtime.raw)
+affine = affine_camera_from_perspective(
+    camera,
+    profile,
+    base_distance=float(runtime.raw["camera"]["base_distance"]),
+)
+renderer.max_baked_ground_builds_per_frame = 8
+pyxel.cls(3)
+active_patches = renderer.draw_baked_ground_patches(model, affine)
+assert sorted(patch.id for patch in active_patches) == sorted(
+    patch.id for patch in affine_patches
+)
+assert renderer.point_in_active_baked_ground_patch(detail.x, detail.z)
+assert renderer.last_stats.baked_ground_cache_size == 0
+renderer.draw_scene(model, affine, presentation_time=0.0, debug=False)
+assert renderer.last_stats.visible_baked_ground_patches == 4
+assert renderer.last_stats.visible_ground_details < len(model.world.ground_details)
+assert renderer.last_stats.baked_ground_cache_size == 4
+patch = affine_patches[0]
+bucket = renderer.baked_ground_camera_bucket(patch, affine)
+first_key = renderer.baked_ground_cache_key(patch, affine, *bucket)
+shifted_camera = affine_camera_from_perspective(
+    CameraState.from_config(
+        runtime.raw,
+        Vec3(model.player.x + 32.0, 0.0, model.player.z + 32.0),
+        runtime.screen_width,
+        runtime.screen_height,
+    ),
+    profile,
+    base_distance=float(runtime.raw["camera"]["base_distance"]),
+)
+shifted_bucket = renderer.baked_ground_camera_bucket(patch, shifted_camera)
+shifted_key = renderer.baked_ground_cache_key(patch, shifted_camera, *shifted_bucket)
+assert bucket == (patch.x, patch.z)
+assert shifted_bucket == (patch.x, patch.z)
+assert first_key == shifted_key
 pyxel.cls(3)
 assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
 placement = renderer.player_sprite_placement(model, camera, presentation_time=0.0)

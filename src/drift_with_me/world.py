@@ -84,6 +84,7 @@ class BakedGroundPatch:
     id: str
     group: str
     enabled: bool
+    projection_kind: str
     x: float
     z: float
     width: float
@@ -359,6 +360,7 @@ class WorldData:
             id=str(item["id"]),
             group=str(item.get("group", "default")),
             enabled=bool(item.get("enabled", True)),
+            projection_kind=str(item.get("projection_kind", "perspective")),
             x=float(center[0]),
             z=float(center[1]),
             width=float(size[0]),
