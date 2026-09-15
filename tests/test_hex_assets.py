@@ -108,6 +108,12 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "fallen_leaves_a": "f1b36b299cbd6bf2f1dbcb45e514d5603ba5f50e3c177594e1d0bb09dd0684cd",
     "crack_sprout_a": "31afbd889e88698f704b94d06542c1196eb2be6ccdaa8543ae4bbc057afea7b7",
     "rubble_small_a": "ba84a6adb25c1272dc677101cbc3e941f629403bd9c9d4ffd980e5ff8e6a590e",
+    "grass_patch_low_a": "a15dc2ea6edb1a5306b358136ff37cb463158ed6ce764af7beae7b114202a07e",
+    "grass_patch_low_b": "854dfd407874d091f6c5eab0757d058f3da8999a24fed7f9c27b2ccb078b5218",
+    "grass_patch_tall_a": "2acf33ebd448bf4757960169e4583df102fb580a4acafec83457a3b7328f482a",
+    "grass_patch_tall_b": "d5e0c7fc7e59a647472e050dae934904af2ffc7eb19c6e66a10ddcc04d826037",
+    "grass_edge_a": "ab61e3da8b6005d4a11eb5c1a446a6e7b279aea8422138895d38f11b51fbd977",
+    "grass_scatter_a": "8eaca3d8803852bea6446d34211cb05cfa2921fbb5ea76d99fc211156ffe99a8",
 }
 ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "water_station_active": {
@@ -194,6 +200,12 @@ ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "fallen_leaves_a": {"0", "1", "2", "4", "5", "9", "A", "C", "D", "E", "F"},
     "crack_sprout_a": {"0", "1", "2", "3", "4", "5", "9", "A", "D", "E", "F"},
     "rubble_small_a": {"0", "1", "2", "4", "5", "7", "9", "A", "D", "E", "F"},
+    "grass_patch_low_a": {"0", "1", "3", "A", "B"},
+    "grass_patch_low_b": {"0", "1", "3", "5", "A", "B", "D"},
+    "grass_patch_tall_a": {"0", "1", "3", "5", "A", "B"},
+    "grass_patch_tall_b": {"0", "1", "3", "5", "A", "B", "F"},
+    "grass_edge_a": {"0", "1", "3", "4", "5", "A", "B"},
+    "grass_scatter_a": {"0", "1", "3", "A", "B"},
 }
 
 
@@ -633,6 +645,12 @@ environment_asset_ids = {{
     "fallen_leaves_a": "fallen_leaves_a_64",
     "crack_sprout_a": "crack_sprout_a_64",
     "rubble_small_a": "rubble_small_a_64",
+    "grass_patch_low_a": "grass_patch_low_a_64",
+    "grass_patch_low_b": "grass_patch_low_b_64",
+    "grass_patch_tall_a": "grass_patch_tall_a_64",
+    "grass_patch_tall_b": "grass_patch_tall_b_64",
+    "grass_edge_a": "grass_edge_a_64",
+    "grass_scatter_a": "grass_scatter_a_64",
 }}
 environment_world_sizes = {{
     "water_station_active": (36.0, 48.0),
@@ -661,6 +679,12 @@ environment_world_sizes = {{
     "fallen_leaves_a": (26.0, 16.0),
     "crack_sprout_a": (28.0, 18.0),
     "rubble_small_a": (32.0, 20.0),
+    "grass_patch_low_a": (42.0, 20.0),
+    "grass_patch_low_b": (42.0, 20.0),
+    "grass_patch_tall_a": (46.0, 46.0),
+    "grass_patch_tall_b": (52.0, 52.0),
+    "grass_edge_a": (48.0, 28.0),
+    "grass_scatter_a": (44.0, 24.0),
 }}
 environment_colkeys = {{
     "water_station_active": 8,
@@ -683,6 +707,12 @@ environment_colkeys = {{
     "fallen_leaves_a": 8,
     "crack_sprout_a": 8,
     "rubble_small_a": 8,
+    "grass_patch_low_a": 8,
+    "grass_patch_low_b": 8,
+    "grass_patch_tall_a": 8,
+    "grass_patch_tall_b": 8,
+    "grass_edge_a": 8,
+    "grass_scatter_a": 8,
 }}
 environment_anchors = {{
     "water_station_active": (48.0, 127.0),
@@ -705,6 +735,12 @@ environment_anchors = {{
     "fallen_leaves_a": (32.0, 63.0),
     "crack_sprout_a": (32.0, 63.0),
     "rubble_small_a": (32.0, 63.0),
+    "grass_patch_low_a": (32.0, 63.0),
+    "grass_patch_low_b": (32.0, 63.0),
+    "grass_patch_tall_a": (32.0, 63.0),
+    "grass_patch_tall_b": (32.0, 63.0),
+    "grass_edge_a": (32.0, 63.0),
+    "grass_scatter_a": (32.0, 63.0),
 }}
 fuse_frame = None
 for direction, expected_hash in fuse_assets.items():
@@ -745,6 +781,10 @@ for source_id, expected_hash in environment_hashes.items():
         "fallen_leaves_a",
         "crack_sprout_a",
         "rubble_small_a",
+        "grass_patch_low_a",
+        "grass_patch_low_b",
+        "grass_edge_a",
+        "grass_scatter_a",
     }}:
         assert env_asset.definition.projection_mode == "ground_decal_source_v1"
     else:
@@ -755,6 +795,8 @@ assert runtime.raw["assets"]["reactive_grass_low_asset"] == "grass_low_a_64"
 assert runtime.raw["assets"]["ground_rubble_asset"] == "rubble_small_a_64"
 assert runtime.raw["assets"]["concrete_clean_a_asset"] == "concrete_clean_a_64"
 assert runtime.raw["assets"]["decal_crack_grass_a_asset"] == "decal_crack_grass_a_64"
+assert runtime.raw["assets"]["grass_patch_low_a_asset"] == "grass_patch_low_a_64"
+assert runtime.raw["assets"]["grass_patch_tall_a_asset"] == "grass_patch_tall_a_64"
 assert sound_snapshot() == before_sound
 assert music_snapshot() == before_music
 assert pyxel.tilemaps[0].pget(0, 0) == before_tile
@@ -774,8 +816,10 @@ solar = model.world.object_by_id("solar_start")
 tree = model.world.object_by_id("tree_02")
 grass = model.world.object_by_id("grass_01")
 low_grass = model.world.object_by_id("grass_02")
+grassland_tall = model.world.object_by_id("grassland_tall_a_01")
 assert tap is not None and stopped_tap is not None and solar is not None
 assert tree is not None and grass is not None and low_grass is not None
+assert grassland_tall is not None
 assert renderer.object_sprite_asset(model, tap).definition.asset_id == "water_station_active_96"
 assert (
     renderer.object_sprite_asset(model, stopped_tap).definition.asset_id
@@ -798,7 +842,13 @@ assert (
     renderer.object_sprite_asset(model, low_grass).definition.projection_mode
     == "ground_decal_source_v1"
 )
-assert len(model.world.ground_details) == 12
+assert renderer.object_sprite_asset(model, grassland_tall).definition.asset_id == (
+    "grass_patch_tall_a_64"
+)
+assert renderer.object_sprite_asset(model, grassland_tall).definition.projection_mode == (
+    "upright_height_billboard_v1"
+)
+assert len(model.world.ground_details) == 22
 detail = model.world.ground_details[0]
 assert detail.id == "nature_review_pebbles"
 assert renderer.ground_detail_sprite_asset(model, detail).definition.asset_id == "pebbles_a_64"
@@ -812,6 +862,23 @@ assert authored_detail_assets == [
     "crack_sprout_a_64",
     "rubble_small_a_64",
 ]
+grassland_detail_assets = {{
+    item.id: renderer.ground_detail_sprite_asset(model, item).definition.asset_id
+    for item in model.world.ground_details
+    if item.id.startswith("grassland_")
+}}
+assert grassland_detail_assets == {{
+    "grassland_low_a_spawn_west": "grass_patch_low_a_64",
+    "grassland_low_b_spawn_east": "grass_patch_low_b_64",
+    "grassland_edge_spawn_north": "grass_edge_a_64",
+    "grassland_scatter_spawn_south": "grass_scatter_a_64",
+    "grassland_low_a_mid_path": "grass_patch_low_a_64",
+    "grassland_low_b_mid_path": "grass_patch_low_b_64",
+    "grassland_edge_mid_path": "grass_edge_a_64",
+    "grassland_scatter_mid_path": "grass_scatter_a_64",
+    "grassland_low_a_far_plaza": "grass_patch_low_a_64",
+    "grassland_edge_far_plaza": "grass_edge_a_64",
+}}
 pyxel.cls(3)
 for item in model.world.ground_details[:4]:
     assert renderer.draw_ground_detail_sprite(model, item, camera)

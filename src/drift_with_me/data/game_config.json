@@ -340,7 +340,13 @@
     "pebbles_a_asset": "pebbles_a_64",
     "fallen_leaves_a_asset": "fallen_leaves_a_64",
     "crack_sprout_a_asset": "crack_sprout_a_64",
-    "rubble_small_a_asset": "rubble_small_a_64"
+    "rubble_small_a_asset": "rubble_small_a_64",
+    "grass_patch_low_a_asset": "grass_patch_low_a_64",
+    "grass_patch_low_b_asset": "grass_patch_low_b_64",
+    "grass_patch_tall_a_asset": "grass_patch_tall_a_64",
+    "grass_patch_tall_b_asset": "grass_patch_tall_b_64",
+    "grass_edge_a_asset": "grass_edge_a_64",
+    "grass_scatter_a_asset": "grass_scatter_a_64"
   },
   "ui": {
     "locale": "ja",

@@ -40,6 +40,17 @@ Nature and small ground-detail assets were updated on 2026-09-14 from the clean 
 
 All clean nature v0.3 assets use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. Existing runtime keys now resolve to these v0.3 assets: `reactive_grass_tall` -> `grass_tall_a`, `reactive_grass_low` -> `grass_low_a`, `ground_pebbles` -> `pebbles_a`, `ground_fallen_leaves` -> `fallen_leaves_a`, `ground_crack_grass` -> `crack_sprout_a`, and `ground_rubble` -> `rubble_small_a`.
 
+Grassland direct v0.1 assets were connected on 2026-09-15. These six sprites are direct extractions from the approved source images, with no redraw, simplification, recolor, or palette replacement:
+
+- `grass_patch_low_a`: source hash `a15dc2ea6edb1a5306b358136ff37cb463158ed6ce764af7beae7b114202a07e`
+- `grass_patch_low_b`: source hash `854dfd407874d091f6c5eab0757d058f3da8999a24fed7f9c27b2ccb078b5218`
+- `grass_patch_tall_a`: source hash `2acf33ebd448bf4757960169e4583df102fb580a4acafec83457a3b7328f482a`
+- `grass_patch_tall_b`: source hash `d5e0c7fc7e59a647472e050dae934904af2ffc7eb19c6e66a10ddcc04d826037`
+- `grass_edge_a`: source hash `ab61e3da8b6005d4a11eb5c1a446a6e7b279aea8422138895d38f11b51fbd977`
+- `grass_scatter_a`: source hash `8eaca3d8803852bea6446d34211cb05cfa2921fbb5ea76d99fc211156ffe99a8`
+
+All grassland direct v0.1 sprites use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. Low grass, edge, and scatter assets are placed as authored `ground_details`; the two tall grass assets are `reactive_prop` upright billboards and use the existing AFF007-C bending path.
+
 After the initial v0.3 connection, the random per-chunk ground-detail generation was disabled (`visual_detail_per_chunk: 0`) because each 64 x 64 ground-projected source is expensive to project per frame in Pyxel Web. The authored one-each review placements remain active.
 
 On 2026-09-14, fixed-camera baked ground patch probes were added around the player spawn. They are intentionally runtime-generated caches, not new `.pyxres` or tilemap resources yet. The renderer samples the existing ground material/decal HEX sources into pre-projected images for the normal FOLLOW camera and draws those images with `blt`. While a patch is active, the legacy per-pixel ground projections inside the same world area are skipped. This gives us a low-risk performance probe before committing to generated `.pyxres`/`bltm` assets.
@@ -122,6 +133,11 @@ Transparent sprites use their asset-specific `colkey`. Most Wave1 transparent sp
 | Fallen leaves v0.3 | `ground_decal_source_v1` | 26 x 16 |
 | Crack sprout v0.3 | `ground_decal_source_v1` | 28 x 18 |
 | Small rubble v0.3 | `ground_decal_source_v1` | 32 x 20 |
+| Grass patch low A/B v0.1 | `ground_decal_source_v1` | 42 x 20 |
+| Grass edge v0.1 | `ground_decal_source_v1` | 48 x 28 |
+| Grass scatter v0.1 | `ground_decal_source_v1` | 44 x 24 |
+| Grass patch tall A v0.1 | `upright_height_billboard_v1` | 46 x 46 |
+| Grass patch tall B v0.1 | `upright_height_billboard_v1` | 52 x 52 |
 | Ground v0.2 concrete/decal review surfaces | `ground_decal_source_v1` | 32 x 32 |
 
 Water station source art is 96 x 128. The supplied recommendation was 32 x 48, but the runtime uses 36 x 48 to preserve the source aspect ratio under Pyxel's uniform `blt` scale.
@@ -129,6 +145,8 @@ Water station source art is 96 x 128. The supplied recommendation was 32 x 48, b
 Tall grass remains an upright billboard. Low grass and the small nature props are ground-projected decals so their non-square recommended world sizes can be preserved without stretching an upright billboard.
 
 Ground small objects and the v0.2 review surfaces use `ground_decal_source_v1`, which samples opaque HEX pixels and projects them onto the X/Z ground plane. This is intentionally separate from the vertical billboard path.
+
+The grassland pack recommends `32 x 46` and `28 x 52` for the two tall grass billboards. The current upright billboard loader and Pyxel `blt` path use uniform scaling and require the runtime world aspect ratio to match the 64 x 64 source canvas, so the first connection keeps the intended heights and uses square runtime sizes (`46 x 46`, `52 x 52`). Preserving narrower visual widths for these upright sprites requires a later non-uniform or row-sliced drawing path.
 
 ## Gameplay Boundaries
 
@@ -140,6 +158,8 @@ World data changes are limited to:
 - `sprite_world_size` for equipment and grass so visual culling matches the new sprites.
 - `ground_surfaces` is empty; large pavement review sheets are no longer active by default.
 - `ground_details` authored entries for sparse pebbles, fallen leaves, crack sprout, and small rubble.
+- `ground_details` also includes fixed grassland v0.1 low grass, edge, and scatter entries around spawn, the path, and the far plaza.
+- `objects` includes four grassland v0.1 tall grass `reactive_prop` entries. They are visual-only and do not change collision or pathing.
 - `visual_detail_per_chunk` is `0`; random small-detail scatter is deferred until a cheaper tiling/sprite path is available.
 
 ## Deferred

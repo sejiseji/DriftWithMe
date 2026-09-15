@@ -677,6 +677,74 @@
       "solid": false,
       "animation": "idle_2_frames",
       "reaction_radius": 24.0
+    },
+    {
+      "id": "grassland_tall_a_01",
+      "kind": "reactive_prop",
+      "position": [
+        288.0,
+        0.0,
+        416.0
+      ],
+      "visual": "grass_patch_tall_a",
+      "sprite_world_size": [
+        46.0,
+        46.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 32.0
+    },
+    {
+      "id": "grassland_tall_b_01",
+      "kind": "reactive_prop",
+      "position": [
+        352.0,
+        0.0,
+        464.0
+      ],
+      "visual": "grass_patch_tall_b",
+      "sprite_world_size": [
+        52.0,
+        52.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 32.0
+    },
+    {
+      "id": "grassland_tall_a_02",
+      "kind": "reactive_prop",
+      "position": [
+        560.0,
+        0.0,
+        688.0
+      ],
+      "visual": "grass_patch_tall_a",
+      "sprite_world_size": [
+        46.0,
+        46.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 32.0
+    },
+    {
+      "id": "grassland_tall_b_02",
+      "kind": "reactive_prop",
+      "position": [
+        720.0,
+        0.0,
+        784.0
+      ],
+      "visual": "grass_patch_tall_b",
+      "sprite_world_size": [
+        52.0,
+        52.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 32.0
     }
   ],
   "enemies": [
@@ -1820,6 +1888,106 @@
       ],
       "visual": "ground_rubble",
       "phase": 11,
+      "color": 11
+    },
+    {
+      "id": "grassland_low_a_spawn_west",
+      "center_xz": [
+        112.0,
+        288.0
+      ],
+      "visual": "grass_patch_low_a",
+      "phase": 12,
+      "color": 11
+    },
+    {
+      "id": "grassland_low_b_spawn_east",
+      "center_xz": [
+        248.0,
+        304.0
+      ],
+      "visual": "grass_patch_low_b",
+      "phase": 13,
+      "color": 11
+    },
+    {
+      "id": "grassland_edge_spawn_north",
+      "center_xz": [
+        184.0,
+        328.0
+      ],
+      "visual": "grass_edge_a",
+      "phase": 14,
+      "color": 11
+    },
+    {
+      "id": "grassland_scatter_spawn_south",
+      "center_xz": [
+        144.0,
+        360.0
+      ],
+      "visual": "grass_scatter_a",
+      "phase": 15,
+      "color": 11
+    },
+    {
+      "id": "grassland_low_a_mid_path",
+      "center_xz": [
+        320.0,
+        432.0
+      ],
+      "visual": "grass_patch_low_a",
+      "phase": 16,
+      "color": 11
+    },
+    {
+      "id": "grassland_low_b_mid_path",
+      "center_xz": [
+        392.0,
+        496.0
+      ],
+      "visual": "grass_patch_low_b",
+      "phase": 17,
+      "color": 11
+    },
+    {
+      "id": "grassland_edge_mid_path",
+      "center_xz": [
+        456.0,
+        544.0
+      ],
+      "visual": "grass_edge_a",
+      "phase": 18,
+      "color": 11
+    },
+    {
+      "id": "grassland_scatter_mid_path",
+      "center_xz": [
+        520.0,
+        592.0
+      ],
+      "visual": "grass_scatter_a",
+      "phase": 19,
+      "color": 11
+    },
+    {
+      "id": "grassland_low_a_far_plaza",
+      "center_xz": [
+        608.0,
+        720.0
+      ],
+      "visual": "grass_patch_low_a",
+      "phase": 20,
+      "color": 11
+    },
+    {
+      "id": "grassland_edge_far_plaza",
+      "center_xz": [
+        688.0,
+        768.0
+      ],
+      "visual": "grass_edge_a",
+      "phase": 21,
       "color": 11
     }
   ]

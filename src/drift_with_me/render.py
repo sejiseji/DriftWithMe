@@ -992,6 +992,9 @@ class Renderer:
             key = "tree_thin_asset" if obj.visual == "tree_thin_b" else "tree_leafy_asset"
             return self.configured_sprite_asset(model, key)
         if obj.kind == "reactive_prop":
+            asset = self.configured_sprite_asset(model, f"{obj.visual}_asset")
+            if asset is not None:
+                return asset
             key = (
                 "reactive_grass_low_asset"
                 if obj.visual == "reactive_grass_low"
