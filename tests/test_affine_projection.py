@@ -24,6 +24,10 @@ from drift_with_me.render import (
     ATMOSPHERE_FAR_DITHER_CELLS,
     ATMOSPHERE_FAR_PALETTE,
     ATMOSPHERE_MID_DITHER_CELLS,
+    ATMOSPHERE_SHADOW_FAR_CELLS,
+    ATMOSPHERE_SHADOW_IMPORTANT_MIN_CELLS,
+    ATMOSPHERE_SHADOW_MID_CELLS,
+    ATMOSPHERE_SHADOW_NEAR_CELLS,
     ATMOSPHERE_WEAK_PALETTE,
     Renderer,
 )
@@ -323,6 +327,31 @@ def test_affine_atmosphere_dither_has_near_mid_far_bands() -> None:
         ATMOSPHERE_FAR_DITHER_CELLS * 0.7
     )
     assert renderer.atmosphere_dither_cells(affine, reference + 220.0, 0.35) == 0
+
+
+def test_affine_atmosphere_shadow_attenuates_by_depth() -> None:
+    runtime, _world, perspective, _profile, affine = make_affine_camera()
+    renderer = Renderer(None)
+    renderer._atmosphere_config = runtime.raw["atmosphere"]
+    reference = affine.profile.reference_depth
+
+    assert renderer.atmosphere_shadow_dither_cells(perspective, reference + 220.0) == 16
+    assert (
+        renderer.atmosphere_shadow_dither_cells(affine, reference + 32.0)
+        == ATMOSPHERE_SHADOW_NEAR_CELLS
+    )
+    assert (
+        renderer.atmosphere_shadow_dither_cells(affine, reference + 96.0)
+        == ATMOSPHERE_SHADOW_MID_CELLS
+    )
+    assert (
+        renderer.atmosphere_shadow_dither_cells(affine, reference + 220.0)
+        == ATMOSPHERE_SHADOW_FAR_CELLS
+    )
+    assert (
+        renderer.atmosphere_shadow_dither_cells(affine, reference + 220.0, important_actor=True)
+        == ATMOSPHERE_SHADOW_IMPORTANT_MIN_CELLS
+    )
 
 
 def test_atmosphere_dither_frame_preserves_colkey_and_reuses_cache() -> None:

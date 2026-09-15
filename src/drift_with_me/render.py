@@ -50,6 +50,10 @@ ATMOSPHERE_MID_DITHER_CELLS = 4
 ATMOSPHERE_FAR_DITHER_CELLS = 8
 ATMOSPHERE_DITHER_MIN_STRENGTH = 0.5
 ATMOSPHERE_DITHER_FOG_COLOR = 13
+ATMOSPHERE_SHADOW_NEAR_CELLS = 12
+ATMOSPHERE_SHADOW_MID_CELLS = 8
+ATMOSPHERE_SHADOW_FAR_CELLS = 4
+ATMOSPHERE_SHADOW_IMPORTANT_MIN_CELLS = 6
 
 
 @dataclass(frozen=True)
@@ -1072,12 +1076,12 @@ class Renderer:
         shadow = camera.project(Vec3(model.player.x, 0.0, model.player.z))
         if shadow is not None:
             radius = self.depth_scaled_radius(camera, shadow.depth, numerator=1200, minimum=3)
-            self.pyxel.elli(
+            self.draw_shadow_ellipse(
                 int(shadow.x - radius),
                 int(shadow.y - radius // 3),
                 radius * 2,
                 max(2, radius // 2),
-                0,
+                self.atmosphere_shadow_dither_cells(camera, shadow.depth, important_actor=True),
             )
         if self.draw_player_sprite(model, camera, presentation_time):
             return
@@ -1286,12 +1290,12 @@ class Renderer:
         shadow = camera.project(Vec3(buddy.x, 0.0, buddy.z))
         if shadow is not None:
             radius = self.depth_scaled_radius(camera, shadow.depth, numerator=700, minimum=2)
-            self.pyxel.elli(
+            self.draw_shadow_ellipse(
                 int(shadow.x - radius),
                 int(shadow.y - max(1, radius // 4)),
                 radius * 2,
                 max(1, radius // 2),
-                0,
+                self.atmosphere_shadow_dither_cells(camera, shadow.depth, important_actor=True),
             )
         bob = math.sin(presentation_time * math.tau / 1.3) * 2.0
         bob += self.interaction_actor_jump(model, "energy_refill")
@@ -1445,6 +1449,75 @@ class Renderer:
         else:
             base_cells = int(config.get("far_dither_cells", ATMOSPHERE_FAR_DITHER_CELLS))
         return max(0, min(16, int(round(base_cells * strength))))
+
+    def atmosphere_shadow_dither_cells(
+        self, camera: CameraState, depth: float, *, important_actor: bool = False
+    ) -> int:
+        config = self._atmosphere_config
+        if not bool(config.get("enabled", False)):
+            return 16
+        if not bool(config.get("shadow_enabled", True)):
+            return 16
+        if bool(config.get("affine_only", True)) and not self.camera_is_affine(camera):
+            return 16
+        if not math.isfinite(depth):
+            return 16
+
+        reference_depth = float(
+            config.get(
+                "reference_depth",
+                getattr(getattr(camera, "profile", None), "reference_depth", 480.0),
+            )
+        )
+        near_offset = float(config.get("near_depth_offset", 64.0))
+        far_offset = float(config.get("far_depth_offset", 176.0))
+        relative_depth = depth - reference_depth
+        if relative_depth < near_offset:
+            cells = int(config.get("shadow_near_cells", ATMOSPHERE_SHADOW_NEAR_CELLS))
+        elif relative_depth < far_offset:
+            cells = int(config.get("shadow_mid_cells", ATMOSPHERE_SHADOW_MID_CELLS))
+        else:
+            cells = int(config.get("shadow_far_cells", ATMOSPHERE_SHADOW_FAR_CELLS))
+        if important_actor:
+            cells = max(
+                cells,
+                int(
+                    config.get(
+                        "shadow_important_min_cells",
+                        ATMOSPHERE_SHADOW_IMPORTANT_MIN_CELLS,
+                    )
+                ),
+            )
+        return max(0, min(16, cells))
+
+    def draw_shadow_ellipse(self, x: int, y: int, width: int, height: int, cells: int) -> None:
+        cells = max(0, min(16, int(cells)))
+        if cells <= 0:
+            return
+        if cells >= 16:
+            self.pyxel.elli(x, y, width, height, 0)
+            return
+
+        radius_x = max(width / 2.0, 0.5)
+        radius_y = max(height / 2.0, 0.5)
+        center_x = x + (width - 1) / 2.0
+        center_y = y + (height - 1) / 2.0
+        screen_width = int(getattr(self.pyxel, "width", 0) or 0)
+        screen_height = int(getattr(self.pyxel, "height", 0) or 0)
+        left = max(0, x) if screen_width > 0 else x
+        right = min(x + width, screen_width) if screen_width > 0 else x + width
+        top = max(0, y) if screen_height > 0 else y
+        bottom = min(y + height, screen_height) if screen_height > 0 else y + height
+        for py in range(top, bottom):
+            local_y = py - y
+            normalized_y = (py + 0.5 - center_y) / radius_y
+            for px in range(left, right):
+                local_x = px - x
+                normalized_x = (px + 0.5 - center_x) / radius_x
+                if normalized_x * normalized_x + normalized_y * normalized_y > 1.0:
+                    continue
+                if ATMOSPHERE_BAYER_4X4[local_y % 4][local_x % 4] < cells:
+                    self.pyxel.pset(px, py, 0)
 
     def atmosphere_dither_fog_color(self) -> int:
         color = int(self._atmosphere_config.get("dither_fog_color", ATMOSPHERE_DITHER_FOG_COLOR))

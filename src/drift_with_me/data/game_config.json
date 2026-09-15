@@ -187,7 +187,12 @@
     "enabled": true,
     "affine_only": true,
     "near_depth_offset": 64.0,
-    "far_depth_offset": 176.0
+    "far_depth_offset": 176.0,
+    "shadow_enabled": true,
+    "shadow_near_cells": 12,
+    "shadow_mid_cells": 8,
+    "shadow_far_cells": 4,
+    "shadow_important_min_cells": 6
   },
   "resources": {
     "water_max": 100.0,
