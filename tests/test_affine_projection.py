@@ -319,7 +319,9 @@ def test_affine_atmosphere_dither_has_near_mid_far_bands() -> None:
         renderer.atmosphere_dither_cells(affine, reference + 220.0, 1.0)
         == ATMOSPHERE_FAR_DITHER_CELLS
     )
-    assert renderer.atmosphere_dither_cells(affine, reference + 220.0, 0.7) == 3
+    assert renderer.atmosphere_dither_cells(affine, reference + 220.0, 0.7) == round(
+        ATMOSPHERE_FAR_DITHER_CELLS * 0.7
+    )
     assert renderer.atmosphere_dither_cells(affine, reference + 220.0, 0.35) == 0
 
 
