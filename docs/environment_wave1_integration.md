@@ -38,7 +38,7 @@ Nature and small ground-detail assets were updated on 2026-09-14 from the clean 
 - `crack_sprout_a`: source hash `31afbd889e88698f704b94d06542c1196eb2be6ccdaa8543ae4bbc057afea7b7`
 - `rubble_small_a`: source hash `ba84a6adb25c1272dc677101cbc3e941f629403bd9c9d4ffd980e5ff8e6a590e`
 
-All clean nature v0.3 assets use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. Existing runtime keys now resolve to these v0.3 assets: `reactive_grass_tall` -> `grass_tall_a`, `reactive_grass_low` -> `grass_low_a`, `ground_pebbles` -> `pebbles_a`, `ground_fallen_leaves` -> `fallen_leaves_a`, `ground_crack_grass` -> `crack_sprout_a`, and `ground_rubble` -> `rubble_small_a`.
+All clean nature v0.3 assets use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. Existing runtime keys now resolve to these v0.3 assets: `reactive_grass_tall` -> `grass_tall_a`, `ground_pebbles` -> `pebbles_a`, `ground_fallen_leaves` -> `fallen_leaves_a`, `ground_crack_grass` -> `crack_sprout_a`, and `ground_rubble` -> `rubble_small_a`. The `grass_low_a` asset remains available, but the current `reactive_grass_low` runtime key uses the older upright `reactive_grass_low_64` sprite so low grass does not appear as a floor-stuck decal during the current review.
 
 Grassland direct v0.1 assets were connected on 2026-09-15. These six sprites are direct extractions from the approved source images, with no redraw, simplification, recolor, or palette replacement:
 
@@ -51,7 +51,7 @@ Grassland direct v0.1 assets were connected on 2026-09-15. These six sprites are
 
 All grassland direct v0.1 sprites use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. The low grass, edge, and scatter assets remain available in the manifest, but their authored `ground_details` placements were removed after the grassland prototype review because the large source sprites read as flattened floor decals under affine projection. The two tall grass assets remain `reactive_prop` upright billboards and use the existing AFF007-C bending path.
 
-After the initial v0.3 connection, the random per-chunk ground-detail generation was disabled (`visual_detail_per_chunk: 0`) because each 64 x 64 ground-projected source is expensive to project per frame in Pyxel Web. The authored one-each review placements remain active.
+After the initial v0.3 connection, the random per-chunk ground-detail generation was disabled (`visual_detail_per_chunk: 0`) because each 64 x 64 ground-projected source is expensive to project per frame in Pyxel Web. The authored one-each review placements were later removed from `ground_details` for the current visual pass.
 
 On 2026-09-14, fixed-camera baked ground patch probes were added around the player spawn. They are intentionally runtime-generated caches, not new `.pyxres` or tilemap resources yet. The renderer samples the existing ground material/decal HEX sources into pre-projected images for the normal FOLLOW camera and draws those images with `blt`. While a patch is active, the legacy per-pixel ground projections inside the same world area are skipped. This gives us a low-risk performance probe before committing to generated `.pyxres`/`bltm` assets.
 
@@ -60,6 +60,7 @@ The first `192 x 192` single patch proved very fast but visibly wrong: it reused
 The follow-up `64 x 64` patch split reduced the visible perspective error, but zoom, camera bucket changes, and patch rebuild latency still made the ground texture read as a separate projected layer. As a result, all baked ground patches are now disabled by default and kept only as a comparison experiment in data:
 
 - `spawn_affine_ground_patch`, group `spawn_192_legacy_compare`, disabled.
+- 4 `128 x 128` patches in group `affine_static_128`, disabled.
 - 9 `64 x 64` patches in group `spawn_64_bucket16`, disabled.
 - Baked patch renderer code remains available for future experiments, but it is not the current visual baseline.
 
@@ -73,13 +74,13 @@ Native headless reference measurements from the disabled 64 patch experiment:
 
 The current visual baseline is a map-wide gray ground undercoat plus the grassland micro prototype where configured. The broad `ground_surfaces` pavement review entries are disabled, and the authored `ground_details` list is currently empty. Small pebbles, fallen leaves, crack sprout, and rubble assets remain available, but their world placements were removed after review because they read as dirty road damage in the current prototype.
 
-On 2026-09-15, a fixed-affine grassland micro prototype was added. This is not a new grass source asset and does not alter the received HEX pixels. It draws configured grassland rectangles as a green base plus 5-6 logical-pixel grass marks. After review, the marks were changed from screen-tile phase repetition to deterministic world-cell clumps: each tiny blade root is fixed in world X/Z, projected once, and drawn upright in screen space. This prevents the texture from reading like a HUD overlay while still avoiding per-pixel ground projection. After the 2026-09-16 review, this layer remains enabled for grassland testing (`grassland_micro.enabled: true`); it should not be confused with the removed road-crack/rubble ground details.
+On 2026-09-15, a fixed-affine grassland micro prototype was added. This is not a new grass source asset and does not alter the received HEX pixels. It draws configured grassland rectangles as a green base plus 5-6 logical-pixel grass marks. After review, the marks were changed from screen-tile phase repetition to deterministic world-cell clumps: each tiny blade root is fixed in world X/Z, projected once, and drawn upright in screen space. This prevents the texture from reading like a HUD overlay while still avoiding per-pixel ground projection. After the 2026-09-16 review, this layer remains enabled for grassland testing (`grassland_micro.enabled: true`), covers the current grassland area from `z=256` through the far map edge, and culls clump generation to the affine screen-visible world range. It should not be confused with the removed road-crack/rubble ground details.
 
 The renderer clears gameplay frames with the same gray color used by `draw_ground()` (`13`). This prevents uncovered map edges or out-of-world screen areas from switching to the old dark indigo clear color when the camera crosses certain positions.
 
 AFF007-B adds the first static/dynamic environment split. Reactive environment props remain static world objects for collision and rendering, but `WorldData` now indexes `reactive_prop` entries by chunk and `EffectSystem` queries only Jack's world-space neighborhood before promoting a prop into a short-lived active state. The active state stores trigger radius, visual radius, reaction strength, movement direction, and recovery progress for future grass/reed/water/hanging-object animation waves. This replaces the old full `world.objects` scan used by grass burst reactions without changing collision, pathing, camera, source sprites, or the current visible grass asset.
 
-AFF007-C connects that active state to grass rendering. Tall upright grass is drawn from the received HEX source with row-wise screen displacement only while active, so the top bends in Jack's movement direction and then recovers. Low ground grass keeps the existing ground-decal projection and adds a short split overlay during the active window. The static sprite path remains unchanged when no active state exists, and the behavior still does not affect collision, pathing, camera, source pixels, or SE.
+AFF007-C connects that active state to grass rendering. Tall upright grass is drawn from the received HEX source with row-wise screen displacement only while active, so the top bends in Jack's movement direction and then recovers. The current placed low grass also uses an upright billboard path to avoid floor-stuck grass silhouettes. The static sprite path remains unchanged when no active state exists, and the behavior still does not affect collision, pathing, camera, source pixels, or SE.
 
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
@@ -132,7 +133,8 @@ Transparent sprites use their asset-specific `colkey`. Most Wave1 transparent sp
 | Solar stations | `upright_height_billboard_v1` | 36 x 48 |
 | Trees | `upright_height_billboard_v1` | 48 x 64 |
 | Tall grass v0.3 | `upright_height_billboard_v1` | 28 x 28 |
-| Low grass v0.3 | `ground_decal_source_v1` | 28 x 18 |
+| Low grass v0.3 | available, not currently placed | 28 x 18 |
+| Reactive low grass | `upright_height_billboard_v1` | 28 x 28 |
 | Pebbles v0.3 | `ground_decal_source_v1` | 22 x 14 |
 | Fallen leaves v0.3 | `ground_decal_source_v1` | 26 x 16 |
 | Crack sprout v0.3 | `ground_decal_source_v1` | 28 x 18 |
@@ -146,7 +148,7 @@ Transparent sprites use their asset-specific `colkey`. Most Wave1 transparent sp
 
 Water station source art is 96 x 128. The supplied recommendation was 32 x 48, but the runtime uses 36 x 48 to preserve the source aspect ratio under Pyxel's uniform `blt` scale.
 
-Tall grass remains an upright billboard. Low grass and the small nature props are ground-projected decals so their non-square recommended world sizes can be preserved without stretching an upright billboard.
+Tall grass remains an upright billboard. The current reactive low grass also uses an upright billboard to preserve the original sprite silhouette on screen. The clean low grass and small nature props remain ground-projected assets for later review, but they are not placed in the current prototype.
 
 Ground small objects and the v0.2 review surfaces use `ground_decal_source_v1`, which samples opaque HEX pixels and projects them onto the X/Z ground plane. This is intentionally separate from the vertical billboard path.
 
@@ -164,7 +166,7 @@ World data changes are limited to:
 - `ground_details` is empty for the current prototype; sparse pebbles, fallen leaves, crack sprout, and small rubble assets are retained but not placed.
 - Grassland v0.1 low grass, edge, and scatter `ground_details` are currently not placed in the world because they are too large to read cleanly as ground-projected floor sprites.
 - `grassland_micro.enabled` is `true` so the current grassland micro surface test remains visible.
-- `objects` includes four grassland v0.1 tall grass `reactive_prop` entries. They are visual-only and do not change collision or pathing.
+- `objects` includes multiple upright grass `reactive_prop` entries for low grass and grassland tall grass. They are visual-only and do not change collision or pathing.
 - `visual_detail_per_chunk` is `0`; random small-detail scatter is deferred until a cheaper tiling/sprite path is available.
 
 ## Deferred

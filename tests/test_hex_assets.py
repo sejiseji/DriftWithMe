@@ -791,7 +791,7 @@ for source_id, expected_hash in environment_hashes.items():
         assert env_asset.definition.projection_mode == "upright_height_billboard_v1"
 assert runtime.raw["assets"]["water_station_working_asset"] == "water_station_active_96"
 assert runtime.raw["assets"]["reactive_grass_tall_asset"] == "grass_tall_a_64"
-assert runtime.raw["assets"]["reactive_grass_low_asset"] == "grass_low_a_64"
+assert runtime.raw["assets"]["reactive_grass_low_asset"] == "reactive_grass_low_64"
 assert runtime.raw["assets"]["ground_rubble_asset"] == "rubble_small_a_64"
 assert runtime.raw["assets"]["concrete_clean_a_asset"] == "concrete_clean_a_64"
 assert runtime.raw["assets"]["decal_crack_grass_a_asset"] == "decal_crack_grass_a_64"
@@ -837,10 +837,10 @@ assert renderer.object_sprite_asset(model, solar).definition.asset_id == "solar_
 model.interaction = None
 assert renderer.object_sprite_asset(model, tree).definition.asset_id == "tree_thin_b_96"
 assert renderer.object_sprite_asset(model, grass).definition.asset_id == "grass_tall_a_64"
-assert renderer.object_sprite_asset(model, low_grass).definition.asset_id == "grass_low_a_64"
+assert renderer.object_sprite_asset(model, low_grass).definition.asset_id == "reactive_grass_low_64"
 assert (
     renderer.object_sprite_asset(model, low_grass).definition.projection_mode
-    == "ground_decal_source_v1"
+    == "upright_height_billboard_v1"
 )
 assert renderer.object_sprite_asset(model, grassland_tall).definition.asset_id == (
     "grass_patch_tall_a_64"
@@ -862,7 +862,7 @@ affine_patches = [
     patch for patch in model.world.baked_ground_patches if patch.group == "affine_static_128"
 ]
 assert len(affine_patches) == 4
-assert all(patch.enabled and patch.projection_kind == "affine" for patch in affine_patches)
+assert all(not patch.enabled and patch.projection_kind == "affine" for patch in affine_patches)
 assert all(patch.width == 128.0 for patch in affine_patches)
 patch_probe_x = affine_patches[0].x
 patch_probe_z = affine_patches[0].z
@@ -892,15 +892,13 @@ affine = affine_camera_from_perspective(
 renderer.max_baked_ground_builds_per_frame = 8
 pyxel.cls(3)
 active_patches = renderer.draw_baked_ground_patches(model, affine)
-assert sorted(patch.id for patch in active_patches) == sorted(
-    patch.id for patch in affine_patches
-)
-assert renderer.point_in_active_baked_ground_patch(patch_probe_x, patch_probe_z)
+assert active_patches == ()
+assert not renderer.point_in_active_baked_ground_patch(patch_probe_x, patch_probe_z)
 assert renderer.last_stats.baked_ground_cache_size == 0
 renderer.draw_scene(model, affine, presentation_time=0.0, debug=False)
-assert renderer.last_stats.visible_baked_ground_patches == 4
+assert renderer.last_stats.visible_baked_ground_patches == 0
 assert renderer.last_stats.visible_ground_details == 0
-assert renderer.last_stats.baked_ground_cache_size == 4
+assert renderer.last_stats.baked_ground_cache_size == 0
 patch = affine_patches[0]
 bucket = renderer.baked_ground_camera_bucket(patch, affine)
 first_key = renderer.baked_ground_cache_key(patch, affine, *bucket)

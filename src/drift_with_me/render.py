@@ -478,6 +478,15 @@ class Renderer:
         if max_visible <= 0:
             return
         x0, z0, x1, z1 = rect
+        visible_rect = self.grassland_micro_visible_world_rect(camera, margin_px=16.0)
+        if visible_rect is not None:
+            vx0, vz0, vx1, vz1 = visible_rect
+            x0 = max(x0, vx0 - cell_world)
+            z0 = max(z0, vz0 - cell_world)
+            x1 = min(x1, vx1 + cell_world)
+            z1 = min(z1, vz1 + cell_world)
+            if x0 >= x1 or z0 >= z1:
+                return
         colors = (
             self.clamped_palette_color(area.get("blade_color", config.get("blade_color", 11))),
             self.clamped_palette_color(
@@ -528,6 +537,32 @@ class Renderer:
                     drawn += 1
                     if drawn >= max_visible:
                         return
+
+    def grassland_micro_visible_world_rect(
+        self, camera: CameraState, margin_px: float
+    ) -> tuple[float, float, float, float] | None:
+        if not self.camera_is_affine(camera):
+            return None
+        points = [
+            screen_to_ground_affine(camera, -margin_px, -margin_px),
+            screen_to_ground_affine(camera, camera.viewport_width + margin_px, -margin_px),
+            screen_to_ground_affine(
+                camera,
+                camera.viewport_width + margin_px,
+                camera.viewport_height + margin_px,
+            ),
+            screen_to_ground_affine(camera, -margin_px, camera.viewport_height + margin_px),
+        ]
+        visible = [point for point in points if point is not None]
+        if len(visible) < 3:
+            return None
+        min_x = min(point.x for point in visible)
+        max_x = max(point.x for point in visible)
+        min_z = min(point.y for point in visible)
+        max_z = max(point.y for point in visible)
+        if not all(math.isfinite(value) for value in (min_x, min_z, max_x, max_z)):
+            return None
+        return min_x, min_z, max_x, max_z
 
     def draw_micro_grass_blade(
         self, root_x: int, root_y: int, height: int, color: int, shadow_color: int
@@ -1979,10 +2014,17 @@ class Renderer:
         cells = self._active_atmosphere_dither_cells
         if cells <= 0:
             return color
-        threshold = ATMOSPHERE_BAYER_4X4[local_y % 4][local_x % 4]
+        threshold = self.atmosphere_dither_threshold(local_x, local_y)
         if threshold < cells:
             return self._active_atmosphere_dither_fog_color
         return color
+
+    def atmosphere_dither_threshold(self, local_x: int, local_y: int) -> int:
+        value = (local_x * 73856093) ^ (local_y * 19349663) ^ (local_x * local_y * 83492791)
+        value ^= value >> 13
+        value *= 1274126177
+        value ^= value >> 16
+        return value & 15
 
     def draw_atmospheric_scaled_sprite(
         self, asset: LoadedSpriteAsset, placement, frame: LoadedSpriteFrame | None = None

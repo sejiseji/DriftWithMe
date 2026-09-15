@@ -218,15 +218,15 @@
     "blade_shadow_color": 3,
     "blade_accent_color": 10,
     "cell_world": 24.0,
-    "max_visible_clumps": 520,
+    "max_visible_clumps": 760,
     "areas": [
       {
         "id": "spawn_grassland_micro",
         "rect_xz": [
-          64.0,
+          0.0,
           256.0,
-          768.0,
-          864.0
+          1024.0,
+          1024.0
         ],
         "phase": 0
       }
@@ -343,7 +343,7 @@
     "tree_leafy_asset": "tree_leafy_a_96",
     "tree_thin_asset": "tree_thin_b_96",
     "reactive_grass_tall_asset": "grass_tall_a_64",
-    "reactive_grass_low_asset": "grass_low_a_64",
+    "reactive_grass_low_asset": "reactive_grass_low_64",
     "ground_pebbles_asset": "pebbles_a_64",
     "ground_fallen_leaves_asset": "fallen_leaves_a_64",
     "ground_crack_grass_asset": "crack_sprout_a_64",

@@ -437,9 +437,9 @@ def test_affine_atmosphere_tuning_keeps_gameplay_entities_readable() -> None:
 
 
 def test_atmosphere_dither_frame_preserves_colkey_and_reuses_cache() -> None:
-    source = FakeImage(4, 4)
-    for y in range(4):
-        for x in range(4):
+    source = FakeImage(8, 8)
+    for y in range(8):
+        for x in range(8):
             source.pset(x, y, 2)
     source.pset(0, 1, 8)
     frame = LoadedSpriteFrame(
@@ -448,18 +448,18 @@ def test_atmosphere_dither_frame_preserves_colkey_and_reuses_cache() -> None:
         source=None,
         u=0,
         v=0,
-        width=4,
-        height=4,
+        width=8,
+        height=8,
         source_hash="source-hash",
     )
     definition = SpriteDefinition(
         asset_id="tree_test",
         palette_id="pyxel_default_16",
-        hex_width=4,
-        hex_height=4,
+        hex_width=8,
+        hex_height=8,
         colkey=8,
-        anchor_px=(2.0, 4.0),
-        world_size=(4.0, 4.0),
+        anchor_px=(4.0, 8.0),
+        world_size=(8.0, 8.0),
         projection_mode="upright_height_billboard_v1",
         flip_policy="none",
         animation="static",
@@ -473,9 +473,16 @@ def test_atmosphere_dither_frame_preserves_colkey_and_reuses_cache() -> None:
 
     derived = renderer.atmospheric_sprite_frame(asset, frame)
     assert derived is renderer.atmospheric_sprite_frame(asset, frame)
-    assert derived.image.pget(0, 0) == ATMOSPHERE_DITHER_FOG_COLOR
-    assert derived.image.pget(3, 0) == 2
     assert derived.image.pget(0, 1) == 8
+    for start_x, start_y in ((0, 0), (4, 0), (0, 4), (4, 4)):
+        quadrant = [
+            derived.image.pget(x, y)
+            for y in range(start_y, start_y + 4)
+            for x in range(start_x, start_x + 4)
+            if (x, y) != (0, 1)
+        ]
+        assert ATMOSPHERE_DITHER_FOG_COLOR in quadrant
+        assert 2 in quadrant
 
 
 def test_affine_camera_ignores_source_yaw_pitch_but_keeps_target_anchor_and_zoom() -> None:
