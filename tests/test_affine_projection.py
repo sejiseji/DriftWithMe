@@ -12,6 +12,8 @@ from drift_with_me.math3d import (
     affine_camera_from_perspective,
     screen_to_ground_affine,
 )
+from drift_with_me.model import GameModel
+from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
 
 
@@ -121,3 +123,55 @@ def test_affine_xz_screen_vectors_are_position_invariant() -> None:
     assert comparison_x.y - comparison_root.y == pytest.approx(base_x.y - base_root.y)
     assert comparison_z.x - comparison_root.x == pytest.approx(base_z.x - base_root.x)
     assert comparison_z.y - comparison_root.y == pytest.approx(base_z.y - base_root.y)
+
+
+def test_affine_height_projects_straight_up_for_actor_roots() -> None:
+    _runtime, _world, _perspective, profile, affine = make_affine_camera()
+    root = affine.project(Vec3(160.0, 0.0, 160.0))
+    raised = affine.project(Vec3(160.0, 26.0, 160.0))
+    assert root is not None and raised is not None
+
+    assert raised.x - root.x == pytest.approx(profile.basis_y.x * 26.0)
+    assert raised.y - root.y == pytest.approx(profile.basis_y.y * 26.0)
+    assert raised.x == pytest.approx(root.x)
+    assert raised.y < root.y
+
+
+def test_affine_buddy_y_separates_body_from_ground_shadow() -> None:
+    runtime, world, _perspective, _profile, affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+
+    shadow = affine.project(Vec3(model.buddy.x, 0.0, model.buddy.z))
+    body = affine.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
+    assert shadow is not None and body is not None
+    assert body.x == pytest.approx(shadow.x)
+    assert body.y < shadow.y
+
+
+def test_affine_entity_roots_project_for_equipment_tree_enemy_and_ground_detail() -> None:
+    runtime, world, _perspective, _profile, affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+
+    object_ids = ("tap_start", "solar_start", "tree_02", "grass_01")
+    for object_id in object_ids:
+        obj = model.world.object_by_id(object_id)
+        assert obj is not None
+        assert affine.project(Vec3(obj.x, 0.0, obj.z)) is not None
+
+    normal_enemy = next(enemy for enemy in model.enemies if enemy.kind == "normal")
+    abnormal_enemy = next(enemy for enemy in model.enemies if enemy.kind == "abnormal")
+    assert affine.project(Vec3(normal_enemy.x, 0.0, normal_enemy.z)) is not None
+    assert affine.project(Vec3(abnormal_enemy.x, 0.0, abnormal_enemy.z)) is not None
+
+    detail = model.world.ground_details[0]
+    assert affine.project(Vec3(detail.x, 0.0, detail.z)) is not None
+
+
+def test_affine_fallback_screen_radii_do_not_depend_on_depth() -> None:
+    _runtime, _world, _perspective, _profile, affine = make_affine_camera()
+    renderer = Renderer(None)
+
+    near = renderer.depth_scaled_radius(affine, 96.0, numerator=1200.0, minimum=3)
+    far = renderer.depth_scaled_radius(affine, 900.0, numerator=1200.0, minimum=3)
+
+    assert near == far == 3

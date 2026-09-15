@@ -865,7 +865,7 @@ class Renderer:
         if point is None:
             return
         pyxel = self.pyxel
-        radius = max(3, int(900 / max(point.depth, 1.0)))
+        radius = self.depth_scaled_radius(camera, point.depth, numerator=900, minimum=3)
         color = 8 if enemy.kind == "normal" else 2
         if enemy.state == "REPELLED":
             color = 12
@@ -971,7 +971,7 @@ class Renderer:
         else:
             x = int(point.x)
             y = int(point.y)
-            radius = max(3, int(900 / max(point.depth, 1.0)))
+            radius = self.depth_scaled_radius(camera, point.depth, numerator=900, minimum=3)
             self.pyxel.circb(x, y, radius, 10)
             for index in range(4):
                 angle = index * math.tau / 4.0
@@ -1011,7 +1011,7 @@ class Renderer:
         point = camera.project(Vec3(bubble.x, 5.0, bubble.z))
         if point is None:
             return
-        radius = max(3, int(600 / max(point.depth, 1.0)))
+        radius = self.depth_scaled_radius(camera, point.depth, numerator=600, minimum=3)
         x = int(point.x)
         y = int(point.y)
         self.pyxel.circb(x, y, radius, 12)
@@ -1021,7 +1021,7 @@ class Renderer:
         hover = self.player_visual_y_offset(model, presentation_time)
         shadow = camera.project(Vec3(model.player.x, 0.0, model.player.z))
         if shadow is not None:
-            radius = max(3, int(1200 / max(shadow.depth, 1.0)))
+            radius = self.depth_scaled_radius(camera, shadow.depth, numerator=1200, minimum=3)
             self.pyxel.elli(
                 int(shadow.x - radius),
                 int(shadow.y - radius // 3),
@@ -1200,7 +1200,7 @@ class Renderer:
         buddy = model.buddy
         shadow = camera.project(Vec3(buddy.x, 0.0, buddy.z))
         if shadow is not None:
-            radius = max(2, int(700 / max(shadow.depth, 1.0)))
+            radius = self.depth_scaled_radius(camera, shadow.depth, numerator=700, minimum=2)
             self.pyxel.elli(
                 int(shadow.x - radius),
                 int(shadow.y - max(1, radius // 4)),
@@ -1246,6 +1246,22 @@ class Renderer:
             return
         radius = float(model.config["barrier"]["radius"])
         self.draw_world_circle(camera, model.player.x, model.player.z, radius, 12)
+
+    def depth_scaled_radius(
+        self, camera: CameraState, depth: float, *, numerator: float, minimum: int
+    ) -> int:
+        if self.camera_is_affine(camera):
+            return self.affine_screen_px(camera, minimum)
+        return max(minimum, int(numerator / max(depth, 1.0)))
+
+    def affine_screen_px(self, camera: CameraState, medium_px: int) -> int:
+        scale = getattr(camera, "effective_scale", 1.0)
+        if not math.isfinite(scale) or scale <= 0.0:
+            scale = 1.0
+        return max(1, int(round(medium_px * scale)))
+
+    def camera_is_affine(self, camera: CameraState) -> bool:
+        return getattr(camera, "projection_kind", "perspective") == "affine"
 
     def draw_box(
         self,
@@ -1318,7 +1334,7 @@ class Renderer:
         self.pyxel.line(int(a.x), int(a.y), int(b.x), int(b.y), color)
 
     def draw_affine_debug_grid(self, model: GameModel, camera: CameraState) -> None:
-        if getattr(camera, "projection_kind", "perspective") != "affine":
+        if not self.camera_is_affine(camera):
             return
         step = float(
             model.config.get("projection", {}).get("affine", {}).get("debug_grid_world", 32.0)
@@ -1405,7 +1421,10 @@ class Renderer:
             point = camera.project(Vec3(particle.x, max(0.0, particle.y), particle.z))
             if point is None:
                 continue
-            size = 2 if particle.progress < 0.5 and point.depth < 620.0 else 1
+            if self.camera_is_affine(camera):
+                size = 2 if particle.progress < 0.5 else 1
+            else:
+                size = 2 if particle.progress < 0.5 and point.depth < 620.0 else 1
             x = int(point.x)
             y = int(point.y)
             if size > 1:
