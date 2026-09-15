@@ -134,6 +134,20 @@ class StaticVisibilityQuery:
 
 
 @dataclass(frozen=True)
+class ReactiveEnvironmentQuery:
+    chunk_ids: tuple[tuple[int, int], ...]
+    objects: tuple[StaticObject, ...]
+
+    @property
+    def candidate_chunk_count(self) -> int:
+        return len(self.chunk_ids)
+
+    @property
+    def candidate_object_count(self) -> int:
+        return len(self.objects)
+
+
+@dataclass(frozen=True)
 class EnemySpawn:
     id: str
     kind: str
@@ -242,6 +256,14 @@ class WorldData:
         self._solid_index = self._build_solid_index()
         self._visual_index = self._build_visual_index()
         self._visual_chunk_heights = self._build_visual_chunk_heights()
+        self.reactive_environment_objects = tuple(
+            obj for obj in self.objects if obj.kind == "reactive_prop" and obj.reaction_radius > 0.0
+        )
+        self.reactive_environment_max_radius = max(
+            (obj.reaction_radius for obj in self.reactive_environment_objects),
+            default=0.0,
+        )
+        self._reactive_environment_index = self._build_reactive_environment_index()
         self.ground_details = self._build_ground_details()
         self.ground_surfaces = tuple(
             self._load_ground_surface(item) for item in raw.get("ground_surfaces", ())
@@ -460,6 +482,27 @@ class WorldData:
             )
         return heights
 
+    def _build_reactive_environment_index(self) -> dict[tuple[int, int], list[StaticObject]]:
+        index: dict[tuple[int, int], list[StaticObject]] = {}
+        for obj in self.reactive_environment_objects:
+            radius = max(
+                obj.reaction_radius,
+                obj.half_x,
+                obj.half_z,
+                obj.sprite_world_width * 0.5,
+                obj.sprite_world_height * 0.5,
+            )
+            x_range, z_range = self._chunk_span(
+                obj.x - radius,
+                obj.z - radius,
+                obj.x + radius,
+                obj.z + radius,
+            )
+            for cx in x_range:
+                for cz in z_range:
+                    index.setdefault((cx, cz), []).append(obj)
+        return index
+
     def _build_ground_details(self) -> tuple[GroundDetail, ...]:
         details: list[GroundDetail] = []
         for index, item in enumerate(self.raw.get("ground_details", ())):
@@ -508,6 +551,31 @@ class WorldData:
         return StaticVisibilityQuery(
             chunk_ids=tuple(chunk_ids),
             objects=tuple(obj for obj in self.objects if obj.id in candidate_ids),
+        )
+
+    def query_reactive_environment(
+        self, x: float, z: float, radius: float = 0.0
+    ) -> ReactiveEnvironmentQuery:
+        if not self.reactive_environment_objects:
+            return ReactiveEnvironmentQuery(chunk_ids=(), objects=())
+        query_radius = max(0.0, radius) + self.reactive_environment_max_radius
+        x_range, z_range = self._chunk_span(
+            x - query_radius,
+            z - query_radius,
+            x + query_radius,
+            z + query_radius,
+        )
+        chunk_ids = tuple((cx, cz) for cz in z_range for cx in x_range)
+        candidate_ids: set[str] = set()
+        for chunk_id in chunk_ids:
+            for obj in self._reactive_environment_index.get(chunk_id, ()):
+                if math.hypot(x - obj.x, z - obj.z) <= obj.reaction_radius + radius:
+                    candidate_ids.add(obj.id)
+        return ReactiveEnvironmentQuery(
+            chunk_ids=chunk_ids,
+            objects=tuple(
+                obj for obj in self.reactive_environment_objects if obj.id in candidate_ids
+            ),
         )
 
     def chunk_may_be_visible(

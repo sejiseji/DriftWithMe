@@ -151,6 +151,27 @@ class CameraPresentationTransform:
     zoom_multiplier: float = 1.0
 
 
+@dataclass
+class ReactiveEnvironmentState:
+    object_id: str
+    kind: str
+    x: float
+    z: float
+    trigger_radius: float
+    visual_radius: float
+    strength: float
+    direction_x: float
+    direction_z: float
+    recovery_sec: float
+    age: float = 0.0
+
+    @property
+    def progress(self) -> float:
+        if self.recovery_sec <= 1e-6:
+            return 1.0
+        return max(0.0, min(self.age / self.recovery_sec, 1.0))
+
+
 def presentation_cue_for_event(event: GameEvent) -> str | None:
     if event.kind == "resource_refilled":
         resource = event.payload.get("resource")
@@ -182,6 +203,12 @@ class EffectSystem:
         self.combat_camera_pulse_enabled = bool(effects.get("combat_camera_pulse_enabled", False))
         self.camera_offset_cap_px = float(effects.get("camera_offset_cap_px", 2.0))
         self.camera_reactions = effects.get("camera_reactions", {})
+        reactive = config.get("reactive_environment", {})
+        self.reactive_environment_enabled = bool(reactive.get("enabled", True))
+        self.reactive_environment_search_radius = float(reactive.get("search_radius_world", 0.0))
+        self.reactive_environment_recovery_sec = float(reactive.get("recovery_sec", 0.8))
+        self.reactive_environment_retrigger_sec = float(reactive.get("retrigger_sec", 0.8))
+        self.max_active_reactive_environment = int(reactive.get("max_active", 32))
         self.particles: list[WorldParticle] = []
         self.rings: list[WorldRing] = []
         self.strokes: list[WorldStroke] = []
@@ -189,6 +216,8 @@ class EffectSystem:
         self.enemy_snapshots: list[EnemySnapshot] = []
         self.screen_cues: list[ScreenCue] = []
         self.camera_impulses: list[CameraImpulse] = []
+        self.reactive_environment_states: dict[str, ReactiveEnvironmentState] = {}
+        self.reactive_environment_last_query_count = 0
         self._grass_cooldowns: dict[str, float] = {}
         self._processed_cues: set[tuple[int, str]] = set()
         self._processed_camera_cues: set[tuple[int, str]] = set()
@@ -201,6 +230,8 @@ class EffectSystem:
         self.enemy_snapshots.clear()
         self.screen_cues.clear()
         self.camera_impulses.clear()
+        self.reactive_environment_states.clear()
+        self.reactive_environment_last_query_count = 0
         self._grass_cooldowns.clear()
         self._processed_cues.clear()
         self._processed_camera_cues.clear()
@@ -362,18 +393,77 @@ class EffectSystem:
         for object_id in tuple(self._grass_cooldowns):
             self._grass_cooldowns[object_id] = max(0.0, self._grass_cooldowns[object_id] - dt)
 
+        for state in self.reactive_environment_states.values():
+            state.age += dt
+        self.reactive_environment_states = {
+            object_id: state
+            for object_id, state in self.reactive_environment_states.items()
+            if state.age < state.recovery_sec
+        }
+
         self.update_grass_reactions(model)
 
     def update_grass_reactions(self, model) -> None:
-        for obj in model.world.objects:
-            if obj.kind != "reactive_prop" or obj.reaction_radius <= 0.0:
-                continue
+        self.reactive_environment_last_query_count = 0
+        if not self.reactive_environment_enabled:
+            return
+        query = model.world.query_reactive_environment(
+            model.player.x,
+            model.player.z,
+            self.reactive_environment_search_radius,
+        )
+        self.reactive_environment_last_query_count = query.candidate_object_count
+        for obj in query.objects:
             if self._grass_cooldowns.get(obj.id, 0.0) > 0.0:
                 continue
-            if math.hypot(model.player.x - obj.x, model.player.z - obj.z) > obj.reaction_radius:
-                continue
+            self.activate_reactive_environment(model, obj)
             self.spawn_burst(obj.x, 0.0, obj.z, color=11, count=3, speed=5.0)
-            self._grass_cooldowns[obj.id] = 0.8
+            self._grass_cooldowns[obj.id] = self.reactive_environment_retrigger_sec
+
+    def activate_reactive_environment(self, model, obj) -> None:
+        if self.max_active_reactive_environment <= 0:
+            return
+        if (
+            obj.id not in self.reactive_environment_states
+            and len(self.reactive_environment_states) >= self.max_active_reactive_environment
+        ):
+            oldest_id = max(
+                self.reactive_environment_states,
+                key=lambda object_id: self.reactive_environment_states[object_id].progress,
+            )
+            self.reactive_environment_states.pop(oldest_id, None)
+        direction_x, direction_z = self.reactive_environment_direction(model, obj)
+        distance = math.hypot(model.player.x - obj.x, model.player.z - obj.z)
+        strength = 1.0 - min(distance / max(obj.reaction_radius, 1e-6), 1.0)
+        visual_radius = max(
+            obj.reaction_radius,
+            obj.sprite_world_width * 0.5,
+            obj.sprite_world_height * 0.5,
+        )
+        self.reactive_environment_states[obj.id] = ReactiveEnvironmentState(
+            object_id=obj.id,
+            kind=obj.visual or obj.kind,
+            x=obj.x,
+            z=obj.z,
+            trigger_radius=obj.reaction_radius,
+            visual_radius=visual_radius,
+            strength=strength,
+            direction_x=direction_x,
+            direction_z=direction_z,
+            recovery_sec=self.reactive_environment_recovery_sec,
+        )
+
+    def reactive_environment_direction(self, model, obj) -> tuple[float, float]:
+        direction_x = float(getattr(model.player, "last_move_x", 0.0))
+        direction_z = float(getattr(model.player, "last_move_z", 0.0))
+        length = math.hypot(direction_x, direction_z)
+        if length <= 1e-6:
+            direction_x = obj.x - model.player.x
+            direction_z = obj.z - model.player.z
+            length = math.hypot(direction_x, direction_z)
+        if length <= 1e-6:
+            return 0.0, 1.0
+        return direction_x / length, direction_z / length
 
     def spawn_burst(
         self, x: float, y: float, z: float, color: int, count: int, speed: float

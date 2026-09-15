@@ -62,6 +62,8 @@ Native headless reference measurements from the disabled 64 patch experiment:
 
 The current visual baseline is a single gray ground undercoat plus sparse, non-tile ground details. The broad `ground_surfaces` pavement review entries are disabled, and the authored `ground_details` list now carries small pebbles, fallen leaves, cracks with grass, and rubble around the spawn/station area. This avoids large projected pavement sheets while retaining local ground texture.
 
+AFF007-B adds the first static/dynamic environment split. Reactive environment props remain static world objects for collision and rendering, but `WorldData` now indexes `reactive_prop` entries by chunk and `EffectSystem` queries only Jack's world-space neighborhood before promoting a prop into a short-lived active state. The active state stores trigger radius, visual radius, reaction strength, movement direction, and recovery progress for future grass/reed/water/hanging-object animation waves. This replaces the old full `world.objects` scan used by grass burst reactions without changing collision, pathing, camera, source sprites, or the current visible grass asset.
+
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
 - `concrete_clean_a`: source hash `e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640`

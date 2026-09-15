@@ -244,6 +244,50 @@ def test_effects_capacity_and_model_invariance() -> None:
     assert snapshot_model(model) == before
 
 
+def test_reactive_environment_query_filters_by_world_distance() -> None:
+    model, _camera = make_model()
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+
+    near = model.world.query_reactive_environment(grass.x, grass.z)
+    far = model.world.query_reactive_environment(0.0, 0.0)
+
+    assert [obj.id for obj in near.objects] == ["grass_01"]
+    assert near.candidate_chunk_count > 0
+    assert far.objects == ()
+
+
+def test_reactive_environment_state_uses_nearby_query_and_recovers() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+    model.player.x = grass.x
+    model.player.z = grass.z
+    model.player.last_move_x = 1.0
+    model.player.last_move_z = 0.0
+
+    effects.update(1.0 / 60.0, model)
+    first_particle_count = len(effects.particles)
+
+    assert effects.reactive_environment_last_query_count == 1
+    assert first_particle_count == 3
+    assert set(effects.reactive_environment_states) == {"grass_01"}
+    state = effects.reactive_environment_states["grass_01"]
+    assert state.kind == "reactive_grass_tall"
+    assert state.direction_x == pytest.approx(1.0)
+    assert state.direction_z == pytest.approx(0.0)
+    assert 0.0 <= state.strength <= 1.0
+
+    effects.update(1.0 / 60.0, model)
+    assert len(effects.particles) == first_particle_count
+
+    model.player.x = 0.0
+    model.player.z = 0.0
+    effects.update(1.0, model)
+    assert effects.reactive_environment_states == {}
+
+
 def test_presentation_cue_mapping_for_existing_events() -> None:
     model, _camera = make_model()
 

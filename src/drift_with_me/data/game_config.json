@@ -428,6 +428,13 @@
     "flash_enabled": false,
     "shake_enabled": false
   },
+  "reactive_environment": {
+    "enabled": true,
+    "max_active": 32,
+    "search_radius_world": 0.0,
+    "recovery_sec": 0.8,
+    "retrigger_sec": 0.8
+  },
   "audio": {
     "enabled_by_default": true,
     "bgm_enabled": false,
