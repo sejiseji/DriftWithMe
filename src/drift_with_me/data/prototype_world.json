@@ -330,6 +330,321 @@
       ]
     },
     {
+      "id": "tree_04",
+      "kind": "sprite_prop",
+      "position": [
+        560.0,
+        0.0,
+        704.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_05",
+      "kind": "sprite_prop",
+      "position": [
+        624.0,
+        0.0,
+        720.0
+      ],
+      "visual": "tree_thin_b",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_06",
+      "kind": "sprite_prop",
+      "position": [
+        704.0,
+        0.0,
+        704.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_07",
+      "kind": "sprite_prop",
+      "position": [
+        864.0,
+        0.0,
+        704.0
+      ],
+      "visual": "tree_thin_b",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_08",
+      "kind": "sprite_prop",
+      "position": [
+        528.0,
+        0.0,
+        784.0
+      ],
+      "visual": "tree_thin_b",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_09",
+      "kind": "sprite_prop",
+      "position": [
+        640.0,
+        0.0,
+        800.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_10",
+      "kind": "sprite_prop",
+      "position": [
+        720.0,
+        0.0,
+        832.0
+      ],
+      "visual": "tree_thin_b",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_11",
+      "kind": "sprite_prop",
+      "position": [
+        880.0,
+        0.0,
+        800.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_12",
+      "kind": "sprite_prop",
+      "position": [
+        576.0,
+        0.0,
+        880.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_13",
+      "kind": "sprite_prop",
+      "position": [
+        656.0,
+        0.0,
+        912.0
+      ],
+      "visual": "tree_thin_b",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_14",
+      "kind": "sprite_prop",
+      "position": [
+        752.0,
+        0.0,
+        896.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_15",
+      "kind": "sprite_prop",
+      "position": [
+        848.0,
+        0.0,
+        912.0
+      ],
+      "visual": "tree_thin_b",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_16",
+      "kind": "sprite_prop",
+      "position": [
+        944.0,
+        0.0,
+        848.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_17",
+      "kind": "sprite_prop",
+      "position": [
+        944.0,
+        0.0,
+        928.0
+      ],
+      "visual": "tree_thin_b",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_18",
+      "kind": "sprite_prop",
+      "position": [
+        496.0,
+        0.0,
+        928.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
       "id": "grass_01",
       "kind": "reactive_prop",
       "position": [
