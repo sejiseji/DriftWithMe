@@ -1111,6 +1111,13 @@ class Renderer:
         if spin_view is not None:
             self.player_sprite_view_name = spin_view
             return spin_view
+        facing_delta = self.actor_screen_facing_delta(model, camera, model.player.x, model.player.z)
+        if facing_delta is not None:
+            screen_dx, screen_dy = facing_delta
+            next_view = self.screen_direction_view_name(screen_dx, screen_dy)
+            if next_view is not None:
+                self.player_sprite_view_name = next_view
+            return self.player_sprite_view_name
         if model.player.moved_distance <= 1e-6:
             self.player_sprite_view_name = "idle"
             return self.player_sprite_view_name
@@ -1144,6 +1151,13 @@ class Renderer:
         if spin_view is not None:
             self.buddy_sprite_view_name = spin_view
             return spin_view
+        facing_delta = self.actor_screen_facing_delta(model, camera, model.buddy.x, model.buddy.z)
+        if facing_delta is not None:
+            screen_dx, screen_dy = facing_delta
+            next_view = self.screen_direction_view_name(screen_dx, screen_dy)
+            if next_view is not None:
+                self.buddy_sprite_view_name = next_view
+            return self.buddy_sprite_view_name
         delta = self.player_screen_move_delta(model, camera)
         if delta is None:
             return self.buddy_sprite_view_name
@@ -1159,6 +1173,25 @@ class Renderer:
         angle = math.atan2(screen_dy, screen_dx)
         sector = int(math.floor((angle + math.pi / 8.0) / (math.pi / 4.0))) % 8
         return self.SPIN_DIRECTION_VIEWS[sector]
+
+    def actor_screen_facing_delta(
+        self,
+        model: GameModel,
+        camera: CameraState,
+        origin_x: float,
+        origin_z: float,
+    ) -> tuple[float, float] | None:
+        target = model.actor_facing_target()
+        if target is None:
+            return None
+        target_x, target_z = target
+        if math.hypot(target_x - origin_x, target_z - origin_z) <= 1e-6:
+            return None
+        origin = camera.project(Vec3(origin_x, 0.0, origin_z))
+        target_point = camera.project(Vec3(target_x, 0.0, target_z))
+        if origin is None or target_point is None:
+            return None
+        return target_point.x - origin.x, target_point.y - origin.y
 
     def interaction_spin_view_name(self, model: GameModel, interaction_kind: str) -> str | None:
         interaction = model.interaction
@@ -1207,7 +1240,9 @@ class Renderer:
         )
 
     def player_sprite_flip_x(self, model: GameModel, camera: CameraState) -> bool:
-        delta = self.player_screen_move_delta(model, camera)
+        delta = self.actor_screen_facing_delta(model, camera, model.player.x, model.player.z)
+        if delta is None:
+            delta = self.player_screen_move_delta(model, camera)
         if delta is None:
             return self.player_sprite_flipped_x
         screen_dx, _screen_dy = delta

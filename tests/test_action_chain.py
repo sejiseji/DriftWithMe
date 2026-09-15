@@ -5,6 +5,7 @@ import pytest
 from drift_with_me.config import load_runtime_config
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import BubbleState, GameModel, InputIntent
+from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
 
 
@@ -90,6 +91,7 @@ def test_bubble_fire_costs_water_and_capture_needs_second_press_for_discharge() 
             break
 
     assert [event.kind for event in fired] == ["bubble_fired"]
+    assert model.actor_facing_target() == pytest.approx((enemy.x, enemy.z))
     assert model.water == pytest.approx(88.0)
     assert enemy.state == "CAPTURED"
     assert [event.kind for event in capture_events] == ["enemy_captured"]
@@ -98,8 +100,29 @@ def test_bubble_fire_costs_water_and_capture_needs_second_press_for_discharge() 
     discharged = model.step(InputIntent(action_pressed=True), camera, dt)
 
     assert enemy.state == "DEFEATED"
+    assert model.actor_facing_target() == pytest.approx((enemy.x, enemy.z))
     assert model.energy == pytest.approx(40.0)
     assert [event.kind for event in discharged] == ["discharge_succeeded"]
+
+
+def test_action_target_direction_overrides_idle_sprite_facing() -> None:
+    model, _camera = make_model()
+    camera, enemy = place_action_scene(model)
+    renderer = Renderer(None)
+
+    model.step(InputIntent(action_pressed=True), camera, 1.0 / 60.0)
+    player_delta = renderer.actor_screen_facing_delta(model, camera, model.player.x, model.player.z)
+    buddy_delta = renderer.actor_screen_facing_delta(model, camera, model.buddy.x, model.buddy.z)
+    assert player_delta is not None
+    assert buddy_delta is not None
+
+    assert model.actor_facing_target() == pytest.approx((enemy.x, enemy.z))
+    assert renderer.player_sprite_direction_view(
+        model, camera
+    ) == renderer.screen_direction_view_name(*player_delta)
+    assert renderer.buddy_sprite_direction_view(
+        model, camera
+    ) == renderer.screen_direction_view_name(*buddy_delta)
 
 
 def test_bubble_failure_does_not_spend_water() -> None:

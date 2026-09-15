@@ -93,6 +93,33 @@ def test_inspection_records_read_id_and_emits_first_read_once() -> None:
     assert model.debug.inspected_count == 1
 
 
+def test_inspection_target_direction_overrides_idle_sprite_facing_until_closed() -> None:
+    model, _camera = make_model()
+    model.player.x = 160.0
+    model.player.z = 192.0
+    camera = camera_for_model(model)
+    renderer = Renderer(None)
+    sign = model.world.object_by_id("sign_start")
+    assert sign is not None
+
+    events = model.step(InputIntent(interact_pressed=True), camera, 1.0 / 60.0)
+    delta = renderer.actor_screen_facing_delta(model, camera, model.player.x, model.player.z)
+
+    assert [event.kind for event in events] == ["interaction_started"]
+    assert model.actor_facing_target() == pytest.approx((sign.x, sign.z))
+    assert delta is not None
+    assert renderer.player_sprite_direction_view(
+        model, camera
+    ) == renderer.screen_direction_view_name(*delta)
+
+    model.actor_facing_target_remaining = 0.0
+    model.update_paused(3.0)
+    assert model.actor_facing_target() == pytest.approx((sign.x, sign.z))
+
+    model.complete_interaction()
+    assert model.actor_facing_target() is None
+
+
 def test_world_stays_stopped_during_inspection() -> None:
     model, _camera = make_model()
     model.player.x = 192.0

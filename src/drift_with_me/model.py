@@ -141,6 +141,9 @@ class GameModel:
         self.barrier_blocked_until_release = False
         self.bubble: BubbleState | None = None
         self.bubble_cooldown_remaining = 0.0
+        self.actor_facing_target_x: float | None = None
+        self.actor_facing_target_z: float | None = None
+        self.actor_facing_target_remaining = 0.0
         self.inspected_object_ids: set[str] = set()
         self.active_enemy_ids: set[str] = set()
         self.auto_move_goal: tuple[float, float] | None = None
@@ -193,6 +196,9 @@ class GameModel:
         self.barrier_blocked_until_release = False
         self.bubble = None
         self.bubble_cooldown_remaining = 0.0
+        self.actor_facing_target_x = None
+        self.actor_facing_target_z = None
+        self.actor_facing_target_remaining = 0.0
         self.inspected_object_ids = set()
         self.active_enemy_ids = set()
         self.auto_move_goal = None
@@ -305,6 +311,10 @@ class GameModel:
         self.world_tick += 1
         self.action_lock_remaining = max(0.0, self.action_lock_remaining - dt)
         self.bubble_cooldown_remaining = max(0.0, self.bubble_cooldown_remaining - dt)
+        self.actor_facing_target_remaining = max(0.0, self.actor_facing_target_remaining - dt)
+        if self.actor_facing_target_remaining <= 0.0:
+            self.actor_facing_target_x = None
+            self.actor_facing_target_z = None
         self.player.stun_remaining = max(0.0, self.player.stun_remaining - dt)
         self.player.invulnerable_remaining = max(0.0, self.player.invulnerable_remaining - dt)
 
@@ -696,6 +706,7 @@ class GameModel:
             dz /= length
 
         self.water = clamp_resource(self.water - cost, self.water_max)
+        self.face_actor_toward(target.x, target.z)
         self.bubble = BubbleState(
             x=self.player.x,
             z=self.player.z,
@@ -750,6 +761,7 @@ class GameModel:
             return
 
         self.energy = clamp_resource(self.energy - cost, self.energy_max)
+        self.face_actor_toward(enemy.x, enemy.z)
         enemy.state = "DEFEATED"
         enemy.state_timer = 0.0
         self.action_lock_remaining = float(self.config["input"]["action_lock_sec"])
@@ -1057,6 +1069,8 @@ class GameModel:
             target_x=target.x,
             target_z=target.z,
         )
+        if kind == "inspect":
+            self.face_actor_toward(target.x, target.z)
         events.append(
             self.event_queue.emit(
                 world_tick=self.world_tick,
@@ -1067,6 +1081,36 @@ class GameModel:
                 payload={"interaction_kind": kind, "duration_sec": duration_sec},
             )
         )
+
+    def face_actor_toward(self, target_x: float, target_z: float) -> None:
+        if not math.isfinite(target_x) or not math.isfinite(target_z):
+            return
+        self.actor_facing_target_x = target_x
+        self.actor_facing_target_z = target_z
+        self.actor_facing_target_remaining = float(
+            self.config.get("interaction", {}).get("actor_face_target_sec", 0.75)
+        )
+
+    def clear_actor_facing_target(self) -> None:
+        self.actor_facing_target_x = None
+        self.actor_facing_target_z = None
+        self.actor_facing_target_remaining = 0.0
+
+    def actor_facing_target(self) -> tuple[float, float] | None:
+        if (
+            self.interaction is not None
+            and self.interaction.kind == "inspect"
+            and self.interaction.target_x is not None
+            and self.interaction.target_z is not None
+        ):
+            return self.interaction.target_x, self.interaction.target_z
+        if (
+            self.actor_facing_target_remaining > 0.0
+            and self.actor_facing_target_x is not None
+            and self.actor_facing_target_z is not None
+        ):
+            return self.actor_facing_target_x, self.actor_facing_target_z
+        return None
 
     def update_paused(self, dt: float) -> list[GameEvent]:
         events: list[GameEvent] = []
@@ -1134,6 +1178,7 @@ class GameModel:
             )
 
         self.interaction = None
+        self.clear_actor_facing_target()
         self.last_events = events
         return events
 
@@ -1149,6 +1194,7 @@ class GameModel:
             return events
         interaction = self.interaction
         self.interaction = None
+        self.clear_actor_facing_target()
         self.debug.cancelled_interactions += 1
         events.append(
             self.event_queue.emit(
