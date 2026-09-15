@@ -5,7 +5,7 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
 
-from drift_with_me.effects import EffectSystem, EnemySnapshot
+from drift_with_me.effects import EffectSystem, EnemySnapshot, ReactiveEnvironmentState
 from drift_with_me.hex_assets import (
     LoadedSpriteAsset,
     LoadedSpriteFrame,
@@ -296,7 +296,7 @@ class Renderer:
                     depth=anchor.depth,
                     layer_bias=0,
                     stable_id=obj.id,
-                    draw=lambda obj=obj: self.draw_object(model, obj, camera),
+                    draw=lambda obj=obj: self.draw_object(model, obj, camera, effects),
                     atmosphere_strength=self.object_atmosphere_strength(obj),
                 )
             )
@@ -385,8 +385,14 @@ class Renderer:
         )
         return commands
 
-    def draw_object(self, model: GameModel, obj: StaticObject, camera: CameraState) -> None:
-        if self.draw_object_sprite(model, obj, camera):
+    def draw_object(
+        self,
+        model: GameModel,
+        obj: StaticObject,
+        camera: CameraState,
+        effects: EffectSystem | None = None,
+    ) -> None:
+        if self.draw_object_sprite(model, obj, camera, effects):
             return
         if obj.kind == "sprite_prop":
             self.draw_sprite_prop(obj, camera)
@@ -795,10 +801,18 @@ class Renderer:
     ) -> LoadedSpriteAsset | None:
         return self.configured_sprite_asset(model, f"{visual}_asset")
 
-    def draw_object_sprite(self, model: GameModel, obj: StaticObject, camera: CameraState) -> bool:
+    def draw_object_sprite(
+        self,
+        model: GameModel,
+        obj: StaticObject,
+        camera: CameraState,
+        effects: EffectSystem | None = None,
+    ) -> bool:
         asset = self.object_sprite_asset(model, obj)
         if asset is None:
             return False
+        if obj.kind == "reactive_prop":
+            return self.draw_reactive_prop_sprite(model, obj, camera, asset, effects)
         if asset.definition.projection_mode == "ground_decal_source_v1":
             return self.draw_ground_source_asset(asset, camera, obj.x, obj.z)
         placement = placement_for_upright_height_billboard(
@@ -810,6 +824,151 @@ class Renderer:
             return False
         self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
+
+    def draw_reactive_prop_sprite(
+        self,
+        model: GameModel,
+        obj: StaticObject,
+        camera: CameraState,
+        asset: LoadedSpriteAsset,
+        effects: EffectSystem | None,
+    ) -> bool:
+        state = self.reactive_environment_state(effects, obj.id)
+        if asset.definition.projection_mode == "ground_decal_source_v1":
+            drawn = self.draw_ground_source_asset(asset, camera, obj.x, obj.z)
+            if drawn and state is not None:
+                self.draw_reactive_ground_prop_overlay(model, obj, camera, state)
+            return drawn
+
+        placement = placement_for_upright_height_billboard(
+            camera,
+            asset.definition,
+            Vec3(obj.x, 0.0, obj.z),
+        )
+        if placement is None:
+            return False
+        if state is not None and self.draw_reactive_upright_prop(
+            model, obj, camera, asset, placement, state
+        ):
+            self.draw_reactive_ground_prop_overlay(model, obj, camera, state)
+            return True
+        self.draw_atmospheric_scaled_sprite(asset, placement)
+        return True
+
+    def reactive_environment_state(
+        self, effects: EffectSystem | None, object_id: str
+    ) -> ReactiveEnvironmentState | None:
+        if effects is None:
+            return None
+        state = effects.reactive_environment_states.get(object_id)
+        if state is None or state.progress >= 1.0:
+            return None
+        return state
+
+    def draw_reactive_upright_prop(
+        self,
+        model: GameModel,
+        obj: StaticObject,
+        camera: CameraState,
+        asset: LoadedSpriteAsset,
+        placement,
+        state: ReactiveEnvironmentState,
+    ) -> bool:
+        frame = asset.frame()
+        source = frame.source
+        if source is None:
+            return False
+        direction = self.reactive_environment_screen_direction(camera, obj, state)
+        if direction is None:
+            return False
+        dir_x, dir_y = direction
+        config = model.config.get("reactive_environment", {})
+        bend_px = float(config.get("upright_bend_px", 10.0))
+        intensity = self.reactive_environment_intensity(state)
+        if intensity <= 1e-6:
+            return False
+
+        sample_step = 2 if placement.scale < 0.5 else 1
+        pixel_size = max(1, int(round(placement.scale * sample_step)))
+        source_width = max(1, int(source.width))
+        source_height = max(1, int(source.height))
+        for row_index, row in enumerate(source.rows):
+            if row_index % sample_step != 0:
+                continue
+            lift = 1.0 - row_index / max(source_height - 1, 1)
+            row_shift = bend_px * intensity * lift**1.35
+            for col_index, char in enumerate(row):
+                if col_index % sample_step != 0:
+                    continue
+                if int(char, 16) == asset.definition.colkey:
+                    continue
+                px = (
+                    placement.left
+                    + (col_index + 0.5) / source_width * (placement.right - placement.left)
+                    + dir_x * row_shift
+                )
+                py = (
+                    placement.top
+                    + (row_index + 0.5) / source_height * (placement.bottom - placement.top)
+                    + dir_y * row_shift * 0.5
+                )
+                color = self.atmosphere_dither_color(
+                    int(char, 16), col_index, row_index, asset.definition.colkey
+                )
+                if pixel_size <= 1:
+                    self.pyxel.pset(int(px), int(py), color)
+                else:
+                    self.pyxel.rect(int(px), int(py), pixel_size, pixel_size, color)
+        return True
+
+    def draw_reactive_ground_prop_overlay(
+        self,
+        model: GameModel,
+        obj: StaticObject,
+        camera: CameraState,
+        state: ReactiveEnvironmentState,
+    ) -> None:
+        root = camera.project(Vec3(obj.x, 0.0, obj.z))
+        direction = self.reactive_environment_screen_direction(camera, obj, state)
+        if root is None or direction is None:
+            return
+        dir_x, dir_y = direction
+        side_x, side_y = -dir_y, dir_x
+        config = model.config.get("reactive_environment", {})
+        length = float(config.get("overlay_line_px", 8.0)) * self.reactive_environment_intensity(
+            state
+        )
+        if length <= 1e-6:
+            return
+        spread = max(2.0, min(5.0, state.visual_radius * 0.18))
+        x = int(root.x)
+        y = int(root.y)
+        pyxel = self.pyxel
+        for side, color in ((-1.0, 11), (1.0, 3)):
+            sx = x + int(round(side_x * spread * side))
+            sy = y + int(round(side_y * spread * side))
+            ex = sx + int(round(dir_x * length + side_x * spread * side * 0.7))
+            ey = sy + int(round(dir_y * length + side_y * spread * side * 0.7))
+            pyxel.line(sx, sy, ex, ey, color)
+
+    def reactive_environment_intensity(self, state: ReactiveEnvironmentState) -> float:
+        return max(0.0, min(state.strength, 1.0)) * (1.0 - max(0.0, min(state.progress, 1.0)))
+
+    def reactive_environment_screen_direction(
+        self, camera: CameraState, obj: StaticObject, state: ReactiveEnvironmentState
+    ) -> tuple[float, float] | None:
+        root = camera.project(Vec3(obj.x, 0.0, obj.z))
+        moved = camera.project(
+            Vec3(obj.x + state.direction_x * 16.0, 0.0, obj.z + state.direction_z * 16.0)
+        )
+        if root is None or moved is None:
+            return None
+        dx = moved.x - root.x
+        dy = moved.y - root.y
+        length = math.hypot(dx, dy)
+        if length <= 1e-6:
+            return None
+        return dx / length, dy / length
 
     def object_sprite_asset(self, model: GameModel, obj: StaticObject) -> LoadedSpriteAsset | None:
         if obj.kind == "water_station":

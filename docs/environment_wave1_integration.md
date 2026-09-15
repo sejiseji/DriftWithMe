@@ -64,6 +64,8 @@ The current visual baseline is a single gray ground undercoat plus sparse, non-t
 
 AFF007-B adds the first static/dynamic environment split. Reactive environment props remain static world objects for collision and rendering, but `WorldData` now indexes `reactive_prop` entries by chunk and `EffectSystem` queries only Jack's world-space neighborhood before promoting a prop into a short-lived active state. The active state stores trigger radius, visual radius, reaction strength, movement direction, and recovery progress for future grass/reed/water/hanging-object animation waves. This replaces the old full `world.objects` scan used by grass burst reactions without changing collision, pathing, camera, source sprites, or the current visible grass asset.
 
+AFF007-C connects that active state to grass rendering. Tall upright grass is drawn from the received HEX source with row-wise screen displacement only while active, so the top bends in Jack's movement direction and then recovers. Low ground grass keeps the existing ground-decal projection and adds a short split overlay during the active window. The static sprite path remains unchanged when no active state exists, and the behavior still does not affect collision, pathing, camera, source pixels, or SE.
+
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
 - `concrete_clean_a`: source hash `e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640`

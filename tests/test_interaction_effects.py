@@ -3,7 +3,11 @@ from __future__ import annotations
 import pytest
 
 from drift_with_me.config import load_runtime_config
-from drift_with_me.effects import EffectSystem, presentation_cue_for_event
+from drift_with_me.effects import (
+    EffectSystem,
+    ReactiveEnvironmentState,
+    presentation_cue_for_event,
+)
 from drift_with_me.events import GameEvent
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import BubbleState, GameModel, InputIntent
@@ -286,6 +290,39 @@ def test_reactive_environment_state_uses_nearby_query_and_recovers() -> None:
     model.player.z = 0.0
     effects.update(1.0, model)
     assert effects.reactive_environment_states == {}
+
+
+def test_reactive_grass_render_helpers_use_active_state_until_recovered() -> None:
+    model, camera = make_model()
+    effects = EffectSystem(model.config)
+    renderer = Renderer(None)
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+    state = ReactiveEnvironmentState(
+        object_id=grass.id,
+        kind=grass.visual,
+        x=grass.x,
+        z=grass.z,
+        trigger_radius=grass.reaction_radius,
+        visual_radius=24.0,
+        strength=0.8,
+        direction_x=1.0,
+        direction_z=0.0,
+        recovery_sec=1.0,
+    )
+    effects.reactive_environment_states[grass.id] = state
+
+    direction = renderer.reactive_environment_screen_direction(camera, grass, state)
+
+    assert renderer.reactive_environment_state(effects, grass.id) is state
+    assert renderer.reactive_environment_intensity(state) == pytest.approx(0.8)
+    assert direction is not None
+    assert direction[0] > 0.0
+    assert abs((direction[0] ** 2 + direction[1] ** 2) ** 0.5 - 1.0) < 1e-6
+
+    state.age = state.recovery_sec
+    assert renderer.reactive_environment_state(effects, grass.id) is None
+    assert renderer.reactive_environment_intensity(state) == pytest.approx(0.0)
 
 
 def test_presentation_cue_mapping_for_existing_events() -> None:
