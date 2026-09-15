@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from drift_with_me.math3d import CameraState, Vec2, Vec3, normalize2
+from drift_with_me.math3d import AffineProjectionProfile, CameraState, Vec2, Vec3, normalize2
 from drift_with_me.world import CameraCue, CameraSequence, CameraZone, StaticObject, WorldData
 
 
@@ -61,7 +61,9 @@ class CameraController:
         self.viewport_width = viewport_width
         self.viewport_height = viewport_height
         self.camera_config = raw_config["camera"]
+        self.affine_profile = AffineProjectionProfile.from_config(raw_config)
         self.follow_target = Vec3(initial_target.x, 0.0, initial_target.z)
+        self.lookahead_offset = Vec2(0.0, 0.0)
         self.active_zone_id: str | None = None
         self.base_blend: CameraBlend | None = None
         self.sequence: SequenceRuntime | None = None
@@ -88,15 +90,23 @@ class CameraController:
 
     def reset(self, target: Vec3) -> None:
         self.follow_target = Vec3(target.x, 0.0, target.z)
+        self.lookahead_offset = Vec2(0.0, 0.0)
         self.active_zone_id = None
         self.base_blend = None
         self.sequence = None
         self.focus = None
         self.current = self.to_camera_state(self.follow_shot())
 
-    def update(self, dt: float, player_x: float, player_z: float) -> CameraState:
+    def update(
+        self,
+        dt: float,
+        player_x: float,
+        player_z: float,
+        lookahead_dir_x: float | None = None,
+        lookahead_dir_z: float | None = None,
+    ) -> CameraState:
         dt = max(0.0, dt)
-        self.update_follow_target(dt, player_x, player_z)
+        self.update_follow_target(dt, player_x, player_z, lookahead_dir_x, lookahead_dir_z)
         base = self.resolve_base_shot(player_x, player_z)
 
         if self.focus is not None:
@@ -197,7 +207,19 @@ class CameraController:
             return self.world.camera_zones[previous_id].leave_sec
         return float(self.camera_config["default_blend_sec"])
 
-    def update_follow_target(self, dt: float, player_x: float, player_z: float) -> None:
+    def update_follow_target(
+        self,
+        dt: float,
+        player_x: float,
+        player_z: float,
+        lookahead_dir_x: float | None = None,
+        lookahead_dir_z: float | None = None,
+    ) -> None:
+        if self.directional_lookahead_active(lookahead_dir_x, lookahead_dir_z):
+            self.update_directional_lookahead_target(
+                dt, player_x, player_z, lookahead_dir_x, lookahead_dir_z
+            )
+            return
         follow = self.follow_shot()
         camera = self.to_camera_state(follow)
         player = camera.project(Vec3(player_x, 0.0, player_z))
@@ -223,6 +245,85 @@ class CameraController:
         next_x = clamp(self.follow_target.x + delta.x * alpha, 0.0, self.world.width)
         next_z = clamp(self.follow_target.z + delta.y * alpha, 0.0, self.world.depth)
         self.follow_target = Vec3(next_x, 0.0, next_z)
+
+    def directional_lookahead_active(
+        self,
+        lookahead_dir_x: float | None,
+        lookahead_dir_z: float | None,
+    ) -> bool:
+        if not bool(self.camera_config.get("lookahead_enabled", False)):
+            return False
+        has_direction = lookahead_dir_x is not None and lookahead_dir_z is not None
+        return has_direction or self.lookahead_offset.length() > 1e-6
+
+    def update_directional_lookahead_target(
+        self,
+        dt: float,
+        player_x: float,
+        player_z: float,
+        lookahead_dir_x: float | None,
+        lookahead_dir_z: float | None,
+    ) -> None:
+        desired_offset = self.directional_lookahead_offset(lookahead_dir_x, lookahead_dir_z)
+        offset_tau = self.directional_lookahead_smoothing_tau(desired_offset)
+        offset_alpha = smoothing_alpha(dt, offset_tau)
+        self.lookahead_offset = Vec2(
+            self.lookahead_offset.x + (desired_offset.x - self.lookahead_offset.x) * offset_alpha,
+            self.lookahead_offset.y + (desired_offset.y - self.lookahead_offset.y) * offset_alpha,
+        )
+        desired_x = clamp(player_x + self.lookahead_offset.x, 0.0, self.world.width)
+        desired_z = clamp(player_z + self.lookahead_offset.y, 0.0, self.world.depth)
+        alpha = smoothing_alpha(dt, float(self.camera_config["follow_tau_sec"]))
+        self.follow_target = Vec3(
+            clamp(
+                self.follow_target.x + (desired_x - self.follow_target.x) * alpha,
+                0.0,
+                self.world.width,
+            ),
+            0.0,
+            clamp(
+                self.follow_target.z + (desired_z - self.follow_target.z) * alpha,
+                0.0,
+                self.world.depth,
+            ),
+        )
+
+    def directional_lookahead_offset(
+        self, direction_x: float | None, direction_z: float | None
+    ) -> Vec2:
+        if direction_x is None or direction_z is None:
+            return Vec2(0.0, 0.0)
+        length = math.hypot(direction_x, direction_z)
+        min_length = float(self.camera_config.get("lookahead_min_direction", 1e-4))
+        if length <= min_length or not math.isfinite(length):
+            return Vec2(0.0, 0.0)
+        dx = direction_x / length
+        dz = direction_z / length
+        screen_per_world_x = (
+            dx * self.affine_profile.basis_x.x + dz * self.affine_profile.basis_z.x
+        ) * self.affine_profile.viewport_scale(self.viewport_width)
+        screen_per_world_y = (
+            dx * self.affine_profile.basis_x.y + dz * self.affine_profile.basis_z.y
+        ) * self.affine_profile.viewport_scale(self.viewport_width)
+        screen_per_world = math.hypot(screen_per_world_x, screen_per_world_y)
+        if screen_per_world <= 1e-6 or not math.isfinite(screen_per_world):
+            return Vec2(0.0, 0.0)
+        screen_px = float(self.camera_config.get("lookahead_screen_ref_px", 64.0))
+        screen_px *= self.affine_profile.viewport_scale(self.viewport_width)
+        world_distance = screen_px / screen_per_world
+        max_world = float(self.camera_config.get("lookahead_limit", world_distance))
+        world_distance = min(world_distance, max(0.0, max_world))
+        return Vec2(dx * world_distance, dz * world_distance)
+
+    def directional_lookahead_smoothing_tau(self, desired_offset: Vec2) -> float:
+        if desired_offset.length() <= 1e-6 or self.lookahead_offset.length() <= 1e-6:
+            return float(self.camera_config.get("lookahead_smooth_sec", 0.3))
+        dot_value = (
+            desired_offset.x * self.lookahead_offset.x + desired_offset.y * self.lookahead_offset.y
+        )
+        if dot_value < 0.0:
+            return float(self.camera_config.get("lookahead_turn_smooth_sec", 0.4))
+        return float(self.camera_config.get("lookahead_smooth_sec", 0.3))
 
     def update_base_blend(self, dt: float, target: CameraShot) -> CameraShot:
         assert self.base_blend is not None

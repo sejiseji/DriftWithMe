@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from drift_with_me.camera import CameraController, camera_ground_axes
@@ -22,6 +24,16 @@ def make_controller() -> tuple[CameraController, GameModel]:
     )
     model.snap_buddy(controller.current)
     return controller, model
+
+
+def lookahead_screen_length(
+    controller: CameraController, offset_x: float, offset_z: float
+) -> float:
+    profile = controller.affine_profile
+    scale = profile.viewport_scale(controller.viewport_width)
+    screen_x = (offset_x * profile.basis_x.x + offset_z * profile.basis_z.x) * scale
+    screen_y = (offset_x * profile.basis_x.y + offset_z * profile.basis_z.y) * scale
+    return math.hypot(screen_x, screen_y)
 
 
 def test_overview_zone_uses_player_position_and_exit_margin() -> None:
@@ -77,6 +89,25 @@ def test_actor_focus_point_frames_target_slightly_below_center() -> None:
         float(controller.camera_config["base_distance"])
         / float(controller.camera_config["zoom_max"])
     )
+
+
+def test_directional_lookahead_uses_affine_screen_distance() -> None:
+    controller, _model = make_controller()
+    expected = float(controller.camera_config["lookahead_screen_ref_px"])
+    expected *= controller.affine_profile.viewport_scale(controller.viewport_width)
+
+    for direction_x, direction_z in [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)]:
+        offset = controller.directional_lookahead_offset(direction_x, direction_z)
+        assert lookahead_screen_length(controller, offset.x, offset.y) == pytest.approx(expected)
+
+
+def test_directional_lookahead_updates_follow_target_ahead_of_player() -> None:
+    controller, model = make_controller()
+
+    controller.update(2.0, model.player.x, model.player.z, 1.0, 0.0)
+
+    assert controller.follow_target.x > model.player.x
+    assert controller.follow_target.z == pytest.approx(model.player.z)
 
 
 def test_buddy_follows_camera_relative_goal_without_affecting_movement() -> None:

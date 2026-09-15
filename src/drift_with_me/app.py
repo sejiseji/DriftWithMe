@@ -125,6 +125,39 @@ class DriftWithMeApp:
     def camera(self) -> CameraState:
         return self.camera_controller.current
 
+    def update_camera_controller(self, elapsed: float) -> CameraState:
+        lookahead_x, lookahead_z = self.camera_lookahead_direction()
+        return self.camera_controller.update(
+            elapsed,
+            self.model.player.x,
+            self.model.player.z,
+            lookahead_x,
+            lookahead_z,
+        )
+
+    def camera_lookahead_direction(self) -> tuple[float | None, float | None]:
+        if self.projection_mode != "affine":
+            return None, None
+        if (
+            self.camera_controller.focus is not None
+            or self.camera_controller.sequence is not None
+            or self.camera_controller.active_zone_id is not None
+        ):
+            return None, None
+
+        min_length = float(self.runtime.raw["camera"].get("lookahead_min_direction", 0.05))
+        for target_x, target_z in self.model.auto_move_path:
+            dx = target_x - self.model.player.x
+            dz = target_z - self.model.player.z
+            if math.hypot(dx, dz) > min_length:
+                return dx, dz
+
+        dx = self.model.player.last_move_x
+        dz = self.model.player.last_move_z
+        if math.hypot(dx, dz) > min_length:
+            return dx, dz
+        return None, None
+
     def initial_projection_mode(self) -> str:
         mode = str(self.runtime.raw.get("projection", {}).get("mode", "perspective"))
         return mode if mode in {"perspective", "affine"} else "perspective"
@@ -330,25 +363,25 @@ class DriftWithMeApp:
                 if self.mouse_pressed_in(self.interact_button_rect()):
                     self.process_events(self.model.cancel_interaction())
                     self.camera_controller.cancel_focus()
-                    self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+                    self.update_camera_controller(elapsed)
                     return
                 if pyxel.btnp(pyxel.KEY_RETURN):
                     self.process_events(self.model.complete_interaction())
-                    self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+                    self.update_camera_controller(elapsed)
                     return
             elif interaction is not None and interaction.kind == "inspect":
                 if not self.inspect_completion_requested():
                     paused_events = self.model.update_paused(elapsed)
-                    self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+                    self.update_camera_controller(elapsed)
                     self.process_events(paused_events)
                     self.effects.update(elapsed, self.model)
                     return
                 self.process_events(self.model.complete_interaction())
                 self.camera_controller.cancel_focus()
-                self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+                self.update_camera_controller(elapsed)
                 return
             paused_events = self.model.update_paused(elapsed)
-            self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+            self.update_camera_controller(elapsed)
             self.process_events(paused_events)
             self.effects.update(elapsed, self.model)
             return
@@ -360,7 +393,7 @@ class DriftWithMeApp:
             self.pending_auto_move_goal = None
             self.pending_cancel_auto_move = False
             self.model.cancel_auto_move()
-            self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+            self.update_camera_controller(elapsed)
             self.effects.update(elapsed, self.model)
             return
 
@@ -430,7 +463,7 @@ class DriftWithMeApp:
                 self.accumulator = 0.0
                 break
 
-        self.camera_controller.update(elapsed, self.model.player.x, self.model.player.z)
+        self.update_camera_controller(elapsed)
 
         if steps >= max_steps and self.accumulator >= fixed_dt:
             self.accumulator = 0.0
