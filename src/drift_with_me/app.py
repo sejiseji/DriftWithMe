@@ -18,6 +18,7 @@ from drift_with_me.math3d import (
     Vec3,
     affine_camera_from_perspective,
     normalize2,
+    screen_to_ground_affine,
     screen_to_ground_point,
 )
 from drift_with_me.model import GameModel, InputIntent, merge_intents
@@ -367,9 +368,7 @@ class DriftWithMeApp:
         pointer_intent = self.pointer_intent(elapsed)
         ui_button_intent = self.ui_button_intent()
         ground_pointer_cancel_intent = self.ground_pointer_cancel_intent()
-        double_tap_intent = self.double_tap_move_intent(
-            elapsed, self.presentation_camera(input_camera)
-        )
+        double_tap_intent = self.double_tap_move_intent(elapsed, self.scene_camera(input_camera))
         if keyboard_intent.action_pressed or ui_button_intent.action_pressed:
             self.pending_action_pressed = True
         if keyboard_intent.interact_pressed or ui_button_intent.interact_pressed:
@@ -644,7 +643,9 @@ class DriftWithMeApp:
             return InputIntent()
         return InputIntent(cancel_auto_move=True)
 
-    def double_tap_move_intent(self, elapsed: float, camera: CameraState) -> InputIntent:
+    def double_tap_move_intent(
+        self, elapsed: float, camera: CameraState | AffineCameraState
+    ) -> InputIntent:
         if not bool(self.runtime.raw.get("auto_move", {}).get("enabled", False)):
             return InputIntent()
         pointer = self.pointer_snapshot
@@ -660,7 +661,7 @@ class DriftWithMeApp:
         if request is None:
             return InputIntent()
 
-        point = screen_to_ground_point(request.camera, request.screen_x, request.screen_y)
+        point = self.screen_to_ground(request.camera, request.screen_x, request.screen_y)
         if point is None or not (
             0.0 <= point.x <= self.world.width and 0.0 <= point.y <= self.world.depth
         ):
@@ -673,9 +674,16 @@ class DriftWithMeApp:
             return InputIntent()
         return InputIntent(auto_move_goal_x=point.x, auto_move_goal_z=point.y)
 
+    def screen_to_ground(
+        self, camera: CameraState | AffineCameraState, screen_x: float, screen_y: float
+    ):
+        if isinstance(camera, AffineCameraState):
+            return screen_to_ground_affine(camera, screen_x, screen_y)
+        return screen_to_ground_point(camera, screen_x, screen_y)
+
     def foreground_object_blocks_ground_pick(
         self,
-        camera: CameraState,
+        camera: CameraState | AffineCameraState,
         screen_x: float,
         screen_y: float,
         ground_x: float,
@@ -694,8 +702,8 @@ class DriftWithMeApp:
         for obj in self.world.objects:
             if not (obj.solid or obj.occludes_player or obj.inspectable):
                 continue
-            obj_projection = camera.project(Vec3(obj.x, 0.0, obj.z))
-            if obj_projection is None or obj_projection.depth > ground_projection.depth + 1e-6:
+            obj_depth = renderer.object_occlusion_depth(obj, camera)
+            if obj_depth is None or obj_depth > ground_projection.depth + 1e-6:
                 continue
             bounds = renderer.object_ground_pick_block_bounds(obj, camera)
             if bounds is not None and bounds.contains(screen_x, screen_y, margin):

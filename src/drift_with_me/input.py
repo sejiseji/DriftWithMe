@@ -4,7 +4,7 @@ import math
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from drift_with_me.math3d import CameraState
+from drift_with_me.math3d import AffineCameraState, CameraState
 from drift_with_me.model import InputIntent
 
 
@@ -32,7 +32,7 @@ class Rect:
 class DoubleTapMoveRequest:
     screen_x: float
     screen_y: float
-    camera: CameraState
+    camera: CameraState | AffineCameraState
 
 
 class DoubleTapMoveRecognizer:
@@ -77,7 +77,7 @@ class DoubleTapMoveRecognizer:
         y: float,
         dt: float,
         ui_rects: tuple[Rect, ...],
-        camera: CameraState,
+        camera: CameraState | AffineCameraState,
         accepting_world_input: bool = True,
     ) -> DoubleTapMoveRequest | None:
         dt = max(0.0, dt)
