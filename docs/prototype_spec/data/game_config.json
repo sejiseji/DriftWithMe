@@ -211,7 +211,7 @@
     "player_strength": 0.1
   },
   "grassland_micro": {
-    "enabled": false,
+    "enabled": true,
     "affine_only": true,
     "base_color": 3,
     "blade_color": 11,

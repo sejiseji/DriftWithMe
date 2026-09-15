@@ -71,9 +71,11 @@ Native headless reference measurements from the disabled 64 patch experiment:
 - Legacy review ground sources plus authored details: about `14.59 ms/frame`.
 - These are local headless measurements, not iPhone/Web runtime FPS guarantees.
 
-The current visual baseline is a single gray ground undercoat plus sparse, non-tile ground details. The broad `ground_surfaces` pavement review entries are disabled, and the authored `ground_details` list now carries small pebbles, fallen leaves, cracks with grass, and rubble around the spawn/station area. This avoids large projected pavement sheets while retaining local ground texture.
+The current visual baseline is a map-wide gray ground undercoat plus the grassland micro prototype where configured. The broad `ground_surfaces` pavement review entries are disabled, and the authored `ground_details` list is currently empty. Small pebbles, fallen leaves, crack sprout, and rubble assets remain available, but their world placements were removed after review because they read as dirty road damage in the current prototype.
 
-On 2026-09-15, a fixed-affine grassland micro prototype was added. This is not a new grass source asset and does not alter the received HEX pixels. It draws configured grassland rectangles as a green base plus 5-6 logical-pixel grass marks. After review, the marks were changed from screen-tile phase repetition to deterministic world-cell clumps: each tiny blade root is fixed in world X/Z, projected once, and drawn upright in screen space. This prevents the texture from reading like a HUD overlay while still avoiding per-pixel ground projection. After the 2026-09-16 review, this layer is disabled by default (`grassland_micro.enabled: false`) so regular play shows only authored world objects and authored sparse ground details; the prototype can still be re-enabled deliberately for comparison.
+On 2026-09-15, a fixed-affine grassland micro prototype was added. This is not a new grass source asset and does not alter the received HEX pixels. It draws configured grassland rectangles as a green base plus 5-6 logical-pixel grass marks. After review, the marks were changed from screen-tile phase repetition to deterministic world-cell clumps: each tiny blade root is fixed in world X/Z, projected once, and drawn upright in screen space. This prevents the texture from reading like a HUD overlay while still avoiding per-pixel ground projection. After the 2026-09-16 review, this layer remains enabled for grassland testing (`grassland_micro.enabled: true`); it should not be confused with the removed road-crack/rubble ground details.
+
+The renderer clears gameplay frames with the same gray color used by `draw_ground()` (`13`). This prevents uncovered map edges or out-of-world screen areas from switching to the old dark indigo clear color when the camera crosses certain positions.
 
 AFF007-B adds the first static/dynamic environment split. Reactive environment props remain static world objects for collision and rendering, but `WorldData` now indexes `reactive_prop` entries by chunk and `EffectSystem` queries only Jack's world-space neighborhood before promoting a prop into a short-lived active state. The active state stores trigger radius, visual radius, reaction strength, movement direction, and recovery progress for future grass/reed/water/hanging-object animation waves. This replaces the old full `world.objects` scan used by grass burst reactions without changing collision, pathing, camera, source sprites, or the current visible grass asset.
 
@@ -159,8 +161,9 @@ World data changes are limited to:
 - `visual` identifiers for trees and grass.
 - `sprite_world_size` for equipment and grass so visual culling matches the new sprites.
 - `ground_surfaces` is empty; large pavement review sheets are no longer active by default.
-- `ground_details` authored entries for sparse pebbles, fallen leaves, crack sprout, and small rubble.
+- `ground_details` is empty for the current prototype; sparse pebbles, fallen leaves, crack sprout, and small rubble assets are retained but not placed.
 - Grassland v0.1 low grass, edge, and scatter `ground_details` are currently not placed in the world because they are too large to read cleanly as ground-projected floor sprites.
+- `grassland_micro.enabled` is `true` so the current grassland micro surface test remains visible.
 - `objects` includes four grassland v0.1 tall grass `reactive_prop` entries. They are visual-only and do not change collision or pathing.
 - `visual_detail_per_chunk` is `0`; random small-detail scatter is deferred until a cheaper tiling/sprite path is available.
 

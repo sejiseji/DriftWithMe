@@ -27,7 +27,6 @@ from drift_with_me.render import (
     ATMOSPHERE_EQUIPMENT_STRENGTH,
     ATMOSPHERE_FAR_DITHER_CELLS,
     ATMOSPHERE_FAR_PALETTE,
-    ATMOSPHERE_GROUND_DETAIL_STRENGTH,
     ATMOSPHERE_MID_DITHER_CELLS,
     ATMOSPHERE_NATURE_PROP_STRENGTH,
     ATMOSPHERE_PLAYER_STRENGTH,
@@ -191,17 +190,11 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     pyxel = RecordingPyxel()
     renderer = Renderer(pyxel)
     config = runtime.raw["grassland_micro"]
+    model = GameModel(runtime.raw, world)
 
-    assert config["enabled"] is False
+    assert config["enabled"] is True
     assert config["affine_only"] is True
     assert config["cell_world"] == pytest.approx(24.0)
-    assert renderer.draw_grassland_micro_layer(GameModel(runtime.raw, world), affine) == 0
-
-    enabled_config = dict(config)
-    enabled_config["enabled"] = True
-    enabled_raw = dict(runtime.raw)
-    enabled_raw["grassland_micro"] = enabled_config
-    model = GameModel(enabled_raw, world)
     assert renderer.draw_grassland_micro_layer(model, perspective) == 0
 
     assert renderer.draw_grassland_micro_layer(model, affine) == 1
@@ -245,7 +238,7 @@ def test_affine_buddy_y_separates_body_from_ground_shadow() -> None:
     assert body.y < shadow.y
 
 
-def test_affine_entity_roots_project_for_equipment_tree_enemy_and_ground_detail() -> None:
+def test_affine_entity_roots_project_for_equipment_tree_enemy_and_world_patch() -> None:
     runtime, world, _perspective, _profile, affine = make_affine_camera()
     model = GameModel(runtime.raw, world)
 
@@ -260,8 +253,11 @@ def test_affine_entity_roots_project_for_equipment_tree_enemy_and_ground_detail(
     assert affine.project(Vec3(normal_enemy.x, 0.0, normal_enemy.z)) is not None
     assert affine.project(Vec3(abnormal_enemy.x, 0.0, abnormal_enemy.z)) is not None
 
-    detail = model.world.ground_details[0]
-    assert affine.project(Vec3(detail.x, 0.0, detail.z)) is not None
+    assert model.world.ground_details == ()
+    patch = next(
+        item for item in model.world.baked_ground_patches if item.group == "affine_static_128"
+    )
+    assert affine.project(Vec3(patch.x, 0.0, patch.z)) is not None
 
 
 def test_affine_fallback_screen_radii_do_not_depend_on_depth() -> None:
@@ -431,12 +427,11 @@ def test_affine_atmosphere_tuning_keeps_gameplay_entities_readable() -> None:
     commands = renderer.world_commands(model, affine, 0.0)
     strengths = {command.stable_id: command.atmosphere_strength for command in commands}
     enemy_id = next(enemy.id for enemy in model.enemies)
-    detail_id = model.world.ground_details[0].id
 
     assert strengths["player"] == ATMOSPHERE_PLAYER_STRENGTH
     assert strengths["buddy"] == ATMOSPHERE_BUDDY_STRENGTH
     assert strengths[enemy_id] == ATMOSPHERE_ENEMY_STRENGTH
-    assert strengths[detail_id] == ATMOSPHERE_GROUND_DETAIL_STRENGTH
+    assert not any(key.startswith("ground_detail:") for key in strengths)
     assert strengths["player"] < strengths[enemy_id] < renderer.object_atmosphere_strength(tree)
     assert strengths["buddy"] < strengths[enemy_id]
 

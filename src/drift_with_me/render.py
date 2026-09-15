@@ -186,7 +186,7 @@ class Renderer:
     ) -> None:
         pyxel = self.pyxel
         self._atmosphere_config = model.config.get("atmosphere", {})
-        pyxel.cls(1)
+        pyxel.cls(13)
         self.draw_ground(model.world, camera)
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
