@@ -217,8 +217,8 @@
     "blade_color": 11,
     "blade_shadow_color": 3,
     "blade_accent_color": 10,
-    "tile_width_px": 32,
-    "tile_height_px": 24,
+    "cell_world": 24.0,
+    "max_visible_clumps": 520,
     "areas": [
       {
         "id": "spawn_grassland_micro",

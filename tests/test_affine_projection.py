@@ -186,7 +186,7 @@ def test_affine_xz_screen_vectors_are_position_invariant() -> None:
     assert comparison_z.y - comparison_root.y == pytest.approx(base_z.y - base_root.y)
 
 
-def test_grassland_micro_layer_uses_affine_phase_and_is_affine_only() -> None:
+def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -> None:
     runtime, world, perspective, _profile, affine = make_affine_camera()
     model = GameModel(runtime.raw, world)
     pyxel = RecordingPyxel()
@@ -195,25 +195,25 @@ def test_grassland_micro_layer_uses_affine_phase_and_is_affine_only() -> None:
 
     assert config["enabled"] is True
     assert config["affine_only"] is True
+    assert config["cell_world"] == pytest.approx(24.0)
     assert renderer.draw_grassland_micro_layer(model, perspective) == 0
-
-    origin = affine.project(Vec3(0.0, 0.0, 0.0))
-    assert origin is not None
-    assert renderer.grassland_micro_phase(affine, 32, 24) == pytest.approx(
-        (origin.x % 32, origin.y % 24)
-    )
-
-    shifted = replace(
-        affine,
-        target=Vec3(affine.target.x + 32.0, affine.target.y, affine.target.z),
-    )
-    assert renderer.grassland_micro_phase(shifted, 32, 24) != pytest.approx(
-        renderer.grassland_micro_phase(affine, 32, 24)
-    )
 
     assert renderer.draw_grassland_micro_layer(model, affine) == 1
     assert any(call[0] == "tri" and call[-1] == config["base_color"] for call in pyxel.calls)
-    assert any(call[0] == "line" for call in pyxel.calls)
+    base_lines = [call for call in pyxel.calls if call[0] == "line"]
+    assert base_lines
+
+    shifted = replace(
+        affine,
+        target=Vec3(affine.target.x, affine.target.y, affine.target.z + 32.0),
+    )
+    pyxel.calls.clear()
+    assert renderer.draw_grassland_micro_layer(model, shifted) == 1
+    shifted_lines = [call for call in pyxel.calls if call[0] == "line"]
+    assert shifted_lines
+    assert {(call[1], call[2]) for call in base_lines[:16]} != {
+        (call[1], call[2]) for call in shifted_lines[:16]
+    }
 
 
 def test_affine_height_projects_straight_up_for_actor_roots() -> None:

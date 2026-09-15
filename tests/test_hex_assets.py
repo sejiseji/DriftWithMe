@@ -848,7 +848,7 @@ assert renderer.object_sprite_asset(model, grassland_tall).definition.asset_id =
 assert renderer.object_sprite_asset(model, grassland_tall).definition.projection_mode == (
     "upright_height_billboard_v1"
 )
-assert len(model.world.ground_details) == 22
+assert len(model.world.ground_details) == 12
 detail = model.world.ground_details[0]
 assert detail.id == "nature_review_pebbles"
 assert renderer.ground_detail_sprite_asset(model, detail).definition.asset_id == "pebbles_a_64"
@@ -862,23 +862,7 @@ assert authored_detail_assets == [
     "crack_sprout_a_64",
     "rubble_small_a_64",
 ]
-grassland_detail_assets = {{
-    item.id: renderer.ground_detail_sprite_asset(model, item).definition.asset_id
-    for item in model.world.ground_details
-    if item.id.startswith("grassland_")
-}}
-assert grassland_detail_assets == {{
-    "grassland_low_a_spawn_west": "grass_patch_low_a_64",
-    "grassland_low_b_spawn_east": "grass_patch_low_b_64",
-    "grassland_edge_spawn_north": "grass_edge_a_64",
-    "grassland_scatter_spawn_south": "grass_scatter_a_64",
-    "grassland_low_a_mid_path": "grass_patch_low_a_64",
-    "grassland_low_b_mid_path": "grass_patch_low_b_64",
-    "grassland_edge_mid_path": "grass_edge_a_64",
-    "grassland_scatter_mid_path": "grass_scatter_a_64",
-    "grassland_low_a_far_plaza": "grass_patch_low_a_64",
-    "grassland_edge_far_plaza": "grass_edge_a_64",
-}}
+assert not any(item.id.startswith("grassland_") for item in model.world.ground_details)
 pyxel.cls(3)
 for item in model.world.ground_details[:4]:
     assert renderer.draw_ground_detail_sprite(model, item, camera)

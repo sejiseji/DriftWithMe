@@ -49,7 +49,7 @@ Grassland direct v0.1 assets were connected on 2026-09-15. These six sprites are
 - `grass_edge_a`: source hash `ab61e3da8b6005d4a11eb5c1a446a6e7b279aea8422138895d38f11b51fbd977`
 - `grass_scatter_a`: source hash `8eaca3d8803852bea6446d34211cb05cfa2921fbb5ea76d99fc211156ffe99a8`
 
-All grassland direct v0.1 sprites use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. Low grass, edge, and scatter assets are placed as authored `ground_details`; the two tall grass assets are `reactive_prop` upright billboards and use the existing AFF007-C bending path.
+All grassland direct v0.1 sprites use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. The low grass, edge, and scatter assets remain available in the manifest, but their authored `ground_details` placements were removed after the grassland prototype review because the large source sprites read as flattened floor decals under affine projection. The two tall grass assets remain `reactive_prop` upright billboards and use the existing AFF007-C bending path.
 
 After the initial v0.3 connection, the random per-chunk ground-detail generation was disabled (`visual_detail_per_chunk: 0`) because each 64 x 64 ground-projected source is expensive to project per frame in Pyxel Web. The authored one-each review placements remain active.
 
@@ -73,7 +73,7 @@ Native headless reference measurements from the disabled 64 patch experiment:
 
 The current visual baseline is a single gray ground undercoat plus sparse, non-tile ground details. The broad `ground_surfaces` pavement review entries are disabled, and the authored `ground_details` list now carries small pebbles, fallen leaves, cracks with grass, and rubble around the spawn/station area. This avoids large projected pavement sheets while retaining local ground texture.
 
-On 2026-09-15, a fixed-affine grassland micro prototype was added. This is not a new grass source asset and does not alter the received HEX pixels. It draws configured grassland rectangles as a green base plus 5-6 logical-pixel screen-space grass marks. The marks use a phase derived from the affine projection of world origin, so camera target movement and directional lookahead move the pattern with the ground instead of pinning it to the HUD. The layer is `affine_only` and runs before sparse ground details and upright high grass. The existing `grass_edge_a`, low grass details, and `grass_patch_tall_a/b` reactive props remain the authored visual anchors around the micro field.
+On 2026-09-15, a fixed-affine grassland micro prototype was added. This is not a new grass source asset and does not alter the received HEX pixels. It draws configured grassland rectangles as a green base plus 5-6 logical-pixel grass marks. After review, the marks were changed from screen-tile phase repetition to deterministic world-cell clumps: each tiny blade root is fixed in world X/Z, projected once, and drawn upright in screen space. This prevents the texture from reading like a HUD overlay while still avoiding per-pixel ground projection. The layer is `affine_only` and runs before sparse ground details and upright high grass.
 
 AFF007-B adds the first static/dynamic environment split. Reactive environment props remain static world objects for collision and rendering, but `WorldData` now indexes `reactive_prop` entries by chunk and `EffectSystem` queries only Jack's world-space neighborhood before promoting a prop into a short-lived active state. The active state stores trigger radius, visual radius, reaction strength, movement direction, and recovery progress for future grass/reed/water/hanging-object animation waves. This replaces the old full `world.objects` scan used by grass burst reactions without changing collision, pathing, camera, source sprites, or the current visible grass asset.
 
@@ -160,7 +160,7 @@ World data changes are limited to:
 - `sprite_world_size` for equipment and grass so visual culling matches the new sprites.
 - `ground_surfaces` is empty; large pavement review sheets are no longer active by default.
 - `ground_details` authored entries for sparse pebbles, fallen leaves, crack sprout, and small rubble.
-- `ground_details` also includes fixed grassland v0.1 low grass, edge, and scatter entries around spawn, the path, and the far plaza.
+- Grassland v0.1 low grass, edge, and scatter `ground_details` are currently not placed in the world because they are too large to read cleanly as ground-projected floor sprites.
 - `objects` includes four grassland v0.1 tall grass `reactive_prop` entries. They are visual-only and do not change collision or pathing.
 - `visual_detail_per_chunk` is `0`; random small-detail scatter is deferred until a cheaper tiling/sprite path is available.
 
