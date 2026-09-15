@@ -170,6 +170,18 @@ class GameModel:
         return float(self.config["player"]["collider_half_z"])
 
     @property
+    def player_solid_margin(self) -> float:
+        return max(0.0, float(self.config["player"].get("solid_collision_margin", 0.0)))
+
+    @property
+    def player_solid_half_x(self) -> float:
+        return self.player_half_x + self.player_solid_margin
+
+    @property
+    def player_solid_half_z(self) -> float:
+        return self.player_half_z + self.player_solid_margin
+
+    @property
     def player_cube_size(self) -> float:
         return float(self.config["player"]["cube_size"])
 
@@ -400,7 +412,12 @@ class GameModel:
         if not math.isfinite(goal_x) or not math.isfinite(goal_z):
             self.emit_denied(events, "auto_move_blocked", scope="auto_move")
             return
-        if self.world.collides_player(goal_x, goal_z, self.player_half_x, self.player_half_z):
+        if self.world.collides_player(
+            goal_x,
+            goal_z,
+            self.player_solid_half_x,
+            self.player_solid_half_z,
+        ):
             self.emit_denied(events, "auto_move_blocked", scope="auto_move")
             return
         if not self.auto_move_path_clear(goal_x, goal_z):
@@ -421,7 +438,7 @@ class GameModel:
     def auto_move_nav_radius(self) -> float:
         auto_move = self.config.get("auto_move", {})
         clearance = float(auto_move.get("nav_clearance_world", 0.0))
-        return max(self.player_half_x, self.player_half_z) + max(0.0, clearance)
+        return max(self.player_solid_half_x, self.player_solid_half_z) + max(0.0, clearance)
 
     def find_auto_move_path(self, goal_x: float, goal_z: float) -> list[tuple[float, float]] | None:
         auto_move = self.config.get("auto_move", {})
@@ -628,8 +645,8 @@ class GameModel:
             before_z,
             delta_x,
             delta_z,
-            self.player_half_x,
-            self.player_half_z,
+            self.player_solid_half_x,
+            self.player_solid_half_z,
         )
         self.player.x = next_x
         self.player.z = next_z
@@ -1612,8 +1629,8 @@ class GameModel:
             self.player.z,
             dx * distance,
             dz * distance,
-            self.player_half_x,
-            self.player_half_z,
+            self.player_solid_half_x,
+            self.player_solid_half_z,
         )
 
     def enemy_radius(self, enemy: EnemyState) -> float:

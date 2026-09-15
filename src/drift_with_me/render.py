@@ -414,6 +414,9 @@ class Renderer:
         rect = self.grassland_micro_world_rect(area)
         if rect is None:
             return False
+        rect = self.grassland_micro_visible_draw_rect(camera, rect, area, config)
+        if rect is None:
+            return False
         x0, z0, x1, z1 = rect
         corners = (
             camera.project(Vec3(x0, 0.0, z0)),
@@ -445,6 +448,28 @@ class Renderer:
         if abs(x1 - x0) <= 1e-6 or abs(z1 - z0) <= 1e-6:
             return None
         return min(x0, x1), min(z0, z1), max(x0, x1), max(z0, z1)
+
+    def grassland_micro_visible_draw_rect(
+        self,
+        camera: CameraState,
+        rect: tuple[float, float, float, float],
+        area: dict,
+        config: dict,
+    ) -> tuple[float, float, float, float] | None:
+        if not self.camera_is_affine(camera):
+            return rect
+        visible_rect = self.grassland_micro_visible_world_rect(camera, margin_px=16.0)
+        if visible_rect is None:
+            return rect
+        x0, z0, x1, z1 = rect
+        vx0, vz0, vx1, vz1 = visible_rect
+        x0 = max(x0, vx0)
+        z0 = max(z0, vz0)
+        x1 = min(x1, vx1)
+        z1 = min(z1, vz1)
+        if x0 >= x1 or z0 >= z1:
+            return None
+        return x0, z0, x1, z1
 
     def projected_quad_bounds(self, points: tuple[ProjectedPoint | None, ...]) -> ScreenRect | None:
         projected = [point for point in points if point is not None]

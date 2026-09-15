@@ -98,6 +98,20 @@ def test_wall_collision_slides_along_tangent_axis() -> None:
     assert z > 300.0
 
 
+def test_player_solid_collision_margin_keeps_sprite_clear_of_box() -> None:
+    model, _camera = make_model()
+    margin = float(model.config["player"]["solid_collision_margin"])
+    wall = model.world.object_by_id("wall_01")
+    assert wall is not None
+    assert margin > 0.0
+
+    model.player.x = wall.min_x - model.player_solid_half_x - 24.0
+    model.player.z = wall.z
+    model.move_player_by_delta(96.0, 0.0)
+
+    assert model.player.x <= wall.min_x - model.player_solid_half_x
+
+
 def pytest_approx(value: float):
     import pytest
 

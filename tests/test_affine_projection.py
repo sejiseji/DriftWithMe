@@ -198,7 +198,8 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["min_blades_per_cell"] == 1
     assert config["max_blades_per_cell"] == 5
     assert config["base_variation_enabled"] is True
-    assert config["areas"][0]["rect_xz"] == [0.0, 0.0, 1024.0, 1024.0]
+    assert config["base_variation_color"] != 13
+    assert config["areas"][0]["rect_xz"] == [-256.0, -256.0, 1280.0, 1280.0]
     assert renderer.draw_grassland_micro_layer(model, perspective) == 0
 
     assert renderer.draw_grassland_micro_layer(model, affine) == 1
@@ -217,6 +218,16 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert {(call[1], call[2]) for call in base_lines[:16]} != {
         (call[1], call[2]) for call in shifted_lines[:16]
     }
+
+    overview = replace(
+        affine,
+        target=Vec3(768.0, 0.0, 768.0),
+        zoom=0.7,
+    )
+    pyxel.calls.clear()
+    assert renderer.draw_grassland_micro_layer(model, overview) == 1
+    assert any(call[0] == "tri" and call[-1] == config["base_color"] for call in pyxel.calls)
+    assert any(call[0] == "line" for call in pyxel.calls)
 
 
 def test_affine_height_projects_straight_up_for_actor_roots() -> None:
