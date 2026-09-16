@@ -230,8 +230,13 @@
     "transition_cell_world": 8.0,
     "transition_pattern": "noise",
     "transition_soft_color": 11,
+    "edge_irregularity_world": 12.0,
     "micro_density_inner": 1.0,
     "micro_density_edge": 0.2,
+    "density_variation_enabled": true,
+    "density_variation_cell_world": 56.0,
+    "density_variation_min": 0.52,
+    "density_variation_max": 1.0,
     "areas": [
       {
         "id": "spawn_grassland_micro",

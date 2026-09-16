@@ -573,6 +573,7 @@ class Renderer:
             tuple(round(value, 4) for value in area_rect),
             round(float(transition_world), 4),
             round(float(tile_world), 4),
+            round(self.grassland_edge_irregularity_world(area, config), 4),
             int(color),
             int(soft_color),
             int(phase),
@@ -612,7 +613,12 @@ class Renderer:
                 center_x = (cell_x0 + cell_x1) * 0.5
                 center_z = (cell_z0 + cell_z1) * 0.5
                 coverage = self.grassland_base_coverage(
-                    area_rect, center_x, center_z, transition_world
+                    area_rect,
+                    center_x,
+                    center_z,
+                    transition_world,
+                    area,
+                    config,
                 )
                 if coverage <= 0:
                     continue
@@ -796,7 +802,13 @@ class Renderer:
                         transition_world,
                         density_inner,
                         density_edge,
+                        area,
+                        config,
                     )
+                    density *= self.grassland_micro_density_variation(
+                        world_x, world_z, area, config
+                    )
+                    density = max(0.0, min(density, 1.0))
                     if density <= 0.0:
                         continue
                     if (
@@ -911,6 +923,8 @@ class Renderer:
                     center_x,
                     center_z,
                     transition_world,
+                    area,
+                    config,
                 )
                 if coverage <= 0.0:
                     continue
@@ -1008,12 +1022,50 @@ class Renderer:
         except (TypeError, ValueError):
             return 8.0
 
+    def grassland_edge_irregularity_world(self, area: dict, config: dict) -> float:
+        try:
+            return max(
+                0.0,
+                float(
+                    area.get(
+                        "edge_irregularity_world",
+                        config.get("edge_irregularity_world", 0.0),
+                    )
+                ),
+            )
+        except (TypeError, ValueError):
+            return 0.0
+
+    def grassland_edge_offset_world(
+        self,
+        world_x: float,
+        world_z: float,
+        area: dict | None,
+        config: dict | None,
+    ) -> float:
+        if area is None or config is None:
+            return 0.0
+        amplitude = self.grassland_edge_irregularity_world(area, config)
+        if amplitude <= 0.0:
+            return 0.0
+        cell_world = self.grassland_transition_cell_world(area, config)
+        seed = int(area.get("phase", config.get("phase", 0)))
+        cell_x = math.floor(world_x / cell_world)
+        cell_z = math.floor(world_z / cell_world)
+        coarse_x = math.floor(world_x / max(cell_world * 2.0, 1.0))
+        coarse_z = math.floor(world_z / max(cell_world * 2.0, 1.0))
+        fine = self.grassland_unit(cell_x, cell_z, 401, seed)
+        coarse = self.grassland_unit(coarse_x, coarse_z, 402, seed)
+        return ((fine * 0.45 + coarse * 0.55) * 2.0 - 1.0) * amplitude
+
     def grassland_transition_t(
         self,
         area_rect: tuple[float, float, float, float],
         world_x: float,
         world_z: float,
         transition_world: float,
+        area: dict | None = None,
+        config: dict | None = None,
     ) -> float:
         x0, z0, x1, z1 = area_rect
         if world_x < x0 or world_x > x1 or world_z < z0 or world_z > z1:
@@ -1021,6 +1073,7 @@ class Renderer:
         if transition_world <= 1e-6:
             return 1.0
         distance_inside = min(world_x - x0, x1 - world_x, world_z - z0, z1 - world_z)
+        distance_inside += self.grassland_edge_offset_world(world_x, world_z, area, config)
         return max(0.0, min(distance_inside / transition_world, 1.0))
 
     def grassland_base_coverage(
@@ -1029,8 +1082,17 @@ class Renderer:
         world_x: float,
         world_z: float,
         transition_world: float,
+        area: dict | None = None,
+        config: dict | None = None,
     ) -> float:
-        t = self.grassland_transition_t(area_rect, world_x, world_z, transition_world)
+        t = self.grassland_transition_t(
+            area_rect,
+            world_x,
+            world_z,
+            transition_world,
+            area,
+            config,
+        )
         return max(0.0, min(t * t * (3.0 - 2.0 * t), 1.0))
 
     def grassland_transition_soft_color(self, area: dict, config: dict, fallback: int) -> int:
@@ -1123,9 +1185,75 @@ class Renderer:
         transition_world: float,
         density_inner: float,
         density_edge: float,
+        area: dict | None = None,
+        config: dict | None = None,
     ) -> float:
-        t = self.grassland_transition_t(area_rect, world_x, world_z, transition_world)
+        t = self.grassland_transition_t(
+            area_rect,
+            world_x,
+            world_z,
+            transition_world,
+            area,
+            config,
+        )
         return max(0.0, min(density_edge + (density_inner - density_edge) * t, 1.0))
+
+    def grassland_micro_density_variation(
+        self,
+        world_x: float,
+        world_z: float,
+        area: dict,
+        config: dict,
+    ) -> float:
+        if not bool(
+            area.get("density_variation_enabled", config.get("density_variation_enabled", False))
+        ):
+            return 1.0
+        try:
+            cell_world = max(
+                16.0,
+                float(
+                    area.get(
+                        "density_variation_cell_world",
+                        config.get("density_variation_cell_world", 64.0),
+                    )
+                ),
+            )
+        except (TypeError, ValueError):
+            cell_world = 64.0
+        try:
+            min_factor = max(
+                0.0,
+                float(
+                    area.get(
+                        "density_variation_min",
+                        config.get("density_variation_min", 0.55),
+                    )
+                ),
+            )
+        except (TypeError, ValueError):
+            min_factor = 0.55
+        try:
+            max_factor = max(
+                min_factor,
+                float(
+                    area.get(
+                        "density_variation_max",
+                        config.get("density_variation_max", 1.1),
+                    )
+                ),
+            )
+        except (TypeError, ValueError):
+            max_factor = 1.1
+        seed = int(area.get("phase", config.get("phase", 0)))
+        cell_x = math.floor(world_x / cell_world)
+        cell_z = math.floor(world_z / cell_world)
+        coarse_x = math.floor(world_x / max(cell_world * 2.0, 1.0))
+        coarse_z = math.floor(world_z / max(cell_world * 2.0, 1.0))
+        fine = self.grassland_unit(cell_x, cell_z, 501, seed)
+        coarse = self.grassland_unit(coarse_x, coarse_z, 502, seed)
+        value = fine * 0.4 + coarse * 0.6
+        return min_factor + (max_factor - min_factor) * value
 
     def draw_micro_grass_blade(
         self,

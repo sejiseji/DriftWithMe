@@ -203,8 +203,13 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["transition_cell_world"] == pytest.approx(8.0)
     assert config["transition_pattern"] == "noise"
     assert config["transition_soft_color"] == 11
+    assert config["edge_irregularity_world"] == pytest.approx(12.0)
     assert config["micro_density_inner"] == pytest.approx(1.0)
     assert config["micro_density_edge"] == pytest.approx(0.2)
+    assert config["density_variation_enabled"] is True
+    assert config["density_variation_cell_world"] == pytest.approx(56.0)
+    assert config["density_variation_min"] == pytest.approx(0.52)
+    assert config["density_variation_max"] == pytest.approx(1.0)
     assert config["areas"][0]["bounds_ref"] == "visual_ground"
     assert world.visual_ground_rect.min_x == pytest.approx(-256.0)
     assert world.visual_ground_rect.max_x == pytest.approx(1280.0)
@@ -268,6 +273,43 @@ def test_grassland_boundary_transition_classification_and_density() -> None:
     assert renderer.grassland_transition_soft_coverage(0.2) > 0.2
     assert renderer.grassland_transition_base_coverage(0.2) == pytest.approx(0.0)
     assert renderer.grassland_transition_base_coverage(0.8) > 0.5
+
+
+def test_grassland_boundary_irregularity_is_world_deterministic() -> None:
+    renderer = Renderer(RecordingPyxel())
+    rect = (0.0, 0.0, 128.0, 128.0)
+    area = {"phase": 4}
+    config = {"edge_irregularity_world": 12.0, "transition_cell_world": 8.0}
+    plain = renderer.grassland_transition_t(rect, 16.0, 64.0, 32.0)
+    irregular = renderer.grassland_transition_t(rect, 16.0, 64.0, 32.0, area, config)
+
+    assert irregular == pytest.approx(
+        renderer.grassland_transition_t(rect, 16.0, 64.0, 32.0, area, config)
+    )
+    assert irregular != pytest.approx(plain)
+    assert 0.0 <= irregular <= 1.0
+
+
+def test_grassland_micro_density_variation_is_world_deterministic() -> None:
+    renderer = Renderer(RecordingPyxel())
+    area = {"phase": 2}
+    config = {
+        "density_variation_enabled": True,
+        "density_variation_cell_world": 56.0,
+        "density_variation_min": 0.52,
+        "density_variation_max": 1.0,
+    }
+    values = [
+        renderer.grassland_micro_density_variation(world_x, world_z, area, config)
+        for world_x, world_z in ((24.0, 24.0), (88.0, 24.0), (152.0, 96.0), (216.0, 168.0))
+    ]
+
+    assert values == [
+        renderer.grassland_micro_density_variation(world_x, world_z, area, config)
+        for world_x, world_z in ((24.0, 24.0), (88.0, 24.0), (152.0, 96.0), (216.0, 168.0))
+    ]
+    assert all(0.52 <= value <= 1.0 for value in values)
+    assert len({round(value, 3) for value in values}) > 1
 
 
 def test_grassland_bayer_pattern_is_world_cell_deterministic() -> None:
