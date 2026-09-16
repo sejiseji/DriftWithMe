@@ -227,7 +227,7 @@
     "base_variation_cell_world": 96.0,
     "max_visible_base_patches": 48,
     "transition_world": 32.0,
-    "transition_cell_world": 8.0,
+    "transition_cell_world": 4.0,
     "transition_pattern": "noise",
     "micro_density_inner": 1.0,
     "micro_density_edge": 0.2,

@@ -200,7 +200,7 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["base_variation_enabled"] is False
     assert config["base_variation_color"] != 13
     assert config["transition_world"] == pytest.approx(32.0)
-    assert config["transition_cell_world"] == pytest.approx(8.0)
+    assert config["transition_cell_world"] == pytest.approx(4.0)
     assert config["transition_pattern"] == "noise"
     assert config["micro_density_inner"] == pytest.approx(1.0)
     assert config["micro_density_edge"] == pytest.approx(0.2)
