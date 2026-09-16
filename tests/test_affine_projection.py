@@ -307,6 +307,34 @@ def test_grassland_noise_pattern_is_world_cell_deterministic() -> None:
     assert 16 <= sum(first) <= 48
 
 
+def test_grassland_boundary_transition_skips_prefilled_interior_cells() -> None:
+    runtime, world, _perspective, profile, _affine = make_affine_camera()
+    pyxel = RecordingPyxel()
+    renderer = Renderer(pyxel)
+    camera = CameraState.from_config(
+        runtime.raw,
+        Vec3(512.0, 0.0, -160.0),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    camera = affine_camera_from_perspective(
+        camera,
+        profile,
+        base_distance=float(runtime.raw["camera"]["base_distance"]),
+    )
+    config = runtime.raw["grassland_micro"]
+    area = config["areas"][0]
+    area_rect = renderer.grassland_micro_world_rect(world, area)
+    assert area_rect is not None
+    draw_rect = renderer.grassland_micro_visible_draw_rect(camera, area_rect, area, config)
+    assert draw_rect is not None
+
+    renderer.draw_grassland_base_transition(camera, area_rect, draw_rect, area, config, 3)
+
+    tri_calls = [call for call in pyxel.calls if call[0] == "tri"]
+    assert 0 < len(tri_calls) < 2500
+
+
 def test_visual_ground_bounds_extend_beyond_walkable_for_affine_ground_draw() -> None:
     _runtime, world, _perspective, _profile, affine = make_affine_camera()
     pyxel = RecordingPyxel()

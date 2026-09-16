@@ -512,6 +512,10 @@ class Renderer:
         max_cell_x = math.ceil(draw_rect[2] / tile_world)
         min_cell_z = math.floor(draw_rect[1] / tile_world)
         max_cell_z = math.ceil(draw_rect[3] / tile_world)
+        inner_x0 = x0 + transition_world
+        inner_z0 = z0 + transition_world
+        inner_x1 = x1 - transition_world
+        inner_z1 = z1 - transition_world
         for cell_z in range(min_cell_z, max_cell_z):
             cell_z0 = max(draw_rect[1], cell_z * tile_world)
             cell_z1 = min(draw_rect[3], (cell_z + 1) * tile_world)
@@ -521,6 +525,13 @@ class Renderer:
                 cell_x0 = max(draw_rect[0], cell_x * tile_world)
                 cell_x1 = min(draw_rect[2], (cell_x + 1) * tile_world)
                 if cell_x0 >= cell_x1:
+                    continue
+                if (
+                    cell_x0 >= inner_x0
+                    and cell_z0 >= inner_z0
+                    and cell_x1 <= inner_x1
+                    and cell_z1 <= inner_z1
+                ):
                     continue
                 center_x = (cell_x0 + cell_x1) * 0.5
                 center_z = (cell_z0 + cell_z1) * 0.5
