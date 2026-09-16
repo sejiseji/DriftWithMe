@@ -159,18 +159,18 @@ def test_foreground_object_blocks_affine_auto_move_pick() -> None:
 
 def test_free_ground_does_not_block_auto_move_pick() -> None:
     app, camera = make_app_shell()
-    projected = camera.project(Vec3(220.0, 0.0, 240.0))
+    projected = camera.project(Vec3(96.0, 0.0, 256.0))
     assert projected is not None
 
     assert not app.foreground_object_blocks_ground_pick(
-        camera, projected.x, projected.y, 220.0, 240.0
+        camera, projected.x, projected.y, 96.0, 256.0
     )
 
 
 def test_double_tap_move_intent_uses_affine_screen_to_ground() -> None:
     app, camera = make_app_shell()
     scene_camera = affine_camera(camera)
-    target = Vec3(220.0, 0.0, 240.0)
+    target = Vec3(96.0, 0.0, 256.0)
     projected = scene_camera.project(target)
     assert projected is not None
 

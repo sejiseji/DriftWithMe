@@ -1910,6 +1910,126 @@
       "render_mode": "ground_decal_prop",
       "source_policy": "grassland_direct_v0_1_hex",
       "environment_role": "static_scatter"
+    },
+    {
+      "schema_version": 1,
+      "id": "giant_tree_root_massive_a_128",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 128,
+      "hex_height": 128,
+      "colkey": 8,
+      "anchor_px": [
+        64,
+        127
+      ],
+      "world_size": [
+        118.0,
+        118.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "giant_tree_root_massive_a.hex",
+          "source_hash": "da4d406f939cd0120ce258300b7f49242b28a70ba8bcd4001f47f7f2c76220cf"
+        }
+      ],
+      "source_hash": "da4d406f939cd0120ce258300b7f49242b28a70ba8bcd4001f47f7f2c76220cf",
+      "render_mode": "upright_billboard",
+      "source_policy": "giant_tree_roots_direct_v0_1_hex",
+      "environment_role": "forest_giant_root_mass"
+    },
+    {
+      "schema_version": 1,
+      "id": "giant_tree_root_tall_b_128",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 128,
+      "hex_height": 128,
+      "colkey": 8,
+      "anchor_px": [
+        64,
+        127
+      ],
+      "world_size": [
+        128.0,
+        128.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "giant_tree_root_tall_b.hex",
+          "source_hash": "b4106c344c6c3269e86667d7488120f14bbf9eb2fd6c2bb4b3f9470928808a5c"
+        }
+      ],
+      "source_hash": "b4106c344c6c3269e86667d7488120f14bbf9eb2fd6c2bb4b3f9470928808a5c",
+      "render_mode": "upright_billboard",
+      "source_policy": "giant_tree_roots_direct_v0_1_hex",
+      "environment_role": "forest_giant_trunk"
+    },
+    {
+      "schema_version": 1,
+      "id": "giant_tree_stump_ruin_a_128",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 128,
+      "hex_height": 128,
+      "colkey": 8,
+      "anchor_px": [
+        64,
+        127
+      ],
+      "world_size": [
+        102.0,
+        102.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "giant_tree_stump_ruin_a.hex",
+          "source_hash": "5431102e3105b370050c5ad7a8ee9fedd917a83be13e16a11652badec9eb3aca"
+        }
+      ],
+      "source_hash": "5431102e3105b370050c5ad7a8ee9fedd917a83be13e16a11652badec9eb3aca",
+      "render_mode": "upright_billboard",
+      "source_policy": "giant_tree_roots_direct_v0_1_hex",
+      "environment_role": "forest_giant_stump"
+    },
+    {
+      "schema_version": 1,
+      "id": "giant_tree_root_arch_a_128",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 128,
+      "hex_height": 128,
+      "colkey": 8,
+      "anchor_px": [
+        64,
+        127
+      ],
+      "world_size": [
+        110.0,
+        110.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "giant_tree_root_arch_a.hex",
+          "source_hash": "dd0ccbb80369e9bbe15d734004f9c67d0aa234a382fff1fa15d9d077744107b1"
+        }
+      ],
+      "source_hash": "dd0ccbb80369e9bbe15d734004f9c67d0aa234a382fff1fa15d9d077744107b1",
+      "render_mode": "upright_billboard",
+      "source_policy": "giant_tree_roots_direct_v0_1_hex",
+      "environment_role": "forest_root_arch"
     }
   ],
   "notes": [
@@ -1934,6 +2054,7 @@
     "Ground extracted v0.2 decal sources use colkey 8, and color index 0 is visible black.",
     "Nature clean v0.3 source HEX assets are loaded as source_assets and are preferred for reactive grass and small ground details.",
     "Nature clean v0.3 uses colkey 8 for all six sprites, and color index 0 is visible black.",
-    "Grassland direct v0.1 source HEX assets are loaded as source_assets. They are direct extractions from approved images, use colkey 8, and keep color index 0 visible black."
+    "Grassland direct v0.1 source HEX assets are loaded as source_assets. They are direct extractions from approved images, use colkey 8, and keep color index 0 visible black.",
+    "Giant tree roots direct v0.1 source HEX assets are loaded as source_assets. They use colkey 8, keep color index 0 visible black, and are bound as solid obstacle visuals while the existing AABB collision remains authoritative."
   ]
 }

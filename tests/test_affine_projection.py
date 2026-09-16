@@ -476,6 +476,39 @@ def test_affine_world_commands_split_solid_boxes_but_perspective_keeps_single_bo
     assert {"wall_01:top", "wall_01:north", "wall_01:east"}.issubset(affine_ids)
 
 
+def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
+    runtime, world, _perspective, profile, _affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+    renderer = Renderer(None)
+    root = world.object_by_id("wall_02")
+    assert root is not None
+    assert root.solid
+    assert root.visual == "giant_tree_root_arch_a"
+    assert root.half_x == pytest.approx(48.0)
+    assert root.half_z == pytest.approx(16.0)
+    assert root.sprite_world_width == pytest.approx(110.0)
+    assert root.sprite_world_height == pytest.approx(110.0)
+    assert root.occludes_player
+    assert not renderer.object_uses_box_geometry(root)
+
+    perspective = CameraState.from_config(
+        runtime.raw,
+        Vec3(root.x, 0.0, root.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    affine = affine_camera_from_perspective(
+        perspective,
+        profile,
+        base_distance=float(runtime.raw["camera"]["base_distance"]),
+    )
+    affine_ids = {command.stable_id for command in renderer.world_commands(model, affine, 0.0)}
+
+    assert "wall_02" in affine_ids
+    assert "wall_02:top" not in affine_ids
+    assert "wall_02:north" not in affine_ids
+
+
 def test_affine_solid_box_occludes_player_with_projected_bounds() -> None:
     runtime, world, _perspective, _profile, affine = make_affine_camera()
     model = GameModel(runtime.raw, world)

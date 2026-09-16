@@ -1781,6 +1781,10 @@ class Renderer:
                 model,
                 "solar_station_active_asset" if active else "solar_station_idle_asset",
             )
+        if obj.kind in {"obstacle", "sprite_prop"}:
+            asset = self.configured_sprite_asset(model, f"{obj.visual}_asset")
+            if asset is not None:
+                return asset
         if obj.kind == "sprite_prop":
             key = "tree_thin_asset" if obj.visual == "tree_thin_b" else "tree_leafy_asset"
             return self.configured_sprite_asset(model, key)
@@ -2640,8 +2644,17 @@ class Renderer:
             placement,
         )
 
+    def object_prefers_sprite_geometry(self, obj: StaticObject) -> bool:
+        return (
+            obj.sprite_world_width > 0.0
+            and obj.sprite_world_height > 0.0
+            and obj.visual not in {"", "small_block"}
+        )
+
     def object_uses_box_geometry(self, obj: StaticObject) -> bool:
-        return obj.solid and obj.kind != "sprite_prop"
+        return (
+            obj.solid and obj.kind != "sprite_prop" and not self.object_prefers_sprite_geometry(obj)
+        )
 
     def solid_box_color(self, obj: StaticObject) -> int:
         return 5 if obj.kind == "obstacle" else 4
@@ -2930,7 +2943,7 @@ class Renderer:
     def object_ground_pick_block_bounds(
         self, obj: StaticObject, camera: CameraState
     ) -> ScreenRect | None:
-        if obj.kind == "sprite_prop":
+        if obj.kind == "sprite_prop" or self.object_prefers_sprite_geometry(obj):
             return self.sprite_prop_bounds(obj, camera)
         if obj.solid:
             bounds = obj.height if obj.height > 0.0 else 24.0

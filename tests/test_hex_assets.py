@@ -114,6 +114,10 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "grass_patch_tall_b": "d5e0c7fc7e59a647472e050dae934904af2ffc7eb19c6e66a10ddcc04d826037",
     "grass_edge_a": "ab61e3da8b6005d4a11eb5c1a446a6e7b279aea8422138895d38f11b51fbd977",
     "grass_scatter_a": "8eaca3d8803852bea6446d34211cb05cfa2921fbb5ea76d99fc211156ffe99a8",
+    "giant_tree_root_massive_a": "da4d406f939cd0120ce258300b7f49242b28a70ba8bcd4001f47f7f2c76220cf",
+    "giant_tree_root_tall_b": "b4106c344c6c3269e86667d7488120f14bbf9eb2fd6c2bb4b3f9470928808a5c",
+    "giant_tree_stump_ruin_a": "5431102e3105b370050c5ad7a8ee9fedd917a83be13e16a11652badec9eb3aca",
+    "giant_tree_root_arch_a": "dd0ccbb80369e9bbe15d734004f9c67d0aa234a382fff1fa15d9d077744107b1",
 }
 ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "water_station_active": {
@@ -206,6 +210,40 @@ ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "grass_patch_tall_b": {"0", "1", "3", "5", "A", "B", "F"},
     "grass_edge_a": {"0", "1", "3", "4", "5", "A", "B"},
     "grass_scatter_a": {"0", "1", "3", "A", "B"},
+    "giant_tree_root_massive_a": {"0", "1", "2", "3", "4", "5", "6", "7", "A", "B", "C", "D", "F"},
+    "giant_tree_root_tall_b": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
+    "giant_tree_stump_ruin_a": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
+    "giant_tree_root_arch_a": {"0", "1", "2", "3", "4", "5", "6", "7", "A", "B", "C", "D", "F"},
 }
 
 
@@ -286,9 +324,16 @@ def test_environment_wave1_source_hex_preserves_received_pixels(asset_id: str) -
         .splitlines()
     )
 
-    expected_size = 128 if asset_id.startswith(("water_", "solar_", "tree_")) else 64
-    expected_width = 96 if expected_size == 128 else 64
-    assert len(rows) == expected_size
+    if asset_id.startswith(("water_", "solar_", "tree_")):
+        expected_height = 128
+        expected_width = 96
+    elif asset_id.startswith("giant_tree_"):
+        expected_height = 128
+        expected_width = 128
+    else:
+        expected_height = 64
+        expected_width = 64
+    assert len(rows) == expected_height
     assert {len(row) for row in rows} == {expected_width}
     assert pixel_hash(rows) == ENVIRONMENT_WAVE1_SOURCE_HASHES[asset_id]
     if asset_id in ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8:
@@ -651,6 +696,10 @@ environment_asset_ids = {{
     "grass_patch_tall_b": "grass_patch_tall_b_64",
     "grass_edge_a": "grass_edge_a_64",
     "grass_scatter_a": "grass_scatter_a_64",
+    "giant_tree_root_massive_a": "giant_tree_root_massive_a_128",
+    "giant_tree_root_tall_b": "giant_tree_root_tall_b_128",
+    "giant_tree_stump_ruin_a": "giant_tree_stump_ruin_a_128",
+    "giant_tree_root_arch_a": "giant_tree_root_arch_a_128",
 }}
 environment_world_sizes = {{
     "water_station_active": (36.0, 48.0),
@@ -685,6 +734,10 @@ environment_world_sizes = {{
     "grass_patch_tall_b": (52.0, 52.0),
     "grass_edge_a": (48.0, 28.0),
     "grass_scatter_a": (44.0, 24.0),
+    "giant_tree_root_massive_a": (118.0, 118.0),
+    "giant_tree_root_tall_b": (128.0, 128.0),
+    "giant_tree_stump_ruin_a": (102.0, 102.0),
+    "giant_tree_root_arch_a": (110.0, 110.0),
 }}
 environment_colkeys = {{
     "water_station_active": 8,
@@ -713,6 +766,10 @@ environment_colkeys = {{
     "grass_patch_tall_b": 8,
     "grass_edge_a": 8,
     "grass_scatter_a": 8,
+    "giant_tree_root_massive_a": 8,
+    "giant_tree_root_tall_b": 8,
+    "giant_tree_stump_ruin_a": 8,
+    "giant_tree_root_arch_a": 8,
 }}
 environment_anchors = {{
     "water_station_active": (48.0, 127.0),
@@ -741,6 +798,10 @@ environment_anchors = {{
     "grass_patch_tall_b": (32.0, 63.0),
     "grass_edge_a": (32.0, 63.0),
     "grass_scatter_a": (32.0, 63.0),
+    "giant_tree_root_massive_a": (64.0, 127.0),
+    "giant_tree_root_tall_b": (64.0, 127.0),
+    "giant_tree_stump_ruin_a": (64.0, 127.0),
+    "giant_tree_root_arch_a": (64.0, 127.0),
 }}
 fuse_frame = None
 for direction, expected_hash in fuse_assets.items():
@@ -797,6 +858,7 @@ assert runtime.raw["assets"]["concrete_clean_a_asset"] == "concrete_clean_a_64"
 assert runtime.raw["assets"]["decal_crack_grass_a_asset"] == "decal_crack_grass_a_64"
 assert runtime.raw["assets"]["grass_patch_low_a_asset"] == "grass_patch_low_a_64"
 assert runtime.raw["assets"]["grass_patch_tall_a_asset"] == "grass_patch_tall_a_64"
+assert runtime.raw["assets"]["giant_tree_root_arch_a_asset"] == "giant_tree_root_arch_a_128"
 assert sound_snapshot() == before_sound
 assert music_snapshot() == before_music
 assert pyxel.tilemaps[0].pget(0, 0) == before_tile
@@ -817,9 +879,10 @@ tree = model.world.object_by_id("tree_02")
 grass = model.world.object_by_id("grass_01")
 low_grass = model.world.object_by_id("grass_02")
 grassland_tall = model.world.object_by_id("grassland_tall_a_01")
+giant_root = model.world.object_by_id("wall_02")
 assert tap is not None and stopped_tap is not None and solar is not None
 assert tree is not None and grass is not None and low_grass is not None
-assert grassland_tall is not None
+assert grassland_tall is not None and giant_root is not None
 assert renderer.object_sprite_asset(model, tap).definition.asset_id == "water_station_active_96"
 assert (
     renderer.object_sprite_asset(model, stopped_tap).definition.asset_id
@@ -847,6 +910,9 @@ assert renderer.object_sprite_asset(model, grassland_tall).definition.asset_id =
 )
 assert renderer.object_sprite_asset(model, grassland_tall).definition.projection_mode == (
     "upright_height_billboard_v1"
+)
+assert renderer.object_sprite_asset(model, giant_root).definition.asset_id == (
+    "giant_tree_root_arch_a_128"
 )
 assert len(model.world.ground_details) == 0
 assert len(model.world.ground_surfaces) == 0
