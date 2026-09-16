@@ -1769,13 +1769,19 @@ class Renderer:
         )
         if placement is None:
             return False
-        if state is not None and self.draw_reactive_upright_prop(
-            model, obj, camera, asset, placement, state
+        if (
+            state is not None
+            and self.reactive_upright_deform_enabled(model)
+            and self.draw_reactive_upright_prop(model, obj, camera, asset, placement, state)
         ):
             self.draw_reactive_ground_prop_overlay(model, obj, camera, state)
             return True
         self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
+
+    def reactive_upright_deform_enabled(self, model: GameModel) -> bool:
+        config = model.config.get("reactive_environment", {})
+        return bool(config.get("upright_deform_enabled", False))
 
     def reactive_environment_state(
         self, effects: EffectSystem | None, object_id: str

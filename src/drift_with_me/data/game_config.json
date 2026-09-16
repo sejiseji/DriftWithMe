@@ -485,6 +485,7 @@
     "recovery_sec": 1.05,
     "retrigger_sec": 0.45,
     "min_strength": 0.35,
+    "upright_deform_enabled": false,
     "upright_bend_px": 13.0,
     "upright_part_px": 5.0,
     "overlay_line_px": 10.0

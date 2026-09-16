@@ -345,6 +345,13 @@ def test_reactive_grass_render_helpers_use_active_state_until_recovered() -> Non
     assert renderer.reactive_environment_intensity(state) == pytest.approx(0.0)
 
 
+def test_reactive_upright_grass_deformation_is_disabled_by_default() -> None:
+    model, _camera = make_model()
+    renderer = Renderer(None)
+
+    assert renderer.reactive_upright_deform_enabled(model) is False
+
+
 def test_presentation_cue_mapping_for_existing_events() -> None:
     model, _camera = make_model()
 
