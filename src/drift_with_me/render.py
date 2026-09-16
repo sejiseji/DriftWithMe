@@ -53,10 +53,10 @@ ATMOSPHERE_BAYER_4X4 = (
     (3, 11, 1, 9),
     (15, 7, 13, 5),
 )
-ATMOSPHERE_MID_DITHER_CELLS = 5
-ATMOSPHERE_FAR_DITHER_CELLS = 10
+ATMOSPHERE_MID_DITHER_CELLS = 3
+ATMOSPHERE_FAR_DITHER_CELLS = 6
 ATMOSPHERE_DITHER_MIN_STRENGTH = 0.5
-ATMOSPHERE_DITHER_FOG_COLOR = 13
+ATMOSPHERE_DITHER_FOG_COLOR = 5
 ATMOSPHERE_SHADOW_NEAR_CELLS = 12
 ATMOSPHERE_SHADOW_MID_CELLS = 8
 ATMOSPHERE_SHADOW_FAR_CELLS = 4
@@ -124,6 +124,15 @@ class ScreenRect:
 
 
 @dataclass(frozen=True)
+class GrasslandTransitionCell:
+    x0: float
+    z0: float
+    x1: float
+    z1: float
+    color: int
+
+
+@dataclass(frozen=True)
 class RenderStats:
     total_static_objects: int = 0
     candidate_chunks: int = 0
@@ -181,6 +190,18 @@ class Renderer:
         self._active_atmosphere_dither_cells = 0
         self._active_atmosphere_dither_fog_color = ATMOSPHERE_DITHER_FOG_COLOR
         self._atmosphere_dither_cache: dict[tuple[str, str, str, int, int], LoadedSpriteFrame] = {}
+        self._grassland_transition_cell_cache: dict[
+            tuple[
+                tuple[float, float, float, float],
+                float,
+                float,
+                int,
+                int,
+                int,
+                str,
+            ],
+            tuple[GrasslandTransitionCell, ...],
+        ] = {}
         self._visible_grassland_micro_areas = 0
         self.last_stats = RenderStats()
 
@@ -508,22 +529,76 @@ class Renderer:
         tile_world = self.grassland_transition_cell_world(area, config)
         phase = int(area.get("phase", config.get("phase", 0)))
         soft_color = self.grassland_transition_soft_color(area, config, color)
-        min_cell_x = math.floor(draw_rect[0] / tile_world)
-        max_cell_x = math.ceil(draw_rect[2] / tile_world)
-        min_cell_z = math.floor(draw_rect[1] / tile_world)
-        max_cell_z = math.ceil(draw_rect[3] / tile_world)
+        cells = self.grassland_transition_cells(
+            area_rect,
+            area,
+            config,
+            color,
+            soft_color,
+            transition_world,
+            tile_world,
+            phase,
+        )
+        for cell in cells:
+            if (
+                cell.x1 <= draw_rect[0]
+                or cell.x0 >= draw_rect[2]
+                or cell.z1 <= draw_rect[1]
+                or cell.z0 >= draw_rect[3]
+            ):
+                continue
+            clipped = (
+                max(cell.x0, draw_rect[0]),
+                max(cell.z0, draw_rect[1]),
+                min(cell.x1, draw_rect[2]),
+                min(cell.z1, draw_rect[3]),
+            )
+            if clipped[0] < clipped[2] and clipped[1] < clipped[3]:
+                self.draw_ground_rect(camera, clipped, cell.color)
+
+    def grassland_transition_cells(
+        self,
+        area_rect: tuple[float, float, float, float],
+        area: dict,
+        config: dict,
+        color: int,
+        soft_color: int,
+        transition_world: float,
+        tile_world: float,
+        phase: int,
+    ) -> tuple[GrasslandTransitionCell, ...]:
+        pattern = str(area.get("transition_pattern", config.get("transition_pattern", "noise")))
+        key = (
+            tuple(round(value, 4) for value in area_rect),
+            round(float(transition_world), 4),
+            round(float(tile_world), 4),
+            int(color),
+            int(soft_color),
+            int(phase),
+            pattern,
+        )
+        cached = self._grassland_transition_cell_cache.get(key)
+        if cached is not None:
+            return cached
+
+        x0, z0, x1, z1 = area_rect
+        min_cell_x = math.floor(x0 / tile_world)
+        max_cell_x = math.ceil(x1 / tile_world)
+        min_cell_z = math.floor(z0 / tile_world)
+        max_cell_z = math.ceil(z1 / tile_world)
         inner_x0 = x0 + transition_world
         inner_z0 = z0 + transition_world
         inner_x1 = x1 - transition_world
         inner_z1 = z1 - transition_world
+        cells: list[GrasslandTransitionCell] = []
         for cell_z in range(min_cell_z, max_cell_z):
-            cell_z0 = max(draw_rect[1], cell_z * tile_world)
-            cell_z1 = min(draw_rect[3], (cell_z + 1) * tile_world)
+            cell_z0 = max(z0, cell_z * tile_world)
+            cell_z1 = min(z1, (cell_z + 1) * tile_world)
             if cell_z0 >= cell_z1:
                 continue
             for cell_x in range(min_cell_x, max_cell_x):
-                cell_x0 = max(draw_rect[0], cell_x * tile_world)
-                cell_x1 = min(draw_rect[2], (cell_x + 1) * tile_world)
+                cell_x0 = max(x0, cell_x * tile_world)
+                cell_x1 = min(x1, (cell_x + 1) * tile_world)
                 if cell_x0 >= cell_x1:
                     continue
                 if (
@@ -550,7 +625,9 @@ class Renderer:
                     area,
                     config,
                 ):
-                    self.draw_ground_rect(camera, (cell_x0, cell_z0, cell_x1, cell_z1), soft_color)
+                    cells.append(
+                        GrasslandTransitionCell(cell_x0, cell_z0, cell_x1, cell_z1, soft_color)
+                    )
                 if not self.grassland_transition_pass(
                     cell_x,
                     cell_z,
@@ -560,7 +637,11 @@ class Renderer:
                     config,
                 ):
                     continue
-                self.draw_ground_rect(camera, (cell_x0, cell_z0, cell_x1, cell_z1), color)
+                cells.append(GrasslandTransitionCell(cell_x0, cell_z0, cell_x1, cell_z1, color))
+
+        result = tuple(cells)
+        self._grassland_transition_cell_cache[key] = result
+        return result
 
     def draw_ground_rect(
         self, camera: CameraState, rect: tuple[float, float, float, float], color: int

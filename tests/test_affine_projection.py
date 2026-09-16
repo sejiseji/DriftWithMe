@@ -200,7 +200,7 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["base_variation_enabled"] is False
     assert config["base_variation_color"] != 13
     assert config["transition_world"] == pytest.approx(32.0)
-    assert config["transition_cell_world"] == pytest.approx(4.0)
+    assert config["transition_cell_world"] == pytest.approx(8.0)
     assert config["transition_pattern"] == "noise"
     assert config["transition_soft_color"] == 11
     assert config["micro_density_inner"] == pytest.approx(1.0)
@@ -333,6 +333,13 @@ def test_grassland_boundary_transition_skips_prefilled_interior_cells() -> None:
 
     tri_calls = [call for call in pyxel.calls if call[0] == "tri"]
     assert 0 < len(tri_calls) < 2500
+    assert len(renderer._grassland_transition_cell_cache) == 1
+    cached_cells = next(iter(renderer._grassland_transition_cell_cache.values()))
+
+    pyxel.calls.clear()
+    renderer.draw_grassland_base_transition(camera, area_rect, draw_rect, area, config, 3)
+
+    assert next(iter(renderer._grassland_transition_cell_cache.values())) is cached_cells
 
 
 def test_visual_ground_bounds_extend_beyond_walkable_for_affine_ground_draw() -> None:
