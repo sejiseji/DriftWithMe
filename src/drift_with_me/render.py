@@ -759,12 +759,14 @@ class Renderer:
         )
         jitter_seed = int(area.get("phase", config.get("phase", 0)))
         min_blades = max(
-            1, int(area.get("min_blades_per_cell", config.get("min_blades_per_cell", 1)))
+            0, int(area.get("min_blades_per_cell", config.get("min_blades_per_cell", 1)))
         )
         max_blades = max(
             min_blades,
             int(area.get("max_blades_per_cell", config.get("max_blades_per_cell", 4))),
         )
+        min_height = self.grassland_micro_min_blade_height(area, config)
+        max_height = self.grassland_micro_max_blade_height(area, config, min_height)
         density_inner = self.grassland_micro_density_inner(area, config)
         density_edge = self.grassland_micro_density_edge(area, config)
         transition_world = self.grassland_transition_world(area, config)
@@ -785,13 +787,15 @@ class Renderer:
                     salt = blade_index * 7
                     rel_x = 0.08 + self.grassland_unit(cell_x, cell_z, salt + 1, jitter_seed) * 0.84
                     rel_z = 0.08 + self.grassland_unit(cell_x, cell_z, salt + 2, jitter_seed) * 0.84
-                    height = 3 + int(
-                        self.grassland_unit(cell_x, cell_z, salt + 3, jitter_seed) * 4.0
+                    height = min_height + int(
+                        self.grassland_unit(cell_x, cell_z, salt + 3, jitter_seed)
+                        * (max_height - min_height + 1)
                     )
-                    color_index = int(
-                        self.grassland_unit(cell_x, cell_z, salt + 4, jitter_seed) * len(colors)
+                    color = self.grassland_micro_blade_color(
+                        cell_x, cell_z, salt + 4, jitter_seed, colors, area, config
                     )
                     lean = int(self.grassland_unit(cell_x, cell_z, salt + 5, jitter_seed) * 3.0) - 1
+                    shape = self.grassland_micro_blade_shape(cell_x, cell_z, salt + 8, jitter_seed)
                     world_x = origin_x + rel_x * cell_world
                     world_z = origin_z + rel_z * cell_world
                     if world_x < x0 or world_x > x1 or world_z < z0 or world_z > z1:
@@ -831,10 +835,11 @@ class Renderer:
                     self.draw_micro_grass_blade(
                         int(round(root.x)),
                         int(round(root.y)),
-                        max(3, min(6, height)),
-                        colors[color_index % len(colors)],
+                        max(min_height, min(max_height, height)),
+                        color,
                         colors[1],
                         lean,
+                        shape,
                     )
                     drawn += 1
                     if drawn >= max_visible:
@@ -1256,6 +1261,65 @@ class Renderer:
         value = fine * 0.4 + coarse * 0.6
         return min_factor + (max_factor - min_factor) * value
 
+    def grassland_micro_min_blade_height(self, area: dict, config: dict) -> int:
+        try:
+            return max(
+                1,
+                int(area.get("min_blade_height_px", config.get("min_blade_height_px", 2))),
+            )
+        except (TypeError, ValueError):
+            return 2
+
+    def grassland_micro_max_blade_height(self, area: dict, config: dict, min_height: int) -> int:
+        try:
+            return max(
+                min_height,
+                int(area.get("max_blade_height_px", config.get("max_blade_height_px", 6))),
+            )
+        except (TypeError, ValueError):
+            return max(min_height, 6)
+
+    def grassland_micro_blade_color(
+        self,
+        cell_x: int,
+        cell_z: int,
+        salt: int,
+        seed: int,
+        colors: tuple[int, int, int],
+        area: dict,
+        config: dict,
+    ) -> int:
+        primary = self.grassland_micro_color_weight(area, config, "blade_primary_weight", 0.58)
+        shadow = self.grassland_micro_color_weight(area, config, "blade_shadow_weight", 0.34)
+        accent = self.grassland_micro_color_weight(area, config, "blade_accent_weight", 0.08)
+        total = primary + shadow + accent
+        if total <= 0.0:
+            return colors[0]
+        roll = self.grassland_unit(cell_x, cell_z, salt, seed) * total
+        if roll < primary:
+            return colors[0]
+        if roll < primary + shadow:
+            return colors[1]
+        return colors[2]
+
+    def grassland_micro_color_weight(
+        self, area: dict, config: dict, key: str, default: float
+    ) -> float:
+        try:
+            return max(0.0, float(area.get(key, config.get(key, default))))
+        except (TypeError, ValueError):
+            return default
+
+    def grassland_micro_blade_shape(self, cell_x: int, cell_z: int, salt: int, seed: int) -> int:
+        roll = self.grassland_unit(cell_x, cell_z, salt, seed)
+        if roll < 0.40:
+            return 0
+        if roll < 0.72:
+            return 1
+        if roll < 0.90:
+            return 2
+        return 3
+
     def draw_micro_grass_blade(
         self,
         root_x: int,
@@ -1264,12 +1328,26 @@ class Renderer:
         color: int,
         shadow_color: int,
         lean: int = 1,
+        shape: int = 0,
     ) -> None:
         tip_y = root_y - height
         tip_x = root_x + max(-1, min(1, lean))
-        self.pyxel.line(root_x, root_y, root_x - 1, tip_y + 1, shadow_color)
-        self.pyxel.line(root_x, root_y, tip_x, tip_y, color)
-        if height >= 5:
+        if shape == 1:
+            self.pyxel.line(root_x, root_y, root_x - 1, tip_y + 1, shadow_color)
+            self.pyxel.line(root_x, root_y, tip_x, tip_y, color)
+        elif shape == 2:
+            self.pyxel.line(root_x, root_y, tip_x, tip_y, color)
+            side_tip_x = root_x + 1 - max(-1, min(1, lean))
+            self.pyxel.line(root_x + 1, root_y, side_tip_x, tip_y + 2, color)
+        elif shape == 3:
+            short_tip_y = root_y - max(1, height - 2)
+            self.pyxel.line(root_x, root_y, root_x, short_tip_y, shadow_color)
+            self.pyxel.pset(root_x + max(-1, min(1, lean)), tip_y + 1, color)
+        else:
+            self.pyxel.line(root_x, root_y, tip_x, tip_y, color)
+            if height >= 5:
+                self.pyxel.pset(tip_x, tip_y, color)
+        if shape in {1, 2} and height >= 5:
             self.pyxel.pset(tip_x, tip_y, color)
 
     def grassland_hash(self, cell_x: int, cell_z: int, salt: int, seed: int = 0) -> int:

@@ -196,8 +196,13 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["enabled"] is True
     assert config["affine_only"] is True
     assert config["cell_world"] == pytest.approx(24.0)
-    assert config["min_blades_per_cell"] == 1
-    assert config["max_blades_per_cell"] == 5
+    assert config["min_blades_per_cell"] == 0
+    assert config["max_blades_per_cell"] == 6
+    assert config["min_blade_height_px"] == 2
+    assert config["max_blade_height_px"] == 6
+    assert config["blade_primary_weight"] == pytest.approx(0.58)
+    assert config["blade_shadow_weight"] == pytest.approx(0.34)
+    assert config["blade_accent_weight"] == pytest.approx(0.08)
     assert config["base_variation_enabled"] is False
     assert config["base_variation_color"] != 13
     assert config["transition_world"] == pytest.approx(32.0)
@@ -206,10 +211,10 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["transition_soft_color"] == 11
     assert config["edge_irregularity_world"] == pytest.approx(12.0)
     assert config["micro_density_inner"] == pytest.approx(1.0)
-    assert config["micro_density_edge"] == pytest.approx(0.2)
+    assert config["micro_density_edge"] == pytest.approx(0.14)
     assert config["density_variation_enabled"] is True
-    assert config["density_variation_cell_world"] == pytest.approx(56.0)
-    assert config["density_variation_min"] == pytest.approx(0.52)
+    assert config["density_variation_cell_world"] == pytest.approx(48.0)
+    assert config["density_variation_min"] == pytest.approx(0.45)
     assert config["density_variation_max"] == pytest.approx(1.0)
     assert config["areas"][0]["bounds_ref"] == "visual_ground"
     assert world.visual_ground_rect.min_x == pytest.approx(-256.0)
@@ -296,8 +301,8 @@ def test_grassland_micro_density_variation_is_world_deterministic() -> None:
     area = {"phase": 2}
     config = {
         "density_variation_enabled": True,
-        "density_variation_cell_world": 56.0,
-        "density_variation_min": 0.52,
+        "density_variation_cell_world": 48.0,
+        "density_variation_min": 0.45,
         "density_variation_max": 1.0,
     }
     values = [
@@ -309,8 +314,52 @@ def test_grassland_micro_density_variation_is_world_deterministic() -> None:
         renderer.grassland_micro_density_variation(world_x, world_z, area, config)
         for world_x, world_z in ((24.0, 24.0), (88.0, 24.0), (152.0, 96.0), (216.0, 168.0))
     ]
-    assert all(0.52 <= value <= 1.0 for value in values)
+    assert all(0.45 <= value <= 1.0 for value in values)
     assert len({round(value, 3) for value in values}) > 1
+
+
+def test_grassland_micro_blade_colors_and_shapes_are_weighted_and_deterministic() -> None:
+    renderer = Renderer(RecordingPyxel())
+    area = {"phase": 5}
+    config = {
+        "blade_primary_weight": 0.58,
+        "blade_shadow_weight": 0.34,
+        "blade_accent_weight": 0.08,
+    }
+    colors = (11, 3, 10)
+    selected_colors = [
+        renderer.grassland_micro_blade_color(cell_x, cell_z, 4, 5, colors, area, config)
+        for cell_z in range(6)
+        for cell_x in range(6)
+    ]
+    shapes = [
+        renderer.grassland_micro_blade_shape(cell_x, cell_z, 8, 5)
+        for cell_z in range(6)
+        for cell_x in range(6)
+    ]
+
+    assert selected_colors == [
+        renderer.grassland_micro_blade_color(cell_x, cell_z, 4, 5, colors, area, config)
+        for cell_z in range(6)
+        for cell_x in range(6)
+    ]
+    assert selected_colors.count(10) < selected_colors.count(11)
+    assert selected_colors.count(10) < selected_colors.count(3)
+    assert len(set(shapes)) >= 3
+
+
+def test_micro_grass_blade_shapes_draw_different_pixel_patterns() -> None:
+    pyxel = RecordingPyxel()
+    renderer = Renderer(pyxel)
+    patterns = []
+
+    for shape in range(4):
+        pyxel.calls.clear()
+        renderer.draw_micro_grass_blade(20, 20, 5, 11, 3, lean=1, shape=shape)
+        assert pyxel.calls
+        patterns.append(tuple(pyxel.calls))
+
+    assert len(set(patterns)) >= 3
 
 
 def test_grassland_bayer_pattern_is_world_cell_deterministic() -> None:
