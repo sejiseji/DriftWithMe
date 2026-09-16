@@ -71,6 +71,7 @@ GRASSLAND_BAYER4 = (
 )
 ATMOSPHERE_GROUND_DETAIL_STRENGTH = 1.0
 ATMOSPHERE_NATURE_PROP_STRENGTH = 1.0
+ATMOSPHERE_REACTIVE_PROP_STRENGTH = 0.0
 ATMOSPHERE_EQUIPMENT_STRENGTH = 0.7
 ATMOSPHERE_SOLID_STRENGTH = 0.8
 ATMOSPHERE_DEFAULT_STATIC_STRENGTH = 0.5
@@ -2507,7 +2508,11 @@ class Renderer:
         return getattr(camera, "projection_kind", "perspective") == "affine"
 
     def object_atmosphere_strength(self, obj: StaticObject) -> float:
-        if obj.kind in {"sprite_prop", "reactive_prop"}:
+        if obj.kind == "reactive_prop":
+            return self.atmosphere_strength_config(
+                "reactive_prop_strength", ATMOSPHERE_REACTIVE_PROP_STRENGTH
+            )
+        if obj.kind == "sprite_prop":
             return self.atmosphere_strength_config(
                 "nature_prop_strength", ATMOSPHERE_NATURE_PROP_STRENGTH
             )

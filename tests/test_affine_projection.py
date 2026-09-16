@@ -30,6 +30,7 @@ from drift_with_me.render import (
     ATMOSPHERE_MID_DITHER_CELLS,
     ATMOSPHERE_NATURE_PROP_STRENGTH,
     ATMOSPHERE_PLAYER_STRENGTH,
+    ATMOSPHERE_REACTIVE_PROP_STRENGTH,
     ATMOSPHERE_SHADOW_FAR_CELLS,
     ATMOSPHERE_SHADOW_IMPORTANT_MIN_CELLS,
     ATMOSPHERE_SHADOW_MID_CELLS,
@@ -685,11 +686,13 @@ def test_affine_atmosphere_tuning_keeps_gameplay_entities_readable() -> None:
     renderer._atmosphere_config = runtime.raw["atmosphere"]
 
     tree = world.object_by_id("tree_01")
+    grass = world.object_by_id("grass_01")
     station = world.object_by_id("tap_start")
     wall = world.object_by_id("wall_01")
-    assert tree is not None and station is not None and wall is not None
+    assert tree is not None and grass is not None and station is not None and wall is not None
 
     assert renderer.object_atmosphere_strength(tree) == ATMOSPHERE_NATURE_PROP_STRENGTH
+    assert renderer.object_atmosphere_strength(grass) == ATMOSPHERE_REACTIVE_PROP_STRENGTH
     assert renderer.object_atmosphere_strength(station) == ATMOSPHERE_EQUIPMENT_STRENGTH
     assert renderer.object_atmosphere_strength(wall) == ATMOSPHERE_SOLID_STRENGTH
 
@@ -699,6 +702,7 @@ def test_affine_atmosphere_tuning_keeps_gameplay_entities_readable() -> None:
 
     assert strengths["player"] == ATMOSPHERE_PLAYER_STRENGTH
     assert strengths["buddy"] == ATMOSPHERE_BUDDY_STRENGTH
+    assert strengths["grass_01"] == ATMOSPHERE_REACTIVE_PROP_STRENGTH
     assert strengths[enemy_id] == ATMOSPHERE_ENEMY_STRENGTH
     assert not any(key.startswith("ground_detail:") for key in strengths)
     assert strengths["player"] < strengths[enemy_id] < renderer.object_atmosphere_strength(tree)

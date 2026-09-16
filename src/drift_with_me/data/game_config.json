@@ -204,6 +204,7 @@
     "shadow_important_min_cells": 6,
     "ground_detail_strength": 1.0,
     "nature_prop_strength": 1.0,
+    "reactive_prop_strength": 0.0,
     "equipment_strength": 0.7,
     "solid_strength": 0.8,
     "default_static_strength": 0.5,

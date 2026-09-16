@@ -176,6 +176,7 @@ World data changes are limited to:
 - Grassland v0.1 low grass, edge, and scatter `ground_details` are currently not placed in the world because they are too large to read cleanly as ground-projected floor sprites.
 - `grassland_micro.enabled` is `true` so the current grassland micro surface test remains visible.
 - `objects` includes multiple upright grass `reactive_prop` entries for low grass and grassland tall grass. They are visual-only and do not change collision or pathing. The current review positions keep tall/low grass away from tree roots so their billboards do not visibly occupy the same foreground/background slot.
+- `reactive_prop_strength` is `0.0`, so upright reactive grass and reeds do not receive the atmospheric dissolve/palette treatment used for trees and other distant nature props. This keeps their supplied silhouettes and colors intact while the grass reaction pass is under review.
 - `visual_detail_per_chunk` is `0`; random small-detail scatter is deferred until a cheaper tiling/sprite path is available.
 - `player.solid_collision_margin` adds a small margin only for player-vs-solid movement/pathing so Jack does not visually sink into the box faces. Enemy contact still uses the original player collider size.
 
