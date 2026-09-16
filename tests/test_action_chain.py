@@ -161,11 +161,11 @@ def test_active_bubble_blocks_second_shot_without_extra_cost() -> None:
 def test_wall_collision_stops_bubble_before_capture() -> None:
     model, _camera = make_model()
     enemy = abnormal_enemy(model)
-    enemy.x = 650.0
-    enemy.z = 352.0
+    enemy.x = 350.0
+    enemy.z = 320.0
     enemy.state = "WINDUP"
     enemy.state_timer = 10.0
-    model.bubble = BubbleState(x=600.0, z=352.0, dir_x=1.0, dir_z=0.0)
+    model.bubble = BubbleState(x=280.0, z=320.0, dir_x=1.0, dir_z=0.0)
     events = []
 
     model.update_bubble(0.2, events)

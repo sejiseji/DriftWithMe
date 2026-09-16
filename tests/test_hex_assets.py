@@ -907,11 +907,13 @@ tree = model.world.object_by_id("tree_02")
 grass = model.world.object_by_id("grass_01")
 low_grass = model.world.object_by_id("grass_02")
 grassland_tall = model.world.object_by_id("grassland_tall_a_01")
-giant_root = model.world.object_by_id("wall_02")
-giant_tree = model.world.object_by_id("wall_03")
+giant_root = model.world.object_by_id("rock_02")
+west_root = model.world.object_by_id("wall_02")
+east_tree = model.world.object_by_id("wall_03")
 assert tap is not None and stopped_tap is not None and solar is not None
 assert tree is not None and grass is not None and low_grass is not None
-assert grassland_tall is not None and giant_root is not None and giant_tree is not None
+assert grassland_tall is not None and giant_root is not None
+assert west_root is not None and east_tree is not None
 assert renderer.object_sprite_asset(model, tap).definition.asset_id == "water_station_active_96"
 assert (
     renderer.object_sprite_asset(model, stopped_tap).definition.asset_id
@@ -941,9 +943,12 @@ assert renderer.object_sprite_asset(model, grassland_tall).definition.projection
     "upright_height_billboard_v1"
 )
 assert renderer.object_sprite_asset(model, giant_root).definition.asset_id == (
+    "giant_tree_root_massive_a_128"
+)
+assert renderer.object_sprite_asset(model, west_root).definition.asset_id == (
     "giant_tree_root_arch_a_128"
 )
-assert renderer.object_sprite_asset(model, giant_tree).definition.asset_id == (
+assert renderer.object_sprite_asset(model, east_tree).definition.asset_id == (
     "giant_tree_02x_c_256"
 )
 assert len(model.world.ground_details) == 0

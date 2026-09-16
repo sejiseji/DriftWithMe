@@ -238,9 +238,9 @@
       "id": "wall_02",
       "kind": "obstacle",
       "position": [
-        448.0,
+        96.0,
         0.0,
-        448.0
+        544.0
       ],
       "visual": "giant_tree_root_arch_a",
       "solid": true,
@@ -259,9 +259,9 @@
       "id": "wall_03",
       "kind": "obstacle",
       "position": [
-        640.0,
+        960.0,
         0.0,
-        352.0
+        544.0
       ],
       "visual": "giant_tree_02x_c",
       "solid": true,

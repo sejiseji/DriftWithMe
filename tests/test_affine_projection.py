@@ -480,14 +480,14 @@ def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
     runtime, world, _perspective, profile, _affine = make_affine_camera()
     model = GameModel(runtime.raw, world)
     renderer = Renderer(None)
-    root = world.object_by_id("wall_02")
+    root = world.object_by_id("rock_02")
     assert root is not None
     assert root.solid
-    assert root.visual == "giant_tree_root_arch_a"
-    assert root.half_x == pytest.approx(48.0)
-    assert root.half_z == pytest.approx(16.0)
-    assert root.sprite_world_width == pytest.approx(110.0)
-    assert root.sprite_world_height == pytest.approx(110.0)
+    assert root.visual == "giant_tree_root_massive_a"
+    assert root.half_x == pytest.approx(20.0)
+    assert root.half_z == pytest.approx(20.0)
+    assert root.sprite_world_width == pytest.approx(118.0)
+    assert root.sprite_world_height == pytest.approx(118.0)
     assert root.occludes_player
     assert not renderer.object_uses_box_geometry(root)
 
@@ -504,37 +504,29 @@ def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
     )
     affine_ids = {command.stable_id for command in renderer.world_commands(model, affine, 0.0)}
 
-    assert "wall_02" in affine_ids
-    assert "wall_02:top" not in affine_ids
-    assert "wall_02:north" not in affine_ids
+    assert "rock_02" in affine_ids
+    assert "rock_02:top" not in affine_ids
+    assert "rock_02:north" not in affine_ids
 
-    giant_tree = world.object_by_id("wall_03")
-    assert giant_tree is not None
-    assert giant_tree.solid
-    assert giant_tree.visual == "giant_tree_02x_c"
-    assert giant_tree.x == pytest.approx(640.0)
-    assert giant_tree.half_x == pytest.approx(16.0)
-    assert giant_tree.half_z == pytest.approx(48.0)
-    assert giant_tree.sprite_world_width == pytest.approx(192.0)
-    assert giant_tree.sprite_world_height == pytest.approx(192.0)
-    assert not renderer.object_uses_box_geometry(giant_tree)
+    west_root = world.object_by_id("wall_02")
+    assert west_root is not None
+    assert west_root.solid
+    assert west_root.visual == "giant_tree_root_arch_a"
+    assert west_root.x == pytest.approx(96.0)
+    assert west_root.z == pytest.approx(544.0)
+    assert west_root.sprite_world_width == pytest.approx(110.0)
+    assert west_root.sprite_world_height == pytest.approx(110.0)
+    assert not renderer.object_uses_box_geometry(west_root)
 
-    perspective = CameraState.from_config(
-        runtime.raw,
-        Vec3(giant_tree.x, 0.0, giant_tree.z),
-        runtime.screen_width,
-        runtime.screen_height,
-    )
-    affine = affine_camera_from_perspective(
-        perspective,
-        profile,
-        base_distance=float(runtime.raw["camera"]["base_distance"]),
-    )
-    affine_ids = {command.stable_id for command in renderer.world_commands(model, affine, 0.0)}
-
-    assert "wall_03" in affine_ids
-    assert "wall_03:top" not in affine_ids
-    assert "wall_03:north" not in affine_ids
+    east_tree = world.object_by_id("wall_03")
+    assert east_tree is not None
+    assert east_tree.solid
+    assert east_tree.visual == "giant_tree_02x_c"
+    assert east_tree.x == pytest.approx(960.0)
+    assert east_tree.z == pytest.approx(544.0)
+    assert east_tree.sprite_world_width == pytest.approx(192.0)
+    assert east_tree.sprite_world_height == pytest.approx(192.0)
+    assert not renderer.object_uses_box_geometry(east_tree)
 
 
 def test_affine_solid_box_occludes_player_with_projected_bounds() -> None:
