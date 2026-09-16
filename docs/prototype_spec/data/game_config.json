@@ -196,7 +196,7 @@
     "dither_min_strength": 0.5,
     "mid_dither_cells": 3,
     "far_dither_cells": 6,
-    "dither_fog_color": 1,
+    "dither_fog_color": 5,
     "shadow_enabled": true,
     "shadow_near_cells": 12,
     "shadow_mid_cells": 8,

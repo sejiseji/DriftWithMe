@@ -503,8 +503,10 @@ def test_affine_atmosphere_palette_depth_preserves_gameplay_entities() -> None:
     assert renderer.atmosphere_palette_mappings(affine, far_depth, 0.1) == ()
     assert renderer.atmosphere_palette_mappings(affine, far_depth, 0.35) == ATMOSPHERE_WEAK_PALETTE
     assert renderer.atmosphere_palette_mappings(affine, far_depth, 1.0) == ATMOSPHERE_FAR_PALETTE
-    assert 13 not in {target for _source, target in ATMOSPHERE_FAR_PALETTE}
-    assert ATMOSPHERE_DITHER_FOG_COLOR == 1
+    far_targets = {target for _source, target in ATMOSPHERE_FAR_PALETTE}
+    assert 13 not in far_targets
+    assert 1 not in far_targets
+    assert ATMOSPHERE_DITHER_FOG_COLOR == 5
 
 
 def test_affine_atmosphere_palette_has_near_mid_far_bands() -> None:
