@@ -33,19 +33,19 @@ from drift_with_me.world import (
 ATMOSPHERE_WEAK_PALETTE = ((0, 1), (1, 5))
 ATMOSPHERE_MID_PALETTE = ((0, 1), (1, 5), (2, 5), (4, 5), (8, 5))
 ATMOSPHERE_FAR_PALETTE = (
-    (0, 5),
-    (1, 5),
-    (2, 5),
-    (3, 11),
-    (4, 5),
-    (5, 13),
-    (8, 5),
-    (9, 13),
-    (10, 13),
-    (11, 12),
-    (12, 13),
-    (14, 13),
-    (15, 13),
+    (0, 1),
+    (1, 1),
+    (2, 1),
+    (3, 5),
+    (4, 1),
+    (5, 1),
+    (8, 1),
+    (9, 4),
+    (10, 4),
+    (11, 5),
+    (12, 5),
+    (14, 4),
+    (15, 4),
 )
 ATMOSPHERE_BAYER_4X4 = (
     (0, 8, 2, 10),
@@ -56,7 +56,7 @@ ATMOSPHERE_BAYER_4X4 = (
 ATMOSPHERE_MID_DITHER_CELLS = 3
 ATMOSPHERE_FAR_DITHER_CELLS = 6
 ATMOSPHERE_DITHER_MIN_STRENGTH = 0.5
-ATMOSPHERE_DITHER_FOG_COLOR = 5
+ATMOSPHERE_DITHER_FOG_COLOR = 1
 ATMOSPHERE_SHADOW_NEAR_CELLS = 12
 ATMOSPHERE_SHADOW_MID_CELLS = 8
 ATMOSPHERE_SHADOW_FAR_CELLS = 4
