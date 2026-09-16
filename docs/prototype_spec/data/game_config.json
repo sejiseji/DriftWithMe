@@ -314,7 +314,7 @@
     "active_enter_radius": 256.0,
     "active_exit_radius": 320.0,
     "screen_margin_ref_px": 24.0,
-    "static_visual_max_height": 128.0,
+    "static_visual_max_height": 192.0,
     "visual_detail_per_chunk": 0,
     "stress_extra_counts": [
       128,
@@ -380,7 +380,11 @@
     "giant_tree_root_massive_a_asset": "giant_tree_root_massive_a_128",
     "giant_tree_root_tall_b_asset": "giant_tree_root_tall_b_128",
     "giant_tree_stump_ruin_a_asset": "giant_tree_stump_ruin_a_128",
-    "giant_tree_root_arch_a_asset": "giant_tree_root_arch_a_128"
+    "giant_tree_root_arch_a_asset": "giant_tree_root_arch_a_128",
+    "giant_tree_02x_a_asset": "giant_tree_02x_a_256",
+    "giant_tree_02x_b_asset": "giant_tree_02x_b_256",
+    "giant_tree_02x_c_asset": "giant_tree_02x_c_256",
+    "giant_tree_02x_d_asset": "giant_tree_02x_d_256"
   },
   "ui": {
     "locale": "ja",

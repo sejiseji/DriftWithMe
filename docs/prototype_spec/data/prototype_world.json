@@ -263,7 +263,7 @@
         0.0,
         352.0
       ],
-      "visual": "giant_tree_root_massive_a",
+      "visual": "giant_tree_02x_c",
       "solid": true,
       "half_extents_xz": [
         16.0,
@@ -271,8 +271,8 @@
       ],
       "height": 32.0,
       "sprite_world_size": [
-        118.0,
-        118.0
+        192.0,
+        192.0
       ],
       "occludes_player": true
     },
