@@ -504,9 +504,10 @@ def test_affine_atmosphere_palette_depth_preserves_gameplay_entities() -> None:
     assert renderer.atmosphere_palette_mappings(affine, far_depth, 0.35) == ATMOSPHERE_WEAK_PALETTE
     assert renderer.atmosphere_palette_mappings(affine, far_depth, 1.0) == ATMOSPHERE_FAR_PALETTE
     far_targets = {target for _source, target in ATMOSPHERE_FAR_PALETTE}
-    assert 13 not in far_targets
     assert 1 not in far_targets
-    assert ATMOSPHERE_DITHER_FOG_COLOR == 5
+    assert 13 in far_targets
+    assert ATMOSPHERE_DITHER_FOG_COLOR == 13
+    assert ATMOSPHERE_FAR_DITHER_CELLS == 4
 
 
 def test_affine_atmosphere_palette_has_near_mid_far_bands() -> None:
@@ -550,7 +551,7 @@ def test_affine_atmosphere_dither_interpolates_between_depth_bands() -> None:
     assert samples[0] == 0
     assert samples[-1] == ATMOSPHERE_FAR_DITHER_CELLS
     assert samples == sorted(samples)
-    assert len(set(samples)) >= 6
+    assert len(set(samples)) >= min(6, ATMOSPHERE_FAR_DITHER_CELLS + 1)
     assert renderer.atmosphere_dither_cells(affine, reference + 220.0, 0.7) == round(
         ATMOSPHERE_FAR_DITHER_CELLS * 0.7
     )

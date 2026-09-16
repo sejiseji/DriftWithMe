@@ -36,16 +36,17 @@ ATMOSPHERE_FAR_PALETTE = (
     (0, 5),
     (1, 5),
     (2, 5),
-    (3, 3),
+    (3, 13),
     (4, 5),
-    (5, 12),
+    (5, 13),
+    (6, 13),
     (8, 5),
-    (9, 4),
-    (10, 9),
-    (11, 3),
-    (12, 12),
-    (14, 4),
-    (15, 9),
+    (9, 13),
+    (10, 13),
+    (11, 13),
+    (12, 13),
+    (14, 13),
+    (15, 13),
 )
 ATMOSPHERE_BAYER_4X4 = (
     (0, 8, 2, 10),
@@ -53,10 +54,10 @@ ATMOSPHERE_BAYER_4X4 = (
     (3, 11, 1, 9),
     (15, 7, 13, 5),
 )
-ATMOSPHERE_MID_DITHER_CELLS = 3
-ATMOSPHERE_FAR_DITHER_CELLS = 6
+ATMOSPHERE_MID_DITHER_CELLS = 2
+ATMOSPHERE_FAR_DITHER_CELLS = 4
 ATMOSPHERE_DITHER_MIN_STRENGTH = 0.5
-ATMOSPHERE_DITHER_FOG_COLOR = 5
+ATMOSPHERE_DITHER_FOG_COLOR = 13
 ATMOSPHERE_SHADOW_NEAR_CELLS = 12
 ATMOSPHERE_SHADOW_MID_CELLS = 8
 ATMOSPHERE_SHADOW_FAR_CELLS = 4
