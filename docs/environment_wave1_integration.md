@@ -88,6 +88,8 @@ AFF007-B adds the first static/dynamic environment split. Reactive environment p
 
 AFF007-C connects that active state to grass rendering. Tall upright grass is drawn from the received HEX source with row-wise screen displacement only while active, so the top bends in Jack's movement direction and then recovers. The current placed low grass also uses an upright billboard path to avoid floor-stuck grass silhouettes. The static sprite path remains unchanged when no active state exists, and the behavior still does not affect collision, pathing, camera, source pixels, or SE.
 
+AFF007-C follow-up keeps the same static/dynamic split but refreshes active grass state while Jack remains inside the trigger radius. This lets the bend direction follow Jack's current movement without spawning repeated particles during cooldown. The active strength now has a configured floor at the trigger edge, recovery is slightly longer, and upright grass pixels receive a small perpendicular split in addition to the existing bend so tall patches read more like they are being pushed apart. Collision, pathing, camera, source HEX pixels, and non-active static sprite drawing remain unchanged.
+
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
 - `concrete_clean_a`: source hash `e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640`

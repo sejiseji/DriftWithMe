@@ -283,13 +283,33 @@ def test_reactive_environment_state_uses_nearby_query_and_recovers() -> None:
     assert state.direction_z == pytest.approx(0.0)
     assert 0.0 <= state.strength <= 1.0
 
+    model.player.last_move_x = 0.0
+    model.player.last_move_z = 1.0
     effects.update(1.0 / 60.0, model)
     assert len(effects.particles) == first_particle_count
+    refreshed = effects.reactive_environment_states["grass_01"]
+    assert refreshed.direction_x == pytest.approx(0.0)
+    assert refreshed.direction_z == pytest.approx(1.0)
+    assert refreshed.age == pytest.approx(0.0)
 
     model.player.x = 0.0
     model.player.z = 0.0
-    effects.update(1.0, model)
+    effects.update(1.1, model)
     assert effects.reactive_environment_states == {}
+
+
+def test_reactive_environment_keeps_minimum_strength_at_trigger_edge() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+    model.player.x = grass.x + grass.reaction_radius
+    model.player.z = grass.z
+
+    effects.update(1.0 / 60.0, model)
+
+    state = effects.reactive_environment_states["grass_01"]
+    assert state.strength == pytest.approx(model.config["reactive_environment"]["min_strength"])
 
 
 def test_reactive_grass_render_helpers_use_active_state_until_recovered() -> None:
@@ -436,5 +456,6 @@ def test_grass_reaction_uses_cooldown() -> None:
 
     assert first_count > 0
     assert second_count == first_count
-    assert len(effects.particles) == first_count
-    assert max(particle.age for particle in effects.particles) == pytest.approx(0.0)
+    assert all(particle.age > 0.0 for particle in effects.particles)
+    assert len(effects.particles) <= first_count
+    assert "grass_01" in effects.reactive_environment_states

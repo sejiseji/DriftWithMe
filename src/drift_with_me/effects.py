@@ -208,6 +208,7 @@ class EffectSystem:
         self.reactive_environment_search_radius = float(reactive.get("search_radius_world", 0.0))
         self.reactive_environment_recovery_sec = float(reactive.get("recovery_sec", 0.8))
         self.reactive_environment_retrigger_sec = float(reactive.get("retrigger_sec", 0.8))
+        self.reactive_environment_min_strength = float(reactive.get("min_strength", 0.0))
         self.max_active_reactive_environment = int(reactive.get("max_active", 32))
         self.particles: list[WorldParticle] = []
         self.rings: list[WorldRing] = []
@@ -414,9 +415,10 @@ class EffectSystem:
         )
         self.reactive_environment_last_query_count = query.candidate_object_count
         for obj in query.objects:
-            if self._grass_cooldowns.get(obj.id, 0.0) > 0.0:
-                continue
+            was_active = obj.id in self.reactive_environment_states
             self.activate_reactive_environment(model, obj)
+            if was_active or self._grass_cooldowns.get(obj.id, 0.0) > 0.0:
+                continue
             self.spawn_burst(obj.x, 0.0, obj.z, color=11, count=3, speed=5.0)
             self._grass_cooldowns[obj.id] = self.reactive_environment_retrigger_sec
 
@@ -434,7 +436,9 @@ class EffectSystem:
             self.reactive_environment_states.pop(oldest_id, None)
         direction_x, direction_z = self.reactive_environment_direction(model, obj)
         distance = math.hypot(model.player.x - obj.x, model.player.z - obj.z)
-        strength = 1.0 - min(distance / max(obj.reaction_radius, 1e-6), 1.0)
+        contact = 1.0 - min(distance / max(obj.reaction_radius, 1e-6), 1.0)
+        min_strength = max(0.0, min(self.reactive_environment_min_strength, 1.0))
+        strength = min_strength + (1.0 - min_strength) * contact
         visual_radius = max(
             obj.reaction_radius,
             obj.sprite_world_width * 0.5,

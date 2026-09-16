@@ -481,10 +481,12 @@
     "enabled": true,
     "max_active": 32,
     "search_radius_world": 0.0,
-    "recovery_sec": 0.8,
-    "retrigger_sec": 0.8,
-    "upright_bend_px": 10.0,
-    "overlay_line_px": 8.0
+    "recovery_sec": 1.05,
+    "retrigger_sec": 0.45,
+    "min_strength": 0.35,
+    "upright_bend_px": 13.0,
+    "upright_part_px": 5.0,
+    "overlay_line_px": 10.0
   },
   "audio": {
     "enabled_by_default": true,

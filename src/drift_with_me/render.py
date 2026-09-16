@@ -1805,9 +1805,11 @@ class Renderer:
         dir_x, dir_y = direction
         config = model.config.get("reactive_environment", {})
         bend_px = float(config.get("upright_bend_px", 10.0))
+        part_px = float(config.get("upright_part_px", 0.0))
         intensity = self.reactive_environment_intensity(state)
         if intensity <= 1e-6:
             return False
+        side_x, side_y = -dir_y, dir_x
 
         sample_step = 2 if placement.scale < 0.5 else 1
         pixel_size = max(1, int(round(placement.scale * sample_step)))
@@ -1823,15 +1825,21 @@ class Renderer:
                     continue
                 if int(char, 16) == asset.definition.colkey:
                     continue
+                col_t = (col_index + 0.5) / source_width
+                side = -1.0 if col_t < 0.5 else 1.0
+                side_amount = abs(col_t - 0.5) * 2.0
+                part_shift = part_px * intensity * (0.3 + 0.7 * lift) * side_amount
                 px = (
                     placement.left
                     + (col_index + 0.5) / source_width * (placement.right - placement.left)
                     + dir_x * row_shift
+                    + side_x * side * part_shift
                 )
                 py = (
                     placement.top
                     + (row_index + 0.5) / source_height * (placement.bottom - placement.top)
                     + dir_y * row_shift * 0.5
+                    + side_y * side * part_shift * 0.5
                 )
                 color = self.atmosphere_dither_color(
                     int(char, 16), col_index, row_index, asset.definition.colkey
