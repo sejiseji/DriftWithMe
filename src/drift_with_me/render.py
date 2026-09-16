@@ -507,6 +507,7 @@ class Renderer:
 
         tile_world = self.grassland_transition_cell_world(area, config)
         phase = int(area.get("phase", config.get("phase", 0)))
+        soft_color = self.grassland_transition_soft_color(area, config, color)
         min_cell_x = math.floor(draw_rect[0] / tile_world)
         max_cell_x = math.ceil(draw_rect[2] / tile_world)
         min_cell_z = math.floor(draw_rect[1] / tile_world)
@@ -528,12 +529,21 @@ class Renderer:
                 )
                 if coverage <= 0:
                     continue
-                if coverage >= 1.0:
-                    continue
+                soft_coverage = self.grassland_transition_soft_coverage(coverage)
+                base_coverage = self.grassland_transition_base_coverage(coverage)
+                if soft_color != color and self.grassland_transition_pass(
+                    cell_x,
+                    cell_z,
+                    soft_coverage,
+                    phase + 31,
+                    area,
+                    config,
+                ):
+                    self.draw_ground_rect(camera, (cell_x0, cell_z0, cell_x1, cell_z1), soft_color)
                 if not self.grassland_transition_pass(
                     cell_x,
                     cell_z,
-                    coverage,
+                    base_coverage,
                     phase,
                     area,
                     config,
@@ -929,6 +939,18 @@ class Renderer:
     ) -> float:
         t = self.grassland_transition_t(area_rect, world_x, world_z, transition_world)
         return max(0.0, min(t * t * (3.0 - 2.0 * t), 1.0))
+
+    def grassland_transition_soft_color(self, area: dict, config: dict, fallback: int) -> int:
+        return self.clamped_palette_color(
+            area.get("transition_soft_color", config.get("transition_soft_color", fallback))
+        )
+
+    def grassland_transition_soft_coverage(self, coverage: float) -> float:
+        return max(0.0, min(coverage * 1.35, 1.0))
+
+    def grassland_transition_base_coverage(self, coverage: float) -> float:
+        t = max(0.0, min((coverage - 0.25) / 0.75, 1.0))
+        return t * t * (3.0 - 2.0 * t)
 
     def grassland_transition_pass(
         self,

@@ -202,6 +202,7 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["transition_world"] == pytest.approx(32.0)
     assert config["transition_cell_world"] == pytest.approx(4.0)
     assert config["transition_pattern"] == "noise"
+    assert config["transition_soft_color"] == 11
     assert config["micro_density_inner"] == pytest.approx(1.0)
     assert config["micro_density_edge"] == pytest.approx(0.2)
     assert config["areas"][0]["bounds_ref"] == "visual_ground"
@@ -264,6 +265,9 @@ def test_grassland_boundary_transition_classification_and_density() -> None:
         density_inner=1.0,
         density_edge=0.2,
     ) == pytest.approx(0.6)
+    assert renderer.grassland_transition_soft_coverage(0.2) > 0.2
+    assert renderer.grassland_transition_base_coverage(0.2) == pytest.approx(0.0)
+    assert renderer.grassland_transition_base_coverage(0.8) > 0.5
 
 
 def test_grassland_bayer_pattern_is_world_cell_deterministic() -> None:

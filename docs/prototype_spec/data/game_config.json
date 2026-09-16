@@ -229,6 +229,7 @@
     "transition_world": 32.0,
     "transition_cell_world": 4.0,
     "transition_pattern": "noise",
+    "transition_soft_color": 11,
     "micro_density_inner": 1.0,
     "micro_density_edge": 0.2,
     "areas": [
