@@ -2332,6 +2332,24 @@ class Renderer:
         if strength <= 0.0 or not math.isfinite(strength) or not math.isfinite(depth):
             return ()
 
+        depth_progress = self.atmosphere_depth_progress(camera, depth)
+        if depth_progress <= 0.0:
+            return ()
+
+        base_stage = 2.0 * depth_progress
+        effective_stage = base_stage * strength
+        if effective_stage < 0.25:
+            return ()
+        if effective_stage < 0.75:
+            return ATMOSPHERE_WEAK_PALETTE
+        if effective_stage < 1.5:
+            return ATMOSPHERE_MID_PALETTE
+        return ATMOSPHERE_FAR_PALETTE
+
+    def atmosphere_depth_progress(self, camera: CameraState, depth: float) -> float:
+        if not math.isfinite(depth):
+            return 0.0
+        config = self._atmosphere_config
         reference_depth = float(
             config.get(
                 "reference_depth",
@@ -2341,18 +2359,28 @@ class Renderer:
         near_offset = float(config.get("near_depth_offset", 64.0))
         far_offset = float(config.get("far_depth_offset", 176.0))
         relative_depth = depth - reference_depth
-        if relative_depth < near_offset:
-            return ()
+        if relative_depth <= near_offset:
+            return 0.0
+        if far_offset <= near_offset:
+            return 1.0
+        return max(0.0, min((relative_depth - near_offset) / (far_offset - near_offset), 1.0))
 
-        base_stage = 1.0 if relative_depth < far_offset else 2.0
-        effective_stage = base_stage * strength
-        if effective_stage < 0.25:
-            return ()
-        if effective_stage < 0.75:
-            return ATMOSPHERE_WEAK_PALETTE
-        if effective_stage < 1.5:
-            return ATMOSPHERE_MID_PALETTE
-        return ATMOSPHERE_FAR_PALETTE
+    def atmosphere_interpolated_dither_cells(
+        self,
+        progress: float,
+        mid_cells: int,
+        far_cells: int,
+    ) -> int:
+        progress = max(0.0, min(progress, 1.0))
+        mid_cells = max(0, min(16, mid_cells))
+        far_cells = max(0, min(16, far_cells))
+        if progress <= 0.0:
+            cells = 0.0
+        elif progress < 0.5:
+            cells = mid_cells * (progress / 0.5)
+        else:
+            cells = mid_cells + (far_cells - mid_cells) * ((progress - 0.5) / 0.5)
+        return max(0, min(16, int(math.floor(cells + 0.5))))
 
     def atmosphere_dither_cells(self, camera: CameraState, depth: float, strength: float) -> int:
         config = self._atmosphere_config
@@ -2369,22 +2397,15 @@ class Renderer:
         ):
             return 0
 
-        reference_depth = float(
-            config.get(
-                "reference_depth",
-                getattr(getattr(camera, "profile", None), "reference_depth", 480.0),
-            )
-        )
-        near_offset = float(config.get("near_depth_offset", 64.0))
-        far_offset = float(config.get("far_depth_offset", 176.0))
-        relative_depth = depth - reference_depth
-        if relative_depth < near_offset:
+        progress = self.atmosphere_depth_progress(camera, depth)
+        if progress <= 0.0:
             return 0
 
-        if relative_depth < far_offset:
-            base_cells = int(config.get("mid_dither_cells", ATMOSPHERE_MID_DITHER_CELLS))
-        else:
-            base_cells = int(config.get("far_dither_cells", ATMOSPHERE_FAR_DITHER_CELLS))
+        base_cells = self.atmosphere_interpolated_dither_cells(
+            progress,
+            int(config.get("mid_dither_cells", ATMOSPHERE_MID_DITHER_CELLS)),
+            int(config.get("far_dither_cells", ATMOSPHERE_FAR_DITHER_CELLS)),
+        )
         return max(0, min(16, int(round(base_cells * strength))))
 
     def atmosphere_shadow_dither_cells(

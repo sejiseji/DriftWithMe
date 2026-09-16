@@ -484,22 +484,34 @@ def test_affine_atmosphere_palette_has_near_mid_far_bands() -> None:
     ) != renderer.atmosphere_palette_mappings(affine, reference + 220.0, 1.0)
 
 
-def test_affine_atmosphere_dither_has_near_mid_far_bands() -> None:
+def test_affine_atmosphere_dither_interpolates_between_depth_bands() -> None:
     runtime, _world, perspective, _profile, affine = make_affine_camera()
     renderer = Renderer(None)
     renderer._atmosphere_config = runtime.raw["atmosphere"]
     reference = affine.profile.reference_depth
+    near_offset = runtime.raw["atmosphere"]["near_depth_offset"]
+    far_offset = runtime.raw["atmosphere"]["far_depth_offset"]
+    midpoint = reference + (near_offset + far_offset) / 2.0
 
     assert renderer.atmosphere_dither_cells(perspective, reference + 220.0, 1.0) == 0
     assert renderer.atmosphere_dither_cells(affine, reference + 32.0, 1.0) == 0
-    assert (
-        renderer.atmosphere_dither_cells(affine, reference + 96.0, 1.0)
-        == ATMOSPHERE_MID_DITHER_CELLS
-    )
+    assert renderer.atmosphere_dither_cells(affine, midpoint, 1.0) == ATMOSPHERE_MID_DITHER_CELLS
     assert (
         renderer.atmosphere_dither_cells(affine, reference + 220.0, 1.0)
         == ATMOSPHERE_FAR_DITHER_CELLS
     )
+    samples = [
+        renderer.atmosphere_dither_cells(
+            affine,
+            reference + near_offset + (far_offset - near_offset) * index / 10.0,
+            1.0,
+        )
+        for index in range(11)
+    ]
+    assert samples[0] == 0
+    assert samples[-1] == ATMOSPHERE_FAR_DITHER_CELLS
+    assert samples == sorted(samples)
+    assert len(set(samples)) >= 6
     assert renderer.atmosphere_dither_cells(affine, reference + 220.0, 0.7) == round(
         ATMOSPHERE_FAR_DITHER_CELLS * 0.7
     )
