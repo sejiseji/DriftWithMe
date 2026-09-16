@@ -694,9 +694,7 @@ class DriftWithMeApp:
             return InputIntent()
 
         point = self.screen_to_ground(request.camera, request.screen_x, request.screen_y)
-        if point is None or not (
-            0.0 <= point.x <= self.world.width and 0.0 <= point.y <= self.world.depth
-        ):
+        if point is None or not self.world.walkable_rect.contains_point(point.x, point.y):
             self.reject_auto_move_goal("auto_move_blocked")
             return InputIntent()
         if self.foreground_object_blocks_ground_pick(
@@ -1680,8 +1678,9 @@ class DriftWithMeApp:
     def minimap_point(
         self, world_x: float, world_z: float, map_x: int, map_y: int, map_side: int
     ) -> tuple[int, int]:
-        u = 0.0 if self.world.width <= 0 else max(0.0, min(world_x / self.world.width, 1.0))
-        v = 0.0 if self.world.depth <= 0 else max(0.0, min(world_z / self.world.depth, 1.0))
+        rect = self.world.minimap_rect
+        u = 0.0 if rect.width <= 0 else max(0.0, min((world_x - rect.min_x) / rect.width, 1.0))
+        v = 0.0 if rect.depth <= 0 else max(0.0, min((world_z - rect.min_z) / rect.depth, 1.0))
         return map_x + round(u * (map_side - 1)), map_y + round(v * (map_side - 1))
 
     def draw_tooltip(self) -> None:

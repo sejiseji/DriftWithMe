@@ -245,9 +245,9 @@ class GameModel:
         goal_x = self.player.x + side_offset * screen_right.x - behind_offset * ground_forward.x
         goal_z = self.player.z + side_offset * screen_right.y - behind_offset * ground_forward.y
         return (
-            max(0.0, min(float(self.world.width), goal_x)),
+            self.world.walkable_rect.clamp_x(goal_x),
             float(buddy_config["height"]),
-            max(0.0, min(float(self.world.depth), goal_z)),
+            self.world.walkable_rect.clamp_z(goal_z),
         )
 
     def buddy_goal_offsets(self, camera: CameraState) -> tuple[float, float]:
@@ -449,12 +449,13 @@ class GameModel:
         if not math.isfinite(grid) or grid <= 0.0:
             return None
         radius = self.auto_move_nav_radius()
-        cols = max(1, math.floor((self.world.width - radius * 2.0) / grid) + 1)
-        rows = max(1, math.floor((self.world.depth - radius * 2.0) / grid) + 1)
+        walkable = self.world.walkable_rect
+        cols = max(1, math.floor((walkable.width - radius * 2.0) / grid) + 1)
+        rows = max(1, math.floor((walkable.depth - radius * 2.0) / grid) + 1)
 
         def node_position(node: tuple[int, int]) -> tuple[float, float]:
             ix, iz = node
-            return radius + ix * grid, radius + iz * grid
+            return walkable.min_x + radius + ix * grid, walkable.min_z + radius + iz * grid
 
         walkable_cache: dict[tuple[int, int], bool] = {}
 
@@ -936,16 +937,17 @@ class GameModel:
         self, start_x: float, start_z: float, end_x: float, end_z: float, radius: float
     ) -> float | None:
         candidates: list[float] = []
+        walkable = self.world.walkable_rect
         dx = end_x - start_x
         dz = end_z - start_z
         if dx < -1e-9:
-            candidates.append((radius - start_x) / dx)
+            candidates.append((walkable.min_x + radius - start_x) / dx)
         elif dx > 1e-9:
-            candidates.append((self.world.width - radius - start_x) / dx)
+            candidates.append((walkable.max_x - radius - start_x) / dx)
         if dz < -1e-9:
-            candidates.append((radius - start_z) / dz)
+            candidates.append((walkable.min_z + radius - start_z) / dz)
         elif dz > 1e-9:
-            candidates.append((self.world.depth - radius - start_z) / dz)
+            candidates.append((walkable.max_z - radius - start_z) / dz)
 
         min_x = min(start_x, end_x) - radius
         max_x = max(start_x, end_x) + radius

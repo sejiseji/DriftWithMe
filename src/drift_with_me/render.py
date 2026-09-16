@@ -27,6 +27,7 @@ from drift_with_me.world import (
     GroundSurface,
     StaticObject,
     WorldData,
+    WorldRect,
 )
 
 ATMOSPHERE_WEAK_PALETTE = ((0, 1), (1, 5))
@@ -213,11 +214,14 @@ class Renderer:
         pyxel = self.pyxel
         ground_color = 13
         border_color = 7
+        ground_rect = self.visible_ground_draw_rect(world.visual_ground_rect, camera, margin_px=8.0)
+        if ground_rect is None:
+            return
         corners = [
-            camera.project(Vec3(0.0, 0.0, 0.0)),
-            camera.project(Vec3(world.width, 0.0, 0.0)),
-            camera.project(Vec3(world.width, 0.0, world.depth)),
-            camera.project(Vec3(0.0, 0.0, world.depth)),
+            camera.project(Vec3(ground_rect.min_x, 0.0, ground_rect.min_z)),
+            camera.project(Vec3(ground_rect.max_x, 0.0, ground_rect.min_z)),
+            camera.project(Vec3(ground_rect.max_x, 0.0, ground_rect.max_z)),
+            camera.project(Vec3(ground_rect.min_x, 0.0, ground_rect.max_z)),
         ]
         if all(point is not None for point in corners):
             p0, p1, p2, p3 = corners
@@ -228,20 +232,38 @@ class Renderer:
                 int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), ground_color
             )
 
-        self.draw_world_line(camera, Vec3(0.0, 0.0, 0.0), Vec3(world.width, 0.0, 0.0), border_color)
+        self.draw_world_rect(camera, world.walkable_rect, border_color)
+
+    def visible_ground_draw_rect(
+        self, rect: WorldRect, camera: CameraState, margin_px: float
+    ) -> WorldRect | None:
+        if not self.camera_is_affine(camera):
+            return rect
+        visible_rect = self.grassland_micro_visible_world_rect(camera, margin_px)
+        if visible_rect is None:
+            return rect
+        vx0, vz0, vx1, vz1 = visible_rect
+        min_x = max(rect.min_x, vx0)
+        min_z = max(rect.min_z, vz0)
+        max_x = min(rect.max_x, vx1)
+        max_z = min(rect.max_z, vz1)
+        if min_x >= max_x or min_z >= max_z:
+            return None
+        return WorldRect(min_x, min_z, max_x, max_z)
+
+    def draw_world_rect(self, camera: CameraState, rect: WorldRect, color: int) -> None:
         self.draw_world_line(
-            camera,
-            Vec3(world.width, 0.0, 0.0),
-            Vec3(world.width, 0.0, world.depth),
-            border_color,
+            camera, Vec3(rect.min_x, 0.0, rect.min_z), Vec3(rect.max_x, 0.0, rect.min_z), color
         )
         self.draw_world_line(
-            camera,
-            Vec3(world.width, 0.0, world.depth),
-            Vec3(0.0, 0.0, world.depth),
-            border_color,
+            camera, Vec3(rect.max_x, 0.0, rect.min_z), Vec3(rect.max_x, 0.0, rect.max_z), color
         )
-        self.draw_world_line(camera, Vec3(0.0, 0.0, world.depth), Vec3(0.0, 0.0, 0.0), border_color)
+        self.draw_world_line(
+            camera, Vec3(rect.max_x, 0.0, rect.max_z), Vec3(rect.min_x, 0.0, rect.max_z), color
+        )
+        self.draw_world_line(
+            camera, Vec3(rect.min_x, 0.0, rect.max_z), Vec3(rect.min_x, 0.0, rect.min_z), color
+        )
 
     def draw_safe_zones(self, world: WorldData, camera: CameraState) -> None:
         for zone in world.safe_zones:
@@ -406,12 +428,16 @@ class Renderer:
             return 0
         visible_count = 0
         for area in areas:
-            if isinstance(area, dict) and self.draw_grassland_micro_area(camera, area, config):
+            if isinstance(area, dict) and self.draw_grassland_micro_area(
+                model.world, camera, area, config
+            ):
                 visible_count += 1
         return visible_count
 
-    def draw_grassland_micro_area(self, camera: CameraState, area: dict, config: dict) -> bool:
-        rect = self.grassland_micro_world_rect(area)
+    def draw_grassland_micro_area(
+        self, world: WorldData, camera: CameraState, area: dict, config: dict
+    ) -> bool:
+        rect = self.grassland_micro_world_rect(world, area)
         if rect is None:
             return False
         rect = self.grassland_micro_visible_draw_rect(camera, rect, area, config)
@@ -438,7 +464,12 @@ class Renderer:
         self.draw_grassland_micro_pattern(camera, corners, bounds, rect, area, config)
         return True
 
-    def grassland_micro_world_rect(self, area: dict) -> tuple[float, float, float, float] | None:
+    def grassland_micro_world_rect(
+        self, world: WorldData, area: dict
+    ) -> tuple[float, float, float, float] | None:
+        if area.get("bounds_ref") == "visual_ground":
+            rect = world.visual_ground_rect
+            return rect.min_x, rect.min_z, rect.max_x, rect.max_z
         raw_rect = area.get("rect_xz")
         if not isinstance(raw_rect, (list, tuple)) or len(raw_rect) != 4:
             return None
@@ -2340,16 +2371,19 @@ class Renderer:
         )
         if step <= 1e-6 or not math.isfinite(step):
             return
-        cols = int(math.floor(model.world.width / step))
-        rows = int(math.floor(model.world.depth / step))
+        rect = model.world.minimap_rect
+        cols = int(math.floor(rect.width / step))
+        rows = int(math.floor(rect.depth / step))
         for index in range(cols + 1):
-            x = min(model.world.width, index * step)
-            self.draw_world_line(camera, Vec3(x, 0.0, 0.0), Vec3(x, 0.0, model.world.depth), 5)
+            x = min(rect.max_x, rect.min_x + index * step)
+            self.draw_world_line(camera, Vec3(x, 0.0, rect.min_z), Vec3(x, 0.0, rect.max_z), 5)
         for index in range(rows + 1):
-            z = min(model.world.depth, index * step)
-            self.draw_world_line(camera, Vec3(0.0, 0.0, z), Vec3(model.world.width, 0.0, z), 6)
+            z = min(rect.max_z, rect.min_z + index * step)
+            self.draw_world_line(camera, Vec3(rect.min_x, 0.0, z), Vec3(rect.max_x, 0.0, z), 6)
 
     def draw_debug_world(self, model: GameModel, camera: CameraState) -> None:
+        self.draw_world_rect(camera, model.world.visual_ground_rect, 11)
+        self.draw_world_rect(camera, model.world.walkable_rect, 7)
         point = camera.project(Vec3(model.player.x, 0.0, model.player.z))
         if point is None:
             return

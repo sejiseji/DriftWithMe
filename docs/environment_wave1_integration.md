@@ -78,6 +78,8 @@ On 2026-09-15, a fixed-affine grassland micro prototype was added. This is not a
 
 The renderer clears gameplay frames with the same gray color used by `draw_ground()` (`13`). This prevents uncovered map edges or out-of-world screen areas from switching to the old dark indigo clear color when the camera crosses certain positions.
 
+On 2026-09-16, BND001 split the former single `world.width/depth` responsibility into explicit world bounds. `walkable_rect_xz` is the gameplay movement and pathing area, `camera_target_rect_xz` clamps FOLLOW/lookahead targets, `visual_ground_rect_xz` is the extended undercoat used by base ground and grassland micro, `content_rect_xz` is the static/chunk management area, and `minimap_rect_xz` remains the user-facing map normalization area. The current prototype values keep walkable/camera/minimap at `0..1024` while visual/content extend to `-256..1280`. The grassland micro area now references `visual_ground` instead of carrying its own temporary `-256..1280` rectangle.
+
 AFF007-B adds the first static/dynamic environment split. Reactive environment props remain static world objects for collision and rendering, but `WorldData` now indexes `reactive_prop` entries by chunk and `EffectSystem` queries only Jack's world-space neighborhood before promoting a prop into a short-lived active state. The active state stores trigger radius, visual radius, reaction strength, movement direction, and recovery progress for future grass/reed/water/hanging-object animation waves. This replaces the old full `world.objects` scan used by grass burst reactions without changing collision, pathing, camera, source sprites, or the current visible grass asset.
 
 AFF007-C connects that active state to grass rendering. Tall upright grass is drawn from the received HEX source with row-wise screen displacement only while active, so the top bends in Jack's movement direction and then recovers. The current placed low grass also uses an upright billboard path to avoid floor-stuck grass silhouettes. The static sprite path remains unchanged when no active state exists, and the behavior still does not affect collision, pathing, camera, source pixels, or SE.
@@ -160,6 +162,7 @@ No collision, AI, input, camera, resource, or SE behavior was changed.
 
 World data changes are limited to:
 
+- `bounds` separates walkable, camera target, visual ground, content, and minimap rectangles.
 - `visual` identifiers for trees and grass.
 - `sprite_world_size` for equipment and grass so visual culling matches the new sprites.
 - `ground_surfaces` is empty; large pavement review sheets are no longer active by default.

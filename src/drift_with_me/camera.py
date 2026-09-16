@@ -242,8 +242,8 @@ class CameraController:
         if delta.length() <= 1e-6:
             return
         alpha = smoothing_alpha(dt, float(self.camera_config["follow_tau_sec"]))
-        next_x = clamp(self.follow_target.x + delta.x * alpha, 0.0, self.world.width)
-        next_z = clamp(self.follow_target.z + delta.y * alpha, 0.0, self.world.depth)
+        next_x = self.world.camera_target_rect.clamp_x(self.follow_target.x + delta.x * alpha)
+        next_z = self.world.camera_target_rect.clamp_z(self.follow_target.z + delta.y * alpha)
         self.follow_target = Vec3(next_x, 0.0, next_z)
 
     def directional_lookahead_active(
@@ -271,8 +271,8 @@ class CameraController:
             self.lookahead_offset.x + (desired_offset.x - self.lookahead_offset.x) * offset_alpha,
             self.lookahead_offset.y + (desired_offset.y - self.lookahead_offset.y) * offset_alpha,
         )
-        desired_x = clamp(player_x + self.lookahead_offset.x, 0.0, self.world.width)
-        desired_z = clamp(player_z + self.lookahead_offset.y, 0.0, self.world.depth)
+        desired_x = self.world.camera_target_rect.clamp_x(player_x + self.lookahead_offset.x)
+        desired_z = self.world.camera_target_rect.clamp_z(player_z + self.lookahead_offset.y)
         follow_tau = float(
             self.camera_config.get("lookahead_follow_tau_sec", self.camera_config["follow_tau_sec"])
         )
@@ -280,14 +280,14 @@ class CameraController:
         self.follow_target = Vec3(
             clamp(
                 self.follow_target.x + (desired_x - self.follow_target.x) * alpha,
-                0.0,
-                self.world.width,
+                self.world.camera_target_rect.min_x,
+                self.world.camera_target_rect.max_x,
             ),
             0.0,
             clamp(
                 self.follow_target.z + (desired_z - self.follow_target.z) * alpha,
-                0.0,
-                self.world.depth,
+                self.world.camera_target_rect.min_z,
+                self.world.camera_target_rect.max_z,
             ),
         )
 

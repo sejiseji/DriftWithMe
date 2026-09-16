@@ -5,7 +5,7 @@ import math
 from drift_with_me.config import load_runtime_config
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import GameModel, InputIntent
-from drift_with_me.world import load_world_data
+from drift_with_me.world import WorldData, load_world_data
 
 
 def make_model() -> tuple[GameModel, CameraState]:
@@ -84,6 +84,43 @@ def test_world_bounds_include_player_half_extent() -> None:
 
     assert x == half_x
     assert z == half_z
+
+
+def test_world_loads_split_bounds_and_legacy_fallback() -> None:
+    world = load_world_data()
+
+    assert world.walkable_rect.min_x == 0.0
+    assert world.walkable_rect.max_x == 1024.0
+    assert world.camera_target_rect == world.walkable_rect
+    assert world.visual_ground_rect.min_x == -256.0
+    assert world.visual_ground_rect.max_z == 1280.0
+    assert world.content_rect.min_x == -256.0
+    assert world.minimap_rect == world.walkable_rect
+
+    legacy_raw = dict(world.raw)
+    legacy_raw.pop("bounds", None)
+    legacy_world = WorldData(legacy_raw, visual_detail_per_chunk=0)
+
+    assert legacy_world.walkable_rect.min_x == 0.0
+    assert legacy_world.walkable_rect.max_x == legacy_world.width
+    assert legacy_world.visual_ground_rect == legacy_world.walkable_rect
+    assert legacy_world.minimap_rect == legacy_world.walkable_rect
+
+
+def test_player_collision_uses_walkable_bounds_not_visual_ground() -> None:
+    runtime = load_runtime_config()
+    world = load_world_data()
+    half_x = runtime.raw["player"]["collider_half_x"]
+    half_z = runtime.raw["player"]["collider_half_z"]
+
+    assert not world.collides_player(
+        world.walkable_rect.min_x + half_x,
+        world.walkable_rect.min_z + half_z,
+        half_x,
+        half_z,
+    )
+    assert world.visual_ground_rect.contains_point(-32.0, 160.0)
+    assert world.collides_player(-32.0, 160.0, half_x, half_z)
 
 
 def test_wall_collision_slides_along_tangent_axis() -> None:

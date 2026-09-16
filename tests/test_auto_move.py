@@ -18,6 +18,11 @@ from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
 
 
+class SilentAudio:
+    def play_preview(self, _event_name: str) -> None:
+        pass
+
+
 def make_model() -> tuple[GameModel, CameraState]:
     runtime = load_runtime_config()
     world = load_world_data()
@@ -46,6 +51,7 @@ def make_app_shell() -> tuple[DriftWithMeApp, CameraState]:
         Vec3(app.model.player.x, 0.0, app.model.player.z),
     )
     app.renderer = Renderer(None)
+    app.audio = SilentAudio()
     app.last_denied_reason = ""
     app.hitstop_remaining = 0.0
     app.projection_mode = "affine"
@@ -179,6 +185,42 @@ def test_double_tap_move_intent_uses_affine_screen_to_ground() -> None:
 
     assert intent.auto_move_goal_x == pytest.approx(target.x, abs=1e-6)
     assert intent.auto_move_goal_z == pytest.approx(target.z, abs=1e-6)
+
+
+def test_double_tap_move_rejects_visual_ground_outside_walkable_bounds() -> None:
+    app, camera = make_app_shell()
+    scene_camera = affine_camera(camera)
+    target = Vec3(-8.0, 0.0, app.model.player.z)
+    assert app.world.visual_ground_rect.contains_point(target.x, target.z)
+    assert not app.world.walkable_rect.contains_point(target.x, target.z)
+    projected = scene_camera.project(target)
+    assert projected is not None
+
+    for down, elapsed in ((True, 0.0), (False, 0.05), (True, 0.1)):
+        app.pointer_snapshot = PointerSnapshot(
+            down=down, pressed=down, x=projected.x, y=projected.y
+        )
+        assert app.double_tap_move_intent(elapsed, scene_camera).auto_move_goal_x is None
+
+    app.pointer_snapshot = PointerSnapshot(down=False, pressed=False, x=projected.x, y=projected.y)
+    intent = app.double_tap_move_intent(0.05, scene_camera)
+
+    assert intent.auto_move_goal_x is None
+    assert app.last_denied_reason == "auto_move_blocked"
+
+
+def test_minimap_normalization_uses_minimap_bounds_not_visual_ground() -> None:
+    app, _camera = make_app_shell()
+    map_x = 10
+    map_y = 20
+    map_side = 50
+
+    assert app.minimap_point(0.0, 0.0, map_x, map_y, map_side) == (map_x, map_y)
+    assert app.minimap_point(1024.0, 1024.0, map_x, map_y, map_side) == (
+        map_x + map_side - 1,
+        map_y + map_side - 1,
+    )
+    assert app.minimap_point(-256.0, -256.0, map_x, map_y, map_side) == (map_x, map_y)
 
 
 def test_auto_move_reaches_clear_goal_at_walk_speed() -> None:

@@ -29,6 +29,38 @@
     ],
     "cell_overrides": []
   },
+  "bounds": {
+    "walkable_rect_xz": [
+      0.0,
+      0.0,
+      1024.0,
+      1024.0
+    ],
+    "camera_target_rect_xz": [
+      0.0,
+      0.0,
+      1024.0,
+      1024.0
+    ],
+    "visual_ground_rect_xz": [
+      -256.0,
+      -256.0,
+      1280.0,
+      1280.0
+    ],
+    "content_rect_xz": [
+      -256.0,
+      -256.0,
+      1280.0,
+      1280.0
+    ],
+    "minimap_rect_xz": [
+      0.0,
+      0.0,
+      1024.0,
+      1024.0
+    ]
+  },
   "spawn": {
     "player": [
       160.0,

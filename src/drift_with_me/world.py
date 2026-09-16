@@ -54,6 +54,39 @@ class ObjectVisualBounds:
 
 
 @dataclass(frozen=True)
+class WorldRect:
+    min_x: float
+    min_z: float
+    max_x: float
+    max_z: float
+
+    @property
+    def width(self) -> float:
+        return max(0.0, self.max_x - self.min_x)
+
+    @property
+    def depth(self) -> float:
+        return max(0.0, self.max_z - self.min_z)
+
+    def contains_point(self, x: float, z: float) -> bool:
+        return self.min_x <= x <= self.max_x and self.min_z <= z <= self.max_z
+
+    def contains_aabb(self, min_x: float, min_z: float, max_x: float, max_z: float) -> bool:
+        return (
+            self.min_x <= min_x
+            and max_x <= self.max_x
+            and self.min_z <= min_z
+            and max_z <= self.max_z
+        )
+
+    def clamp_x(self, x: float, half_extent: float = 0.0) -> float:
+        return clamp(x, self.min_x + half_extent, self.max_x - half_extent)
+
+    def clamp_z(self, z: float, half_extent: float = 0.0) -> float:
+        return clamp(z, self.min_z + half_extent, self.max_z - half_extent)
+
+
+@dataclass(frozen=True)
 class GroundDetail:
     id: str
     chunk_id: tuple[int, int]
@@ -227,9 +260,31 @@ class WorldData:
         self.width = float(ground["width_cells"] * ground["cell_size"])
         self.depth = float(ground["depth_cells"] * ground["cell_size"])
         self.cell_size = float(ground["cell_size"])
+        legacy_rect = WorldRect(0.0, 0.0, self.width, self.depth)
+        bounds = raw.get("bounds", {})
+        self.walkable_rect = self._load_world_rect(
+            bounds.get("walkable_rect_xz"),
+            legacy_rect,
+        )
+        self.camera_target_rect = self._load_world_rect(
+            bounds.get("camera_target_rect_xz"),
+            self.walkable_rect,
+        )
+        self.visual_ground_rect = self._load_world_rect(
+            bounds.get("visual_ground_rect_xz"),
+            legacy_rect,
+        )
+        self.content_rect = self._load_world_rect(
+            bounds.get("content_rect_xz"),
+            legacy_rect,
+        )
+        self.minimap_rect = self._load_world_rect(
+            bounds.get("minimap_rect_xz"),
+            legacy_rect,
+        )
         self.chunk_size = chunk_size
-        self.chunk_cols = max(1, math.ceil(self.width / self.chunk_size))
-        self.chunk_rows = max(1, math.ceil(self.depth / self.chunk_size))
+        self.chunk_cols = max(1, math.ceil(self.content_rect.width / self.chunk_size))
+        self.chunk_rows = max(1, math.ceil(self.content_rect.depth / self.chunk_size))
         self.static_visual_max_height = static_visual_max_height
         self.visual_detail_per_chunk = max(0, visual_detail_per_chunk)
         self.spawn_x = float(raw["spawn"]["player"][0])
@@ -271,6 +326,19 @@ class WorldData:
         self.baked_ground_patches = tuple(
             self._load_baked_ground_patch(item) for item in raw.get("baked_ground_patches", ())
         )
+
+    def _load_world_rect(self, raw_rect: Any, fallback: WorldRect) -> WorldRect:
+        if not isinstance(raw_rect, (list, tuple)) or len(raw_rect) != 4:
+            return fallback
+        try:
+            min_x, min_z, max_x, max_z = (float(value) for value in raw_rect)
+        except (TypeError, ValueError):
+            return fallback
+        if not all(math.isfinite(value) for value in (min_x, min_z, max_x, max_z)):
+            return fallback
+        if max_x <= min_x or max_z <= min_z:
+            return fallback
+        return WorldRect(min_x, min_z, max_x, max_z)
 
     def _load_object(self, item: dict[str, Any]) -> StaticObject:
         position = item["position"]
@@ -429,10 +497,18 @@ class WorldData:
         return range(min_cx, max_cx + 1), range(min_cz, max_cz + 1)
 
     def _chunk_x(self, x: float) -> int:
-        return int(clamp(math.floor(x / self.chunk_size), 0, self.chunk_cols - 1))
+        return int(
+            clamp(
+                math.floor((x - self.content_rect.min_x) / self.chunk_size), 0, self.chunk_cols - 1
+            )
+        )
 
     def _chunk_z(self, z: float) -> int:
-        return int(clamp(math.floor(z / self.chunk_size), 0, self.chunk_rows - 1))
+        return int(
+            clamp(
+                math.floor((z - self.content_rect.min_z) / self.chunk_size), 0, self.chunk_rows - 1
+            )
+        )
 
     @property
     def chunk_ids(self) -> tuple[tuple[int, int], ...]:
@@ -516,14 +592,15 @@ class WorldData:
         for cx, cz in self.chunk_ids:
             for index in range(self.visual_detail_per_chunk):
                 seed = stable_u32(cx, cz, index)
+                chunk_min_x, chunk_min_z, chunk_max_x, chunk_max_z = self.chunk_world_bounds(cx, cz)
                 x_offset = 16.0 + (seed & 0xFFFF) / 0xFFFF * (self.chunk_size - 32.0)
                 z_offset = 16.0 + ((seed >> 16) & 0xFFFF) / 0xFFFF * (self.chunk_size - 32.0)
                 details.append(
                     GroundDetail(
                         id=f"detail_{cx}_{cz}_{index}",
                         chunk_id=(cx, cz),
-                        x=min(self.width - 1.0, cx * self.chunk_size + x_offset),
-                        z=min(self.depth - 1.0, cz * self.chunk_size + z_offset),
+                        x=min(chunk_max_x - 1.0, chunk_min_x + x_offset),
+                        z=min(chunk_max_z - 1.0, chunk_min_z + z_offset),
                         visual=visuals[seed % len(visuals)],
                         phase=seed % 4,
                         color=11 if seed & 1 else 3,
@@ -582,10 +659,7 @@ class WorldData:
         self, chunk_id: tuple[int, int], camera: CameraState, margin_px: float
     ) -> bool:
         cx, cz = chunk_id
-        min_x = cx * self.chunk_size
-        min_z = cz * self.chunk_size
-        max_x = min(self.width, min_x + self.chunk_size)
-        max_z = min(self.depth, min_z + self.chunk_size)
+        min_x, min_z, max_x, max_z = self.chunk_world_bounds(cx, cz)
         height = self._visual_chunk_heights.get(chunk_id, 8.0)
         rect = project_world_aabb(camera, min_x, min_z, max_x, max_z, height)
         if rect is None:
@@ -600,6 +674,16 @@ class WorldData:
             -margin_px,
             camera.viewport_width + margin_px,
             camera.viewport_height + margin_px,
+        )
+
+    def chunk_world_bounds(self, cx: int, cz: int) -> tuple[float, float, float, float]:
+        min_x = self.content_rect.min_x + cx * self.chunk_size
+        min_z = self.content_rect.min_z + cz * self.chunk_size
+        return (
+            min_x,
+            min_z,
+            min(self.content_rect.max_x, min_x + self.chunk_size),
+            min(self.content_rect.max_z, min_z + self.chunk_size),
         )
 
     def query_solids(
@@ -621,7 +705,7 @@ class WorldData:
         max_x = x + half_x
         min_z = z - half_z
         max_z = z + half_z
-        if min_x < 0.0 or max_x > self.width or min_z < 0.0 or max_z > self.depth:
+        if not self.walkable_rect.contains_aabb(min_x, min_z, max_x, max_z):
             return True
         return bool(self.query_solids(min_x, min_z, max_x, max_z))
 
@@ -641,10 +725,10 @@ class WorldData:
         current_x = x
         current_z = z
         for _ in range(steps):
-            next_x = clamp(current_x + step_x, half_x, self.width - half_x)
+            next_x = self.walkable_rect.clamp_x(current_x + step_x, half_x)
             if not self.collides_player(next_x, current_z, half_x, half_z):
                 current_x = next_x
-            next_z = clamp(current_z + step_z, half_z, self.depth - half_z)
+            next_z = self.walkable_rect.clamp_z(current_z + step_z, half_z)
             if not self.collides_player(current_x, next_z, half_x, half_z):
                 current_z = next_z
         return current_x, current_z

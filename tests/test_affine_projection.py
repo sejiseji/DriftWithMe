@@ -199,7 +199,9 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["max_blades_per_cell"] == 5
     assert config["base_variation_enabled"] is True
     assert config["base_variation_color"] != 13
-    assert config["areas"][0]["rect_xz"] == [-256.0, -256.0, 1280.0, 1280.0]
+    assert config["areas"][0]["bounds_ref"] == "visual_ground"
+    assert world.visual_ground_rect.min_x == pytest.approx(-256.0)
+    assert world.visual_ground_rect.max_x == pytest.approx(1280.0)
     assert renderer.draw_grassland_micro_layer(model, perspective) == 0
 
     assert renderer.draw_grassland_micro_layer(model, affine) == 1
@@ -228,6 +230,36 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert renderer.draw_grassland_micro_layer(model, overview) == 1
     assert any(call[0] == "tri" and call[-1] == config["base_color"] for call in pyxel.calls)
     assert any(call[0] == "line" for call in pyxel.calls)
+
+
+def test_visual_ground_bounds_extend_beyond_walkable_for_affine_ground_draw() -> None:
+    _runtime, world, _perspective, _profile, affine = make_affine_camera()
+    pyxel = RecordingPyxel()
+    renderer = Renderer(pyxel)
+    camera = replace(
+        affine,
+        target=Vec3(-64.0, 0.0, 160.0),
+    )
+
+    rect = renderer.visible_ground_draw_rect(world.visual_ground_rect, camera, margin_px=8.0)
+    assert rect is not None
+    assert rect.min_x < world.walkable_rect.min_x
+    renderer.draw_ground(world, camera)
+
+    assert any(call[0] == "tri" and call[-1] == 13 for call in pyxel.calls)
+
+
+def test_visual_ground_draw_stops_outside_visual_bounds() -> None:
+    _runtime, world, _perspective, _profile, affine = make_affine_camera()
+    renderer = Renderer(RecordingPyxel())
+    camera = replace(
+        affine,
+        target=Vec3(-2000.0, 0.0, -2000.0),
+    )
+
+    assert (
+        renderer.visible_ground_draw_rect(world.visual_ground_rect, camera, margin_px=8.0) is None
+    )
 
 
 def test_affine_height_projects_straight_up_for_actor_roots() -> None:

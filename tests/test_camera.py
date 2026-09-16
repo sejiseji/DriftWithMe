@@ -137,6 +137,19 @@ def test_directional_lookahead_follow_target_uses_dedicated_smoothing() -> None:
     assert controller.follow_target.x - model.player.x < controller.lookahead_offset.x
 
 
+def test_directional_lookahead_clamps_to_camera_target_bounds() -> None:
+    controller, _model = make_controller()
+    rect = controller.world.camera_target_rect
+    player_x = rect.max_x - 2.0
+    player_z = rect.max_z - 2.0
+
+    for _ in range(120):
+        controller.update(1.0 / 60.0, player_x, player_z, 1.0, 1.0)
+
+    assert controller.follow_target.x <= rect.max_x
+    assert controller.follow_target.z <= rect.max_z
+
+
 def test_directional_lookahead_keeps_player_in_default_perspective_view() -> None:
     controller, model = make_controller()
     margin_px = 16.0
