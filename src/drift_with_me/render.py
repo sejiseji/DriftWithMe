@@ -530,11 +530,13 @@ class Renderer:
                     continue
                 if coverage >= 1.0:
                     continue
-                if not self.grassland_bayer_pass(
+                if not self.grassland_transition_pass(
                     cell_x,
                     cell_z,
                     coverage,
                     phase,
+                    area,
+                    config,
                 ):
                     continue
                 self.draw_ground_rect(camera, (cell_x0, cell_z0, cell_x1, cell_z1), color)
@@ -809,11 +811,13 @@ class Renderer:
                 )
                 if coverage <= 0.0:
                     continue
-                if coverage < 1.0 and not self.grassland_bayer_pass(
+                if coverage < 1.0 and not self.grassland_transition_pass(
                     cell_x,
                     cell_z,
                     coverage,
                     phase + 17,
+                    area,
+                    config,
                 ):
                     continue
                 patch_corners = (
@@ -924,7 +928,21 @@ class Renderer:
         transition_world: float,
     ) -> float:
         t = self.grassland_transition_t(area_rect, world_x, world_z, transition_world)
-        return max(0.0, min(round(t * 4.0) * 0.25, 1.0))
+        return max(0.0, min(t * t * (3.0 - 2.0 * t), 1.0))
+
+    def grassland_transition_pass(
+        self,
+        cell_x: int,
+        cell_z: int,
+        coverage: float,
+        phase: int,
+        area: dict,
+        config: dict,
+    ) -> bool:
+        pattern = str(area.get("transition_pattern", config.get("transition_pattern", "noise")))
+        if pattern == "bayer4":
+            return self.grassland_bayer_pass(cell_x, cell_z, coverage, phase)
+        return self.grassland_noise_pass(cell_x, cell_z, coverage, phase)
 
     def grassland_bayer_pass(
         self, cell_x: int, cell_z: int, coverage: float, phase: int = 0
@@ -935,6 +953,18 @@ class Renderer:
             return True
         threshold = GRASSLAND_BAYER4[(cell_z + phase) & 3][(cell_x + phase * 3) & 3]
         return threshold < int(round(max(0.0, min(coverage, 1.0)) * 16.0))
+
+    def grassland_noise_pass(
+        self, cell_x: int, cell_z: int, coverage: float, phase: int = 0
+    ) -> bool:
+        if coverage <= 0.0:
+            return False
+        if coverage >= 1.0:
+            return True
+        return self.grassland_unit(cell_x, cell_z, 131, phase) < max(
+            0.0,
+            min(coverage, 1.0),
+        )
 
     def grassland_micro_density_inner(self, area: dict, config: dict) -> float:
         try:

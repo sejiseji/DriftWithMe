@@ -197,11 +197,11 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["cell_world"] == pytest.approx(24.0)
     assert config["min_blades_per_cell"] == 1
     assert config["max_blades_per_cell"] == 5
-    assert config["base_variation_enabled"] is True
+    assert config["base_variation_enabled"] is False
     assert config["base_variation_color"] != 13
     assert config["transition_world"] == pytest.approx(32.0)
     assert config["transition_cell_world"] == pytest.approx(8.0)
-    assert config["transition_pattern"] == "bayer4"
+    assert config["transition_pattern"] == "noise"
     assert config["micro_density_inner"] == pytest.approx(1.0)
     assert config["micro_density_edge"] == pytest.approx(0.2)
     assert config["areas"][0]["bounds_ref"] == "visual_ground"
@@ -280,6 +280,27 @@ def test_grassland_bayer_pattern_is_world_cell_deterministic() -> None:
         for cell_z in range(4)
         for cell_x in range(4)
     ]
+
+
+def test_grassland_noise_pattern_is_world_cell_deterministic() -> None:
+    renderer = Renderer(RecordingPyxel())
+    first = [
+        renderer.grassland_transition_pass(
+            cell_x, cell_z, 0.5, 5, {}, {"transition_pattern": "noise"}
+        )
+        for cell_z in range(8)
+        for cell_x in range(8)
+    ]
+    second = [
+        renderer.grassland_transition_pass(
+            cell_x, cell_z, 0.5, 5, {}, {"transition_pattern": "noise"}
+        )
+        for cell_z in range(8)
+        for cell_x in range(8)
+    ]
+
+    assert first == second
+    assert 16 <= sum(first) <= 48
 
 
 def test_visual_ground_bounds_extend_beyond_walkable_for_affine_ground_draw() -> None:
