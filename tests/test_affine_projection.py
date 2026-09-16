@@ -199,6 +199,11 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert config["max_blades_per_cell"] == 5
     assert config["base_variation_enabled"] is True
     assert config["base_variation_color"] != 13
+    assert config["transition_world"] == pytest.approx(32.0)
+    assert config["transition_cell_world"] == pytest.approx(8.0)
+    assert config["transition_pattern"] == "bayer4"
+    assert config["micro_density_inner"] == pytest.approx(1.0)
+    assert config["micro_density_edge"] == pytest.approx(0.2)
     assert config["areas"][0]["bounds_ref"] == "visual_ground"
     assert world.visual_ground_rect.min_x == pytest.approx(-256.0)
     assert world.visual_ground_rect.max_x == pytest.approx(1280.0)
@@ -230,6 +235,51 @@ def test_grassland_micro_layer_uses_world_anchored_clumps_and_is_affine_only() -
     assert renderer.draw_grassland_micro_layer(model, overview) == 1
     assert any(call[0] == "tri" and call[-1] == config["base_color"] for call in pyxel.calls)
     assert any(call[0] == "line" for call in pyxel.calls)
+
+
+def test_grassland_boundary_transition_classification_and_density() -> None:
+    renderer = Renderer(RecordingPyxel())
+    rect = (0.0, 0.0, 128.0, 128.0)
+    transition_world = 32.0
+
+    assert renderer.grassland_transition_t(rect, 0.0, 64.0, transition_world) == pytest.approx(0.0)
+    assert renderer.grassland_transition_t(rect, 16.0, 64.0, transition_world) == pytest.approx(0.5)
+    assert renderer.grassland_transition_t(rect, 64.0, 64.0, transition_world) == pytest.approx(1.0)
+    assert renderer.grassland_base_coverage(rect, 16.0, 64.0, transition_world) == pytest.approx(
+        0.5
+    )
+    assert renderer.grassland_micro_density(
+        rect,
+        0.0,
+        64.0,
+        transition_world,
+        density_inner=1.0,
+        density_edge=0.2,
+    ) == pytest.approx(0.2)
+    assert renderer.grassland_micro_density(
+        rect,
+        16.0,
+        64.0,
+        transition_world,
+        density_inner=1.0,
+        density_edge=0.2,
+    ) == pytest.approx(0.6)
+
+
+def test_grassland_bayer_pattern_is_world_cell_deterministic() -> None:
+    renderer = Renderer(RecordingPyxel())
+    results = [
+        renderer.grassland_bayer_pass(cell_x, cell_z, 0.5, phase=3)
+        for cell_z in range(4)
+        for cell_x in range(4)
+    ]
+
+    assert sum(results) == 8
+    assert results == [
+        renderer.grassland_bayer_pass(cell_x, cell_z, 0.5, phase=3)
+        for cell_z in range(4)
+        for cell_x in range(4)
+    ]
 
 
 def test_visual_ground_bounds_extend_beyond_walkable_for_affine_ground_draw() -> None:

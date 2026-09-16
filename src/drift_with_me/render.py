@@ -61,6 +61,13 @@ ATMOSPHERE_SHADOW_NEAR_CELLS = 12
 ATMOSPHERE_SHADOW_MID_CELLS = 8
 ATMOSPHERE_SHADOW_FAR_CELLS = 4
 ATMOSPHERE_SHADOW_IMPORTANT_MIN_CELLS = 6
+
+GRASSLAND_BAYER4 = (
+    (0, 8, 2, 10),
+    (12, 4, 14, 6),
+    (3, 11, 1, 9),
+    (15, 7, 13, 5),
+)
 ATMOSPHERE_GROUND_DETAIL_STRENGTH = 1.0
 ATMOSPHERE_NATURE_PROP_STRENGTH = 1.0
 ATMOSPHERE_EQUIPMENT_STRENGTH = 0.7
@@ -437,13 +444,13 @@ class Renderer:
     def draw_grassland_micro_area(
         self, world: WorldData, camera: CameraState, area: dict, config: dict
     ) -> bool:
-        rect = self.grassland_micro_world_rect(world, area)
-        if rect is None:
+        area_rect = self.grassland_micro_world_rect(world, area)
+        if area_rect is None:
             return False
-        rect = self.grassland_micro_visible_draw_rect(camera, rect, area, config)
-        if rect is None:
+        draw_rect = self.grassland_micro_visible_draw_rect(camera, area_rect, area, config)
+        if draw_rect is None:
             return False
-        x0, z0, x1, z1 = rect
+        x0, z0, x1, z1 = draw_rect
         corners = (
             camera.project(Vec3(x0, 0.0, z0)),
             camera.project(Vec3(x1, 0.0, z0)),
@@ -458,11 +465,95 @@ class Renderer:
             return False
 
         base_color = self.clamped_palette_color(area.get("base_color", config.get("base_color", 3)))
-        self.pyxel.tri(int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), base_color)
-        self.pyxel.tri(int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), base_color)
-        self.draw_grassland_micro_base_variation(camera, corners, bounds, rect, area, config)
-        self.draw_grassland_micro_pattern(camera, corners, bounds, rect, area, config)
+        self.draw_grassland_base_transition(camera, area_rect, draw_rect, area, config, base_color)
+        self.draw_grassland_micro_base_variation(
+            camera, corners, bounds, area_rect, draw_rect, area, config
+        )
+        self.draw_grassland_micro_pattern(
+            camera, corners, bounds, area_rect, draw_rect, area, config
+        )
         return True
+
+    def draw_grassland_base_transition(
+        self,
+        camera: CameraState,
+        area_rect: tuple[float, float, float, float],
+        draw_rect: tuple[float, float, float, float],
+        area: dict,
+        config: dict,
+        color: int,
+    ) -> None:
+        transition_world = self.grassland_transition_world(area, config)
+        if transition_world <= 1e-6:
+            self.draw_ground_rect(camera, draw_rect, color)
+            return
+
+        x0, z0, x1, z1 = area_rect
+        inner_rect = (
+            max(draw_rect[0], x0 + transition_world),
+            max(draw_rect[1], z0 + transition_world),
+            min(draw_rect[2], x1 - transition_world),
+            min(draw_rect[3], z1 - transition_world),
+        )
+        if inner_rect[0] < inner_rect[2] and inner_rect[1] < inner_rect[3]:
+            self.draw_ground_rect(camera, inner_rect, color)
+        if (
+            draw_rect[0] >= x0 + transition_world
+            and draw_rect[1] >= z0 + transition_world
+            and draw_rect[2] <= x1 - transition_world
+            and draw_rect[3] <= z1 - transition_world
+        ):
+            return
+
+        tile_world = self.grassland_transition_cell_world(area, config)
+        phase = int(area.get("phase", config.get("phase", 0)))
+        min_cell_x = math.floor(draw_rect[0] / tile_world)
+        max_cell_x = math.ceil(draw_rect[2] / tile_world)
+        min_cell_z = math.floor(draw_rect[1] / tile_world)
+        max_cell_z = math.ceil(draw_rect[3] / tile_world)
+        for cell_z in range(min_cell_z, max_cell_z):
+            cell_z0 = max(draw_rect[1], cell_z * tile_world)
+            cell_z1 = min(draw_rect[3], (cell_z + 1) * tile_world)
+            if cell_z0 >= cell_z1:
+                continue
+            for cell_x in range(min_cell_x, max_cell_x):
+                cell_x0 = max(draw_rect[0], cell_x * tile_world)
+                cell_x1 = min(draw_rect[2], (cell_x + 1) * tile_world)
+                if cell_x0 >= cell_x1:
+                    continue
+                center_x = (cell_x0 + cell_x1) * 0.5
+                center_z = (cell_z0 + cell_z1) * 0.5
+                coverage = self.grassland_base_coverage(
+                    area_rect, center_x, center_z, transition_world
+                )
+                if coverage <= 0:
+                    continue
+                if coverage >= 1.0:
+                    continue
+                if not self.grassland_bayer_pass(
+                    cell_x,
+                    cell_z,
+                    coverage,
+                    phase,
+                ):
+                    continue
+                self.draw_ground_rect(camera, (cell_x0, cell_z0, cell_x1, cell_z1), color)
+
+    def draw_ground_rect(
+        self, camera: CameraState, rect: tuple[float, float, float, float], color: int
+    ) -> None:
+        x0, z0, x1, z1 = rect
+        corners = (
+            camera.project(Vec3(x0, 0.0, z0)),
+            camera.project(Vec3(x1, 0.0, z0)),
+            camera.project(Vec3(x1, 0.0, z1)),
+            camera.project(Vec3(x0, 0.0, z1)),
+        )
+        if any(point is None for point in corners):
+            return
+        p0, p1, p2, p3 = corners
+        self.pyxel.tri(int(p0.x), int(p0.y), int(p1.x), int(p1.y), int(p2.x), int(p2.y), color)
+        self.pyxel.tri(int(p0.x), int(p0.y), int(p2.x), int(p2.y), int(p3.x), int(p3.y), color)
 
     def grassland_micro_world_rect(
         self, world: WorldData, area: dict
@@ -524,7 +615,8 @@ class Renderer:
         camera: CameraState,
         corners: tuple[ProjectedPoint | None, ...],
         bounds: ScreenRect,
-        rect: tuple[float, float, float, float],
+        area_rect: tuple[float, float, float, float],
+        draw_rect: tuple[float, float, float, float],
         area: dict,
         config: dict,
     ) -> None:
@@ -534,7 +626,7 @@ class Renderer:
         )
         if max_visible <= 0:
             return
-        x0, z0, x1, z1 = rect
+        x0, z0, x1, z1 = draw_rect
         visible_rect = self.grassland_micro_visible_world_rect(camera, margin_px=16.0)
         if visible_rect is not None:
             vx0, vz0, vx1, vz1 = visible_rect
@@ -561,6 +653,9 @@ class Renderer:
             min_blades,
             int(area.get("max_blades_per_cell", config.get("max_blades_per_cell", 4))),
         )
+        density_inner = self.grassland_micro_density_inner(area, config)
+        density_edge = self.grassland_micro_density_edge(area, config)
+        transition_world = self.grassland_transition_world(area, config)
         cell_min_x = math.floor(x0 / cell_world)
         cell_max_x = math.ceil(x1 / cell_world)
         cell_min_z = math.floor(z0 / cell_world)
@@ -588,6 +683,21 @@ class Renderer:
                     world_x = origin_x + rel_x * cell_world
                     world_z = origin_z + rel_z * cell_world
                     if world_x < x0 or world_x > x1 or world_z < z0 or world_z > z1:
+                        continue
+                    density = self.grassland_micro_density(
+                        area_rect,
+                        world_x,
+                        world_z,
+                        transition_world,
+                        density_inner,
+                        density_edge,
+                    )
+                    if density <= 0.0:
+                        continue
+                    if (
+                        density < 1.0
+                        and self.grassland_unit(cell_x, cell_z, salt + 6, jitter_seed) > density
+                    ):
                         continue
                     root = camera.project(Vec3(world_x, 0.0, world_z))
                     if root is None:
@@ -617,7 +727,8 @@ class Renderer:
         camera: CameraState,
         corners: tuple[ProjectedPoint | None, ...],
         bounds: ScreenRect,
-        rect: tuple[float, float, float, float],
+        area_rect: tuple[float, float, float, float],
+        draw_rect: tuple[float, float, float, float],
         area: dict,
         config: dict,
     ) -> None:
@@ -640,7 +751,7 @@ class Renderer:
         )
         if max_patches <= 0:
             return
-        x0, z0, x1, z1 = rect
+        x0, z0, x1, z1 = draw_rect
         visible_rect = self.grassland_micro_visible_world_rect(camera, margin_px=24.0)
         if visible_rect is not None:
             vx0, vz0, vx1, vz1 = visible_rect
@@ -654,6 +765,7 @@ class Renderer:
             area.get("base_variation_color", config.get("base_variation_color", 13))
         )
         phase = int(area.get("phase", config.get("phase", 0)))
+        transition_world = self.grassland_transition_world(area, config)
         cell_min_x = math.floor(x0 / tile_world)
         cell_max_x = math.ceil(x1 / tile_world)
         cell_min_z = math.floor(z0 / tile_world)
@@ -686,6 +798,23 @@ class Renderer:
                 vx1 = max(px0, px1 - inset_x1)
                 vz1 = max(pz0, pz1 - inset_z1)
                 if vx1 - vx0 < 12.0 or vz1 - vz0 < 12.0:
+                    continue
+                center_x = (vx0 + vx1) * 0.5
+                center_z = (vz0 + vz1) * 0.5
+                coverage = self.grassland_base_coverage(
+                    area_rect,
+                    center_x,
+                    center_z,
+                    transition_world,
+                )
+                if coverage <= 0.0:
+                    continue
+                if coverage < 1.0 and not self.grassland_bayer_pass(
+                    cell_x,
+                    cell_z,
+                    coverage,
+                    phase + 17,
+                ):
                     continue
                 patch_corners = (
                     camera.project(Vec3(vx0, 0.0, vz0)),
@@ -754,6 +883,104 @@ class Renderer:
         if not all(math.isfinite(value) for value in (min_x, min_z, max_x, max_z)):
             return None
         return min_x, min_z, max_x, max_z
+
+    def grassland_transition_world(self, area: dict, config: dict) -> float:
+        try:
+            return max(
+                0.0, float(area.get("transition_world", config.get("transition_world", 32.0)))
+            )
+        except (TypeError, ValueError):
+            return 32.0
+
+    def grassland_transition_cell_world(self, area: dict, config: dict) -> float:
+        try:
+            return max(
+                4.0,
+                float(area.get("transition_cell_world", config.get("transition_cell_world", 8.0))),
+            )
+        except (TypeError, ValueError):
+            return 8.0
+
+    def grassland_transition_t(
+        self,
+        area_rect: tuple[float, float, float, float],
+        world_x: float,
+        world_z: float,
+        transition_world: float,
+    ) -> float:
+        x0, z0, x1, z1 = area_rect
+        if world_x < x0 or world_x > x1 or world_z < z0 or world_z > z1:
+            return 0.0
+        if transition_world <= 1e-6:
+            return 1.0
+        distance_inside = min(world_x - x0, x1 - world_x, world_z - z0, z1 - world_z)
+        return max(0.0, min(distance_inside / transition_world, 1.0))
+
+    def grassland_base_coverage(
+        self,
+        area_rect: tuple[float, float, float, float],
+        world_x: float,
+        world_z: float,
+        transition_world: float,
+    ) -> float:
+        t = self.grassland_transition_t(area_rect, world_x, world_z, transition_world)
+        return max(0.0, min(round(t * 4.0) * 0.25, 1.0))
+
+    def grassland_bayer_pass(
+        self, cell_x: int, cell_z: int, coverage: float, phase: int = 0
+    ) -> bool:
+        if coverage <= 0.0:
+            return False
+        if coverage >= 1.0:
+            return True
+        threshold = GRASSLAND_BAYER4[(cell_z + phase) & 3][(cell_x + phase * 3) & 3]
+        return threshold < int(round(max(0.0, min(coverage, 1.0)) * 16.0))
+
+    def grassland_micro_density_inner(self, area: dict, config: dict) -> float:
+        try:
+            return max(
+                0.0,
+                min(
+                    float(
+                        area.get(
+                            "micro_density_inner",
+                            config.get("micro_density_inner", 1.0),
+                        )
+                    ),
+                    1.0,
+                ),
+            )
+        except (TypeError, ValueError):
+            return 1.0
+
+    def grassland_micro_density_edge(self, area: dict, config: dict) -> float:
+        try:
+            return max(
+                0.0,
+                min(
+                    float(
+                        area.get(
+                            "micro_density_edge",
+                            config.get("micro_density_edge", 0.2),
+                        )
+                    ),
+                    1.0,
+                ),
+            )
+        except (TypeError, ValueError):
+            return 0.2
+
+    def grassland_micro_density(
+        self,
+        area_rect: tuple[float, float, float, float],
+        world_x: float,
+        world_z: float,
+        transition_world: float,
+        density_inner: float,
+        density_edge: float,
+    ) -> float:
+        t = self.grassland_transition_t(area_rect, world_x, world_z, transition_world)
+        return max(0.0, min(density_edge + (density_inner - density_edge) * t, 1.0))
 
     def draw_micro_grass_blade(
         self,
