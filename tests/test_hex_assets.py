@@ -879,7 +879,7 @@ for source_id, expected_hash in environment_hashes.items():
         assert env_asset.definition.projection_mode == "upright_height_billboard_v1"
 assert runtime.raw["assets"]["water_station_working_asset"] == "water_station_active_96"
 assert runtime.raw["assets"]["reactive_grass_tall_asset"] == "grass_tall_a_64"
-assert runtime.raw["assets"]["reactive_grass_low_asset"] == "reactive_grass_low_64"
+assert runtime.raw["assets"]["reactive_grass_low_asset"] == "grass_low_a_upright_64"
 assert runtime.raw["assets"]["ground_rubble_asset"] == "rubble_small_a_64"
 assert runtime.raw["assets"]["concrete_clean_a_asset"] == "concrete_clean_a_64"
 assert runtime.raw["assets"]["decal_crack_grass_a_asset"] == "decal_crack_grass_a_64"
@@ -931,7 +931,10 @@ assert renderer.object_sprite_asset(model, solar).definition.asset_id == "solar_
 model.interaction = None
 assert renderer.object_sprite_asset(model, tree).definition.asset_id == "tree_thin_b_96"
 assert renderer.object_sprite_asset(model, grass).definition.asset_id == "grass_tall_a_64"
-assert renderer.object_sprite_asset(model, low_grass).definition.asset_id == "reactive_grass_low_64"
+assert (
+    renderer.object_sprite_asset(model, low_grass).definition.asset_id
+    == "grass_low_a_upright_64"
+)
 assert (
     renderer.object_sprite_asset(model, low_grass).definition.projection_mode
     == "upright_height_billboard_v1"

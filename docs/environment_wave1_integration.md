@@ -38,7 +38,7 @@ Nature and small ground-detail assets were updated on 2026-09-14 from the clean 
 - `crack_sprout_a`: source hash `31afbd889e88698f704b94d06542c1196eb2be6ccdaa8543ae4bbc057afea7b7`
 - `rubble_small_a`: source hash `ba84a6adb25c1272dc677101cbc3e941f629403bd9c9d4ffd980e5ff8e6a590e`
 
-All clean nature v0.3 assets use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. Existing runtime keys now resolve to these v0.3 assets: `reactive_grass_tall` -> `grass_tall_a`, `ground_pebbles` -> `pebbles_a`, `ground_fallen_leaves` -> `fallen_leaves_a`, `ground_crack_grass` -> `crack_sprout_a`, and `ground_rubble` -> `rubble_small_a`. The `grass_low_a` asset remains available, but the current `reactive_grass_low` runtime key uses the older upright `reactive_grass_low_64` sprite so low grass does not appear as a floor-stuck decal during the current review.
+All clean nature v0.3 assets use `8` as the transparent color. Color `0` is visible black and must not be treated as transparency. Existing runtime keys now resolve to these v0.3 assets: `reactive_grass_tall` -> `grass_tall_a`, `reactive_grass_low` -> the upright `grass_low_a_upright_64` metadata variant, `ground_pebbles` -> `pebbles_a`, `ground_fallen_leaves` -> `fallen_leaves_a`, `ground_crack_grass` -> `crack_sprout_a`, and `ground_rubble` -> `rubble_small_a`. `grass_low_a_upright_64` uses the same received `grass_low_a.hex` pixels as the ground-decal definition, but keeps low grass as an upright billboard so it does not appear as a floor-stuck decal during the current review.
 
 Grassland direct v0.1 assets were connected on 2026-09-15. These six sprites are direct extractions from the approved source images, with no redraw, simplification, recolor, or palette replacement:
 
@@ -156,7 +156,7 @@ Transparent sprites use their asset-specific `colkey`. Most Wave1 transparent sp
 
 Water station source art is 96 x 128. The supplied recommendation was 32 x 48, but the runtime uses 36 x 48 to preserve the source aspect ratio under Pyxel's uniform `blt` scale.
 
-Tall grass remains an upright billboard. The current reactive low grass also uses an upright billboard to preserve the original sprite silhouette on screen. The clean low grass and small nature props remain ground-projected assets for later review, but they are not placed in the current prototype.
+Tall grass remains an upright billboard. The current reactive low grass also uses an upright billboard metadata variant to preserve the original sprite silhouette on screen while using the multi-color `grass_low_a.hex` source. The clean low grass ground-decal definition and small nature props remain available for later review, but they are not placed in the current prototype.
 
 Ground small objects and the v0.2 review surfaces use `ground_decal_source_v1`, which samples opaque HEX pixels and projects them onto the X/Z ground plane. This is intentionally separate from the vertical billboard path.
 

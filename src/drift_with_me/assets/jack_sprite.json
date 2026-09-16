@@ -1615,6 +1615,37 @@
     },
     {
       "schema_version": 1,
+      "id": "grass_low_a_upright_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        63
+      ],
+      "world_size": [
+        28.0,
+        28.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "grass_low_a.hex",
+          "source_hash": "c117cebf842445c61510bfbf3192997cea3449f2e16e701bad96e64099939964"
+        }
+      ],
+      "source_hash": "c117cebf842445c61510bfbf3192997cea3449f2e16e701bad96e64099939964",
+      "render_mode": "reactive_upright",
+      "source_policy": "nature_clean_v0_3_hex",
+      "environment_role": "reactive_low_grass",
+      "reactive_kind": "static_review"
+    },
+    {
+      "schema_version": 1,
       "id": "pebbles_a_64",
       "palette_id": "pyxel_default_16",
       "hex_width": 64,
