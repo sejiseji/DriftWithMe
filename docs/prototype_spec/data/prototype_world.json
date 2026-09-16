@@ -238,9 +238,9 @@
       "id": "wall_02",
       "kind": "obstacle",
       "position": [
-        96.0,
+        104.0,
         0.0,
-        544.0
+        640.0
       ],
       "visual": "giant_tree_root_arch_a",
       "solid": true,
@@ -259,9 +259,9 @@
       "id": "wall_03",
       "kind": "obstacle",
       "position": [
-        960.0,
+        928.0,
         0.0,
-        544.0
+        672.0
       ],
       "visual": "giant_tree_02x_c",
       "solid": true,
@@ -385,7 +385,7 @@
       "id": "tree_04",
       "kind": "sprite_prop",
       "position": [
-        560.0,
+        464.0,
         0.0,
         704.0
       ],
@@ -406,9 +406,9 @@
       "id": "tree_05",
       "kind": "sprite_prop",
       "position": [
-        624.0,
+        584.0,
         0.0,
-        720.0
+        880.0
       ],
       "visual": "tree_thin_b",
       "solid": true,
@@ -427,7 +427,7 @@
       "id": "tree_06",
       "kind": "sprite_prop",
       "position": [
-        704.0,
+        760.0,
         0.0,
         704.0
       ],
@@ -448,9 +448,9 @@
       "id": "tree_07",
       "kind": "sprite_prop",
       "position": [
-        864.0,
+        856.0,
         0.0,
-        704.0
+        760.0
       ],
       "visual": "tree_thin_b",
       "solid": true,
@@ -469,9 +469,9 @@
       "id": "tree_08",
       "kind": "sprite_prop",
       "position": [
-        528.0,
+        488.0,
         0.0,
-        784.0
+        816.0
       ],
       "visual": "tree_thin_b",
       "solid": true,
@@ -492,7 +492,7 @@
       "position": [
         640.0,
         0.0,
-        800.0
+        880.0
       ],
       "visual": "tree_leafy_a",
       "solid": true,
@@ -513,7 +513,7 @@
       "position": [
         720.0,
         0.0,
-        832.0
+        880.0
       ],
       "visual": "tree_thin_b",
       "solid": true,
@@ -1351,9 +1351,9 @@
       "id": "tree_50",
       "kind": "sprite_prop",
       "position": [
-        936.0,
+        1016.0,
         0.0,
-        736.0
+        752.0
       ],
       "visual": "tree_thin_b",
       "solid": true,
@@ -1414,9 +1414,9 @@
       "id": "tree_53",
       "kind": "sprite_prop",
       "position": [
-        664.0,
+        840.0,
         0.0,
-        760.0
+        720.0
       ],
       "visual": "tree_leafy_a",
       "solid": true,
@@ -1541,9 +1541,9 @@
       "id": "grassland_tall_b_02",
       "kind": "reactive_prop",
       "position": [
-        992.0,
+        928.0,
         0.0,
-        672.0
+        800.0
       ],
       "visual": "grass_patch_tall_b",
       "sprite_world_size": [
@@ -1592,9 +1592,9 @@
       "id": "grass_low_05",
       "kind": "reactive_prop",
       "position": [
-        736.0,
+        816.0,
         0.0,
-        560.0
+        592.0
       ],
       "visual": "reactive_grass_low",
       "sprite_world_size": [
@@ -1609,9 +1609,9 @@
       "id": "grass_low_06",
       "kind": "reactive_prop",
       "position": [
-        992.0,
+        1000.0,
         0.0,
-        760.0
+        832.0
       ],
       "visual": "reactive_grass_low",
       "sprite_world_size": [
@@ -1677,9 +1677,9 @@
       "id": "grassland_tall_a_04",
       "kind": "reactive_prop",
       "position": [
-        960.0,
+        1016.0,
         0.0,
-        560.0
+        640.0
       ],
       "visual": "grass_patch_tall_a",
       "sprite_world_size": [

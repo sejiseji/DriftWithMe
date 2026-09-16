@@ -604,8 +604,8 @@ def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
     assert west_root is not None
     assert west_root.solid
     assert west_root.visual == "giant_tree_root_arch_a"
-    assert west_root.x == pytest.approx(96.0)
-    assert west_root.z == pytest.approx(544.0)
+    assert west_root.x == pytest.approx(104.0)
+    assert west_root.z == pytest.approx(640.0)
     assert west_root.sprite_world_width == pytest.approx(110.0)
     assert west_root.sprite_world_height == pytest.approx(110.0)
     assert not renderer.object_uses_box_geometry(west_root)
@@ -614,11 +614,29 @@ def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
     assert east_tree is not None
     assert east_tree.solid
     assert east_tree.visual == "giant_tree_02x_c"
-    assert east_tree.x == pytest.approx(960.0)
-    assert east_tree.z == pytest.approx(544.0)
+    assert east_tree.x == pytest.approx(928.0)
+    assert east_tree.z == pytest.approx(672.0)
     assert east_tree.sprite_world_width == pytest.approx(192.0)
     assert east_tree.sprite_world_height == pytest.approx(192.0)
     assert not renderer.object_uses_box_geometry(east_tree)
+
+
+def test_env003_forest_composition_keeps_clearings_and_outer_density() -> None:
+    _runtime, world, _perspective, _profile, _affine = make_affine_camera()
+    trees = tuple(obj for obj in world.objects if obj.id.startswith("tree_"))
+    north_trees = tuple(obj for obj in trees if obj.z >= 704.0)
+
+    assert len(north_trees) >= 40
+    assert not [obj.id for obj in trees if 520.0 <= obj.x <= 800.0 and 720.0 <= obj.z <= 840.0]
+
+    for target_id, minimum_distance in {
+        "maintenance_unit": 96.0,
+        "observation_post": 88.0,
+    }.items():
+        target = world.object_by_id(target_id)
+        assert target is not None
+        nearest_tree_distance = min(math.hypot(obj.x - target.x, obj.z - target.z) for obj in trees)
+        assert nearest_tree_distance >= minimum_distance
 
 
 def test_affine_solid_box_occludes_player_with_projected_bounds() -> None:
