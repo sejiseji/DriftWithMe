@@ -90,6 +90,8 @@ AFF007-C originally connected that active state to grass rendering with a row-wi
 
 AFF007-C follow-up keeps the same static/dynamic split but refreshes active grass state while Jack remains inside the trigger radius. That state is retained for future use, but the visible upright deformation and split pass are disabled in the current prototype. If reactive tall grass/reeds return later, they should use supplied animation frames or a dedicated overlay asset instead of per-pixel row displacement on the existing authored sprite.
 
+ENV001 stabilizes the current vegetation display contract. Low grass now treats `grass_low_a.hex` as the visual source for the placed `reactive_grass_low` objects through the `grass_low_a_upright_64` metadata variant. This keeps the multi-color received pixels, draws the sprite as an upright billboard, and keeps the object in the same reactive-prop atmosphere/depth path as tall grass. Tall grass and reeds remain upright billboards with no runtime geometry deformation: no shear, row displacement, mesh warp, or pixel-grid bend is applied. The reactive environment active state may still be recorded for future use, but it does not alter the visible sprite until dedicated reaction frames such as `idle`, `bend_left`, `bend_right`, and `recover` are supplied.
+
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
 - `concrete_clean_a`: source hash `e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640`

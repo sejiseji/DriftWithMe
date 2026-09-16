@@ -674,6 +674,7 @@ assert runtime.raw["assets"]["abnormal_urchin_idle_asset"] == "abnormal_urchin_i
 fuse_assets = {FUSE_DIRECTION_HASHES!r}
 fuse_rects = {FUSE_DIRECTION_RECTS!r}
 environment_hashes = {ENVIRONMENT_WAVE1_SOURCE_HASHES!r}
+low_grass_expected_colors = {ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8["grass_low_a"]!r}
 environment_asset_ids = {{
     "water_station_active": "water_station_active_96",
     "water_station_stopped": "water_station_stopped_96",
@@ -931,14 +932,19 @@ assert renderer.object_sprite_asset(model, solar).definition.asset_id == "solar_
 model.interaction = None
 assert renderer.object_sprite_asset(model, tree).definition.asset_id == "tree_thin_b_96"
 assert renderer.object_sprite_asset(model, grass).definition.asset_id == "grass_tall_a_64"
+low_grass_asset = renderer.object_sprite_asset(model, low_grass)
 assert (
-    renderer.object_sprite_asset(model, low_grass).definition.asset_id
+    low_grass_asset.definition.asset_id
     == "grass_low_a_upright_64"
 )
 assert (
-    renderer.object_sprite_asset(model, low_grass).definition.projection_mode
+    low_grass_asset.definition.projection_mode
     == "upright_height_billboard_v1"
 )
+low_grass_frame = low_grass_asset.frame()
+assert low_grass_frame.source_hash == environment_hashes["grass_low_a"]
+assert low_grass_frame.source is not None
+assert set("".join(low_grass_frame.source.rows)) - {{"8"}} == low_grass_expected_colors
 assert renderer.object_sprite_asset(model, grassland_tall).definition.asset_id == (
     "grass_patch_tall_a_64"
 )

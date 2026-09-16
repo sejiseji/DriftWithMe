@@ -9,6 +9,7 @@ from drift_with_me.effects import (
     presentation_cue_for_event,
 )
 from drift_with_me.events import GameEvent
+from drift_with_me.hex_assets import LoadedSpriteAsset, LoadedSpriteFrame, SpriteDefinition
 from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import BubbleState, GameModel, InputIntent
 from drift_with_me.render import Renderer
@@ -350,6 +351,70 @@ def test_reactive_upright_grass_deformation_is_disabled_by_default() -> None:
     renderer = Renderer(None)
 
     assert renderer.reactive_upright_deform_enabled(model) is False
+
+
+def test_env001_reactive_upright_grass_uses_static_billboard_when_active(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model, camera = make_model()
+    effects = EffectSystem(model.config)
+    renderer = Renderer(None)
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+    effects.reactive_environment_states[grass.id] = ReactiveEnvironmentState(
+        object_id=grass.id,
+        kind=grass.visual,
+        x=grass.x,
+        z=grass.z,
+        trigger_radius=grass.reaction_radius,
+        visual_radius=24.0,
+        strength=1.0,
+        direction_x=1.0,
+        direction_z=0.0,
+        recovery_sec=1.0,
+    )
+    asset = LoadedSpriteAsset(
+        definition=SpriteDefinition(
+            asset_id="test_reactive_grass",
+            palette_id="pyxel_default_16",
+            hex_width=64,
+            hex_height=64,
+            colkey=8,
+            anchor_px=(32.0, 63.0),
+            world_size=(28.0, 28.0),
+            projection_mode="upright_height_billboard_v1",
+            flip_policy="none",
+            animation="static",
+            frames=(),
+            source_hash="0" * 64,
+        ),
+        frames={
+            "idle_00": LoadedSpriteFrame(
+                frame_id="idle_00",
+                image=None,
+                source=None,
+                u=0,
+                v=0,
+                width=64,
+                height=64,
+                source_hash="0" * 64,
+            )
+        },
+    )
+    calls: list[str] = []
+
+    def fail_deform(*_args, **_kwargs) -> bool:
+        calls.append("deform")
+        return True
+
+    def record_static(*_args, **_kwargs) -> None:
+        calls.append("static")
+
+    monkeypatch.setattr(renderer, "draw_reactive_upright_prop", fail_deform)
+    monkeypatch.setattr(renderer, "draw_atmospheric_scaled_sprite", record_static)
+
+    assert renderer.draw_reactive_prop_sprite(model, grass, camera, asset, effects) is True
+    assert calls == ["static"]
 
 
 def test_presentation_cue_mapping_for_existing_events() -> None:
