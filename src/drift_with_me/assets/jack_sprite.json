@@ -1964,12 +1964,12 @@
         {
           "id": "idle_00",
           "path": "giant_tree_root_massive_a.hex",
-          "source_hash": "363268eee705a7eb91d7b25e1522a69d11f5c2f10b4cd94c21f16823b3f4b8e2"
+          "source_hash": "0a11dc36dec13a26a11d1c07150032e2925b5e0aa1a328a1c0649e0d06b9e052"
         }
       ],
-      "source_hash": "363268eee705a7eb91d7b25e1522a69d11f5c2f10b4cd94c21f16823b3f4b8e2",
+      "source_hash": "0a11dc36dec13a26a11d1c07150032e2925b5e0aa1a328a1c0649e0d06b9e052",
       "render_mode": "upright_billboard",
-      "source_policy": "giant_tree_roots_approved_v0_1_hex",
+      "source_policy": "giant_tree_roots_approved_v0_1_hex_cleaned_detached_islands",
       "environment_role": "forest_giant_root_massive"
     },
     {
@@ -1994,12 +1994,12 @@
         {
           "id": "idle_00",
           "path": "giant_tree_root_spire_b.hex",
-          "source_hash": "f75390b473244ba701e39d8029e3c97a4b89424628e66af4dd929567130f90eb"
+          "source_hash": "c5033a26b48d675229657950fdd0c50206db739a3e0e4e36e2572dee790ebe59"
         }
       ],
-      "source_hash": "f75390b473244ba701e39d8029e3c97a4b89424628e66af4dd929567130f90eb",
+      "source_hash": "c5033a26b48d675229657950fdd0c50206db739a3e0e4e36e2572dee790ebe59",
       "render_mode": "upright_billboard",
-      "source_policy": "giant_tree_roots_approved_v0_1_hex",
+      "source_policy": "giant_tree_roots_approved_v0_1_hex_cleaned_detached_islands",
       "environment_role": "forest_giant_root_spire"
     },
     {
@@ -2054,12 +2054,12 @@
         {
           "id": "idle_00",
           "path": "giant_tree_root_arch_d.hex",
-          "source_hash": "66850feadace59e27ce5176b8c0fa3ad3a82d9d8a709ca45250bfbe4742db469"
+          "source_hash": "ace5740816d1b0e0cca9b6180713e6fc94ead47028bb13016c00e30687203954"
         }
       ],
-      "source_hash": "66850feadace59e27ce5176b8c0fa3ad3a82d9d8a709ca45250bfbe4742db469",
+      "source_hash": "ace5740816d1b0e0cca9b6180713e6fc94ead47028bb13016c00e30687203954",
       "render_mode": "upright_billboard",
-      "source_policy": "giant_tree_roots_approved_v0_1_hex",
+      "source_policy": "giant_tree_roots_approved_v0_1_hex_cleaned_detached_islands",
       "environment_role": "forest_giant_root_arch"
     },
     {
