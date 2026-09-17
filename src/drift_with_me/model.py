@@ -87,8 +87,17 @@ class CombatSession:
     enemy_return_x: float
     enemy_return_z: float
     duration_sec: float
-    phase: str = "ENTER"
+    phase: str = "ENEMY_WINDUP"
     elapsed_sec: float = 0.0
+    phase_elapsed_sec: float = 0.0
+    pattern_id: str = ""
+    marker_positions: tuple[float, ...] = ()
+    marker_judgements: tuple[str | None, ...] = ()
+    timing_elapsed_sec: float = 0.0
+    defense_was_down: bool = False
+    input_debounce_remaining: float = 0.0
+    hit_count: int = 0
+    result: str | None = None
 
 
 @dataclass
@@ -364,7 +373,7 @@ class GameModel:
         self.update_combat_reentry_cooldowns(dt)
         if self.combat_session is not None:
             self.player.barrier_active = False
-            self.update_combat_session(dt, events)
+            self.update_combat_session(intent, dt, events)
             self.last_events = events
             return events
 
@@ -1697,14 +1706,179 @@ class GameModel:
         for enemy_id in expired:
             self.combat_reentry_cooldowns.pop(enemy_id, None)
 
-    def update_combat_session(self, dt: float, events: list[GameEvent]) -> None:
+    def update_combat_session(
+        self, intent: InputIntent, dt: float, events: list[GameEvent]
+    ) -> None:
         session = self.combat_session
         if session is None:
             return
-        session.elapsed_sec += max(0.0, dt)
-        if session.elapsed_sec < session.duration_sec:
+        elapsed = max(0.0, dt)
+        session.elapsed_sec += elapsed
+        session.phase_elapsed_sec += elapsed
+        session.input_debounce_remaining = max(0.0, session.input_debounce_remaining - elapsed)
+        defense_pressed = (
+            intent.barrier
+            and not session.defense_was_down
+            and session.input_debounce_remaining <= 0.0
+        )
+        session.defense_was_down = intent.barrier
+
+        if session.phase == "ENEMY_WINDUP":
+            if session.phase_elapsed_sec >= self.combat_windup_sec():
+                self.advance_combat_phase(session, "ENEMY_CHARGE", events)
             return
-        self.restore_combat_session(events)
+        if session.phase == "ENEMY_CHARGE":
+            if session.phase_elapsed_sec >= self.combat_charge_normal_sec():
+                self.advance_combat_phase(session, "PREIMPACT_SLOW", events)
+            return
+        if session.phase == "PREIMPACT_SLOW":
+            if session.phase_elapsed_sec >= self.combat_preimpact_slow_sec():
+                self.advance_combat_phase(session, "PARRY_TIMING", events)
+            return
+        if session.phase == "PARRY_TIMING":
+            self.update_combat_parry_timing(session, defense_pressed, elapsed, events)
+            return
+        if session.phase == "PARRY_RESOLVE":
+            if session.phase_elapsed_sec >= self.combat_resolve_sec(session):
+                self.restore_combat_session(events)
+            return
+
+    def advance_combat_phase(
+        self, session: CombatSession, phase: str, events: list[GameEvent]
+    ) -> None:
+        session.phase = phase
+        session.phase_elapsed_sec = 0.0
+        if phase == "PARRY_TIMING":
+            session.timing_elapsed_sec = 0.0
+            session.marker_judgements = tuple(None for _ in session.marker_positions)
+            session.hit_count = 0
+            session.result = None
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="combat_phase_changed",
+                actor_id=session.enemy_id,
+                target_id="player",
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={"phase": phase},
+            )
+        )
+
+    def update_combat_parry_timing(
+        self,
+        session: CombatSession,
+        defense_pressed: bool,
+        dt: float,
+        events: list[GameEvent],
+    ) -> None:
+        sweep_sec = self.combat_parry_sweep_sec()
+        radius = self.combat_parry_hit_radius_normalized()
+        session.timing_elapsed_sec = min(sweep_sec, session.timing_elapsed_sec + max(0.0, dt))
+        slider = self.combat_timing_slider_position(session)
+        if slider is None:
+            return
+        if defense_pressed:
+            hit_index = self.combat_marker_hit_index(session, slider, radius)
+            if hit_index is None:
+                events.append(
+                    self.event_queue.emit(
+                        world_tick=self.world_tick,
+                        kind="combat_parry_input_missed",
+                        actor_id="player",
+                        target_id=session.enemy_id,
+                        world_position=(self.player.x, 0.0, self.player.z),
+                        payload={"slider": slider},
+                    )
+                )
+            else:
+                self.resolve_combat_marker(session, hit_index, "HIT", slider, events)
+                session.input_debounce_remaining = self.combat_parry_input_debounce_sec()
+        for index, marker in enumerate(session.marker_positions):
+            if (
+                index < len(session.marker_judgements)
+                and session.marker_judgements[index] is None
+                and slider > marker + radius
+            ):
+                self.resolve_combat_marker(session, index, "MISS", slider, events)
+        if session.timing_elapsed_sec >= sweep_sec:
+            for index in range(len(session.marker_positions)):
+                if (
+                    index < len(session.marker_judgements)
+                    and session.marker_judgements[index] is None
+                ):
+                    self.resolve_combat_marker(session, index, "MISS", slider, events)
+            self.resolve_combat_round(session, events)
+
+    def combat_marker_hit_index(
+        self, session: CombatSession, slider: float, radius: float
+    ) -> int | None:
+        best_index: int | None = None
+        best_distance = radius
+        for index, marker in enumerate(session.marker_positions):
+            if (
+                index >= len(session.marker_judgements)
+                or session.marker_judgements[index] is not None
+            ):
+                continue
+            distance = abs(slider - marker)
+            if distance <= best_distance:
+                best_distance = distance
+                best_index = index
+        return best_index
+
+    def resolve_combat_marker(
+        self,
+        session: CombatSession,
+        index: int,
+        judgement: str,
+        slider: float,
+        events: list[GameEvent],
+    ) -> None:
+        if index < 0 or index >= len(session.marker_judgements):
+            return
+        if session.marker_judgements[index] is not None:
+            return
+        judgements = list(session.marker_judgements)
+        judgements[index] = judgement
+        session.marker_judgements = tuple(judgements)
+        session.hit_count = sum(1 for item in session.marker_judgements if item == "HIT")
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="combat_marker_judged",
+                actor_id="player",
+                target_id=session.enemy_id,
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={
+                    "index": index,
+                    "judgement": judgement,
+                    "marker": session.marker_positions[index],
+                    "slider": slider,
+                },
+            )
+        )
+
+    def resolve_combat_round(self, session: CombatSession, events: list[GameEvent]) -> None:
+        hit_count = sum(1 for item in session.marker_judgements if item == "HIT")
+        if hit_count >= self.combat_perfect_hits():
+            result = "perfect"
+        elif hit_count >= self.combat_success_min_hits():
+            result = "defense_success"
+        else:
+            result = "failure"
+        session.hit_count = hit_count
+        session.result = result
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="combat_timing_resolved",
+                actor_id="player",
+                target_id=session.enemy_id,
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={"hit_count": hit_count, "result": result},
+            )
+        )
+        self.advance_combat_phase(session, "PARRY_RESOLVE", events)
 
     def combat_duration_sec(self) -> float:
         entry = self.combat_v1_config().get("entry", {})
@@ -1716,6 +1890,125 @@ class GameModel:
             + float(entry.get("battle_banner_sec", 0.0))
         )
         return max(1.0 / 60.0, duration)
+
+    def combat_enemy_charge_config(self) -> dict[str, Any]:
+        charge = self.combat_v1_config().get("enemy_charge", {})
+        return charge if isinstance(charge, dict) else {}
+
+    def combat_parry_config(self) -> dict[str, Any]:
+        parry = self.combat_v1_config().get("parry", {})
+        return parry if isinstance(parry, dict) else {}
+
+    def combat_time_scale_config(self) -> dict[str, Any]:
+        time_scale = self.combat_v1_config().get("time_scale", {})
+        return time_scale if isinstance(time_scale, dict) else {}
+
+    def combat_defense_config(self) -> dict[str, Any]:
+        defense = self.combat_v1_config().get("defense", {})
+        return defense if isinstance(defense, dict) else {}
+
+    def combat_windup_sec(self) -> float:
+        return max(0.0, float(self.combat_enemy_charge_config().get("windup_sec", 0.7)))
+
+    def combat_charge_sec(self) -> float:
+        return max(0.0, float(self.combat_enemy_charge_config().get("charge_sec", 0.38)))
+
+    def combat_preimpact_slow_sec(self) -> float:
+        charge_sec = self.combat_charge_sec()
+        configured = max(
+            0.0, float(self.combat_enemy_charge_config().get("preimpact_slow_start_sec", 0.22))
+        )
+        return min(charge_sec, configured)
+
+    def combat_charge_normal_sec(self) -> float:
+        return max(0.0, self.combat_charge_sec() - self.combat_preimpact_slow_sec())
+
+    def combat_round_gap_sec(self) -> float:
+        return max(0.0, float(self.combat_enemy_charge_config().get("round_gap_sec", 0.55)))
+
+    def combat_parry_sweep_sec(self) -> float:
+        return max(1.0 / 60.0, float(self.combat_parry_config().get("sweep_sec", 1.35)))
+
+    def combat_parry_input_debounce_sec(self) -> float:
+        return max(0.0, float(self.combat_parry_config().get("input_debounce_sec", 0.08)))
+
+    def combat_parry_track_width_px(self) -> float:
+        presentation = self.combat_v1_config().get("presentation_medium_512x236", {})
+        candidates = []
+        if isinstance(presentation, dict):
+            candidates = presentation.get("timing_bar_candidates", [])
+        width = 204.0
+        if isinstance(candidates, list) and candidates:
+            first = candidates[0]
+            if isinstance(first, list | tuple) and len(first) >= 3:
+                width = float(first[2])
+        padding = max(0.0, float(self.combat_parry_config().get("track_padding_px", 12)))
+        return max(1.0, width - padding * 2.0)
+
+    def combat_parry_hit_radius_normalized(self) -> float:
+        radius_px = max(0.0, float(self.combat_parry_config().get("hit_radius_px", 9)))
+        return min(0.5, radius_px / self.combat_parry_track_width_px())
+
+    def combat_parry_gate_radius_normalized(self) -> float:
+        radius_px = max(0.0, float(self.combat_parry_config().get("gate_radius_px", 18)))
+        return min(0.5, radius_px / self.combat_parry_track_width_px())
+
+    def combat_success_min_hits(self) -> int:
+        return max(1, int(self.combat_defense_config().get("normal_success_min_hits", 1)))
+
+    def combat_perfect_hits(self) -> int:
+        return max(1, int(self.combat_defense_config().get("perfect_hits", 3)))
+
+    def combat_resolve_sec(self, session: CombatSession) -> float:
+        if session.result == "failure":
+            return max(0.0, float(self.combat_defense_config().get("failure_recovery_sec", 0.45)))
+        return self.combat_round_gap_sec()
+
+    def combat_presentation_time_scale(self) -> float:
+        session = self.combat_session
+        if session is None or session.phase != "PREIMPACT_SLOW":
+            return 1.0
+        return max(0.0, float(self.combat_time_scale_config().get("preimpact_world", 0.3)))
+
+    def combat_timing_slider_position(self, session: CombatSession | None = None) -> float | None:
+        session = self.combat_session if session is None else session
+        if session is None:
+            return None
+        if session.phase not in {"PARRY_TIMING", "PARRY_RESOLVE"}:
+            return None
+        return max(0.0, min(session.timing_elapsed_sec / self.combat_parry_sweep_sec(), 1.0))
+
+    def combat_marker_patterns(self) -> tuple[tuple[float, ...], ...]:
+        parry = self.combat_parry_config()
+        marker_count = max(1, int(parry.get("marker_count", 3)))
+        raw_patterns = parry.get("patterns_normalized", [])
+        if not isinstance(raw_patterns, list):
+            raw_patterns = []
+        hit_radius = self.combat_parry_hit_radius_normalized()
+        gate_radius = self.combat_parry_gate_radius_normalized()
+        edge_margin = min(0.45, max(hit_radius, gate_radius * 0.5))
+        min_gap = max(hit_radius * 2.0, 0.12)
+        patterns: list[tuple[float, ...]] = []
+        for raw in raw_patterns:
+            if not isinstance(raw, list | tuple) or len(raw) != marker_count:
+                continue
+            pattern = tuple(float(value) for value in raw)
+            if tuple(sorted(pattern)) != pattern:
+                continue
+            if pattern[0] < edge_margin or pattern[-1] > 1.0 - edge_margin:
+                continue
+            if any(b - a < min_gap for a, b in zip(pattern, pattern[1:], strict=False)):
+                continue
+            patterns.append(pattern)
+        if patterns:
+            return tuple(patterns)
+        return ((0.22, 0.5, 0.78),)
+
+    def combat_pattern_for_enemy(self, enemy: EnemyState) -> tuple[str, tuple[float, ...]]:
+        patterns = self.combat_marker_patterns()
+        seed = sum(ord(char) for char in enemy.id) + self.debug.player_contacts
+        index = seed % len(patterns)
+        return f"pattern_{index:02d}", patterns[index]
 
     def combat_exit_config(self) -> dict[str, Any]:
         exit_config = self.combat_v1_config().get("exit", {})
@@ -1809,6 +2102,7 @@ class GameModel:
         self.cancel_auto_move()
         self.player.barrier_active = False
         self.face_actor_toward(enemy.x, enemy.z)
+        pattern_id, marker_positions = self.combat_pattern_for_enemy(enemy)
         self.combat_session = CombatSession(
             enemy_id=enemy.id,
             snapshot=snapshot,
@@ -1817,6 +2111,9 @@ class GameModel:
             enemy_return_x=enemy_return_x,
             enemy_return_z=enemy_return_z,
             duration_sec=self.combat_duration_sec(),
+            pattern_id=pattern_id,
+            marker_positions=marker_positions,
+            marker_judgements=tuple(None for _ in marker_positions),
         )
         self.debug.player_contacts += 1
         events.append(
@@ -1831,6 +2128,9 @@ class GameModel:
                     "player_return": (player_return_x, player_return_z),
                     "enemy_return": (enemy_return_x, enemy_return_z),
                     "duration_sec": self.combat_session.duration_sec,
+                    "phase": self.combat_session.phase,
+                    "pattern_id": pattern_id,
+                    "marker_positions": marker_positions,
                 },
             )
         )
@@ -1897,6 +2197,8 @@ class GameModel:
                     "enemy_stun_sec": enemy_stun_sec,
                     "player_invulnerability_sec": player_invulnerability_sec,
                     "reentry_cooldown_sec": reentry_cooldown_sec,
+                    "combat_result": session.result,
+                    "combat_hits": session.hit_count,
                 },
             )
         )

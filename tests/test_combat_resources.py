@@ -33,6 +33,65 @@ def normal_enemy(model: GameModel):
     return enemy
 
 
+def enable_fast_combat(model: GameModel) -> None:
+    model.config["combat_v1_enabled"] = True
+    model.config["combat_v1"]["enemy_charge"].update(
+        {
+            "windup_sec": 0.03,
+            "charge_sec": 0.05,
+            "preimpact_slow_start_sec": 0.02,
+            "round_gap_sec": 0.03,
+        }
+    )
+    model.config["combat_v1"]["parry"]["sweep_sec"] = 0.3
+    model.config["combat_v1"]["parry"]["input_debounce_sec"] = 0.0
+    model.config["combat_v1"]["defense"]["failure_recovery_sec"] = 0.03
+
+
+def start_fast_combat(model: GameModel, camera: CameraState):
+    enable_fast_combat(model)
+    model.player.x = 300.0
+    model.player.z = 192.0
+    enemy = normal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+    events = model.step(InputIntent(), camera, 1.0 / 60.0)
+    assert [event.kind for event in events] == ["combat_started"]
+    assert model.combat_session is not None
+    return enemy
+
+
+def step_to_combat_phase(model: GameModel, camera: CameraState, phase: str) -> list:
+    events = []
+    for _ in range(80):
+        session = model.combat_session
+        if session is not None and session.phase == phase:
+            return events
+        events.extend(model.step(InputIntent(), camera, 1.0 / 60.0))
+    raise AssertionError(f"combat phase {phase} was not reached")
+
+
+def step_until_combat_restored(model: GameModel, camera: CameraState) -> list:
+    events = []
+    for _ in range(240):
+        if model.combat_session is None:
+            return events
+        events.extend(model.step(InputIntent(), camera, 1.0 / 60.0))
+    raise AssertionError("combat session did not restore")
+
+
+def hit_combat_marker(model: GameModel, camera: CameraState, marker: float) -> list:
+    session = model.combat_session
+    assert session is not None
+    sweep = model.combat_parry_sweep_sec()
+    target_elapsed = marker * sweep
+    advance = max(0.0, target_elapsed - session.timing_elapsed_sec)
+    events = model.step(InputIntent(), camera, advance)
+    events.extend(model.step(InputIntent(barrier=True), camera, 0.0))
+    model.step(InputIntent(), camera, 0.0)
+    return events
+
+
 def test_normal_urchin_approaches_slowly_outside_safe_zone() -> None:
     model, camera = make_model()
     model.player.x = 260.0
@@ -252,9 +311,9 @@ def test_bat001_restore_separates_actors_and_sets_safety_windows() -> None:
     enemy.z = 192.0
 
     model.step(InputIntent(), camera, 1.0 / 60.0)
-    events = model.step(InputIntent(), camera, 1.0)
+    events = step_until_combat_restored(model, camera)
 
-    assert [event.kind for event in events] == ["combat_restored"]
+    assert events[-1].kind == "combat_restored"
     assert model.combat_session is None
     assert not model.player_overlaps_enemy(enemy)
     assert enemy.state == "REST"
@@ -272,6 +331,147 @@ def test_bat001_restore_separates_actors_and_sets_safety_windows() -> None:
     assert cooldown_events == []
     assert model.combat_session is None
     assert (model.player.x, model.player.z) == before_player
+
+
+def test_bat002_parry_patterns_have_three_markers_with_safe_spacing() -> None:
+    model, _camera = make_model()
+    model.config["combat_v1_enabled"] = True
+
+    patterns = model.combat_marker_patterns()
+    radius = model.combat_parry_hit_radius_normalized()
+
+    assert patterns
+    for pattern in patterns:
+        assert len(pattern) == 3
+        assert tuple(sorted(pattern)) == pattern
+        assert pattern[0] >= radius
+        assert pattern[-1] <= 1.0 - radius
+        assert all(b - a >= radius * 2.0 for a, b in zip(pattern, pattern[1:], strict=False))
+
+
+def test_bat002_slider_advances_monotonically_during_parry_timing() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+
+    positions = []
+    for _ in range(5):
+        model.step(InputIntent(), camera, 0.03)
+        session = model.combat_session
+        assert session is not None
+        slider = model.combat_timing_slider_position(session)
+        assert slider is not None
+        positions.append(slider)
+
+    assert positions == sorted(positions)
+    assert positions[-1] > positions[0]
+
+
+def test_bat002_no_input_marks_all_miss_and_failure() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+
+    events = model.step(InputIntent(), camera, model.combat_parry_sweep_sec() + 0.01)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "PARRY_RESOLVE"
+    assert session.marker_judgements == ("MISS", "MISS", "MISS")
+    assert session.hit_count == 0
+    assert session.result == "failure"
+    resolved = [event for event in events if event.kind == "combat_timing_resolved"]
+    assert resolved[-1].payload["result"] == "failure"
+
+
+def test_bat002_press_inside_hit_radius_hits_marker_once() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    first_marker = session.marker_positions[0]
+
+    first_events = hit_combat_marker(model, camera, first_marker)
+    second_events = model.step(InputIntent(barrier=True), camera, 0.0)
+
+    session = model.combat_session
+    assert session is not None
+    assert session.marker_judgements[0] == "HIT"
+    assert session.hit_count == 1
+    assert len([event for event in first_events if event.kind == "combat_marker_judged"]) == 1
+    assert not [event for event in second_events if event.kind == "combat_marker_judged"]
+
+
+def test_bat002_one_hit_resolves_as_defense_success() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    hit_combat_marker(model, camera, session.marker_positions[0])
+
+    model.step(InputIntent(), camera, model.combat_parry_sweep_sec() + 0.01)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "PARRY_RESOLVE"
+    assert session.hit_count == 1
+    assert session.result == "defense_success"
+
+
+def test_bat002_three_hits_sets_perfect_result_only() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    markers = session.marker_positions
+
+    for marker in markers:
+        hit_combat_marker(model, camera, marker)
+    model.step(InputIntent(), camera, model.combat_parry_sweep_sec() + 0.01)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "PARRY_RESOLVE"
+    assert session.hit_count == 3
+    assert session.result == "perfect"
+    assert session.marker_judgements == ("HIT", "HIT", "HIT")
+
+
+def test_bat002_preimpact_slow_does_not_slow_timing_bar() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PREIMPACT_SLOW")
+
+    assert model.combat_presentation_time_scale() == pytest.approx(0.3)
+
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    before = model.combat_timing_slider_position(session)
+    assert before == pytest.approx(0.0)
+
+    model.step(InputIntent(), camera, 0.06)
+    after = model.combat_timing_slider_position(session)
+
+    assert after == pytest.approx(0.06 / model.combat_parry_sweep_sec())
+    assert model.combat_presentation_time_scale() == pytest.approx(1.0)
+
+
+def test_bat002_pause_by_not_stepping_keeps_slider_position() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+
+    model.step(InputIntent(), camera, 0.05)
+    session = model.combat_session
+    assert session is not None
+    paused_position = model.combat_timing_slider_position(session)
+    assert paused_position is not None
+
+    assert model.combat_timing_slider_position(session) == pytest.approx(paused_position)
 
 
 def test_safe_zone_blocks_contact_and_enemy_entry() -> None:

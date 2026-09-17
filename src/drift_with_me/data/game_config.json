@@ -484,7 +484,86 @@
       "enemy_anchor_px": [
         318,
         112
+      ],
+      "fuse_victory_anchor_px": [
+        175,
+        132
+      ],
+      "timing_bar_candidates": [
+        [
+          154,
+          54,
+          204,
+          24
+        ],
+        [
+          154,
+          164,
+          188,
+          24
+        ]
       ]
+    },
+    "enemy_charge": {
+      "windup_sec": 0.7,
+      "charge_sec": 0.38,
+      "round_gap_sec": 0.55,
+      "preimpact_slow_start_sec": 0.22
+    },
+    "parry": {
+      "sweep_sec": 1.35,
+      "track_padding_px": 12,
+      "marker_count": 3,
+      "hit_radius_px": 9,
+      "gate_radius_px": 18,
+      "input_debounce_sec": 0.08,
+      "patterns_normalized": [
+        [
+          0.22,
+          0.5,
+          0.78
+        ],
+        [
+          0.18,
+          0.44,
+          0.74
+        ],
+        [
+          0.27,
+          0.58,
+          0.86
+        ],
+        [
+          0.16,
+          0.54,
+          0.82
+        ],
+        [
+          0.25,
+          0.48,
+          0.72
+        ]
+      ]
+    },
+    "time_scale": {
+      "exploration": 1.0,
+      "preimpact_world": 0.3,
+      "perfect_world": 0.12,
+      "perfect_hold_sec": 0.32,
+      "combat_ui": 1.0
+    },
+    "defense": {
+      "successful_rounds_to_deflect": 2,
+      "normal_success_min_hits": 1,
+      "perfect_hits": 3,
+      "failure_hitstop_sec": 0.09,
+      "failure_recovery_sec": 0.45
+    },
+    "counter": {
+      "bubble_window_sec": 1.2,
+      "zap_window_sec": 0.85,
+      "bubble_requires_existing_water_cost": true,
+      "zap_requires_existing_energy_cost": true
     },
     "exit": {
       "knockback_visual_sec": 0.28,

@@ -1264,6 +1264,7 @@ class DriftWithMeApp:
                 enabled=primary_enabled,
             )
             self.draw_tooltip()
+            self.draw_combat_timing_bar()
         if self.debug_enabled:
             render_stats = self.renderer.last_stats if self.renderer is not None else None
             pyxel.text(8, 48, f"pos={self.model.player.x:.1f},{self.model.player.z:.1f}", 7)
@@ -1342,6 +1343,8 @@ class DriftWithMeApp:
         return self.ui_token(self.action_button_mode())
 
     def action_button_mode(self) -> str:
+        if self.model.combat_session is not None:
+            return "GUARD"
         if self.model.world_paused:
             return "NONE"
         camera = self.camera()
@@ -1354,6 +1357,61 @@ class DriftWithMeApp:
         if self.model.bubble_target(camera) is not None:
             return "BUBBLE"
         return "NONE"
+
+    def combat_timing_bar_rect(self) -> Rect:
+        combat = self.runtime.raw.get("combat_v1", {})
+        presentation = (
+            combat.get("presentation_medium_512x236", {}) if isinstance(combat, dict) else {}
+        )
+        candidates = (
+            presentation.get("timing_bar_candidates", []) if isinstance(presentation, dict) else []
+        )
+        raw_rect = (
+            candidates[0] if isinstance(candidates, list) and candidates else [154, 54, 204, 24]
+        )
+        scale_x = self.runtime.screen_width / 512.0
+        scale_y = self.runtime.screen_height / 236.0
+        return Rect(
+            float(raw_rect[0]) * scale_x,
+            float(raw_rect[1]) * scale_y,
+            float(raw_rect[2]) * scale_x,
+            float(raw_rect[3]) * scale_y,
+        )
+
+    def draw_combat_timing_bar(self) -> None:
+        session = self.model.combat_session
+        if session is None or session.phase not in {"PARRY_TIMING", "PARRY_RESOLVE"}:
+            return
+        pyxel = self.pyxel
+        rect = self.combat_timing_bar_rect()
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        parry = self.runtime.raw.get("combat_v1", {}).get("parry", {})
+        padding = float(parry.get("track_padding_px", 12)) * (self.runtime.screen_width / 512.0)
+        track_x = int(rect.x + padding)
+        track_w = max(8, int(rect.width - padding * 2))
+        track_y = int(rect.y + rect.height / 2 + 2)
+        pyxel.rect(track_x, track_y, track_w, 4, 1)
+        pyxel.rectb(track_x, track_y, track_w, 4, 7)
+        for index, marker in enumerate(session.marker_positions):
+            judgement = (
+                session.marker_judgements[index] if index < len(session.marker_judgements) else None
+            )
+            color = 11 if judgement == "HIT" else 8 if judgement == "MISS" else 7
+            marker_x = int(track_x + marker * track_w)
+            pyxel.line(marker_x, track_y - 4, marker_x, track_y + 7, color)
+            pyxel.rect(marker_x - 1, track_y - 1, 3, 6, color)
+        slider = self.model.combat_timing_slider_position(session)
+        if slider is not None:
+            slider_x = int(track_x + slider * track_w)
+            pyxel.line(slider_x, track_y - 7, slider_x, track_y + 10, 10)
+        label = "PERFECT" if session.result == "perfect" else "GOOD" if session.result else "PARRY"
+        self.draw_ui_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y + 4),
+            label,
+            10 if session.result == "perfect" else 7,
+            "auxiliary",
+        )
 
     def draw_interaction_chip(self) -> None:
         interaction = self.model.interaction
