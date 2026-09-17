@@ -594,8 +594,8 @@ def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
     assert root is not None
     assert root.solid
     assert root.visual == "giant_tree_root_massive_a"
-    assert root.half_x == pytest.approx(60.0)
-    assert root.half_z == pytest.approx(60.0)
+    assert root.half_x == pytest.approx(52.0)
+    assert root.half_z == pytest.approx(24.0)
     assert root.sprite_world_width == pytest.approx(120.0)
     assert root.sprite_world_height == pytest.approx(120.0)
     assert root.occludes_player
@@ -605,8 +605,8 @@ def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
     assert stump_root is not None
     assert stump_root.solid
     assert stump_root.visual == "giant_tree_root_hollow_c"
-    assert stump_root.half_x == pytest.approx(59.0)
-    assert stump_root.half_z == pytest.approx(59.0)
+    assert stump_root.half_x == pytest.approx(51.0)
+    assert stump_root.half_z == pytest.approx(24.0)
     assert stump_root.sprite_world_width == pytest.approx(118.0)
     assert stump_root.sprite_world_height == pytest.approx(118.0)
     assert stump_root.occludes_player
@@ -635,8 +635,8 @@ def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
     assert west_root.visual == "giant_tree_root_arch_d"
     assert west_root.x == pytest.approx(104.0)
     assert west_root.z == pytest.approx(640.0)
-    assert west_root.half_x == pytest.approx(60.0)
-    assert west_root.half_z == pytest.approx(60.0)
+    assert west_root.half_x == pytest.approx(52.0)
+    assert west_root.half_z == pytest.approx(24.0)
     assert west_root.sprite_world_width == pytest.approx(120.0)
     assert west_root.sprite_world_height == pytest.approx(120.0)
     assert not renderer.object_uses_box_geometry(west_root)
@@ -647,11 +647,34 @@ def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
     assert east_tree.visual == "giant_tree_root_spire_b"
     assert east_tree.x == pytest.approx(928.0)
     assert east_tree.z == pytest.approx(672.0)
-    assert east_tree.half_x == pytest.approx(59.0)
-    assert east_tree.half_z == pytest.approx(59.0)
+    assert east_tree.half_x == pytest.approx(51.0)
+    assert east_tree.half_z == pytest.approx(24.0)
     assert east_tree.sprite_world_width == pytest.approx(118.0)
     assert east_tree.sprite_world_height == pytest.approx(118.0)
     assert not renderer.object_uses_box_geometry(east_tree)
+
+
+def test_affine_giant_root_collision_edge_tracks_sprite_edge() -> None:
+    runtime, world, _perspective, _profile, affine = make_affine_camera()
+    _model = GameModel(runtime.raw, world)
+    renderer = Renderer(None)
+
+    for object_id in ("rock_02", "rock_01", "wall_02", "wall_03"):
+        obj = world.object_by_id(object_id)
+        assert obj is not None
+        sprite_bounds = renderer.sprite_prop_bounds(obj, affine)
+        collision_bounds = renderer.project_box_bounds(
+            affine,
+            obj.x,
+            obj.z,
+            obj.half_x,
+            obj.half_z,
+            max(1.0, obj.height),
+            0.0,
+        )
+        assert sprite_bounds is not None
+        assert collision_bounds is not None
+        assert collision_bounds.width == pytest.approx(sprite_bounds.width, rel=0.06)
 
 
 def test_env003_forest_composition_keeps_clearings_and_outer_density() -> None:
