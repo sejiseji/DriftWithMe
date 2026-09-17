@@ -1343,7 +1343,18 @@ class DriftWithMeApp:
         return self.ui_token(self.action_button_mode())
 
     def action_button_mode(self) -> str:
-        if self.model.combat_session is not None:
+        session = self.model.combat_session
+        if session is not None:
+            counter_mode = self.model.combat_counter_action_mode()
+            if counter_mode != "NONE":
+                return counter_mode
+            if session.phase in {
+                "PARRY_RESOLVE",
+                "PERFECT_FREEZE",
+                "COMBAT_EXIT_DEFLECT",
+                "COMBAT_EXIT_COUNTER",
+            }:
+                return "NONE"
             return "GUARD"
         if self.model.world_paused:
             return "NONE"
@@ -1586,6 +1597,20 @@ class DriftWithMeApp:
             text_color = theme["disabled_text"]
         inner_key = "context_light" if slot == "context" else "primary_light"
         self.draw_panel_frame(rect, fill=fill, inner=theme[inner_key])
+        if (
+            enabled
+            and slot == "primary"
+            and token in {"BUBBLE", "ZAP"}
+            and self.model.combat_counter_action_mode() == token
+            and (self.frame // 8) % 2 == 0
+        ):
+            self.pyxel.rectb(
+                int(rect.x) + 2,
+                int(rect.y) + 2,
+                max(1, int(rect.width) - 4),
+                max(1, int(rect.height) - 4),
+                10,
+            )
         if rect.height <= 30:
             self.draw_compact_action_button_content(rect, token, text_color)
             return

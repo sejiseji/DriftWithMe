@@ -100,6 +100,8 @@ class CombatSession:
     result: str | None = None
     successful_defense_count: int = 0
     outcome: str | None = None
+    bubble_used: bool = False
+    zap_used: bool = False
 
 
 @dataclass
@@ -1742,12 +1744,42 @@ class GameModel:
             return
         if session.phase == "PARRY_RESOLVE":
             if session.phase_elapsed_sec >= self.combat_resolve_sec(session):
-                if session.outcome == "deflect":
+                if session.result == "perfect":
+                    self.advance_combat_phase(session, "PERFECT_FREEZE", events)
+                elif session.outcome == "deflect":
                     self.advance_combat_phase(session, "COMBAT_EXIT_DEFLECT", events)
                 else:
                     self.advance_combat_phase(session, "ENEMY_WINDUP", events)
             return
+        if session.phase == "PERFECT_FREEZE":
+            if session.phase_elapsed_sec >= self.combat_perfect_hold_sec():
+                if not self.combat_bubble_counter_available(session):
+                    session.outcome = "deflect"
+                    self.advance_combat_phase(session, "COMBAT_EXIT_DEFLECT", events)
+                else:
+                    self.advance_combat_phase(session, "PERFECT_BUBBLE_WINDOW", events)
+            return
+        if session.phase == "PERFECT_BUBBLE_WINDOW":
+            if intent.action_pressed:
+                self.try_combat_counter_bubble(session, events)
+                return
+            if session.phase_elapsed_sec >= self.combat_bubble_window_sec():
+                session.outcome = "deflect"
+                self.advance_combat_phase(session, "COMBAT_EXIT_DEFLECT", events)
+            return
+        if session.phase == "PERFECT_ZAP_WINDOW":
+            if intent.action_pressed:
+                self.try_combat_counter_zap(session, events)
+                return
+            if session.phase_elapsed_sec >= self.combat_zap_window_sec():
+                session.outcome = "capture"
+                self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
+            return
         if session.phase == "COMBAT_EXIT_DEFLECT":
+            if session.phase_elapsed_sec >= self.combat_deflect_knockback_sec():
+                self.restore_combat_session(events)
+            return
+        if session.phase == "COMBAT_EXIT_COUNTER":
             if session.phase_elapsed_sec >= self.combat_deflect_knockback_sec():
                 self.restore_combat_session(events)
             return
@@ -1762,6 +1794,8 @@ class GameModel:
             session.marker_judgements = tuple(None for _ in session.marker_positions)
             session.hit_count = 0
             session.result = None
+        if phase in {"PERFECT_BUBBLE_WINDOW", "PERFECT_ZAP_WINDOW"}:
+            session.input_debounce_remaining = 0.0
         events.append(
             self.event_queue.emit(
                 world_tick=self.world_tick,
@@ -1925,6 +1959,10 @@ class GameModel:
         defense = self.combat_v1_config().get("defense", {})
         return defense if isinstance(defense, dict) else {}
 
+    def combat_counter_config(self) -> dict[str, Any]:
+        counter = self.combat_v1_config().get("counter", {})
+        return counter if isinstance(counter, dict) else {}
+
     def combat_windup_sec(self) -> float:
         return max(0.0, float(self.combat_enemy_charge_config().get("windup_sec", 0.7)))
 
@@ -1980,6 +2018,21 @@ class GameModel:
     def combat_successful_rounds_to_deflect(self) -> int:
         return max(1, int(self.combat_defense_config().get("successful_rounds_to_deflect", 2)))
 
+    def combat_perfect_hold_sec(self) -> float:
+        return max(0.0, float(self.combat_time_scale_config().get("perfect_hold_sec", 0.32)))
+
+    def combat_bubble_window_sec(self) -> float:
+        return max(0.0, float(self.combat_counter_config().get("bubble_window_sec", 1.2)))
+
+    def combat_zap_window_sec(self) -> float:
+        return max(0.0, float(self.combat_counter_config().get("zap_window_sec", 0.85)))
+
+    def combat_bubble_water_cost(self) -> float:
+        return max(0.0, float(self.config["resources"]["bubble_water_cost"]))
+
+    def combat_zap_energy_cost(self) -> float:
+        return max(0.0, float(self.config["resources"]["discharge_energy_cost"]))
+
     def combat_resolve_sec(self, session: CombatSession) -> float:
         if session.result == "failure":
             return max(0.0, float(self.combat_defense_config().get("failure_recovery_sec", 0.45)))
@@ -1992,7 +2045,7 @@ class GameModel:
         session = self.combat_session
         if session is None or session.enemy_id != enemy.id:
             return (0.0, 0.0)
-        if session.phase != "COMBAT_EXIT_DEFLECT":
+        if session.phase not in {"COMBAT_EXIT_DEFLECT", "COMBAT_EXIT_COUNTER"}:
             return (0.0, 0.0)
         duration = self.combat_deflect_knockback_sec()
         if duration <= 1e-6:
@@ -2019,9 +2072,112 @@ class GameModel:
 
     def combat_presentation_time_scale(self) -> float:
         session = self.combat_session
-        if session is None or session.phase != "PREIMPACT_SLOW":
+        if session is None:
+            return 1.0
+        if session.phase in {"PERFECT_FREEZE", "PERFECT_BUBBLE_WINDOW", "PERFECT_ZAP_WINDOW"}:
+            return max(0.0, float(self.combat_time_scale_config().get("perfect_world", 0.12)))
+        if session.phase != "PREIMPACT_SLOW":
             return 1.0
         return max(0.0, float(self.combat_time_scale_config().get("preimpact_world", 0.3)))
+
+    def combat_counter_enemy(self, session: CombatSession | None = None) -> EnemyState | None:
+        session = self.combat_session if session is None else session
+        if session is None:
+            return None
+        return self.enemy_by_id(session.enemy_id)
+
+    def combat_bubble_counter_available(self, session: CombatSession | None = None) -> bool:
+        session = self.combat_session if session is None else session
+        if session is None or session.bubble_used:
+            return False
+        if self.combat_counter_enemy(session) is None:
+            return False
+        return self.water + 1e-9 >= self.combat_bubble_water_cost()
+
+    def combat_zap_counter_available(self, session: CombatSession | None = None) -> bool:
+        session = self.combat_session if session is None else session
+        if session is None or session.zap_used:
+            return False
+        enemy = self.combat_counter_enemy(session)
+        if enemy is None or enemy.state == "DEFEATED":
+            return False
+        return self.energy + 1e-9 >= self.combat_zap_energy_cost()
+
+    def combat_counter_action_mode(self) -> str:
+        session = self.combat_session
+        if session is None:
+            return "NONE"
+        if session.phase == "PERFECT_BUBBLE_WINDOW" and self.combat_bubble_counter_available(
+            session
+        ):
+            return "BUBBLE"
+        if session.phase == "PERFECT_ZAP_WINDOW" and self.combat_zap_counter_available(session):
+            return "ZAP"
+        return "NONE"
+
+    def try_combat_counter_bubble(self, session: CombatSession, events: list[GameEvent]) -> None:
+        if session.phase != "PERFECT_BUBBLE_WINDOW" or session.bubble_used:
+            return
+        enemy = self.combat_counter_enemy(session)
+        if enemy is None or self.water + 1e-9 < self.combat_bubble_water_cost():
+            session.outcome = "deflect"
+            self.advance_combat_phase(session, "COMBAT_EXIT_DEFLECT", events)
+            return
+
+        cost = self.combat_bubble_water_cost()
+        self.water = clamp_resource(self.water - cost, self.water_max)
+        session.bubble_used = True
+        self.face_actor_toward(enemy.x, enemy.z)
+        self.debug.bubbles_fired += 1
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="bubble_fired",
+                actor_id="player",
+                target_id=enemy.id,
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={"water_cost": cost, "combat_counter": True},
+            )
+        )
+        self.capture_enemy(enemy, events)
+        if not self.combat_zap_counter_available(session):
+            session.outcome = "capture"
+            self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
+            return
+        self.advance_combat_phase(session, "PERFECT_ZAP_WINDOW", events)
+
+    def try_combat_counter_zap(self, session: CombatSession, events: list[GameEvent]) -> None:
+        if session.phase != "PERFECT_ZAP_WINDOW" or session.zap_used:
+            return
+        enemy = self.combat_counter_enemy(session)
+        if enemy is None:
+            session.outcome = "capture"
+            self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
+            return
+        if self.energy + 1e-9 < self.combat_zap_energy_cost():
+            session.outcome = "capture"
+            self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
+            return
+
+        cost = self.combat_zap_energy_cost()
+        self.energy = clamp_resource(self.energy - cost, self.energy_max)
+        session.zap_used = True
+        session.outcome = "defeat"
+        self.face_actor_toward(enemy.x, enemy.z)
+        enemy.state = "DEFEATED"
+        enemy.state_timer = 0.0
+        self.debug.discharges += 1
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="discharge_succeeded",
+                actor_id="buddy",
+                target_id=enemy.id,
+                world_position=(enemy.x, 0.0, enemy.z),
+                payload={"energy_cost": cost, "combat_counter": True},
+            )
+        )
+        self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
 
     def combat_timing_slider_position(self, session: CombatSession | None = None) -> float | None:
         session = self.combat_session if session is None else session
@@ -2216,13 +2372,24 @@ class GameModel:
                 )
             enemy.x = enemy_x
             enemy.z = enemy_z
-            enemy.state = "REST"
-            enemy.state_timer = enemy_stun_sec
+            if session.outcome == "defeat":
+                enemy.state = "DEFEATED"
+                enemy.state_timer = 0.0
+            elif session.outcome == "capture":
+                enemy.state = "CAPTURED"
+                enemy.state_timer = max(
+                    enemy.state_timer,
+                    float(self.config["bubble"]["capture_duration_sec"]),
+                )
+            else:
+                enemy.state = "REST"
+                enemy.state_timer = enemy_stun_sec
             enemy.push_x_per_sec = 0.0
             enemy.push_z_per_sec = 0.0
             enemy.dash_x = 0.0
             enemy.dash_z = 0.0
-            self.combat_reentry_cooldowns[enemy.id] = reentry_cooldown_sec
+            if session.outcome not in {"capture", "defeat"}:
+                self.combat_reentry_cooldowns[enemy.id] = reentry_cooldown_sec
 
         if not self.world.collides_player(
             player_x, player_z, self.player_solid_half_x, self.player_solid_half_z

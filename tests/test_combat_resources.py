@@ -132,6 +132,34 @@ def start_deflect_exit(model: GameModel, camera: CameraState):
     return normal_enemy(model)
 
 
+def start_perfect_freeze(model: GameModel, camera: CameraState):
+    enemy = start_fast_combat(model, camera)
+    session = resolve_round_with_hits(model, camera, 3)
+    assert session.result == "perfect"
+    assert session.successful_defense_count == 0
+    assert session.outcome is None
+    advance_from_resolve(model, camera)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "PERFECT_FREEZE"
+    return enemy
+
+
+def step_to_bubble_window(model: GameModel, camera: CameraState) -> None:
+    model.step(InputIntent(), camera, model.combat_perfect_hold_sec() + 0.01)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "PERFECT_BUBBLE_WINDOW"
+
+
+def step_to_zap_window(model: GameModel, camera: CameraState) -> None:
+    step_to_bubble_window(model, camera)
+    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "PERFECT_ZAP_WINDOW"
+
+
 def test_normal_urchin_approaches_slowly_outside_safe_zone() -> None:
     model, camera = make_model()
     model.player.x = 260.0
@@ -606,6 +634,128 @@ def test_bat003_deflect_restore_sets_safety_windows_and_cooldown() -> None:
     assert model.combat_reentry_cooldowns[enemy.id] == pytest.approx(2.0)
     assert events[-1].payload["combat_outcome"] == "deflect"
     assert events[-1].payload["successful_defense_count"] == 2
+
+
+def test_bat004_perfect_enters_bubble_counter_window() -> None:
+    model, camera = make_model()
+    start_perfect_freeze(model, camera)
+
+    assert model.combat_counter_action_mode() == "NONE"
+    assert model.combat_presentation_time_scale() == pytest.approx(0.12)
+    step_to_bubble_window(model, camera)
+
+    session = model.combat_session
+    assert session is not None
+    assert session.result == "perfect"
+    assert session.successful_defense_count == 0
+    assert model.combat_counter_action_mode() == "BUBBLE"
+
+
+def test_bat004_bubble_timeout_deflects_without_spending_water() -> None:
+    model, camera = make_model()
+    start_perfect_freeze(model, camera)
+    step_to_bubble_window(model, camera)
+    water_before = model.water
+
+    model.step(InputIntent(), camera, model.combat_bubble_window_sec() + 0.01)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_DEFLECT"
+    assert session.outcome == "deflect"
+    assert model.water == pytest.approx(water_before)
+
+
+def test_bat004_insufficient_water_deflects_before_bubble_window() -> None:
+    model, camera = make_model()
+    model.water = model.combat_bubble_water_cost() - 1.0
+    start_perfect_freeze(model, camera)
+    water_before = model.water
+
+    model.step(InputIntent(), camera, model.combat_perfect_hold_sec() + 0.01)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_DEFLECT"
+    assert session.outcome == "deflect"
+    assert model.combat_counter_action_mode() == "NONE"
+    assert model.water == pytest.approx(water_before)
+
+
+def test_bat004_bubble_success_opens_zap_window_and_spends_water_once() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    step_to_bubble_window(model, camera)
+    water_before = model.water
+
+    events = model.step(InputIntent(action_pressed=True), camera, 0.0)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "PERFECT_ZAP_WINDOW"
+    assert session.bubble_used
+    assert enemy.state == "CAPTURED"
+    assert model.water == pytest.approx(water_before - model.combat_bubble_water_cost())
+    assert [event.kind for event in events if event.kind in {"bubble_fired", "enemy_captured"}] == [
+        "bubble_fired",
+        "enemy_captured",
+    ]
+
+
+def test_bat004_zap_timeout_keeps_capture_and_spends_no_energy() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+    energy_before = model.energy
+
+    model.step(InputIntent(), camera, model.combat_zap_window_sec() + 0.01)
+    events = step_until_combat_restored(model, camera)
+
+    assert model.energy == pytest.approx(energy_before)
+    assert enemy.state == "CAPTURED"
+    assert events[-1].payload["combat_outcome"] == "capture"
+
+
+def test_bat004_insufficient_energy_keeps_capture_without_spending_energy() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    model.energy = model.combat_zap_energy_cost() - 1.0
+    step_to_bubble_window(model, camera)
+    energy_before = model.energy
+
+    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_COUNTER"
+    assert session.outcome == "capture"
+    assert enemy.state == "CAPTURED"
+    assert model.combat_counter_action_mode() == "NONE"
+    assert model.energy == pytest.approx(energy_before)
+
+
+def test_bat004_zap_success_defeats_enemy_and_spends_energy_once() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+    energy_before = model.energy
+
+    events = model.step(InputIntent(action_pressed=True), camera, 0.0)
+    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_COUNTER"
+    assert session.outcome == "defeat"
+    assert session.zap_used
+    assert enemy.state == "DEFEATED"
+    assert model.energy == pytest.approx(energy_before - model.combat_zap_energy_cost())
+    assert [event.kind for event in events if event.kind == "discharge_succeeded"] == [
+        "discharge_succeeded"
+    ]
+    restore_events = step_until_combat_restored(model, camera)
+    assert enemy.state == "DEFEATED"
+    assert restore_events[-1].payload["combat_outcome"] == "defeat"
 
 
 def test_safe_zone_blocks_contact_and_enemy_entry() -> None:
