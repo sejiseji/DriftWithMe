@@ -102,6 +102,7 @@ class DriftWithMeApp:
         self.pending_auto_move_goal: tuple[float, float] | None = None
         self.pending_cancel_auto_move = False
         self.last_denied_reason = ""
+        self.last_denied_remaining = 0.0
         self.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
         self.browser_pointer_sequence_seen = 0
 
@@ -173,6 +174,7 @@ class DriftWithMeApp:
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        self.update_denied_feedback(elapsed)
 
         f1_key = getattr(pyxel, "KEY_F1", None)
         if f1_key is not None and pyxel.btnp(f1_key):
@@ -284,6 +286,7 @@ class DriftWithMeApp:
         self.pending_auto_move_goal = None
         self.pending_cancel_auto_move = False
         self.last_denied_reason = ""
+        self.last_denied_remaining = 0.0
         self.previous_time = None
         self.accumulator = 0.0
         self.hitstop_remaining = 0.0
@@ -293,12 +296,14 @@ class DriftWithMeApp:
         self.model.water = self.model.water_max
         self.model.energy = self.model.energy_max
         self.last_denied_reason = ""
+        self.last_denied_remaining = 0.0
 
     def zero_resources_for_debug(self) -> None:
         self.model.water = 0.0
         self.model.energy = 0.0
         self.model.player.barrier_active = False
         self.last_denied_reason = ""
+        self.last_denied_remaining = 0.0
 
     def toggle_culling_for_debug(self) -> None:
         self.model.culling_enabled = not self.model.culling_enabled
@@ -476,7 +481,7 @@ class DriftWithMeApp:
             return
         for event in events:
             if event.kind == "action_denied":
-                self.last_denied_reason = str(event.payload.get("reason", "denied"))
+                self.set_denied_reason(str(event.payload.get("reason", "denied")))
             elif event.kind == "interaction_started" and event.target_id is not None:
                 target = self.world.object_by_id(event.target_id)
                 interaction_kind = str(event.payload.get("interaction_kind", ""))
@@ -748,8 +753,28 @@ class DriftWithMeApp:
         return float(auto_move.get("foreground_pick_margin_ref_px", 2.0)) * ui_scale
 
     def reject_auto_move_goal(self, reason: str) -> None:
-        self.last_denied_reason = reason
+        self.set_denied_reason(reason)
         self.audio.play_preview("action_denied")
+
+    def set_denied_reason(self, reason: str) -> None:
+        self.last_denied_reason = reason
+        self.last_denied_remaining = self.denied_feedback_duration()
+
+    def update_denied_feedback(self, elapsed: float) -> None:
+        if not self.last_denied_reason:
+            self.last_denied_remaining = 0.0
+            return
+        remaining = getattr(self, "last_denied_remaining", 0.0)
+        if remaining <= 0.0:
+            self.last_denied_reason = ""
+            self.last_denied_remaining = 0.0
+            return
+        self.last_denied_remaining = max(0.0, remaining - max(0.0, elapsed))
+        if self.last_denied_remaining <= 0.0:
+            self.last_denied_reason = ""
+
+    def denied_feedback_duration(self) -> float:
+        return max(0.0, float(self.runtime.raw.get("ui", {}).get("denied_feedback_sec", 1.2)))
 
     def ui_button_intent(self) -> InputIntent:
         action_mode = self.action_button_mode()

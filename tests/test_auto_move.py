@@ -53,6 +53,7 @@ def make_app_shell() -> tuple[DriftWithMeApp, CameraState]:
     app.renderer = Renderer(None)
     app.audio = SilentAudio()
     app.last_denied_reason = ""
+    app.last_denied_remaining = 0.0
     app.hitstop_remaining = 0.0
     app.projection_mode = "affine"
     app.affine_projection_profile = AffineProjectionProfile.from_config(runtime.raw)
@@ -207,6 +208,32 @@ def test_double_tap_move_rejects_visual_ground_outside_walkable_bounds() -> None
 
     assert intent.auto_move_goal_x is None
     assert app.last_denied_reason == "auto_move_blocked"
+
+
+def test_auto_move_denied_feedback_expires_without_new_denial() -> None:
+    app, _camera = make_app_shell()
+
+    app.set_denied_reason("auto_move_blocked")
+    duration = app.denied_feedback_duration()
+
+    app.update_denied_feedback(duration - 0.01)
+    assert app.last_denied_reason == "auto_move_blocked"
+
+    app.update_denied_feedback(0.02)
+    assert app.last_denied_reason == ""
+    assert app.last_denied_remaining == 0.0
+
+
+def test_auto_move_denied_feedback_refreshes_on_new_denial() -> None:
+    app, _camera = make_app_shell()
+    duration = app.denied_feedback_duration()
+
+    app.set_denied_reason("auto_move_blocked")
+    app.update_denied_feedback(duration * 0.75)
+    app.set_denied_reason("auto_move_no_path")
+
+    assert app.last_denied_reason == "auto_move_no_path"
+    assert app.last_denied_remaining == pytest.approx(duration)
 
 
 def test_minimap_normalization_uses_minimap_bounds_not_visual_ground() -> None:
