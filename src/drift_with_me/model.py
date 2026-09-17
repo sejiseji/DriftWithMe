@@ -54,6 +54,43 @@ class EnemyState:
     dash_z: float = 0.0
 
 
+@dataclass(frozen=True)
+class CombatActorSnapshot:
+    x: float
+    z: float
+    state: str | None = None
+    state_timer: float = 0.0
+    push_x_per_sec: float = 0.0
+    push_z_per_sec: float = 0.0
+    dash_x: float = 0.0
+    dash_z: float = 0.0
+    last_move_x: float = 0.0
+    last_move_z: float = 0.0
+
+
+@dataclass(frozen=True)
+class CombatSnapshot:
+    player: CombatActorSnapshot
+    enemy: CombatActorSnapshot
+    enemy_id: str
+    auto_move_goal: tuple[float, float] | None
+    auto_move_path: tuple[tuple[float, float], ...]
+    auto_move_stuck_elapsed: float
+
+
+@dataclass
+class CombatSession:
+    enemy_id: str
+    snapshot: CombatSnapshot
+    player_return_x: float
+    player_return_z: float
+    enemy_return_x: float
+    enemy_return_z: float
+    duration_sec: float
+    phase: str = "ENTER"
+    elapsed_sec: float = 0.0
+
+
 @dataclass
 class BubbleState:
     x: float
@@ -149,6 +186,8 @@ class GameModel:
         self.auto_move_goal: tuple[float, float] | None = None
         self.auto_move_path: list[tuple[float, float]] = []
         self.auto_move_stuck_elapsed = 0.0
+        self.combat_session: CombatSession | None = None
+        self.combat_reentry_cooldowns: dict[str, float] = {}
         self.refresh_active_enemies()
 
     def enemy_from_spawn(self, spawn) -> EnemyState:
@@ -216,6 +255,8 @@ class GameModel:
         self.auto_move_goal = None
         self.auto_move_path = []
         self.auto_move_stuck_elapsed = 0.0
+        self.combat_session = None
+        self.combat_reentry_cooldowns = {}
         self.refresh_active_enemies()
 
     @property
@@ -317,6 +358,13 @@ class GameModel:
         if self.world_paused:
             self.cancel_auto_move()
             self.player.barrier_active = False
+            self.last_events = events
+            return events
+
+        self.update_combat_reentry_cooldowns(dt)
+        if self.combat_session is not None:
+            self.player.barrier_active = False
+            self.update_combat_session(dt, events)
             self.last_events = events
             return events
 
@@ -1622,6 +1670,329 @@ class GameModel:
             )
         )
 
+    def combat_v1_config(self) -> dict[str, Any]:
+        config = self.config.get("combat_v1", {})
+        return config if isinstance(config, dict) else {}
+
+    def combat_v1_enabled(self) -> bool:
+        config = self.combat_v1_config()
+        feature_flag = config.get("feature_flag", {})
+        key = "combat_v1_enabled"
+        default = bool(config.get("enabled", False))
+        if isinstance(feature_flag, dict):
+            key = str(feature_flag.get("key", key))
+            default = bool(feature_flag.get("bat001_default", default))
+        return bool(self.config.get(key, default))
+
+    def update_combat_reentry_cooldowns(self, dt: float) -> None:
+        if not self.combat_reentry_cooldowns:
+            return
+        expired: list[str] = []
+        for enemy_id, remaining in self.combat_reentry_cooldowns.items():
+            next_remaining = max(0.0, remaining - dt)
+            if next_remaining <= 0.0:
+                expired.append(enemy_id)
+            else:
+                self.combat_reentry_cooldowns[enemy_id] = next_remaining
+        for enemy_id in expired:
+            self.combat_reentry_cooldowns.pop(enemy_id, None)
+
+    def update_combat_session(self, dt: float, events: list[GameEvent]) -> None:
+        session = self.combat_session
+        if session is None:
+            return
+        session.elapsed_sec += max(0.0, dt)
+        if session.elapsed_sec < session.duration_sec:
+            return
+        self.restore_combat_session(events)
+
+    def combat_duration_sec(self) -> float:
+        entry = self.combat_v1_config().get("entry", {})
+        if not isinstance(entry, dict):
+            return 0.4
+        duration = (
+            float(entry.get("isolation_sec", 0.18))
+            + float(entry.get("actor_settle_sec", 0.2))
+            + float(entry.get("battle_banner_sec", 0.0))
+        )
+        return max(1.0 / 60.0, duration)
+
+    def combat_exit_config(self) -> dict[str, Any]:
+        exit_config = self.combat_v1_config().get("exit", {})
+        return exit_config if isinstance(exit_config, dict) else {}
+
+    def combat_enemy_stun_sec(self) -> float:
+        return max(0.0, float(self.combat_exit_config().get("enemy_stun_sec", 1.5)))
+
+    def combat_player_invulnerability_sec(self) -> float:
+        return max(0.0, float(self.combat_exit_config().get("player_invulnerability_sec", 0.5)))
+
+    def combat_reentry_cooldown_sec(self) -> float:
+        return max(0.0, float(self.combat_exit_config().get("combat_reentry_cooldown_sec", 2.0)))
+
+    def combat_min_safe_separation(self, enemy: EnemyState) -> float:
+        configured = float(self.combat_exit_config().get("min_safe_separation_world", 18.0))
+        non_overlap = self.enemy_radius(enemy) + max(self.player_half_x, self.player_half_z) + 0.5
+        return max(configured, non_overlap)
+
+    def combat_contact_on_cooldown(self, enemy: EnemyState) -> bool:
+        return self.combat_reentry_cooldowns.get(enemy.id, 0.0) > 0.0
+
+    def can_start_contact_combat(self, enemy: EnemyState) -> bool:
+        if not self.combat_v1_enabled():
+            return False
+        if self.combat_session is not None:
+            return False
+        if enemy.kind != "normal":
+            return False
+        return not self.combat_contact_on_cooldown(enemy)
+
+    def combat_snapshot_for(self, enemy: EnemyState) -> CombatSnapshot:
+        return CombatSnapshot(
+            player=CombatActorSnapshot(
+                x=self.player.x,
+                z=self.player.z,
+                last_move_x=self.player.last_move_x,
+                last_move_z=self.player.last_move_z,
+            ),
+            enemy=CombatActorSnapshot(
+                x=enemy.x,
+                z=enemy.z,
+                state=enemy.state,
+                state_timer=enemy.state_timer,
+                push_x_per_sec=enemy.push_x_per_sec,
+                push_z_per_sec=enemy.push_z_per_sec,
+                dash_x=enemy.dash_x,
+                dash_z=enemy.dash_z,
+            ),
+            enemy_id=enemy.id,
+            auto_move_goal=self.auto_move_goal,
+            auto_move_path=tuple(self.auto_move_path),
+            auto_move_stuck_elapsed=self.auto_move_stuck_elapsed,
+        )
+
+    def start_contact_combat(self, enemy: EnemyState, events: list[GameEvent]) -> None:
+        snapshot = self.combat_snapshot_for(enemy)
+        min_separation = self.combat_min_safe_separation(enemy)
+        enemy_return_x, enemy_return_z = self.find_combat_enemy_anchor(
+            enemy,
+            self.player.x,
+            self.player.z,
+            min_separation,
+        )
+        player_return_x, player_return_z = self.find_combat_player_anchor(
+            self.player.x,
+            self.player.z,
+            enemy_return_x,
+            enemy_return_z,
+            enemy,
+            min_separation,
+        )
+        enemy_return_x, enemy_return_z = self.find_combat_enemy_anchor(
+            enemy,
+            player_return_x,
+            player_return_z,
+            min_separation,
+        )
+        if not self.combat_player_anchor_safe(
+            player_return_x, player_return_z, enemy_return_x, enemy_return_z, min_separation
+        ):
+            player_return_x, player_return_z = self.find_combat_player_anchor(
+                player_return_x,
+                player_return_z,
+                enemy_return_x,
+                enemy_return_z,
+                enemy,
+                min_separation,
+            )
+
+        self.cancel_auto_move()
+        self.player.barrier_active = False
+        self.face_actor_toward(enemy.x, enemy.z)
+        self.combat_session = CombatSession(
+            enemy_id=enemy.id,
+            snapshot=snapshot,
+            player_return_x=player_return_x,
+            player_return_z=player_return_z,
+            enemy_return_x=enemy_return_x,
+            enemy_return_z=enemy_return_z,
+            duration_sec=self.combat_duration_sec(),
+        )
+        self.debug.player_contacts += 1
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="combat_started",
+                actor_id=enemy.id,
+                target_id="player",
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={
+                    "enemy_kind": enemy.kind,
+                    "player_return": (player_return_x, player_return_z),
+                    "enemy_return": (enemy_return_x, enemy_return_z),
+                    "duration_sec": self.combat_session.duration_sec,
+                },
+            )
+        )
+
+    def restore_combat_session(self, events: list[GameEvent]) -> None:
+        session = self.combat_session
+        if session is None:
+            return
+        enemy = self.enemy_by_id(session.enemy_id)
+        player_x = session.player_return_x
+        player_z = session.player_return_z
+        enemy_x = session.enemy_return_x
+        enemy_z = session.enemy_return_z
+        enemy_kind = "unknown"
+        enemy_stun_sec = self.combat_enemy_stun_sec()
+        player_invulnerability_sec = self.combat_player_invulnerability_sec()
+        reentry_cooldown_sec = self.combat_reentry_cooldown_sec()
+
+        if enemy is not None:
+            enemy_kind = enemy.kind
+            min_separation = self.combat_min_safe_separation(enemy)
+            enemy_x, enemy_z = self.find_combat_enemy_anchor(
+                enemy, player_x, player_z, min_separation, start_x=enemy_x, start_z=enemy_z
+            )
+            if not self.combat_player_anchor_safe(
+                player_x, player_z, enemy_x, enemy_z, min_separation
+            ):
+                player_x, player_z = self.find_combat_player_anchor(
+                    player_x, player_z, enemy_x, enemy_z, enemy, min_separation
+                )
+            enemy.x = enemy_x
+            enemy.z = enemy_z
+            enemy.state = "REST"
+            enemy.state_timer = enemy_stun_sec
+            enemy.push_x_per_sec = 0.0
+            enemy.push_z_per_sec = 0.0
+            enemy.dash_x = 0.0
+            enemy.dash_z = 0.0
+            self.combat_reentry_cooldowns[enemy.id] = reentry_cooldown_sec
+
+        if not self.world.collides_player(
+            player_x, player_z, self.player_solid_half_x, self.player_solid_half_z
+        ):
+            self.player.x = player_x
+            self.player.z = player_z
+        self.player.stun_remaining = 0.0
+        self.player.invulnerable_remaining = max(
+            self.player.invulnerable_remaining,
+            player_invulnerability_sec,
+        )
+        self.player.barrier_active = False
+        self.player.last_move_x = session.snapshot.player.last_move_x
+        self.player.last_move_z = session.snapshot.player.last_move_z
+        self.combat_session = None
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="combat_restored",
+                actor_id=session.enemy_id,
+                target_id="player",
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={
+                    "enemy_kind": enemy_kind,
+                    "enemy_stun_sec": enemy_stun_sec,
+                    "player_invulnerability_sec": player_invulnerability_sec,
+                    "reentry_cooldown_sec": reentry_cooldown_sec,
+                },
+            )
+        )
+
+    def find_combat_player_anchor(
+        self,
+        start_x: float,
+        start_z: float,
+        enemy_x: float,
+        enemy_z: float,
+        enemy: EnemyState,
+        min_separation: float,
+    ) -> tuple[float, float]:
+        if self.combat_player_anchor_safe(start_x, start_z, enemy_x, enemy_z, min_separation):
+            return start_x, start_z
+        preferred_x = start_x - enemy_x
+        preferred_z = start_z - enemy_z
+        if math.hypot(preferred_x, preferred_z) <= 1e-6:
+            preferred_x = -self.player.last_move_x
+            preferred_z = -self.player.last_move_z
+        for x, z in self.combat_anchor_candidates(start_x, start_z, preferred_x, preferred_z):
+            if self.combat_player_anchor_safe(x, z, enemy_x, enemy_z, min_separation):
+                return x, z
+        return start_x, start_z
+
+    def find_combat_enemy_anchor(
+        self,
+        enemy: EnemyState,
+        player_x: float,
+        player_z: float,
+        min_separation: float,
+        start_x: float | None = None,
+        start_z: float | None = None,
+    ) -> tuple[float, float]:
+        origin_x = enemy.x if start_x is None else start_x
+        origin_z = enemy.z if start_z is None else start_z
+        if self.combat_enemy_anchor_safe(
+            enemy, origin_x, origin_z, player_x, player_z, min_separation
+        ):
+            return origin_x, origin_z
+        preferred_x = origin_x - player_x
+        preferred_z = origin_z - player_z
+        for x, z in self.combat_anchor_candidates(origin_x, origin_z, preferred_x, preferred_z):
+            if self.combat_enemy_anchor_safe(enemy, x, z, player_x, player_z, min_separation):
+                return x, z
+        return origin_x, origin_z
+
+    def combat_anchor_candidates(
+        self, start_x: float, start_z: float, preferred_x: float, preferred_z: float
+    ) -> tuple[tuple[float, float], ...]:
+        length = math.hypot(preferred_x, preferred_z)
+        if length <= 1e-6:
+            preferred_x, preferred_z = stable_direction(f"{start_x:.3f}:{start_z:.3f}")
+        else:
+            preferred_x /= length
+            preferred_z /= length
+        base_angle = math.atan2(preferred_z, preferred_x)
+        angle_offsets = (
+            0.0,
+            math.pi / 8.0,
+            -math.pi / 8.0,
+            math.pi / 4.0,
+            -math.pi / 4.0,
+            math.pi / 2.0,
+            -math.pi / 2.0,
+            math.pi,
+        )
+        candidates: list[tuple[float, float]] = []
+        for radius in (18.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0):
+            for offset in angle_offsets:
+                angle = base_angle + offset
+                candidates.append(
+                    (start_x + math.cos(angle) * radius, start_z + math.sin(angle) * radius)
+                )
+        return tuple(candidates)
+
+    def combat_player_anchor_safe(
+        self, x: float, z: float, enemy_x: float, enemy_z: float, min_separation: float
+    ) -> bool:
+        if self.world.collides_player(x, z, self.player_solid_half_x, self.player_solid_half_z):
+            return False
+        return math.hypot(x - enemy_x, z - enemy_z) >= min_separation
+
+    def combat_enemy_anchor_safe(
+        self,
+        enemy: EnemyState,
+        x: float,
+        z: float,
+        player_x: float,
+        player_z: float,
+        min_separation: float,
+    ) -> bool:
+        if self.world.collides_enemy_circle(x, z, self.enemy_radius(enemy)):
+            return False
+        return math.hypot(x - player_x, z - player_z) >= min_separation
+
     def resolve_player_contacts(self, events: list[GameEvent]) -> None:
         if self.player.barrier_active or self.player.invulnerable_remaining > 0.0:
             return
@@ -1631,6 +2002,12 @@ class GameModel:
             if enemy.state in {"DEFEATED", "REPELLED", "REST", "CAPTURED"}:
                 continue
             if self.player_overlaps_enemy(enemy):
+                if self.combat_v1_enabled() and enemy.kind == "normal":
+                    if self.combat_contact_on_cooldown(enemy):
+                        return
+                    if self.can_start_contact_combat(enemy):
+                        self.start_contact_combat(enemy, events)
+                        return
                 self.cancel_auto_move()
                 self.knock_player_from(enemy)
                 self.player.stun_remaining = float(self.config["player"]["contact_stun_sec"])

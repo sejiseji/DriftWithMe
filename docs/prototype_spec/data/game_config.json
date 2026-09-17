@@ -462,6 +462,39 @@
       }
     }
   },
+  "combat_v1_enabled": false,
+  "combat_v1": {
+    "profile_id": "urchin_ram_parry_v1",
+    "feature_flag": {
+      "key": "combat_v1_enabled",
+      "bat001_default": false
+    },
+    "entry": {
+      "combat_zoom": 1.45,
+      "camera_transition_sec": 0.28,
+      "isolation_sec": 0.18,
+      "actor_settle_sec": 0.2,
+      "battle_banner_sec": 0.45
+    },
+    "presentation_medium_512x236": {
+      "player_anchor_px": [
+        214,
+        142
+      ],
+      "enemy_anchor_px": [
+        318,
+        112
+      ]
+    },
+    "exit": {
+      "knockback_visual_sec": 0.28,
+      "camera_restore_sec": 0.35,
+      "enemy_stun_sec": 1.5,
+      "player_invulnerability_sec": 0.5,
+      "combat_reentry_cooldown_sec": 2.0,
+      "min_safe_separation_world": 18.0
+    }
+  },
   "effects": {
     "max_particles": 64,
     "max_emotes": 8,

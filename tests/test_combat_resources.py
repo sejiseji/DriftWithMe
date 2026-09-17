@@ -132,6 +132,109 @@ def test_unprotected_contact_knocks_player_once_during_invulnerability() -> None
     assert second_events == []
 
 
+def test_bat001_contact_starts_isolated_combat_without_world_knockback() -> None:
+    model, camera = make_model()
+    model.config["combat_v1_enabled"] = True
+    model.player.x = 300.0
+    model.player.z = 192.0
+    camera = camera_for_model(model)
+    enemy = normal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+    start_player = (model.player.x, model.player.z)
+    start_enemy = (enemy.x, enemy.z)
+
+    events = model.step(InputIntent(), camera, 1.0 / 60.0)
+
+    assert [event.kind for event in events] == ["combat_started"]
+    assert model.combat_session is not None
+    assert (model.player.x, model.player.z) == start_player
+    assert (enemy.x, enemy.z) == start_enemy
+    assert model.debug.player_contacts == 1
+
+
+def test_bat001_start_combat_cancels_auto_move_snapshot() -> None:
+    model, _camera = make_model()
+    model.config["combat_v1_enabled"] = True
+    model.player.x = 300.0
+    model.player.z = 192.0
+    enemy = normal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+    model.auto_move_goal = (360.0, 192.0)
+    model.auto_move_path = [(330.0, 192.0), (360.0, 192.0)]
+    model.auto_move_stuck_elapsed = 0.25
+    events = []
+
+    model.start_contact_combat(enemy, events)
+
+    assert [event.kind for event in events] == ["combat_started"]
+    assert model.combat_session is not None
+    assert model.combat_session.snapshot.auto_move_goal == (360.0, 192.0)
+    assert model.combat_session.snapshot.auto_move_path == ((330.0, 192.0), (360.0, 192.0))
+    assert model.combat_session.snapshot.auto_move_stuck_elapsed == pytest.approx(0.25)
+    assert model.auto_move_goal is None
+    assert model.auto_move_path == []
+
+
+def test_bat001_combat_session_freezes_world_until_restore() -> None:
+    model, camera = make_model()
+    model.config["combat_v1_enabled"] = True
+    model.player.x = 300.0
+    model.player.z = 192.0
+    camera = camera_for_model(model)
+    enemy = normal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+
+    model.step(InputIntent(), camera, 1.0 / 60.0)
+    assert model.combat_session is not None
+    start_player = (model.player.x, model.player.z)
+    start_enemy = (enemy.x, enemy.z)
+    start_tick = model.world_tick
+
+    events = model.step(InputIntent(strength=1.0, screen_x=1.0), camera, 0.1)
+
+    assert events == []
+    assert model.combat_session is not None
+    assert (model.player.x, model.player.z) == start_player
+    assert (enemy.x, enemy.z) == start_enemy
+    assert model.world_tick == start_tick
+
+
+def test_bat001_restore_separates_actors_and_sets_safety_windows() -> None:
+    model, camera = make_model()
+    model.config["combat_v1_enabled"] = True
+    model.player.x = 300.0
+    model.player.z = 192.0
+    camera = camera_for_model(model)
+    enemy = normal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+
+    model.step(InputIntent(), camera, 1.0 / 60.0)
+    events = model.step(InputIntent(), camera, 1.0)
+
+    assert [event.kind for event in events] == ["combat_restored"]
+    assert model.combat_session is None
+    assert not model.player_overlaps_enemy(enemy)
+    assert enemy.state == "REST"
+    assert enemy.state_timer == pytest.approx(1.5)
+    assert model.player.invulnerable_remaining == pytest.approx(0.5)
+    assert model.combat_reentry_cooldowns[enemy.id] == pytest.approx(2.0)
+
+    model.player.invulnerable_remaining = 0.0
+    enemy.state = "APPROACH"
+    enemy.x = model.player.x + 1.0
+    enemy.z = model.player.z
+    before_player = (model.player.x, model.player.z)
+    cooldown_events = model.step(InputIntent(), camera, 1.0 / 60.0)
+
+    assert cooldown_events == []
+    assert model.combat_session is None
+    assert (model.player.x, model.player.z) == before_player
+
+
 def test_safe_zone_blocks_contact_and_enemy_entry() -> None:
     model, camera = make_model()
     enemy = normal_enemy(model)
