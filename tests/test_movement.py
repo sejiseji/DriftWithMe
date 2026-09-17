@@ -52,6 +52,7 @@ def test_screen_right_input_moves_projection_right() -> None:
 
 def test_diagonal_movement_is_not_faster_than_axis_movement() -> None:
     axis_model, axis_camera = make_model()
+    right_model, right_camera = make_model()
     diagonal_model, diagonal_camera = make_model()
     runtime = load_runtime_config()
     profile = AffineProjectionProfile.from_config(runtime.raw)
@@ -61,6 +62,7 @@ def test_diagonal_movement_is_not_faster_than_axis_movement() -> None:
         base_distance=float(runtime.raw["camera"]["base_distance"]),
     )
     axis_before = affine_camera.project(Vec3(axis_model.player.x, 0.0, axis_model.player.z))
+    right_before = affine_camera.project(Vec3(right_model.player.x, 0.0, right_model.player.z))
     diagonal_before = affine_camera.project(
         Vec3(diagonal_model.player.x, 0.0, diagonal_model.player.z)
     )
@@ -69,6 +71,7 @@ def test_diagonal_movement_is_not_faster_than_axis_movement() -> None:
 
     for _ in range(60):
         axis_model.step(InputIntent(screen_y=-1.0, strength=1.0), axis_camera, dt)
+        right_model.step(InputIntent(screen_x=1.0, strength=1.0), right_camera, dt)
         diagonal_model.step(
             InputIntent(screen_x=diagonal, screen_y=-diagonal, strength=1.0),
             diagonal_camera,
@@ -76,25 +79,32 @@ def test_diagonal_movement_is_not_faster_than_axis_movement() -> None:
         )
 
     axis_after = affine_camera.project(Vec3(axis_model.player.x, 0.0, axis_model.player.z))
+    right_after = affine_camera.project(Vec3(right_model.player.x, 0.0, right_model.player.z))
     diagonal_after = affine_camera.project(
         Vec3(diagonal_model.player.x, 0.0, diagonal_model.player.z)
     )
     assert axis_before is not None and axis_after is not None
+    assert right_before is not None and right_after is not None
     assert diagonal_before is not None and diagonal_after is not None
     axis_screen_distance = math.hypot(
         axis_after.x - axis_before.x,
         axis_after.y - axis_before.y,
     )
+    right_screen_distance = math.hypot(
+        right_after.x - right_before.x,
+        right_after.y - right_before.y,
+    )
     diagonal_screen_distance = math.hypot(
         diagonal_after.x - diagonal_before.x,
         diagonal_after.y - diagonal_before.y,
     )
-    assert diagonal_screen_distance <= axis_screen_distance + 0.5
+    assert diagonal_screen_distance <= max(axis_screen_distance, right_screen_distance) + 0.5
 
 
-def test_affine_manual_axis_input_balances_projected_screen_distance() -> None:
+def test_affine_manual_axis_input_moderately_boosts_vertical_screen_distance() -> None:
     right_model, base_camera = make_model()
     up_model, _ = make_model()
+    baseline_up_model, _ = make_model()
     runtime = load_runtime_config()
     profile = AffineProjectionProfile.from_config(runtime.raw)
     camera = affine_camera_from_perspective(
@@ -104,21 +114,35 @@ def test_affine_manual_axis_input_balances_projected_screen_distance() -> None:
     )
     right_before = camera.project(Vec3(right_model.player.x, 0.0, right_model.player.z))
     up_before = camera.project(Vec3(up_model.player.x, 0.0, up_model.player.z))
+    baseline_up_before = camera.project(
+        Vec3(baseline_up_model.player.x, 0.0, baseline_up_model.player.z)
+    )
 
     right_model.step(InputIntent(screen_x=1.0, strength=1.0), base_camera, 1.0 / 60.0)
     up_model.step(InputIntent(screen_y=-1.0, strength=1.0), base_camera, 1.0 / 60.0)
+    baseline_up_model.config["player"]["manual_affine_screen_speed_equalize"] = False
+    baseline_up_model.step(InputIntent(screen_y=-1.0, strength=1.0), base_camera, 1.0 / 60.0)
 
     right_after = camera.project(Vec3(right_model.player.x, 0.0, right_model.player.z))
     up_after = camera.project(Vec3(up_model.player.x, 0.0, up_model.player.z))
+    baseline_up_after = camera.project(
+        Vec3(baseline_up_model.player.x, 0.0, baseline_up_model.player.z)
+    )
 
     assert right_before is not None and right_after is not None
     assert up_before is not None and up_after is not None
+    assert baseline_up_before is not None and baseline_up_after is not None
     right_screen_distance = math.hypot(
         right_after.x - right_before.x,
         right_after.y - right_before.y,
     )
     up_screen_distance = math.hypot(up_after.x - up_before.x, up_after.y - up_before.y)
-    assert up_screen_distance == pytest_approx(right_screen_distance)
+    baseline_up_screen_distance = math.hypot(
+        baseline_up_after.x - baseline_up_before.x,
+        baseline_up_after.y - baseline_up_before.y,
+    )
+    assert up_screen_distance > baseline_up_screen_distance * 1.35
+    assert up_screen_distance < right_screen_distance * 0.7
 
 
 def test_released_input_stops_on_next_step() -> None:

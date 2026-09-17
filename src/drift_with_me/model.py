@@ -445,8 +445,13 @@ class GameModel:
         )
         if reference_projected <= 1e-9 or not math.isfinite(reference_projected):
             return 1.0
-        scale = reference_projected / projected
-        max_scale = max(1.0, float(player_config.get("manual_affine_screen_speed_max_scale", 2.5)))
+        raw_scale = reference_projected / projected
+        blend = max(
+            0.0,
+            min(1.0, float(player_config.get("manual_affine_screen_speed_blend", 0.35))),
+        )
+        scale = 1.0 + (raw_scale - 1.0) * blend
+        max_scale = max(1.0, float(player_config.get("manual_affine_screen_speed_max_scale", 1.55)))
         return max(1.0, min(scale, max_scale))
 
     def request_auto_move_goal(self, goal_x: float, goal_z: float, events: list[GameEvent]) -> None:
