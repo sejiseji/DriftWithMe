@@ -1830,7 +1830,10 @@ class DriftWithMeApp:
     ) -> tuple[int, int]:
         rect = self.world.minimap_rect
         u = 0.0 if rect.width <= 0 else max(0.0, min((world_x - rect.min_x) / rect.width, 1.0))
-        v = 0.0 if rect.depth <= 0 else max(0.0, min((world_z - rect.min_z) / rect.depth, 1.0))
+        v = 1.0
+        if rect.depth > 0:
+            normalized_z = max(0.0, min((world_z - rect.min_z) / rect.depth, 1.0))
+            v = 1.0 - normalized_z
         return map_x + round(u * (map_side - 1)), map_y + round(v * (map_side - 1))
 
     def draw_tooltip(self) -> None:

@@ -242,12 +242,18 @@ def test_minimap_normalization_uses_minimap_bounds_not_visual_ground() -> None:
     map_y = 20
     map_side = 50
 
-    assert app.minimap_point(0.0, 0.0, map_x, map_y, map_side) == (map_x, map_y)
-    assert app.minimap_point(1024.0, 1024.0, map_x, map_y, map_side) == (
-        map_x + map_side - 1,
+    assert app.minimap_point(0.0, 0.0, map_x, map_y, map_side) == (
+        map_x,
         map_y + map_side - 1,
     )
-    assert app.minimap_point(-256.0, -256.0, map_x, map_y, map_side) == (map_x, map_y)
+    assert app.minimap_point(1024.0, 1024.0, map_x, map_y, map_side) == (
+        map_x + map_side - 1,
+        map_y,
+    )
+    assert app.minimap_point(-256.0, -256.0, map_x, map_y, map_side) == (
+        map_x,
+        map_y + map_side - 1,
+    )
 
 
 def test_minimap_cardinal_axes_follow_world_xz() -> None:
@@ -265,7 +271,7 @@ def test_minimap_cardinal_axes_follow_world_xz() -> None:
         map_y,
         map_side,
     )
-    down = app.minimap_point(
+    north = app.minimap_point(
         player.x,
         player.z + 64.0,
         map_x,
@@ -275,8 +281,8 @@ def test_minimap_cardinal_axes_follow_world_xz() -> None:
 
     assert right[0] > base[0]
     assert right[1] == base[1]
-    assert down[1] > base[1]
-    assert down[0] == base[0]
+    assert north[1] < base[1]
+    assert north[0] == base[0]
 
 
 def test_auto_move_reaches_clear_goal_at_walk_speed() -> None:
