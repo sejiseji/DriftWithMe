@@ -25,7 +25,6 @@ from drift_with_me.math3d import (
 from drift_with_me.model import GameModel, InputIntent, merge_intents
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
-from drift_with_me.ui_skin import UISkinLibrary, load_ui_skin_library
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.world import load_world_data
 
@@ -69,7 +68,6 @@ class DriftWithMeApp:
         self.model.snap_buddy(self.camera_controller.current)
         self.renderer: Renderer | None = None
         self.sprite_assets: SpriteAssetLibrary | None = None
-        self.ui_skin: UISkinLibrary | None = None
         self.screen = AppScreen.START
         self.debug_enabled = False
         self.projection_mode = self.initial_projection_mode()
@@ -120,9 +118,6 @@ class DriftWithMeApp:
         )
         pyxel.mouse(True)
         self.ui_text = load_ui_text_renderer(pyxel, self.runtime)
-        self.ui_skin = load_ui_skin_library(pyxel)
-        for error in self.ui_skin.errors:
-            print(f"ui_skin_error: {error}")
         self.sprite_assets = load_runtime_sprite_library(pyxel, self.runtime.raw)
         for error in self.sprite_assets.errors:
             print(f"asset_error: {error}")
@@ -1088,10 +1083,8 @@ class DriftWithMeApp:
         box_height = text_height + 5
         x = self.runtime.screen_width - box_width - 4
         y = 42
-        rect = Rect(x, y, box_width, box_height)
-        if not self.draw_ui_skin_asset("sf_build_label_frame", rect):
-            self.pyxel.rect(x, y, box_width, box_height, 0)
-            self.pyxel.rectb(x, y, box_width, box_height, 13)
+        self.pyxel.rect(x, y, box_width, box_height, 0)
+        self.pyxel.rectb(x, y, box_width, box_height, 13)
         draw_pixel_text(self.pyxel, x + 3, y + 2, text, 7, scale=scale)
 
     def draw_start(self) -> None:
@@ -1375,8 +1368,7 @@ class DriftWithMeApp:
         pyxel = self.pyxel
         rect = self.interaction_chip_rect()
         accent = 10 if interaction.kind == "energy_refill" else 12
-        if not self.draw_ui_skin_asset("sf_frame_status_wide", rect):
-            self.draw_panel_frame(rect, fill=0, inner=5)
+        self.draw_panel_frame(rect, fill=0, inner=5)
         if rect.height <= 32:
             self.draw_compact_progress_slot(rect, interaction, accent)
             return
@@ -1504,12 +1496,6 @@ class DriftWithMeApp:
         text = self.fit_ui_text_to_width(label, int(rect.width) - 8, style_name)
         self.draw_ui_text_in_rect(rect, text, text_color, style_name, align="center")
 
-    def draw_ui_skin_asset(self, asset_id: str, rect: Rect) -> bool:
-        skin = getattr(self, "ui_skin", None)
-        if skin is None or not skin.enabled:
-            return False
-        return skin.draw(self.pyxel, asset_id, rect)
-
     def draw_panel_frame(self, rect: Rect, fill: int, inner: int | None = None) -> None:
         pyxel = self.pyxel
         x = int(rect.x)
@@ -1541,9 +1527,7 @@ class DriftWithMeApp:
             fill = theme["disabled_fill"]
             text_color = theme["disabled_text"]
         inner_key = "context_light" if slot == "context" else "primary_light"
-        skin_id = "sf_button_primary" if slot == "primary" and enabled else "sf_button_secondary"
-        if not self.draw_ui_skin_asset(skin_id, rect):
-            self.draw_panel_frame(rect, fill=fill, inner=theme[inner_key])
+        self.draw_panel_frame(rect, fill=fill, inner=theme[inner_key])
         if rect.height <= 30:
             self.draw_compact_action_button_content(rect, token, text_color)
             return
@@ -1632,10 +1616,6 @@ class DriftWithMeApp:
             pyxel.rect(cx - 1, y + 2, 3, icon_size - 4, color)
 
     def draw_system_button(self, hit_rect: Rect, visual_rect: Rect, icon: str) -> None:
-        if icon == "pause" and self.draw_ui_skin_asset("sf_button_pause", visual_rect):
-            return
-        if icon == "sound" and self.draw_ui_skin_asset("sf_button_sound", visual_rect):
-            return
         theme = self.ui_theme()
         self.draw_panel_frame(visual_rect, fill=theme["system_fill"], inner=theme["system_hover"])
         x = int(visual_rect.x)
@@ -1699,8 +1679,7 @@ class DriftWithMeApp:
 
     def draw_resource_panel(self) -> None:
         rect = self.resource_panel_rect()
-        if not self.draw_ui_skin_asset("sf_frame_resource", rect):
-            self.draw_panel_frame(rect, fill=0, inner=5)
+        self.draw_panel_frame(rect, fill=0, inner=5)
         profile = self.runtime.profile.name
         compact = rect.width <= 170
         if compact:
@@ -1786,8 +1765,6 @@ class DriftWithMeApp:
         rect = self.wordmark_rect()
         if rect.x < self.resource_panel_rect().x + self.resource_panel_rect().width + 8:
             return
-        if self.draw_ui_skin_asset("sf_wordmark_plate", rect):
-            return
         self.draw_text_center(
             int(rect.x + rect.width / 2), int(rect.y + 2), "DRIFTWITHME", 7, scale=1
         )
@@ -1807,7 +1784,6 @@ class DriftWithMeApp:
         )
 
     def draw_minimap(self) -> None:
-        shell_drawn = self.draw_ui_skin_asset("sf_minimap_shell", self.minimap_rect())
         rect = self.minimap_visual_rect()
         x = int(rect.x)
         y = int(rect.y)
@@ -1815,13 +1791,12 @@ class DriftWithMeApp:
         radius = size // 2 - 2
         cx = x + size // 2
         cy = y + size // 2
-        if not shell_drawn:
-            self.pyxel.circ(cx, cy, radius, 1)
-            self.pyxel.circb(cx, cy, radius, 7)
-            for offset in range(-radius + 6, radius, 8):
-                span = int(math.sqrt(max(0, radius * radius - offset * offset)))
-                self.pyxel.line(cx - span, cy + offset, cx + span, cy + offset, 5)
-                self.pyxel.line(cx + offset, cy - span, cx + offset, cy + span, 5)
+        self.pyxel.circ(cx, cy, radius, 1)
+        self.pyxel.circb(cx, cy, radius, 7)
+        for offset in range(-radius + 6, radius, 8):
+            span = int(math.sqrt(max(0, radius * radius - offset * offset)))
+            self.pyxel.line(cx - span, cy + offset, cx + span, cy + offset, 5)
+            self.pyxel.line(cx + offset, cy - span, cx + offset, cy + span, 5)
         map_side = max(16, int((size - 12) / math.sqrt(2)))
         map_x = cx - map_side // 2
         map_y = cy - map_side // 2
@@ -1858,8 +1833,7 @@ class DriftWithMeApp:
         if not text:
             return
         rect = self.tooltip_rect(two_lines=False)
-        if not self.draw_ui_skin_asset("sf_frame_status_wide", rect):
-            self.draw_panel_frame(rect, fill=0, inner=5)
+        self.draw_panel_frame(rect, fill=0, inner=5)
         fitted = self.fit_ui_text_to_width(text, int(rect.width) - 16, "tooltip")
         if rect.height <= 24:
             text_w = self.ui_renderer.text_width(fitted, "tooltip")
