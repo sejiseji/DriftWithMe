@@ -237,6 +237,7 @@ class Renderer:
         self.draw_interaction_marker(model, camera)
         self.draw_action_marker(model, camera)
         self.draw_effects(model, camera, effects)
+        self.draw_combat_victory_cue(model, camera)
         if debug:
             self.draw_affine_debug_grid(model, camera)
             self.draw_debug_world(model, camera)
@@ -425,7 +426,13 @@ class Renderer:
                     )
                 )
         buddy_anchor = None
-        if not combat_isolated:
+        combat_victory_buddy = (
+            combat_isolated
+            and combat_session is not None
+            and combat_session.phase == "VICTORY_CUE"
+            and model.combat_victory_actor(combat_session) == "buddy"
+        )
+        if not combat_isolated or combat_victory_buddy:
             buddy_anchor = camera.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
         if buddy_anchor is not None:
             commands.append(
@@ -2367,8 +2374,10 @@ class Renderer:
         )
 
     def player_visual_y_offset(self, model: GameModel, presentation_time: float) -> float:
-        return self.player_visual_hover(model, presentation_time) + self.interaction_actor_jump(
-            model, "water_refill"
+        return (
+            self.player_visual_hover(model, presentation_time)
+            + self.interaction_actor_jump(model, "water_refill")
+            + self.combat_victory_actor_jump(model, "player")
         )
 
     def player_visual_hover(self, model: GameModel, presentation_time: float) -> float:
@@ -2404,6 +2413,10 @@ class Renderer:
         return asset, using_idle_fallback and self.player_sprite_flip_x(model, camera)
 
     def player_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        spin_view = self.combat_victory_spin_view_name(model, "player")
+        if spin_view is not None:
+            self.player_sprite_view_name = spin_view
+            return spin_view
         spin_view = self.interaction_spin_view_name(model, "water_refill")
         if spin_view is not None:
             self.player_sprite_view_name = spin_view
@@ -2444,6 +2457,10 @@ class Renderer:
         return asset
 
     def buddy_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        spin_view = self.combat_victory_spin_view_name(model, "buddy")
+        if spin_view is not None:
+            self.buddy_sprite_view_name = spin_view
+            return spin_view
         spin_view = self.interaction_spin_view_name(model, "energy_refill")
         if spin_view is not None:
             self.buddy_sprite_view_name = spin_view
@@ -2505,6 +2522,30 @@ class Renderer:
             return 0.0
         height = float(model.config["interaction"].get("actor_jump_height", 0.0))
         return math.sin(max(0.0, min(interaction.progress, 1.0)) * math.pi) * height
+
+    def combat_victory_spin_view_name(self, model: GameModel, actor: str) -> str | None:
+        session = model.combat_session
+        if (
+            session is None
+            or session.phase != "VICTORY_CUE"
+            or model.combat_victory_actor(session) != actor
+        ):
+            return None
+        direction_count = len(self.SPIN_DIRECTION_VIEWS)
+        progress = max(0.0, min(model.combat_victory_progress(session), 0.999999))
+        index = int(progress * direction_count) % direction_count
+        return self.SPIN_DIRECTION_VIEWS[index]
+
+    def combat_victory_actor_jump(self, model: GameModel, actor: str) -> float:
+        session = model.combat_session
+        if (
+            session is None
+            or session.phase != "VICTORY_CUE"
+            or model.combat_victory_actor(session) != actor
+        ):
+            return 0.0
+        height = float(model.config["interaction"].get("actor_jump_height", 7.0))
+        return math.sin(model.combat_victory_progress(session) * math.pi) * height
 
     def configured_sprite_asset(
         self, model: GameModel, config_key: str
@@ -2575,6 +2616,7 @@ class Renderer:
             )
         bob = math.sin(presentation_time * math.tau / 1.3) * 2.0
         bob += self.interaction_actor_jump(model, "energy_refill")
+        bob += self.combat_victory_actor_jump(model, "buddy")
         if self.draw_buddy_sprite(model, camera, bob):
             return
         half = model.buddy_cube_size / 2.0
@@ -2605,6 +2647,37 @@ class Renderer:
             return False
         self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
+
+    def draw_combat_victory_cue(self, model: GameModel, camera: CameraState) -> None:
+        session = model.combat_session
+        if session is None or session.phase != "VICTORY_CUE":
+            return
+        actor = model.combat_victory_actor(session)
+        progress = model.combat_victory_progress(session)
+        if actor == "buddy":
+            x = model.buddy.x
+            y = model.buddy.y + self.combat_victory_actor_jump(model, "buddy") + 12.0
+            z = model.buddy.z
+            label = "YAY!"
+        else:
+            x = model.player.x
+            y = self.player_visual_y_offset(model, 0.0) + 16.0
+            z = model.player.z
+            label = "POP!"
+        point = camera.project(Vec3(x, y, z))
+        if point is None:
+            return
+        px = int(point.x)
+        py = int(point.y)
+        color = {"capture": 12, "defeat": 10, "deflect": 7}.get(session.outcome or "", 7)
+        pulse = 1 + int(math.sin(progress * math.pi) * 2)
+        self.pyxel.text(px - len(label) * 2, py - 15, label, color)
+        for index in range(6):
+            angle = progress * math.tau + index * math.tau / 6.0
+            radius = 7 + progress * 10 + (index % 2) * 3
+            sx = int(px + math.cos(angle) * radius)
+            sy = int(py - 4 + math.sin(angle) * radius * 0.55)
+            self.pyxel.rect(sx, sy, pulse, pulse, color if index % 2 == 0 else 7)
 
     def draw_barrier(self, model: GameModel, camera: CameraState) -> None:
         if not model.player.barrier_active:

@@ -46,6 +46,7 @@ def enable_fast_combat(model: GameModel) -> None:
     model.config["combat_v1"]["parry"]["sweep_sec"] = 0.3
     model.config["combat_v1"]["parry"]["input_debounce_sec"] = 0.0
     model.config["combat_v1"]["defense"]["failure_recovery_sec"] = 0.03
+    model.config["combat_v1"].setdefault("victory", {})["cue_sec"] = 0.08
 
 
 def start_fast_combat(model: GameModel, camera: CameraState):
@@ -130,6 +131,17 @@ def start_deflect_exit(model: GameModel, camera: CameraState):
     assert session is not None
     assert session.phase == "COMBAT_EXIT_DEFLECT"
     return normal_enemy(model)
+
+
+def step_exit_to_victory_cue(model: GameModel, camera: CameraState) -> list:
+    session = model.combat_session
+    assert session is not None
+    assert session.phase in {"COMBAT_EXIT_DEFLECT", "COMBAT_EXIT_COUNTER"}
+    events = model.step(InputIntent(), camera, model.combat_deflect_knockback_sec() + 0.01)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "VICTORY_CUE"
+    return events
 
 
 def start_perfect_freeze(model: GameModel, camera: CameraState):
@@ -748,7 +760,7 @@ def test_bat004_zap_success_defeats_enemy_and_spends_energy_once() -> None:
     assert session.phase == "COMBAT_EXIT_COUNTER"
     assert session.outcome == "defeat"
     assert session.zap_used
-    assert enemy.state == "DEFEATED"
+    assert enemy.state != "DEFEATED"
     assert model.energy == pytest.approx(energy_before - model.combat_zap_energy_cost())
     assert [event.kind for event in events if event.kind == "discharge_succeeded"] == [
         "discharge_succeeded"
@@ -756,6 +768,110 @@ def test_bat004_zap_success_defeats_enemy_and_spends_energy_once() -> None:
     restore_events = step_until_combat_restored(model, camera)
     assert enemy.state == "DEFEATED"
     assert restore_events[-1].payload["combat_outcome"] == "defeat"
+
+
+def test_bat005_deflect_routes_through_victory_cue_before_restore() -> None:
+    model, camera = make_model()
+    enemy = start_deflect_exit(model, camera)
+    player_before = (model.player.x, model.player.z)
+    enemy_before = (enemy.x, enemy.z)
+
+    events = step_exit_to_victory_cue(model, camera)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.outcome == "deflect"
+    assert session.victory_actor == "buddy"
+    assert model.combat_victory_actor() == "buddy"
+    assert any(event.kind == "combat_victory_cue_started" for event in events)
+    assert (model.player.x, model.player.z) == player_before
+    assert (enemy.x, enemy.z) == enemy_before
+
+    restore_events = step_until_combat_restored(model, camera)
+
+    assert restore_events[-1].kind == "combat_restored"
+    assert restore_events[-1].payload["combat_outcome"] == "deflect"
+    assert enemy.state == "REST"
+
+
+def test_bat005_capture_routes_through_victory_cue_before_restore() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+
+    model.step(InputIntent(), camera, model.combat_zap_window_sec() + 0.01)
+    events = step_exit_to_victory_cue(model, camera)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.outcome == "capture"
+    assert any(event.kind == "combat_victory_cue_started" for event in events)
+    assert enemy.state == "CAPTURED"
+
+    restore_events = step_until_combat_restored(model, camera)
+
+    assert restore_events[-1].payload["combat_outcome"] == "capture"
+    assert enemy.state == "CAPTURED"
+
+
+def test_bat005_defeat_commits_enemy_state_after_victory_cue() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+
+    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    step_exit_to_victory_cue(model, camera)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.outcome == "defeat"
+    assert enemy.state != "DEFEATED"
+
+    restore_events = step_until_combat_restored(model, camera)
+
+    assert restore_events[-1].payload["combat_outcome"] == "defeat"
+    assert enemy.state == "DEFEATED"
+
+
+def test_bat005_failure_round_does_not_enter_victory_cue() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    resolve_round_with_hits(model, camera, 0)
+
+    events = advance_from_resolve(model, camera)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "ENEMY_WINDUP"
+    assert not [event for event in events if event.kind == "combat_victory_cue_started"]
+
+
+def test_bat005_night_victory_cue_uses_player_actor() -> None:
+    model, camera = make_model()
+    model.config["simulation"]["day_phase"] = "night"
+    start_deflect_exit(model, camera)
+
+    step_exit_to_victory_cue(model, camera)
+
+    assert model.combat_victory_actor() == "player"
+
+
+def test_bat005_victory_cue_keeps_world_frozen_until_restore() -> None:
+    model, camera = make_model()
+    enemy = start_deflect_exit(model, camera)
+    step_exit_to_victory_cue(model, camera)
+    player_before = (model.player.x, model.player.z)
+    enemy_before = (enemy.x, enemy.z)
+    world_tick_before = model.world_tick
+
+    events = model.step(InputIntent(), camera, model.combat_victory_cue_sec() * 0.5)
+
+    assert model.combat_session is not None
+    assert model.combat_session.phase == "VICTORY_CUE"
+    assert events == []
+    assert model.world_tick == world_tick_before
+    assert (model.player.x, model.player.z) == player_before
+    assert (enemy.x, enemy.z) == enemy_before
 
 
 def test_safe_zone_blocks_contact_and_enemy_entry() -> None:

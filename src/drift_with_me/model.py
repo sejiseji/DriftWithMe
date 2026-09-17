@@ -102,6 +102,7 @@ class CombatSession:
     outcome: str | None = None
     bubble_used: bool = False
     zap_used: bool = False
+    victory_actor: str | None = None
 
 
 @dataclass
@@ -1777,10 +1778,14 @@ class GameModel:
             return
         if session.phase == "COMBAT_EXIT_DEFLECT":
             if session.phase_elapsed_sec >= self.combat_deflect_knockback_sec():
-                self.restore_combat_session(events)
+                self.start_combat_victory_cue(session, events)
             return
         if session.phase == "COMBAT_EXIT_COUNTER":
             if session.phase_elapsed_sec >= self.combat_deflect_knockback_sec():
+                self.start_combat_victory_cue(session, events)
+            return
+        if session.phase == "VICTORY_CUE":
+            if session.phase_elapsed_sec >= self.combat_victory_cue_sec():
                 self.restore_combat_session(events)
             return
 
@@ -1963,6 +1968,10 @@ class GameModel:
         counter = self.combat_v1_config().get("counter", {})
         return counter if isinstance(counter, dict) else {}
 
+    def combat_victory_config(self) -> dict[str, Any]:
+        victory = self.combat_v1_config().get("victory", {})
+        return victory if isinstance(victory, dict) else {}
+
     def combat_windup_sec(self) -> float:
         return max(0.0, float(self.combat_enemy_charge_config().get("windup_sec", 0.7)))
 
@@ -2027,6 +2036,9 @@ class GameModel:
     def combat_zap_window_sec(self) -> float:
         return max(0.0, float(self.combat_counter_config().get("zap_window_sec", 0.85)))
 
+    def combat_victory_cue_sec(self) -> float:
+        return max(0.0, float(self.combat_victory_config().get("cue_sec", 0.72)))
+
     def combat_bubble_water_cost(self) -> float:
         return max(0.0, float(self.config["resources"]["bubble_water_cost"]))
 
@@ -2079,6 +2091,43 @@ class GameModel:
         if session.phase != "PREIMPACT_SLOW":
             return 1.0
         return max(0.0, float(self.combat_time_scale_config().get("preimpact_world", 0.3)))
+
+    def combat_victory_actor(self, session: CombatSession | None = None) -> str | None:
+        session = self.combat_session if session is None else session
+        if session is None or session.phase != "VICTORY_CUE":
+            return None
+        if session.victory_actor:
+            return session.victory_actor
+        return "buddy" if self.config["simulation"].get("day_phase") == "day" else "player"
+
+    def combat_victory_progress(self, session: CombatSession | None = None) -> float:
+        session = self.combat_session if session is None else session
+        if session is None or session.phase != "VICTORY_CUE":
+            return 0.0
+        duration = self.combat_victory_cue_sec()
+        if duration <= 1e-6:
+            return 1.0
+        return max(0.0, min(session.phase_elapsed_sec / duration, 1.0))
+
+    def start_combat_victory_cue(self, session: CombatSession, events: list[GameEvent]) -> None:
+        session.victory_actor = (
+            "buddy" if self.config["simulation"].get("day_phase") == "day" else "player"
+        )
+        self.advance_combat_phase(session, "VICTORY_CUE", events)
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="combat_victory_cue_started",
+                actor_id=session.victory_actor,
+                target_id=session.enemy_id,
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={
+                    "combat_outcome": session.outcome,
+                    "victory_actor": session.victory_actor,
+                    "duration_sec": self.combat_victory_cue_sec(),
+                },
+            )
+        )
 
     def combat_counter_enemy(self, session: CombatSession | None = None) -> EnemyState | None:
         session = self.combat_session if session is None else session
@@ -2164,8 +2213,6 @@ class GameModel:
         session.zap_used = True
         session.outcome = "defeat"
         self.face_actor_toward(enemy.x, enemy.z)
-        enemy.state = "DEFEATED"
-        enemy.state_timer = 0.0
         self.debug.discharges += 1
         events.append(
             self.event_queue.emit(

@@ -566,6 +566,9 @@
       "bubble_requires_existing_water_cost": true,
       "zap_requires_existing_energy_cost": true
     },
+    "victory": {
+      "cue_sec": 0.72
+    },
     "exit": {
       "knockback_visual_sec": 0.28,
       "camera_restore_sec": 0.35,

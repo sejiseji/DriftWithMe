@@ -1353,6 +1353,7 @@ class DriftWithMeApp:
                 "PERFECT_FREEZE",
                 "COMBAT_EXIT_DEFLECT",
                 "COMBAT_EXIT_COUNTER",
+                "VICTORY_CUE",
             }:
                 return "NONE"
             return "GUARD"
