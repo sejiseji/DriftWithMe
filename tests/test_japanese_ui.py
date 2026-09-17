@@ -25,8 +25,8 @@ def test_japanese_ui_resources_translate_existing_tokens() -> None:
     assert resources.token("DONE") == "閉じる"
     assert resources.token("NEXT") == "次へ"
     assert resources.reason("insufficient_water") == "水が足りない"
-    assert resources.reason("auto_move_blocked") == "そこへは行けません"
-    assert resources.reason("auto_move_no_path") == "道が見つかりません"
+    assert resources.reason("auto_move_blocked") == "行けません"
+    assert resources.reason("auto_move_no_path") == "道なし"
     assert resources.raw_text("WATER REFILL") == "給水"
 
 

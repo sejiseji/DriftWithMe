@@ -103,6 +103,7 @@ class DriftWithMeApp:
         self.pending_cancel_auto_move = False
         self.last_denied_reason = ""
         self.last_denied_remaining = 0.0
+        self.location_label_remaining = 0.0
         self.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
         self.browser_pointer_sequence_seen = 0
 
@@ -175,6 +176,7 @@ class DriftWithMeApp:
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
         self.update_denied_feedback(elapsed)
+        self.update_location_label(elapsed)
 
         f1_key = getattr(pyxel, "KEY_F1", None)
         if f1_key is not None and pyxel.btnp(f1_key):
@@ -240,6 +242,7 @@ class DriftWithMeApp:
         self.pending_auto_move_goal = None
         self.pending_cancel_auto_move = False
         self.screen = AppScreen.PLAY
+        self.show_location_label()
 
     def update_pause_screen(self) -> None:
         pyxel = self.pyxel
@@ -287,6 +290,7 @@ class DriftWithMeApp:
         self.pending_cancel_auto_move = False
         self.last_denied_reason = ""
         self.last_denied_remaining = 0.0
+        self.show_location_label()
         self.previous_time = None
         self.accumulator = 0.0
         self.hitstop_remaining = 0.0
@@ -482,6 +486,8 @@ class DriftWithMeApp:
         for event in events:
             if event.kind == "action_denied":
                 self.set_denied_reason(str(event.payload.get("reason", "denied")))
+            elif event.kind == "inspection_completed":
+                self.show_location_label()
             elif event.kind == "interaction_started" and event.target_id is not None:
                 target = self.world.object_by_id(event.target_id)
                 interaction_kind = str(event.payload.get("interaction_kind", ""))
@@ -776,6 +782,25 @@ class DriftWithMeApp:
     def denied_feedback_duration(self) -> float:
         return max(0.0, float(self.runtime.raw.get("ui", {}).get("denied_feedback_sec", 1.2)))
 
+    def location_label_duration(self) -> float:
+        return max(0.0, float(self.runtime.raw.get("ui", {}).get("location_label_sec", 2.4)))
+
+    def show_location_label(self) -> None:
+        self.location_label_remaining = self.location_label_duration()
+
+    def update_location_label(self, elapsed: float) -> None:
+        remaining = getattr(self, "location_label_remaining", 0.0)
+        if remaining <= 0.0:
+            self.location_label_remaining = 0.0
+            return
+        self.location_label_remaining = max(0.0, remaining - max(0.0, elapsed))
+
+    def location_label_visible(self) -> bool:
+        return (
+            bool(getattr(self, "debug_enabled", False))
+            or getattr(self, "location_label_remaining", 0.0) > 0.0
+        )
+
     def ui_button_intent(self) -> InputIntent:
         action_mode = self.action_button_mode()
         if action_mode == "GUARD":
@@ -819,7 +844,6 @@ class DriftWithMeApp:
             self.pause_button_rect(),
             self.sound_button_rect(),
             self.minimap_rect(),
-            self.location_rect(),
         ]
         if interaction is not None and interaction.kind in {"water_refill", "energy_refill"}:
             rects.append(self.interaction_chip_rect())
@@ -1040,7 +1064,16 @@ class DriftWithMeApp:
             self.draw_pause()
         else:
             self.draw_play()
-        self.draw_build_label()
+        if self.build_label_visible():
+            self.draw_build_label()
+
+    def build_label_visible(self) -> bool:
+        mode = str(self.runtime.raw.get("ui", {}).get("build_label_mode", "always"))
+        if mode == "hidden":
+            return False
+        if mode == "debug":
+            return bool(getattr(self, "debug_enabled", False))
+        return True
 
     def draw_build_label(self) -> None:
         text = BUILD_LABEL.upper()
@@ -1215,7 +1248,8 @@ class DriftWithMeApp:
         if not inspect_modal:
             self.draw_wordmark()
             self.draw_minimap()
-            self.draw_location_label()
+            if self.location_label_visible():
+                self.draw_location_label()
             self.draw_action_button(
                 self.interact_button_visual_rect(),
                 self.interact_button_token(),

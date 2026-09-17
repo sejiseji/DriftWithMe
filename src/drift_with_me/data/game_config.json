@@ -40,6 +40,11 @@
     "day_phase": "day",
     "realtime_day_night": false
   },
+  "ui": {
+    "denied_feedback_sec": 1.2,
+    "location_label_sec": 2.4,
+    "build_label_mode": "always"
+  },
   "world_debug": {
     "show_walkable_boundary": true,
     "walkable_boundary_color": 7

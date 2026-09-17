@@ -174,6 +174,43 @@ def test_uic002_status_slot_blocks_only_rejection_and_progress() -> None:
     assert active_rects.count(app.interaction_chip_rect()) == 1
 
 
+def test_uic003_location_label_is_temporary_and_nonblocking() -> None:
+    app = make_app_for_profile("medium")
+    app.model = SimpleNamespace(interaction=None)
+    app.last_denied_reason = ""
+    app.debug_enabled = False
+    app.location_label_remaining = 0.0
+
+    assert not app.location_label_visible()
+    assert app.location_rect() not in app.active_ui_rects()
+
+    app.show_location_label()
+
+    assert app.location_label_visible()
+    assert app.location_rect() not in app.active_ui_rects()
+
+    app.update_location_label(app.location_label_duration() + 0.01)
+
+    assert not app.location_label_visible()
+    assert app.location_rect() not in app.active_ui_rects()
+
+
+def test_uic003_build_label_visibility_modes() -> None:
+    app = make_app_for_profile("medium")
+    app.debug_enabled = False
+
+    assert app.build_label_visible()
+
+    app.runtime.raw["ui"]["build_label_mode"] = "hidden"
+    assert not app.build_label_visible()
+
+    app.runtime.raw["ui"]["build_label_mode"] = "debug"
+    assert not app.build_label_visible()
+
+    app.debug_enabled = True
+    assert app.build_label_visible()
+
+
 def test_pause_debug_controls_fit_inside_panel_across_profiles() -> None:
     for profile in ("low", "medium", "high"):
         app = make_app_for_profile(profile)
