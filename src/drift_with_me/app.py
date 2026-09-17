@@ -43,6 +43,15 @@ class PointerSnapshot:
     y: float
 
 
+@dataclass(frozen=True)
+class MinimapProjection:
+    camera: CameraState | AffineCameraState
+    screen_min_x: float
+    screen_min_y: float
+    screen_width: float
+    screen_height: float
+
+
 class DriftWithMeApp:
     def __init__(
         self,
@@ -1800,8 +1809,9 @@ class DriftWithMeApp:
         map_side = max(16, int((size - 12) / math.sqrt(2)))
         map_x = cx - map_side // 2
         map_y = cy - map_side // 2
+        projection = self.minimap_projection(self.scene_camera(self.camera()))
         for obj in self.world.objects:
-            px, py = self.minimap_point(obj.x, obj.z, map_x, map_y, map_side)
+            px, py = self.minimap_point(obj.x, obj.z, map_x, map_y, map_side, projection)
             if obj.kind == "water_station":
                 color = 12
             elif obj.kind == "solar_station":
@@ -1817,16 +1827,116 @@ class DriftWithMeApp:
             map_x,
             map_y,
             map_side,
+            projection,
         )
-        self.pyxel.tri(px, py - 3, px - 3, py + 3, px + 3, py + 3, 7)
+        heading_x, heading_y = self.minimap_heading_delta(
+            px, py, map_x, map_y, map_side, projection
+        )
+        self.draw_minimap_player_marker(px, py, heading_x, heading_y)
+
+    def minimap_projection(
+        self, camera: CameraState | AffineCameraState
+    ) -> MinimapProjection | None:
+        rect = self.world.minimap_rect
+        corners = (
+            (rect.min_x, rect.min_z),
+            (rect.min_x + rect.width, rect.min_z),
+            (rect.min_x, rect.min_z + rect.depth),
+            (rect.min_x + rect.width, rect.min_z + rect.depth),
+        )
+        projected = []
+        for world_x, world_z in corners:
+            point = camera.project(Vec3(world_x, 0.0, world_z))
+            if point is None or not math.isfinite(point.x) or not math.isfinite(point.y):
+                return None
+            projected.append(point)
+        min_x = min(point.x for point in projected)
+        max_x = max(point.x for point in projected)
+        min_y = min(point.y for point in projected)
+        max_y = max(point.y for point in projected)
+        width = max_x - min_x
+        height = max_y - min_y
+        if width <= 1e-6 or height <= 1e-6:
+            return None
+        return MinimapProjection(camera, min_x, min_y, width, height)
 
     def minimap_point(
-        self, world_x: float, world_z: float, map_x: int, map_y: int, map_side: int
+        self,
+        world_x: float,
+        world_z: float,
+        map_x: int,
+        map_y: int,
+        map_side: int,
+        projection: MinimapProjection | None = None,
     ) -> tuple[int, int]:
+        if projection is not None:
+            point = projection.camera.project(Vec3(world_x, 0.0, world_z))
+            if point is not None and math.isfinite(point.x) and math.isfinite(point.y):
+                u = max(
+                    0.0,
+                    min((point.x - projection.screen_min_x) / projection.screen_width, 1.0),
+                )
+                v = max(
+                    0.0,
+                    min((point.y - projection.screen_min_y) / projection.screen_height, 1.0),
+                )
+                return map_x + round(u * (map_side - 1)), map_y + round(v * (map_side - 1))
+
         rect = self.world.minimap_rect
         u = 0.0 if rect.width <= 0 else max(0.0, min((world_x - rect.min_x) / rect.width, 1.0))
         v = 0.0 if rect.depth <= 0 else max(0.0, min((world_z - rect.min_z) / rect.depth, 1.0))
         return map_x + round(u * (map_side - 1)), map_y + round(v * (map_side - 1))
+
+    def minimap_heading_delta(
+        self,
+        player_x: int,
+        player_y: int,
+        map_x: int,
+        map_y: int,
+        map_side: int,
+        projection: MinimapProjection | None,
+    ) -> tuple[float, float]:
+        heading_x = self.model.player.last_move_x
+        heading_z = self.model.player.last_move_z
+        length = math.hypot(heading_x, heading_z)
+        if length <= 1e-6:
+            return 0.0, -1.0
+        heading_x /= length
+        heading_z /= length
+        ahead_x, ahead_y = self.minimap_point(
+            self.model.player.x + heading_x * 32.0,
+            self.model.player.z + heading_z * 32.0,
+            map_x,
+            map_y,
+            map_side,
+            projection,
+        )
+        return ahead_x - player_x, ahead_y - player_y
+
+    def draw_minimap_player_marker(
+        self, x: int, y: int, direction_x: float, direction_y: float
+    ) -> None:
+        length = math.hypot(direction_x, direction_y)
+        if length <= 1e-6:
+            direction_x = 0.0
+            direction_y = -1.0
+        else:
+            direction_x /= length
+            direction_y /= length
+        tip = 5.0
+        back = 3.0
+        half_width = 3.0
+        perp_x = -direction_y
+        perp_y = direction_x
+        self.pyxel.tri(
+            round(x + direction_x * tip),
+            round(y + direction_y * tip),
+            round(x - direction_x * back + perp_x * half_width),
+            round(y - direction_y * back + perp_y * half_width),
+            round(x - direction_x * back - perp_x * half_width),
+            round(y - direction_y * back - perp_y * half_width),
+            7,
+        )
 
     def draw_tooltip(self) -> None:
         text = self.current_tooltip_text()

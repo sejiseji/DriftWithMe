@@ -12,6 +12,7 @@ from drift_with_me.math3d import (
     Vec3,
     affine_camera_from_perspective,
     screen_to_ground_point,
+    screen_to_world_direction,
 )
 from drift_with_me.model import GameModel, InputIntent
 from drift_with_me.render import Renderer
@@ -248,6 +249,62 @@ def test_minimap_normalization_uses_minimap_bounds_not_visual_ground() -> None:
         map_y + map_side - 1,
     )
     assert app.minimap_point(-256.0, -256.0, map_x, map_y, map_side) == (map_x, map_y)
+
+
+def test_minimap_projection_matches_screen_cardinal_directions() -> None:
+    app, camera = make_app_shell()
+    scene_camera = affine_camera(camera)
+    projection = app.minimap_projection(scene_camera)
+    assert projection is not None
+    map_x = 10
+    map_y = 20
+    map_side = 80
+    player = app.model.player
+    base = app.minimap_point(player.x, player.z, map_x, map_y, map_side, projection)
+    screen_right = screen_to_world_direction(scene_camera, player.x, player.z, 1.0, 0.0)
+    screen_down = screen_to_world_direction(scene_camera, player.x, player.z, 0.0, 1.0)
+
+    right = app.minimap_point(
+        player.x + screen_right.x * 64.0,
+        player.z + screen_right.y * 64.0,
+        map_x,
+        map_y,
+        map_side,
+        projection,
+    )
+    down = app.minimap_point(
+        player.x + screen_down.x * 64.0,
+        player.z + screen_down.y * 64.0,
+        map_x,
+        map_y,
+        map_side,
+        projection,
+    )
+
+    assert right[0] > base[0]
+    assert abs(right[1] - base[1]) <= 1
+    assert down[1] > base[1]
+    assert abs(down[0] - base[0]) <= 1
+
+
+def test_minimap_heading_delta_uses_projected_movement_direction() -> None:
+    app, camera = make_app_shell()
+    scene_camera = affine_camera(camera)
+    projection = app.minimap_projection(scene_camera)
+    assert projection is not None
+    map_x = 10
+    map_y = 20
+    map_side = 80
+    player = app.model.player
+    screen_right = screen_to_world_direction(scene_camera, player.x, player.z, 1.0, 0.0)
+    player.last_move_x = screen_right.x
+    player.last_move_z = screen_right.y
+    px, py = app.minimap_point(player.x, player.z, map_x, map_y, map_side, projection)
+
+    heading_x, heading_y = app.minimap_heading_delta(px, py, map_x, map_y, map_side, projection)
+
+    assert heading_x > 0.0
+    assert abs(heading_y) <= 1.0
 
 
 def test_auto_move_reaches_clear_goal_at_walk_speed() -> None:
