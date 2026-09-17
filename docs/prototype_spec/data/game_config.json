@@ -56,7 +56,9 @@
     "contact_knockback": 16.0,
     "contact_stun_sec": 0.2,
     "invulnerable_sec": 1.0,
-    "has_hp": false
+    "has_hp": false,
+    "manual_affine_screen_speed_equalize": true,
+    "manual_affine_screen_speed_max_scale": 2.5
   },
   "buddy": {
     "cube_size": 6.0,

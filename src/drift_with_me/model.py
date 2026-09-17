@@ -376,6 +376,7 @@ class GameModel:
             )
             move_speed = float(self.config["player"]["move_speed"])
             distance = move_speed * max(0.0, min(intent.strength, 1.0)) * dt
+            distance *= self.manual_screen_speed_scale(camera, direction)
             delta_x = direction.x * distance
             delta_z = direction.y * distance
             self.move_player_by_delta(delta_x, delta_z)
@@ -404,6 +405,49 @@ class GameModel:
         self.auto_move_goal = None
         self.auto_move_path = []
         self.auto_move_stuck_elapsed = 0.0
+
+    def manual_screen_speed_scale(self, camera: Any, direction: Any) -> float:
+        player_config = self.config.get("player", {})
+        projection_config = self.config.get("projection", {})
+        if projection_config.get("mode") != "affine":
+            return 1.0
+        if not bool(player_config.get("manual_affine_screen_speed_equalize", True)):
+            return 1.0
+        if abs(direction.x) <= 1e-9 and abs(direction.y) <= 1e-9:
+            return 1.0
+        affine_config = projection_config.get("affine", {})
+        basis_x = affine_config.get("basis_x", [1.0, 0.0])
+        basis_z = affine_config.get("basis_z", [0.0, 1.0])
+        viewport = affine_config.get(
+            "reference_viewport", [camera.viewport_width, camera.viewport_height]
+        )
+        viewport_scale = (
+            float(camera.viewport_width) / float(viewport[0]) if float(viewport[0]) > 1e-9 else 1.0
+        )
+        projected = math.hypot(
+            (direction.x * float(basis_x[0]) + direction.y * float(basis_z[0])) * viewport_scale,
+            (direction.x * float(basis_x[1]) + direction.y * float(basis_z[1])) * viewport_scale,
+        )
+        if projected <= 1e-9 or not math.isfinite(projected):
+            return 1.0
+        reference_direction = screen_to_world_direction(
+            camera,
+            self.player.x,
+            self.player.z,
+            1.0,
+            0.0,
+        )
+        reference_projected = math.hypot(
+            (reference_direction.x * float(basis_x[0]) + reference_direction.y * float(basis_z[0]))
+            * viewport_scale,
+            (reference_direction.x * float(basis_x[1]) + reference_direction.y * float(basis_z[1]))
+            * viewport_scale,
+        )
+        if reference_projected <= 1e-9 or not math.isfinite(reference_projected):
+            return 1.0
+        scale = reference_projected / projected
+        max_scale = max(1.0, float(player_config.get("manual_affine_screen_speed_max_scale", 2.5)))
+        return max(1.0, min(scale, max_scale))
 
     def request_auto_move_goal(self, goal_x: float, goal_z: float, events: list[GameEvent]) -> None:
         auto_move = self.config.get("auto_move", {})

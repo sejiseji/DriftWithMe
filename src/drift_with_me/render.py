@@ -222,6 +222,7 @@ class Renderer:
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
         self.draw_ground_surfaces(model, camera)
+        self.draw_walkable_boundary_overlay(model, camera)
         self.draw_safe_zones(model.world, camera)
         self.draw_auto_move_goal(model, camera, presentation_time)
         commands = self.world_commands(model, camera, presentation_time, effects)
@@ -236,7 +237,6 @@ class Renderer:
         self.draw_interaction_marker(model, camera)
         self.draw_action_marker(model, camera)
         self.draw_effects(model, camera, effects)
-        self.draw_walkable_boundary_overlay(model, camera)
         if debug:
             self.draw_affine_debug_grid(model, camera)
             self.draw_debug_world(model, camera)
