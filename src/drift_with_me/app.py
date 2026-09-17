@@ -821,10 +821,10 @@ class DriftWithMeApp:
             self.minimap_rect(),
             self.location_rect(),
         ]
-        if self.last_denied_reason:
-            rects.append(self.tooltip_rect(two_lines=False))
         if interaction is not None and interaction.kind in {"water_refill", "energy_refill"}:
             rects.append(self.interaction_chip_rect())
+        elif self.last_denied_reason:
+            rects.append(self.tooltip_rect(two_lines=False))
         return tuple(rects)
 
     def ui_numeric_layout(self) -> dict:
@@ -1335,6 +1335,9 @@ class DriftWithMeApp:
         rect = self.interaction_chip_rect()
         accent = 10 if interaction.kind == "energy_refill" else 12
         self.draw_panel_frame(rect, fill=0, inner=5)
+        if rect.height <= 28:
+            self.draw_compact_progress_slot(rect, interaction, accent)
+            return
         profile = self.runtime.profile.name
         scale = 1.25 if profile == "high" else 1.0
         compact = rect.height <= 50
@@ -1383,6 +1386,31 @@ class DriftWithMeApp:
                 13,
                 "body",
             )
+
+    def draw_compact_progress_slot(self, rect: Rect, interaction, accent: int) -> None:
+        icon_size = 12 if self.runtime.profile.name != "high" else 14
+        icon_x = int(rect.x + 7)
+        icon_y = int(rect.y + rect.height / 2 - icon_size / 2)
+        icon_token = "CHARGE" if interaction.kind == "energy_refill" else "REFILL"
+        self.draw_button_icon_at(icon_token, icon_x, icon_y, icon_size, accent)
+
+        label_x = icon_x + icon_size + 5
+        meter_x = int(rect.x + 74)
+        meter_w = max(24, int(rect.x + rect.width - meter_x - 8))
+        label_w = max(12, meter_x - label_x - 5)
+        label = self.fit_ui_text_to_width(self.interaction_title(interaction), label_w, "button")
+        text_h = self.ui_renderer.text_height("button")
+        text_y = int(rect.y + rect.height / 2 - text_h / 2 + 5)
+        self.draw_ui_text(self.pyxel, label_x, text_y, label, 7, "button")
+        self.draw_meter(
+            meter_x,
+            int(rect.y + rect.height / 2 - 3),
+            meter_w,
+            6,
+            interaction.progress,
+            1.0,
+            accent,
+        )
 
     def draw_inspect_panel(self, interaction) -> None:
         panel = self.inspect_panel_rect()
@@ -1773,6 +1801,20 @@ class DriftWithMeApp:
         rect = self.tooltip_rect(two_lines=False)
         self.draw_panel_frame(rect, fill=0, inner=5)
         fitted = self.fit_ui_text_to_width(text, int(rect.width) - 16, "tooltip")
+        if rect.height <= 24:
+            text_w = self.ui_renderer.text_width(fitted, "tooltip")
+            text_h = self.ui_renderer.text_height("tooltip")
+            x = int(rect.x + rect.width / 2 - text_w / 2)
+            y = int(rect.y + rect.height / 2 - text_h / 2 + 5)
+            self.draw_ui_text(
+                self.pyxel,
+                x,
+                y,
+                fitted,
+                8 if self.last_denied_reason else 7,
+                "tooltip",
+            )
+            return
         self.draw_ui_text_in_rect(
             Rect(rect.x + 8, rect.y + 4, rect.width - 16, rect.height - 8),
             fitted,

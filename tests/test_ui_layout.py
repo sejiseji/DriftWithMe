@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from drift_with_me.app import DriftWithMeApp, PointerSnapshot
 from drift_with_me.config import load_data_json, load_runtime_config
 from drift_with_me.input import Rect
@@ -56,7 +58,7 @@ EXPECTED_RECTS = {
         "pause_hit": (472, 8, 32, 32),
         "context_action": (356, 192, 76, 40),
         "primary_action": (432, 192, 76, 40),
-        "progress_chip": (180, 182, 148, 40),
+        "progress_chip": (352, 164, 152, 24),
         "minimap": (8, 162, 60, 70),
         "location": (8, 218, 72, 14),
     },
@@ -80,6 +82,8 @@ EXPECTED_VISUAL_RECTS = {
         "primary_action": (436, 198, 68, 28),
         "minimap": (12, 166, 52, 52),
         "wordmark": (316, 13, 112, 14),
+        "tooltip_one": (352, 164, 152, 24),
+        "tooltip_two": (352, 148, 152, 40),
     }
 }
 
@@ -103,7 +107,7 @@ def test_numeric_hud_rects_match_v02_reference_across_profiles() -> None:
         assert rect_tuple(app.location_rect()) == expected["location"]
 
 
-def test_compact_hud_c_medium_visual_rects_match_uic001_target() -> None:
+def test_compact_hud_c_medium_visual_rects_match_uic_targets() -> None:
     app = make_app_for_profile("medium")
     expected = EXPECTED_VISUAL_RECTS["medium"]
 
@@ -113,6 +117,8 @@ def test_compact_hud_c_medium_visual_rects_match_uic001_target() -> None:
     assert rect_tuple(app.action_button_visual_rect()) == expected["primary_action"]
     assert rect_tuple(app.minimap_visual_rect()) == expected["minimap"]
     assert rect_tuple(app.wordmark_rect()) == expected["wordmark"]
+    assert rect_tuple(app.tooltip_rect(two_lines=False)) == expected["tooltip_one"]
+    assert rect_tuple(app.tooltip_rect(two_lines=True)) == expected["tooltip_two"]
 
     assert app.action_button_rect().width >= app.action_button_visual_rect().width
     assert app.action_button_rect().height >= app.action_button_visual_rect().height
@@ -150,6 +156,22 @@ def test_numeric_layout_data_keeps_permanent_hud_inside_screen() -> None:
         assert layout["profiles"][profile]["rects"]["resource"] == list(
             EXPECTED_RECTS[profile]["resource"]
         )
+
+
+def test_uic002_status_slot_blocks_only_rejection_and_progress() -> None:
+    app = make_app_for_profile("medium")
+    app.model = SimpleNamespace(interaction=None)
+    app.last_denied_reason = ""
+
+    assert app.tooltip_rect(two_lines=False) not in app.active_ui_rects()
+
+    app.last_denied_reason = "auto_move_blocked"
+    assert app.tooltip_rect(two_lines=False) in app.active_ui_rects()
+
+    app.model.interaction = SimpleNamespace(kind="water_refill")
+    active_rects = app.active_ui_rects()
+    assert app.interaction_chip_rect() in active_rects
+    assert active_rects.count(app.interaction_chip_rect()) == 1
 
 
 def test_pause_debug_controls_fit_inside_panel_across_profiles() -> None:
