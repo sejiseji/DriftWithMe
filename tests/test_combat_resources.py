@@ -3,8 +3,9 @@ from __future__ import annotations
 import pytest
 
 from drift_with_me.config import load_runtime_config
-from drift_with_me.math3d import CameraState, Vec3
+from drift_with_me.math3d import AffineProjectionProfile, CameraState, Vec3
 from drift_with_me.model import GameModel, InputIntent
+from drift_with_me.render import Renderer
 from drift_with_me.world import load_world_data
 
 
@@ -200,6 +201,44 @@ def test_bat001_combat_session_freezes_world_until_restore() -> None:
     assert (model.player.x, model.player.z) == start_player
     assert (enemy.x, enemy.z) == start_enemy
     assert model.world_tick == start_tick
+
+
+def test_bat001_combat_render_filter_hides_surrounding_objects_without_world_mutation() -> None:
+    model, camera = make_model()
+    model.config["combat_v1_enabled"] = True
+    model.player.x = 300.0
+    model.player.z = 192.0
+    camera = camera_for_model(model)
+    enemy = normal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+    before_objects = model.world.objects
+
+    model.step(InputIntent(), camera, 1.0 / 60.0)
+    commands = Renderer(object()).world_commands(model, camera, 0.0)
+
+    assert model.world.objects is before_objects
+    assert {command.stable_id for command in commands} == {"player", enemy.id}
+
+
+def test_bat001_combat_does_not_mutate_affine_projection_basis() -> None:
+    model, camera = make_model()
+    model.config["combat_v1_enabled"] = True
+    model.player.x = 300.0
+    model.player.z = 192.0
+    camera = camera_for_model(model)
+    enemy = normal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+    before = AffineProjectionProfile.from_config(model.config)
+
+    model.step(InputIntent(), camera, 1.0 / 60.0)
+    during = AffineProjectionProfile.from_config(model.config)
+    model.step(InputIntent(), camera, 1.0)
+    after = AffineProjectionProfile.from_config(model.config)
+
+    assert during == before
+    assert after == before
 
 
 def test_bat001_restore_separates_actors_and_sets_safety_windows() -> None:

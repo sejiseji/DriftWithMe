@@ -325,17 +325,24 @@ class Renderer:
         effects: EffectSystem | None = None,
     ) -> list[DrawCommand]:
         commands: list[DrawCommand] = []
+        combat_session = model.combat_session
+        combat_enemy_id = combat_session.enemy_id if combat_session is not None else None
+        combat_isolated = combat_enemy_id is not None
         margin = float(model.config["culling"]["screen_margin_ref_px"])
         visible_query = model.world.query_visible_static_objects(camera, margin)
-        visible_objects = [
-            obj for obj in visible_query.objects if self.object_is_visible(obj, camera, margin)
-        ]
-        visible_details = [
-            detail
-            for detail in model.world.ground_details_for_chunks(visible_query.chunk_ids)
-            if self.ground_detail_is_visible(detail, camera, margin)
-            and not self.point_in_active_baked_ground_patch(detail.x, detail.z)
-        ]
+        if combat_isolated:
+            visible_objects = []
+            visible_details = []
+        else:
+            visible_objects = [
+                obj for obj in visible_query.objects if self.object_is_visible(obj, camera, margin)
+            ]
+            visible_details = [
+                detail
+                for detail in model.world.ground_details_for_chunks(visible_query.chunk_ids)
+                if self.ground_detail_is_visible(detail, camera, margin)
+                and not self.point_in_active_baked_ground_patch(detail.x, detail.z)
+            ]
         for detail in visible_details:
             anchor = camera.project(Vec3(detail.x, 0.0, detail.z))
             if anchor is None:
@@ -370,6 +377,8 @@ class Renderer:
                 )
             )
         for enemy in model.enemies:
+            if combat_isolated and enemy.id != combat_enemy_id:
+                continue
             anchor = camera.project(Vec3(enemy.x, 0.0, enemy.z))
             if anchor is None:
                 continue
@@ -384,7 +393,7 @@ class Renderer:
                     ),
                 )
             )
-        if effects is not None:
+        if effects is not None and not combat_isolated:
             for snapshot in effects.enemy_snapshots:
                 anchor = camera.project(Vec3(snapshot.x, 0.0, snapshot.z))
                 if anchor is None:
@@ -402,7 +411,7 @@ class Renderer:
                         ),
                     )
                 )
-        if model.bubble is not None:
+        if model.bubble is not None and not combat_isolated:
             bubble_anchor = camera.project(Vec3(model.bubble.x, 4.0, model.bubble.z))
             if bubble_anchor is not None:
                 commands.append(
@@ -414,7 +423,9 @@ class Renderer:
                         atmosphere_strength=0.0,
                     )
                 )
-        buddy_anchor = camera.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
+        buddy_anchor = None
+        if not combat_isolated:
+            buddy_anchor = camera.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
         if buddy_anchor is not None:
             commands.append(
                 DrawCommand(
