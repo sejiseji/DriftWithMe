@@ -242,7 +242,7 @@
         0.0,
         640.0
       ],
-      "visual": "giant_tree_root_arch_a",
+      "visual": "giant_tree_root_arch_d",
       "solid": true,
       "half_extents_xz": [
         48.0,
@@ -250,8 +250,8 @@
       ],
       "height": 32.0,
       "sprite_world_size": [
-        110.0,
-        110.0
+        120.0,
+        120.0
       ],
       "occludes_player": true
     },
@@ -263,7 +263,7 @@
         0.0,
         672.0
       ],
-      "visual": "giant_tree_02x_c",
+      "visual": "giant_tree_root_spire_b",
       "solid": true,
       "half_extents_xz": [
         16.0,
@@ -271,8 +271,8 @@
       ],
       "height": 32.0,
       "sprite_world_size": [
-        192.0,
-        192.0
+        118.0,
+        118.0
       ],
       "occludes_player": true
     },
@@ -284,7 +284,7 @@
         0.0,
         576.0
       ],
-      "visual": "giant_tree_stump_ruin_a",
+      "visual": "giant_tree_root_hollow_c",
       "solid": true,
       "half_extents_xz": [
         16.0,
@@ -292,8 +292,8 @@
       ],
       "height": 24.0,
       "sprite_world_size": [
-        102.0,
-        102.0
+        118.0,
+        118.0
       ],
       "occludes_player": true
     },
@@ -313,8 +313,8 @@
       ],
       "height": 32.0,
       "sprite_world_size": [
-        118.0,
-        118.0
+        120.0,
+        120.0
       ],
       "occludes_player": true
     },

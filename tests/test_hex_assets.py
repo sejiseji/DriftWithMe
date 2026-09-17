@@ -114,7 +114,10 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "grass_patch_tall_b": "d5e0c7fc7e59a647472e050dae934904af2ffc7eb19c6e66a10ddcc04d826037",
     "grass_edge_a": "ab61e3da8b6005d4a11eb5c1a446a6e7b279aea8422138895d38f11b51fbd977",
     "grass_scatter_a": "8eaca3d8803852bea6446d34211cb05cfa2921fbb5ea76d99fc211156ffe99a8",
-    "giant_tree_root_massive_a": "da4d406f939cd0120ce258300b7f49242b28a70ba8bcd4001f47f7f2c76220cf",
+    "giant_tree_root_massive_a": "363268eee705a7eb91d7b25e1522a69d11f5c2f10b4cd94c21f16823b3f4b8e2",
+    "giant_tree_root_spire_b": "f75390b473244ba701e39d8029e3c97a4b89424628e66af4dd929567130f90eb",
+    "giant_tree_root_hollow_c": "05db0fbc47deae7b8f24203301e6e4615549d3c637403c03b2724fd1aace8bb3",
+    "giant_tree_root_arch_d": "66850feadace59e27ce5176b8c0fa3ad3a82d9d8a709ca45250bfbe4742db469",
     "giant_tree_root_tall_b": "b4106c344c6c3269e86667d7488120f14bbf9eb2fd6c2bb4b3f9470928808a5c",
     "giant_tree_stump_ruin_a": "5431102e3105b370050c5ad7a8ee9fedd917a83be13e16a11652badec9eb3aca",
     "giant_tree_root_arch_a": "dd0ccbb80369e9bbe15d734004f9c67d0aa234a382fff1fa15d9d077744107b1",
@@ -214,7 +217,74 @@ ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "grass_patch_tall_b": {"0", "1", "3", "5", "A", "B", "F"},
     "grass_edge_a": {"0", "1", "3", "4", "5", "A", "B"},
     "grass_scatter_a": {"0", "1", "3", "A", "B"},
-    "giant_tree_root_massive_a": {"0", "1", "2", "3", "4", "5", "6", "7", "A", "B", "C", "D", "F"},
+    "giant_tree_root_massive_a": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
+    "giant_tree_root_spire_b": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
+    "giant_tree_root_hollow_c": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
+    "giant_tree_root_arch_d": {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+    },
     "giant_tree_root_tall_b": {
         "0",
         "1",
@@ -709,6 +779,9 @@ environment_asset_ids = {{
     "grass_edge_a": "grass_edge_a_64",
     "grass_scatter_a": "grass_scatter_a_64",
     "giant_tree_root_massive_a": "giant_tree_root_massive_a_128",
+    "giant_tree_root_spire_b": "giant_tree_root_spire_b_128",
+    "giant_tree_root_hollow_c": "giant_tree_root_hollow_c_128",
+    "giant_tree_root_arch_d": "giant_tree_root_arch_d_128",
     "giant_tree_root_tall_b": "giant_tree_root_tall_b_128",
     "giant_tree_stump_ruin_a": "giant_tree_stump_ruin_a_128",
     "giant_tree_root_arch_a": "giant_tree_root_arch_a_128",
@@ -750,7 +823,10 @@ environment_world_sizes = {{
     "grass_patch_tall_b": (52.0, 52.0),
     "grass_edge_a": (48.0, 28.0),
     "grass_scatter_a": (44.0, 24.0),
-    "giant_tree_root_massive_a": (118.0, 118.0),
+    "giant_tree_root_massive_a": (120.0, 120.0),
+    "giant_tree_root_spire_b": (118.0, 118.0),
+    "giant_tree_root_hollow_c": (118.0, 118.0),
+    "giant_tree_root_arch_d": (120.0, 120.0),
     "giant_tree_root_tall_b": (128.0, 128.0),
     "giant_tree_stump_ruin_a": (102.0, 102.0),
     "giant_tree_root_arch_a": (110.0, 110.0),
@@ -787,6 +863,9 @@ environment_colkeys = {{
     "grass_edge_a": 8,
     "grass_scatter_a": 8,
     "giant_tree_root_massive_a": 8,
+    "giant_tree_root_spire_b": 8,
+    "giant_tree_root_hollow_c": 8,
+    "giant_tree_root_arch_d": 8,
     "giant_tree_root_tall_b": 8,
     "giant_tree_stump_ruin_a": 8,
     "giant_tree_root_arch_a": 8,
@@ -823,6 +902,9 @@ environment_anchors = {{
     "grass_edge_a": (32.0, 63.0),
     "grass_scatter_a": (32.0, 63.0),
     "giant_tree_root_massive_a": (64.0, 127.0),
+    "giant_tree_root_spire_b": (64.0, 127.0),
+    "giant_tree_root_hollow_c": (64.0, 127.0),
+    "giant_tree_root_arch_d": (64.0, 127.0),
     "giant_tree_root_tall_b": (64.0, 127.0),
     "giant_tree_stump_ruin_a": (64.0, 127.0),
     "giant_tree_root_arch_a": (64.0, 127.0),
@@ -888,6 +970,9 @@ assert runtime.raw["assets"]["grass_patch_low_a_asset"] == "grass_patch_low_a_64
 assert runtime.raw["assets"]["grass_patch_tall_a_asset"] == "grass_patch_tall_a_64"
 assert runtime.raw["assets"]["giant_tree_root_arch_a_asset"] == "giant_tree_root_arch_a_128"
 assert runtime.raw["assets"]["giant_tree_02x_c_asset"] == "giant_tree_02x_c_256"
+assert runtime.raw["assets"]["giant_tree_root_spire_b_asset"] == "giant_tree_root_spire_b_128"
+assert runtime.raw["assets"]["giant_tree_root_hollow_c_asset"] == "giant_tree_root_hollow_c_128"
+assert runtime.raw["assets"]["giant_tree_root_arch_d_asset"] == "giant_tree_root_arch_d_128"
 assert sound_snapshot() == before_sound
 assert music_snapshot() == before_music
 assert pyxel.tilemaps[0].pget(0, 0) == before_tile
@@ -909,11 +994,13 @@ grass = model.world.object_by_id("grass_01")
 low_grass = model.world.object_by_id("grass_02")
 grassland_tall = model.world.object_by_id("grassland_tall_a_01")
 giant_root = model.world.object_by_id("rock_02")
+stump_root = model.world.object_by_id("rock_01")
 west_root = model.world.object_by_id("wall_02")
 east_tree = model.world.object_by_id("wall_03")
 assert tap is not None and stopped_tap is not None and solar is not None
 assert tree is not None and grass is not None and low_grass is not None
 assert grassland_tall is not None and giant_root is not None
+assert stump_root is not None
 assert west_root is not None and east_tree is not None
 assert renderer.object_sprite_asset(model, tap).definition.asset_id == "water_station_active_96"
 assert (
@@ -954,11 +1041,14 @@ assert renderer.object_sprite_asset(model, grassland_tall).definition.projection
 assert renderer.object_sprite_asset(model, giant_root).definition.asset_id == (
     "giant_tree_root_massive_a_128"
 )
+assert renderer.object_sprite_asset(model, stump_root).definition.asset_id == (
+    "giant_tree_root_hollow_c_128"
+)
 assert renderer.object_sprite_asset(model, west_root).definition.asset_id == (
-    "giant_tree_root_arch_a_128"
+    "giant_tree_root_arch_d_128"
 )
 assert renderer.object_sprite_asset(model, east_tree).definition.asset_id == (
-    "giant_tree_02x_c_256"
+    "giant_tree_root_spire_b_128"
 )
 assert len(model.world.ground_details) == 0
 assert len(model.world.ground_surfaces) == 0
