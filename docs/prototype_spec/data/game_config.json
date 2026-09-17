@@ -467,7 +467,8 @@
     "profile_id": "urchin_ram_parry_v1",
     "feature_flag": {
       "key": "combat_v1_enabled",
-      "bat001_default": false
+      "bat001_default": false,
+      "enable_for_manual_playtest_from": "BAT003"
     },
     "entry": {
       "combat_zoom": 1.45,

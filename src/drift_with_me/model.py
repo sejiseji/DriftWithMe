@@ -98,6 +98,8 @@ class CombatSession:
     input_debounce_remaining: float = 0.0
     hit_count: int = 0
     result: str | None = None
+    successful_defense_count: int = 0
+    outcome: str | None = None
 
 
 @dataclass
@@ -1740,6 +1742,13 @@ class GameModel:
             return
         if session.phase == "PARRY_RESOLVE":
             if session.phase_elapsed_sec >= self.combat_resolve_sec(session):
+                if session.outcome == "deflect":
+                    self.advance_combat_phase(session, "COMBAT_EXIT_DEFLECT", events)
+                else:
+                    self.advance_combat_phase(session, "ENEMY_WINDUP", events)
+            return
+        if session.phase == "COMBAT_EXIT_DEFLECT":
+            if session.phase_elapsed_sec >= self.combat_deflect_knockback_sec():
                 self.restore_combat_session(events)
             return
 
@@ -1868,6 +1877,10 @@ class GameModel:
             result = "failure"
         session.hit_count = hit_count
         session.result = result
+        if result == "defense_success":
+            session.successful_defense_count += 1
+        if session.successful_defense_count >= self.combat_successful_rounds_to_deflect():
+            session.outcome = "deflect"
         events.append(
             self.event_queue.emit(
                 world_tick=self.world_tick,
@@ -1875,7 +1888,12 @@ class GameModel:
                 actor_id="player",
                 target_id=session.enemy_id,
                 world_position=(self.player.x, 0.0, self.player.z),
-                payload={"hit_count": hit_count, "result": result},
+                payload={
+                    "hit_count": hit_count,
+                    "result": result,
+                    "successful_defense_count": session.successful_defense_count,
+                    "outcome": session.outcome,
+                },
             )
         )
         self.advance_combat_phase(session, "PARRY_RESOLVE", events)
@@ -1959,10 +1977,45 @@ class GameModel:
     def combat_perfect_hits(self) -> int:
         return max(1, int(self.combat_defense_config().get("perfect_hits", 3)))
 
+    def combat_successful_rounds_to_deflect(self) -> int:
+        return max(1, int(self.combat_defense_config().get("successful_rounds_to_deflect", 2)))
+
     def combat_resolve_sec(self, session: CombatSession) -> float:
         if session.result == "failure":
             return max(0.0, float(self.combat_defense_config().get("failure_recovery_sec", 0.45)))
         return self.combat_round_gap_sec()
+
+    def combat_deflect_knockback_sec(self) -> float:
+        return max(0.0, float(self.combat_exit_config().get("knockback_visual_sec", 0.28)))
+
+    def combat_enemy_presentation_offset(self, enemy: EnemyState) -> tuple[float, float]:
+        session = self.combat_session
+        if session is None or session.enemy_id != enemy.id:
+            return (0.0, 0.0)
+        if session.phase != "COMBAT_EXIT_DEFLECT":
+            return (0.0, 0.0)
+        duration = self.combat_deflect_knockback_sec()
+        if duration <= 1e-6:
+            return (0.0, 0.0)
+        dx = session.snapshot.enemy.x - session.snapshot.player.x
+        dz = session.snapshot.enemy.z - session.snapshot.player.z
+        length = math.hypot(dx, dz)
+        if length <= 1e-6:
+            dx = enemy.x - self.player.x
+            dz = enemy.z - self.player.z
+            length = math.hypot(dx, dz)
+        if length <= 1e-6:
+            dx = 1.0
+            dz = 0.0
+            length = 1.0
+        t = max(0.0, min(session.phase_elapsed_sec / duration, 1.0))
+        eased = 1.0 - (1.0 - t) * (1.0 - t)
+        distance = 34.0 * eased
+        return (dx / length * distance, dz / length * distance)
+
+    def enemy_presentation_position(self, enemy: EnemyState) -> tuple[float, float]:
+        offset_x, offset_z = self.combat_enemy_presentation_offset(enemy)
+        return (enemy.x + offset_x, enemy.z + offset_z)
 
     def combat_presentation_time_scale(self) -> float:
         session = self.combat_session
@@ -2199,6 +2252,8 @@ class GameModel:
                     "reentry_cooldown_sec": reentry_cooldown_sec,
                     "combat_result": session.result,
                     "combat_hits": session.hit_count,
+                    "combat_outcome": session.outcome,
+                    "successful_defense_count": session.successful_defense_count,
                 },
             )
         )

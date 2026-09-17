@@ -379,7 +379,8 @@ class Renderer:
         for enemy in model.enemies:
             if combat_isolated and enemy.id != combat_enemy_id:
                 continue
-            anchor = camera.project(Vec3(enemy.x, 0.0, enemy.z))
+            enemy_x, enemy_z = model.enemy_presentation_position(enemy)
+            anchor = camera.project(Vec3(enemy_x, 0.0, enemy_z))
             if anchor is None:
                 continue
             commands.append(
@@ -2173,7 +2174,8 @@ class Renderer:
     def draw_enemy(self, model: GameModel, enemy, camera: CameraState) -> None:
         if enemy.state == "DEFEATED":
             return
-        point = camera.project(Vec3(enemy.x, 4.0, enemy.z))
+        enemy_x, enemy_z = model.enemy_presentation_position(enemy)
+        point = camera.project(Vec3(enemy_x, 4.0, enemy_z))
         if point is None:
             return
         pyxel = self.pyxel
@@ -2193,7 +2195,7 @@ class Renderer:
             color = 13
         x = int(point.x)
         y = int(point.y)
-        sprite_placement = self.draw_enemy_sprite(model, enemy, camera)
+        sprite_placement = self.draw_enemy_sprite(model, enemy, camera, enemy_x, enemy_z)
         if sprite_placement is not None:
             left, top, width, height = sprite_placement.rect
             x = left + width // 2
@@ -2217,15 +2219,15 @@ class Renderer:
         elif enemy.state == "WINDUP":
             self.draw_world_line(
                 camera,
-                Vec3(enemy.x, 0.0, enemy.z),
-                Vec3(enemy.x + enemy.dash_x * 56.0, 0.0, enemy.z + enemy.dash_z * 56.0),
+                Vec3(enemy_x, 0.0, enemy_z),
+                Vec3(enemy_x + enemy.dash_x * 56.0, 0.0, enemy_z + enemy.dash_z * 56.0),
                 8,
             )
             pyxel.circb(x, y, radius + 5, 8)
         elif enemy.state == "DASH":
             pyxel.circb(x, y, radius + 5, 2)
         elif enemy.state == "CAPTURED":
-            self.draw_world_circle(camera, enemy.x, enemy.z, 16.0, 12)
+            self.draw_world_circle(camera, enemy_x, enemy_z, 16.0, 12)
             pyxel.circb(x, y, radius + 5, 12)
 
     def enemy_sprite_asset(self, model: GameModel, enemy) -> LoadedSpriteAsset | None:
@@ -2240,18 +2242,34 @@ class Renderer:
             return self.configured_sprite_asset(model, "abnormal_urchin_idle_asset")
         return None
 
-    def enemy_sprite_placement(self, model: GameModel, enemy, camera: CameraState):
+    def enemy_sprite_placement(
+        self,
+        model: GameModel,
+        enemy,
+        camera: CameraState,
+        x: float | None = None,
+        z: float | None = None,
+    ):
         asset = self.enemy_sprite_asset(model, enemy)
         if asset is None:
             return None
+        draw_x = enemy.x if x is None else x
+        draw_z = enemy.z if z is None else z
         return placement_for_upright_height_billboard(
             camera,
             asset.definition,
-            Vec3(enemy.x, 0.0, enemy.z),
+            Vec3(draw_x, 0.0, draw_z),
         )
 
-    def draw_enemy_sprite(self, model: GameModel, enemy, camera: CameraState):
-        placement = self.enemy_sprite_placement(model, enemy, camera)
+    def draw_enemy_sprite(
+        self,
+        model: GameModel,
+        enemy,
+        camera: CameraState,
+        x: float | None = None,
+        z: float | None = None,
+    ):
+        placement = self.enemy_sprite_placement(model, enemy, camera, x, z)
         if placement is None:
             return None
         asset = self.enemy_sprite_asset(model, enemy)

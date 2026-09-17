@@ -92,6 +92,46 @@ def hit_combat_marker(model: GameModel, camera: CameraState, marker: float) -> l
     return events
 
 
+def finish_current_parry_round(model: GameModel, camera: CameraState) -> list:
+    events = model.step(InputIntent(), camera, model.combat_parry_sweep_sec() + 0.01)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "PARRY_RESOLVE"
+    return events
+
+
+def advance_from_resolve(model: GameModel, camera: CameraState) -> list:
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "PARRY_RESOLVE"
+    return model.step(InputIntent(), camera, model.combat_resolve_sec(session) + 0.01)
+
+
+def resolve_round_with_hits(model: GameModel, camera: CameraState, hit_count: int):
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    for marker in session.marker_positions[:hit_count]:
+        hit_combat_marker(model, camera, marker)
+    finish_current_parry_round(model, camera)
+    session = model.combat_session
+    assert session is not None
+    return session
+
+
+def start_deflect_exit(model: GameModel, camera: CameraState):
+    start_fast_combat(model, camera)
+    resolve_round_with_hits(model, camera, 1)
+    advance_from_resolve(model, camera)
+    session = resolve_round_with_hits(model, camera, 1)
+    assert session.outcome == "deflect"
+    advance_from_resolve(model, camera)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_DEFLECT"
+    return normal_enemy(model)
+
+
 def test_normal_urchin_approaches_slowly_outside_safe_zone() -> None:
     model, camera = make_model()
     model.player.x = 260.0
@@ -311,7 +351,8 @@ def test_bat001_restore_separates_actors_and_sets_safety_windows() -> None:
     enemy.z = 192.0
 
     model.step(InputIntent(), camera, 1.0 / 60.0)
-    events = step_until_combat_restored(model, camera)
+    events = []
+    model.restore_combat_session(events)
 
     assert events[-1].kind == "combat_restored"
     assert model.combat_session is None
@@ -418,6 +459,8 @@ def test_bat002_one_hit_resolves_as_defense_success() -> None:
     assert session.phase == "PARRY_RESOLVE"
     assert session.hit_count == 1
     assert session.result == "defense_success"
+    assert session.successful_defense_count == 1
+    assert session.outcome is None
 
 
 def test_bat002_three_hits_sets_perfect_result_only() -> None:
@@ -437,6 +480,8 @@ def test_bat002_three_hits_sets_perfect_result_only() -> None:
     assert session.phase == "PARRY_RESOLVE"
     assert session.hit_count == 3
     assert session.result == "perfect"
+    assert session.successful_defense_count == 0
+    assert session.outcome is None
     assert session.marker_judgements == ("HIT", "HIT", "HIT")
 
 
@@ -472,6 +517,95 @@ def test_bat002_pause_by_not_stepping_keeps_slider_position() -> None:
     assert paused_position is not None
 
     assert model.combat_timing_slider_position(session) == pytest.approx(paused_position)
+
+
+def test_bat003_failure_loops_without_increasing_success_count() -> None:
+    model, camera = make_model()
+    enemy = start_fast_combat(model, camera)
+    start_player = (model.player.x, model.player.z)
+    start_enemy = (enemy.x, enemy.z)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+
+    finish_current_parry_round(model, camera)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.result == "failure"
+    assert session.successful_defense_count == 0
+    assert session.outcome is None
+    advance_from_resolve(model, camera)
+    assert model.combat_session is not None
+    assert model.combat_session.phase == "ENEMY_WINDUP"
+    assert (model.player.x, model.player.z) == start_player
+    assert (enemy.x, enemy.z) == start_enemy
+
+
+def test_bat003_success_count_survives_a_failed_round() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+
+    resolve_round_with_hits(model, camera, 1)
+    advance_from_resolve(model, camera)
+    session = resolve_round_with_hits(model, camera, 0)
+
+    assert session.result == "failure"
+    assert session.successful_defense_count == 1
+    assert session.outcome is None
+    advance_from_resolve(model, camera)
+    assert model.combat_session is not None
+    assert model.combat_session.phase == "ENEMY_WINDUP"
+    assert model.combat_session.successful_defense_count == 1
+
+
+def test_bat003_two_successful_rounds_start_deflect_exit() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+
+    resolve_round_with_hits(model, camera, 1)
+    advance_from_resolve(model, camera)
+    session = resolve_round_with_hits(model, camera, 1)
+
+    assert session.result == "defense_success"
+    assert session.successful_defense_count == 2
+    assert session.outcome == "deflect"
+
+    events = advance_from_resolve(model, camera)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_DEFLECT"
+    assert [event.payload["phase"] for event in events if event.kind == "combat_phase_changed"] == [
+        "COMBAT_EXIT_DEFLECT"
+    ]
+
+
+def test_bat003_deflect_knockback_is_presentation_only_until_restore() -> None:
+    model, camera = make_model()
+    enemy = start_deflect_exit(model, camera)
+    enemy_world = (enemy.x, enemy.z)
+
+    model.step(InputIntent(), camera, model.combat_deflect_knockback_sec() * 0.5)
+    offset_x, offset_z = model.combat_enemy_presentation_offset(enemy)
+
+    assert (enemy.x, enemy.z) == enemy_world
+    assert (offset_x * offset_x + offset_z * offset_z) ** 0.5 > 1.0
+
+
+def test_bat003_deflect_restore_sets_safety_windows_and_cooldown() -> None:
+    model, camera = make_model()
+    enemy = start_deflect_exit(model, camera)
+
+    events = step_until_combat_restored(model, camera)
+
+    assert events[-1].kind == "combat_restored"
+    assert model.combat_session is None
+    assert not model.player_overlaps_enemy(enemy)
+    assert enemy.state == "REST"
+    assert enemy.state_timer == pytest.approx(1.5)
+    assert model.player.invulnerable_remaining == pytest.approx(0.5)
+    assert model.combat_reentry_cooldowns[enemy.id] == pytest.approx(2.0)
+    assert events[-1].payload["combat_outcome"] == "deflect"
+    assert events[-1].payload["successful_defense_count"] == 2
 
 
 def test_safe_zone_blocks_contact_and_enemy_entry() -> None:
