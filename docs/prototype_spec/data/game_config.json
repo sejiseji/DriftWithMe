@@ -410,6 +410,8 @@
   "ui": {
     "locale": "ja",
     "denied_feedback_sec": 1.2,
+    "location_label_sec": 2.4,
+    "build_label_mode": "always",
     "font": {
       "family": "DotGothic16",
       "path": "assets/fonts/DotGothic16-Regular.ttf",

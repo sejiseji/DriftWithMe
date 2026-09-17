@@ -1369,7 +1369,7 @@ class DriftWithMeApp:
         rect = self.interaction_chip_rect()
         accent = 10 if interaction.kind == "energy_refill" else 12
         self.draw_panel_frame(rect, fill=0, inner=5)
-        if rect.height <= 28:
+        if rect.height <= 32:
             self.draw_compact_progress_slot(rect, interaction, accent)
             return
         profile = self.runtime.profile.name
@@ -1681,7 +1681,7 @@ class DriftWithMeApp:
         rect = self.resource_panel_rect()
         self.draw_panel_frame(rect, fill=0, inner=5)
         profile = self.runtime.profile.name
-        compact = rect.width <= 140
+        compact = rect.width <= 170
         if compact:
             rows = (
                 (6, 5, 24, 3, 28, 56, 8, 68),

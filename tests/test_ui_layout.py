@@ -43,14 +43,14 @@ def contains(outer: Rect, inner: Rect) -> bool:
 
 EXPECTED_RECTS = {
     "low": {
-        "resource": (6, 6, 156, 44),
+        "resource": (6, 6, 132, 40),
         "sound_hit": (356, 6, 30, 30),
         "pause_hit": (390, 6, 30, 30),
-        "context_action": (286, 148, 62, 36),
-        "primary_action": (356, 148, 62, 36),
-        "progress_chip": (148, 148, 132, 36),
-        "minimap": (18, 113, 56, 56),
-        "location": (6, 172, 80, 18),
+        "context_action": (274, 154, 76, 38),
+        "primary_action": (350, 154, 76, 38),
+        "progress_chip": (274, 126, 148, 24),
+        "minimap": (10, 120, 56, 70),
+        "location": (8, 178, 72, 14),
     },
     "medium": {
         "resource": (8, 8, 132, 40),
@@ -63,18 +63,28 @@ EXPECTED_RECTS = {
         "location": (8, 218, 72, 14),
     },
     "high": {
-        "resource": (10, 10, 210, 60),
+        "resource": (10, 10, 156, 44),
         "sound_hit": (545, 10, 40, 40),
         "pause_hit": (590, 10, 40, 40),
         "context_action": (432, 228, 94, 48),
         "primary_action": (536, 228, 94, 48),
-        "progress_chip": (225, 228, 180, 48),
-        "minimap": (25, 176, 80, 80),
-        "location": (10, 261, 110, 23),
+        "progress_chip": (432, 190, 198, 30),
+        "minimap": (20, 196, 84, 88),
+        "location": (10, 272, 100, 18),
     },
 }
 
 EXPECTED_VISUAL_RECTS = {
+    "low": {
+        "sound": (360, 10, 22, 22),
+        "pause": (394, 10, 22, 22),
+        "context_action": (278, 160, 68, 28),
+        "primary_action": (354, 160, 68, 28),
+        "minimap": (14, 124, 48, 48),
+        "wordmark": (226, 10, 112, 14),
+        "tooltip_one": (274, 126, 148, 24),
+        "tooltip_two": (274, 104, 148, 40),
+    },
     "medium": {
         "sound": (440, 12, 24, 24),
         "pause": (476, 12, 24, 24),
@@ -84,7 +94,17 @@ EXPECTED_VISUAL_RECTS = {
         "wordmark": (316, 13, 112, 14),
         "tooltip_one": (352, 164, 152, 24),
         "tooltip_two": (352, 148, 152, 40),
-    }
+    },
+    "high": {
+        "sound": (550, 15, 30, 30),
+        "pause": (595, 15, 30, 30),
+        "context_action": (438, 238, 84, 30),
+        "primary_action": (542, 238, 84, 30),
+        "minimap": (28, 208, 64, 64),
+        "wordmark": (388, 16, 132, 16),
+        "tooltip_one": (432, 190, 198, 30),
+        "tooltip_two": (432, 162, 198, 54),
+    },
 }
 
 
@@ -107,25 +127,26 @@ def test_numeric_hud_rects_match_v02_reference_across_profiles() -> None:
         assert rect_tuple(app.location_rect()) == expected["location"]
 
 
-def test_compact_hud_c_medium_visual_rects_match_uic_targets() -> None:
-    app = make_app_for_profile("medium")
-    expected = EXPECTED_VISUAL_RECTS["medium"]
+def test_compact_hud_c_visual_rects_match_uic_targets_across_profiles() -> None:
+    for profile in ("low", "medium", "high"):
+        app = make_app_for_profile(profile)
+        expected = EXPECTED_VISUAL_RECTS[profile]
 
-    assert rect_tuple(app.sound_visual_rect()) == expected["sound"]
-    assert rect_tuple(app.pause_visual_rect()) == expected["pause"]
-    assert rect_tuple(app.interact_button_visual_rect()) == expected["context_action"]
-    assert rect_tuple(app.action_button_visual_rect()) == expected["primary_action"]
-    assert rect_tuple(app.minimap_visual_rect()) == expected["minimap"]
-    assert rect_tuple(app.wordmark_rect()) == expected["wordmark"]
-    assert rect_tuple(app.tooltip_rect(two_lines=False)) == expected["tooltip_one"]
-    assert rect_tuple(app.tooltip_rect(two_lines=True)) == expected["tooltip_two"]
+        assert rect_tuple(app.sound_visual_rect()) == expected["sound"]
+        assert rect_tuple(app.pause_visual_rect()) == expected["pause"]
+        assert rect_tuple(app.interact_button_visual_rect()) == expected["context_action"]
+        assert rect_tuple(app.action_button_visual_rect()) == expected["primary_action"]
+        assert rect_tuple(app.minimap_visual_rect()) == expected["minimap"]
+        assert rect_tuple(app.wordmark_rect()) == expected["wordmark"]
+        assert rect_tuple(app.tooltip_rect(two_lines=False)) == expected["tooltip_one"]
+        assert rect_tuple(app.tooltip_rect(two_lines=True)) == expected["tooltip_two"]
 
-    assert app.action_button_rect().width >= app.action_button_visual_rect().width
-    assert app.action_button_rect().height >= app.action_button_visual_rect().height
-    assert app.interact_button_rect().width >= app.interact_button_visual_rect().width
-    assert app.interact_button_rect().height >= app.interact_button_visual_rect().height
-    assert app.minimap_rect().width >= app.minimap_visual_rect().width
-    assert app.minimap_rect().height >= app.minimap_visual_rect().height
+        assert app.action_button_rect().width >= app.action_button_visual_rect().width
+        assert app.action_button_rect().height >= app.action_button_visual_rect().height
+        assert app.interact_button_rect().width >= app.interact_button_visual_rect().width
+        assert app.interact_button_rect().height >= app.interact_button_visual_rect().height
+        assert app.minimap_rect().width >= app.minimap_visual_rect().width
+        assert app.minimap_rect().height >= app.minimap_visual_rect().height
 
 
 def test_numeric_layout_data_keeps_permanent_hud_inside_screen() -> None:
