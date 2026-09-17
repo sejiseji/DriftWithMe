@@ -51,14 +51,14 @@ EXPECTED_RECTS = {
         "location": (6, 172, 80, 18),
     },
     "medium": {
-        "resource": (8, 8, 168, 48),
+        "resource": (8, 8, 132, 40),
         "sound_hit": (436, 8, 32, 32),
         "pause_hit": (472, 8, 32, 32),
-        "context_action": (348, 184, 74, 38),
-        "primary_action": (430, 184, 74, 38),
+        "context_action": (356, 192, 76, 40),
+        "primary_action": (432, 192, 76, 40),
         "progress_chip": (180, 182, 148, 40),
-        "minimap": (20, 142, 64, 64),
-        "location": (8, 210, 88, 18),
+        "minimap": (8, 162, 60, 70),
+        "location": (8, 218, 72, 14),
     },
     "high": {
         "resource": (10, 10, 210, 60),
@@ -70,6 +70,17 @@ EXPECTED_RECTS = {
         "minimap": (25, 176, 80, 80),
         "location": (10, 261, 110, 23),
     },
+}
+
+EXPECTED_VISUAL_RECTS = {
+    "medium": {
+        "sound": (440, 12, 24, 24),
+        "pause": (476, 12, 24, 24),
+        "context_action": (360, 198, 68, 28),
+        "primary_action": (436, 198, 68, 28),
+        "minimap": (12, 166, 52, 52),
+        "wordmark": (316, 13, 112, 14),
+    }
 }
 
 
@@ -92,9 +103,28 @@ def test_numeric_hud_rects_match_v02_reference_across_profiles() -> None:
         assert rect_tuple(app.location_rect()) == expected["location"]
 
 
+def test_compact_hud_c_medium_visual_rects_match_uic001_target() -> None:
+    app = make_app_for_profile("medium")
+    expected = EXPECTED_VISUAL_RECTS["medium"]
+
+    assert rect_tuple(app.sound_visual_rect()) == expected["sound"]
+    assert rect_tuple(app.pause_visual_rect()) == expected["pause"]
+    assert rect_tuple(app.interact_button_visual_rect()) == expected["context_action"]
+    assert rect_tuple(app.action_button_visual_rect()) == expected["primary_action"]
+    assert rect_tuple(app.minimap_visual_rect()) == expected["minimap"]
+    assert rect_tuple(app.wordmark_rect()) == expected["wordmark"]
+
+    assert app.action_button_rect().width >= app.action_button_visual_rect().width
+    assert app.action_button_rect().height >= app.action_button_visual_rect().height
+    assert app.interact_button_rect().width >= app.interact_button_visual_rect().width
+    assert app.interact_button_rect().height >= app.interact_button_visual_rect().height
+    assert app.minimap_rect().width >= app.minimap_visual_rect().width
+    assert app.minimap_rect().height >= app.minimap_visual_rect().height
+
+
 def test_numeric_layout_data_keeps_permanent_hud_inside_screen() -> None:
     layout = load_data_json("ui_numeric_layout.json")
-    permanent_ids = (
+    permanent_ids = [
         "resource",
         "sound_hit",
         "pause_hit",
@@ -103,16 +133,19 @@ def test_numeric_layout_data_keeps_permanent_hud_inside_screen() -> None:
         "progress_chip",
         "minimap",
         "location",
-    )
+    ]
     for profile in ("low", "medium", "high"):
         app = make_app_for_profile(profile)
         screen = Rect(0, 0, app.runtime.screen_width, app.runtime.screen_height)
-        rects = [app.ui_rect(rect_id) for rect_id in permanent_ids]
+        rects = [(rect_id, app.ui_rect(rect_id)) for rect_id in permanent_ids]
 
-        for rect in rects:
+        for _rect_id, rect in rects:
             assert contains(screen, rect)
-        for index, rect in enumerate(rects):
-            for other in rects[index + 1 :]:
+        allowed_overlaps = {frozenset(("minimap", "location"))}
+        for index, (rect_id, rect) in enumerate(rects):
+            for other_id, other in rects[index + 1 :]:
+                if frozenset((rect_id, other_id)) in allowed_overlaps:
+                    continue
                 assert not overlaps(rect, other)
         assert layout["profiles"][profile]["rects"]["resource"] == list(
             EXPECTED_RECTS[profile]["resource"]

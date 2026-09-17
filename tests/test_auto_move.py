@@ -191,7 +191,7 @@ def test_double_tap_move_intent_uses_affine_screen_to_ground() -> None:
 def test_double_tap_move_rejects_visual_ground_outside_walkable_bounds() -> None:
     app, camera = make_app_shell()
     scene_camera = affine_camera(camera)
-    target = Vec3(-8.0, 0.0, app.model.player.z)
+    target = Vec3(-16.0, 0.0, app.model.player.z)
     assert app.world.visual_ground_rect.contains_point(target.x, target.z)
     assert not app.world.walkable_rect.contains_point(target.x, target.z)
     projected = scene_camera.project(target)

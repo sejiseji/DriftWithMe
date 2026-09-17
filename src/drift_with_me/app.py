@@ -845,11 +845,22 @@ class DriftWithMeApp:
         rect = self.ui_profile_layout()["rects"][name]
         return Rect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
 
+    def optional_ui_rect(self, name: str, fallback: str) -> Rect:
+        rects = self.ui_profile_layout()["rects"]
+        rect = rects.get(name, rects[fallback])
+        return Rect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+
     def action_button_rect(self) -> Rect:
         return self.ui_rect("primary_action")
 
+    def action_button_visual_rect(self) -> Rect:
+        return self.optional_ui_rect("primary_action_visual", "primary_action")
+
     def interact_button_rect(self) -> Rect:
         return self.ui_rect("context_action")
+
+    def interact_button_visual_rect(self) -> Rect:
+        return self.optional_ui_rect("context_action_visual", "context_action")
 
     def pause_button_rect(self) -> Rect:
         return self.ui_rect("pause_hit")
@@ -868,6 +879,9 @@ class DriftWithMeApp:
 
     def minimap_rect(self) -> Rect:
         return self.ui_rect("minimap")
+
+    def minimap_visual_rect(self) -> Rect:
+        return self.optional_ui_rect("minimap_visual", "minimap")
 
     def location_rect(self) -> Rect:
         return self.ui_rect("location")
@@ -1203,14 +1217,14 @@ class DriftWithMeApp:
             self.draw_minimap()
             self.draw_location_label()
             self.draw_action_button(
-                self.interact_button_rect(),
+                self.interact_button_visual_rect(),
                 self.interact_button_token(),
                 slot="context",
                 enabled=True,
             )
             primary_enabled = not resource_modal and self.action_button_mode() != "NONE"
             self.draw_action_button(
-                self.action_button_rect(),
+                self.action_button_visual_rect(),
                 self.action_button_mode(),
                 slot="primary",
                 enabled=primary_enabled,
@@ -1452,6 +1466,9 @@ class DriftWithMeApp:
             text_color = theme["disabled_text"]
         inner_key = "context_light" if slot == "context" else "primary_light"
         self.draw_panel_frame(rect, fill=fill, inner=theme[inner_key])
+        if rect.height <= 30:
+            self.draw_compact_action_button_content(rect, token, text_color)
+            return
         self.draw_button_icon(token, rect, text_color)
         label_rect = self.action_button_label_rect(rect)
         label = self.fit_ui_text_to_width(self.ui_token(token), int(label_rect.width), "button")
@@ -1463,7 +1480,27 @@ class DriftWithMeApp:
             align="center",
         )
 
+    def draw_compact_action_button_content(self, rect: Rect, token: str, color: int) -> None:
+        icon_size = 12 if self.runtime.profile.name != "high" else 14
+        pad_x = 6
+        gap = 4
+        icon_x = int(rect.x + pad_x)
+        icon_y = int(rect.y + rect.height / 2 - icon_size / 2)
+        self.draw_button_icon_at(token, icon_x, icon_y, icon_size, color)
+        label_x = icon_x + icon_size + gap
+        label_w = max(8, int(rect.x + rect.width - label_x - 4))
+        label = self.fit_ui_text_to_width(self.ui_token(token), label_w, "button")
+        text_h = self.ui_renderer.text_height("button")
+        text_y = int(rect.y + rect.height / 2 - text_h / 2 + 5)
+        self.draw_ui_text(self.pyxel, label_x, text_y, label, color, "button")
+
     def action_button_label_rect(self, rect: Rect) -> Rect:
+        if rect.height <= 30:
+            icon_size = 12 if self.runtime.profile.name != "high" else 14
+            pad_x = 6
+            gap = 4
+            label_x = rect.x + pad_x + icon_size + gap
+            return Rect(label_x, rect.y, rect.x + rect.width - label_x - 4, rect.height)
         pad_x = 8 if self.runtime.profile.name == "high" else 6
         label_h = 20 if self.runtime.profile.name == "high" else 16
         bottom_pad = 8 if self.runtime.profile.name == "high" else 6
@@ -1475,7 +1512,6 @@ class DriftWithMeApp:
         )
 
     def draw_button_icon(self, token: str, rect: Rect, color: int) -> None:
-        pyxel = self.pyxel
         if self.runtime.profile.name == "high":
             icon_size = 16
             y_offset = 5
@@ -1487,6 +1523,10 @@ class DriftWithMeApp:
             y_offset = 4
         x = int(rect.x + rect.width / 2 - icon_size / 2)
         y = int(rect.y + y_offset)
+        self.draw_button_icon_at(token, x, y, icon_size, color)
+
+    def draw_button_icon_at(self, token: str, x: int, y: int, icon_size: int, color: int) -> None:
+        pyxel = self.pyxel
         cx = x + icon_size // 2
         cy = y + icon_size // 2
         if token in {"CHECK", "DONE", "NEXT"}:
@@ -1579,7 +1619,13 @@ class DriftWithMeApp:
         rect = self.resource_panel_rect()
         self.draw_panel_frame(rect, fill=0, inner=5)
         profile = self.runtime.profile.name
-        if profile == "high":
+        compact = rect.width <= 140
+        if compact:
+            rows = (
+                (6, 5, 24, 3, 28, 56, 8, 68),
+                (6, 22, 24, 20, 28, 56, 25, 68),
+            )
+        elif profile == "high":
             rows = (
                 (10, 10, 30, 8, 42, 75, 8, 35, 120, 15, 80),
                 (10, 35, 30, 33, 42, 75, 33, 35, 120, 40, 80),
@@ -1600,37 +1646,49 @@ class DriftWithMeApp:
         )
         row_text_height = 22 if profile == "high" else 18
         for index, (label, value, maximum, color, icon) in enumerate(resources):
-            (
-                icon_x,
-                icon_y,
-                label_x,
-                label_y,
-                label_w,
-                value_x,
-                value_y,
-                value_w,
-                meter_x,
-                meter_y,
-                meter_w,
-            ) = rows[index]
             x = int(rect.x)
             y = int(rect.y)
-            self.draw_resource_icon(x + icon_x, y + icon_y, icon, color)
-            self.draw_ui_text_in_rect(
-                Rect(x + label_x, y + label_y, label_w, row_text_height),
-                label,
-                color,
-                "resource",
-                align="left",
-            )
-            self.draw_ui_text_in_rect(
-                Rect(x + value_x, y + value_y, value_w, row_text_height),
-                f"{value:03d}",
-                7,
-                "numeric",
-                align="right",
-            )
-            self.draw_meter(x + meter_x, y + meter_y, meter_w, 7, value, maximum, color)
+            if compact:
+                icon_x, icon_y, value_x, value_y, value_w, meter_x, meter_y, meter_w = rows[index]
+                self.draw_resource_icon(x + icon_x, y + icon_y, icon, color)
+                self.draw_ui_text_in_rect(
+                    Rect(x + value_x, y + value_y, value_w, row_text_height),
+                    f"{value:03d}",
+                    7,
+                    "numeric",
+                    align="right",
+                )
+                self.draw_meter(x + meter_x, y + meter_y, meter_w, 6, value, maximum, color)
+            else:
+                (
+                    icon_x,
+                    icon_y,
+                    label_x,
+                    label_y,
+                    label_w,
+                    value_x,
+                    value_y,
+                    value_w,
+                    meter_x,
+                    meter_y,
+                    meter_w,
+                ) = rows[index]
+                self.draw_resource_icon(x + icon_x, y + icon_y, icon, color)
+                self.draw_ui_text_in_rect(
+                    Rect(x + label_x, y + label_y, label_w, row_text_height),
+                    label,
+                    color,
+                    "resource",
+                    align="left",
+                )
+                self.draw_ui_text_in_rect(
+                    Rect(x + value_x, y + value_y, value_w, row_text_height),
+                    f"{value:03d}",
+                    7,
+                    "numeric",
+                    align="right",
+                )
+                self.draw_meter(x + meter_x, y + meter_y, meter_w, 7, value, maximum, color)
 
     def draw_resource_icon(self, x: int, y: int, icon: str, color: int) -> None:
         if icon == "water":
@@ -1664,7 +1722,7 @@ class DriftWithMeApp:
         )
 
     def draw_minimap(self) -> None:
-        rect = self.minimap_rect()
+        rect = self.minimap_visual_rect()
         x = int(rect.x)
         y = int(rect.y)
         size = int(rect.width)

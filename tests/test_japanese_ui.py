@@ -53,12 +53,12 @@ def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
         assert renderer.font_loaded
         for token in primary_tokens:
             label = renderer.resources.token(token)
-            label_rect = app.action_button_label_rect(app.action_button_rect())
+            label_rect = app.action_button_label_rect(app.action_button_visual_rect())
             assert renderer.text_width(label, "button") <= label_rect.width
             assert renderer.text_height("button") + 2 <= label_rect.height
         for token in context_tokens:
             label = renderer.resources.token(token)
-            label_rect = app.action_button_label_rect(app.interact_button_rect())
+            label_rect = app.action_button_label_rect(app.interact_button_visual_rect())
             assert renderer.text_width(label, "button") <= label_rect.width
             assert renderer.text_height("button") + 2 <= label_rect.height
         for token in inspect_tokens:
