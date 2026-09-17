@@ -40,6 +40,10 @@
     "day_phase": "day",
     "realtime_day_night": false
   },
+  "world_debug": {
+    "show_walkable_boundary": true,
+    "walkable_boundary_color": 7
+  },
   "player": {
     "move_speed": 96.0,
     "collider_half_x": 8.0,

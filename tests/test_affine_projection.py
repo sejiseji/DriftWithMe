@@ -451,6 +451,24 @@ def test_visual_ground_bounds_extend_beyond_walkable_for_affine_ground_draw() ->
     assert any(call[0] == "tri" and call[-1] == 13 for call in pyxel.calls)
 
 
+def test_walkable_boundary_overlay_is_configurable_development_cue() -> None:
+    runtime, world, _perspective, _profile, affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+    pyxel = RecordingPyxel()
+    renderer = Renderer(pyxel)
+
+    renderer.draw_walkable_boundary_overlay(model, affine)
+
+    boundary_lines = [call for call in pyxel.calls if call[0] == "line" and call[-1] == 7]
+    assert len(boundary_lines) == 4
+
+    pyxel.calls.clear()
+    model.config["world_debug"]["show_walkable_boundary"] = False
+    renderer.draw_walkable_boundary_overlay(model, affine)
+
+    assert not pyxel.calls
+
+
 def test_visual_ground_draw_stops_outside_visual_bounds() -> None:
     _runtime, world, _perspective, _profile, affine = make_affine_camera()
     renderer = Renderer(RecordingPyxel())

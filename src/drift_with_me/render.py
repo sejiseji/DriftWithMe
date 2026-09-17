@@ -236,6 +236,7 @@ class Renderer:
         self.draw_interaction_marker(model, camera)
         self.draw_action_marker(model, camera)
         self.draw_effects(model, camera, effects)
+        self.draw_walkable_boundary_overlay(model, camera)
         if debug:
             self.draw_affine_debug_grid(model, camera)
             self.draw_debug_world(model, camera)
@@ -263,6 +264,13 @@ class Renderer:
             )
 
         self.draw_world_rect(camera, world.walkable_rect, border_color)
+
+    def draw_walkable_boundary_overlay(self, model: GameModel, camera: CameraState) -> None:
+        config = model.config.get("world_debug", {})
+        if not config.get("show_walkable_boundary", True):
+            return
+        color = int(config.get("walkable_boundary_color", 7))
+        self.draw_world_rect(camera, model.world.walkable_rect, color)
 
     def visible_ground_draw_rect(
         self, rect: WorldRect, camera: CameraState, margin_px: float
