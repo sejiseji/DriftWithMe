@@ -203,6 +203,7 @@ class GameModel:
         self.auto_move_stuck_elapsed = 0.0
         self.combat_session: CombatSession | None = None
         self.combat_reentry_cooldowns: dict[str, float] = {}
+        self.buddy_hard_follow_suppressed_remaining = 0.0
         self.refresh_active_enemies()
 
     def enemy_from_spawn(self, spawn) -> EnemyState:
@@ -272,6 +273,7 @@ class GameModel:
         self.auto_move_stuck_elapsed = 0.0
         self.combat_session = None
         self.combat_reentry_cooldowns = {}
+        self.buddy_hard_follow_suppressed_remaining = 0.0
         self.refresh_active_enemies()
 
     @property
@@ -376,6 +378,10 @@ class GameModel:
             self.last_events = events
             return events
 
+        self.buddy_hard_follow_suppressed_remaining = max(
+            0.0,
+            self.buddy_hard_follow_suppressed_remaining - max(0.0, dt),
+        )
         self.update_combat_reentry_cooldowns(dt)
         if self.combat_session is not None:
             self.player.barrier_active = False
@@ -2159,6 +2165,9 @@ class GameModel:
             float(self.combat_exit_config().get("player_restore_jump_height_world", 16.0)),
         )
 
+    def combat_buddy_follow_grace_sec(self) -> float:
+        return max(0.0, float(self.combat_exit_config().get("buddy_follow_snap_grace_sec", 0.6)))
+
     def combat_enemy_knockback_world(self) -> float:
         return max(0.0, float(self.combat_exit_config().get("enemy_knockback_world", 34.0)))
 
@@ -2634,6 +2643,10 @@ class GameModel:
         self.player.barrier_active = False
         self.player.last_move_x = session.snapshot.player.last_move_x
         self.player.last_move_z = session.snapshot.player.last_move_z
+        self.buddy_hard_follow_suppressed_remaining = max(
+            self.buddy_hard_follow_suppressed_remaining,
+            self.combat_buddy_follow_grace_sec(),
+        )
         self.combat_session = None
         events.append(
             self.event_queue.emit(
@@ -2958,7 +2971,10 @@ class GameModel:
         self.buddy.goal_z = goal_z
 
         hard_limit = float(self.config["buddy"]["hard_follow_limit"])
-        if self.buddy.distance_to_goal() > hard_limit:
+        if (
+            self.buddy.distance_to_goal() > hard_limit
+            and self.buddy_hard_follow_suppressed_remaining <= 0.0
+        ):
             self.buddy.x = goal_x
             self.buddy.y = goal_y
             self.buddy.z = goal_z

@@ -571,7 +571,9 @@ class Renderer:
         move_progress = _smoothstep(progress / 0.34)
         float_progress = _smoothstep(progress / 0.24)
         float_y = 18.0 * float_progress
-        float_y += math.sin(max(0.0, progress - 0.18) * math.tau * 2.2) * 1.8
+        wobble = math.sin(max(0.0, progress - 0.18) * math.tau * 2.2) * 1.8
+        wobble *= 1.0 - _smoothstep((progress - 0.72) / 0.28)
+        float_y += wobble
         return ActorPresentation(
             _lerp(model.buddy.x, target_x, move_progress),
             _lerp(model.buddy.z, target_z, move_progress),

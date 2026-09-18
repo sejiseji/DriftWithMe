@@ -1210,6 +1210,71 @@ def test_combat_defeat_special_moves_buddy_and_fades_enemy() -> None:
     assert renderer.combat_defeat_enemy_visibility(model, enemy) < 1.0
 
 
+def test_combat_defeat_victory_buddy_matches_restore_start() -> None:
+    model, camera = make_model()
+    start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+    renderer = Renderer(None)
+
+    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_COUNTER"
+
+    session.phase = "VICTORY_CUE"
+    session.phase_elapsed_sec = model.combat_victory_cue_sec()
+    victory_end = renderer.buddy_actor_presentation(model, camera, 0.0)
+
+    session.phase = "COMBAT_RESTORE_JUMP"
+    session.phase_elapsed_sec = 0.0
+    restore_start = renderer.buddy_actor_presentation(model, camera, 0.0)
+
+    assert restore_start.x == pytest.approx(victory_end.x)
+    assert restore_start.z == pytest.approx(victory_end.z)
+    assert restore_start.jump_y == pytest.approx(victory_end.jump_y)
+
+
+def test_combat_restore_starts_buddy_follow_snap_grace() -> None:
+    model, camera = make_model()
+    start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+
+    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    step_until_combat_restored(model, camera)
+
+    assert model.buddy_hard_follow_suppressed_remaining == pytest.approx(
+        model.combat_buddy_follow_grace_sec()
+    )
+
+
+def test_buddy_hard_follow_snap_is_suppressed_during_post_combat_grace() -> None:
+    model, camera = make_model()
+    goal_x, goal_y, goal_z = model.buddy_goal(camera)
+    model.buddy.x = goal_x - 200.0
+    model.buddy.y = goal_y
+    model.buddy.z = goal_z
+    model.buddy.goal_x = goal_x
+    model.buddy.goal_y = goal_y
+    model.buddy.goal_z = goal_z
+    before = model.buddy.distance_to_goal()
+
+    model.buddy_hard_follow_suppressed_remaining = 0.6
+    model.update_buddy(camera, 1.0 / 60.0)
+
+    assert model.buddy.distance_to_goal() < before
+    assert model.buddy.distance_to_goal() > 1.0
+
+    model.buddy.x = goal_x - 200.0
+    model.buddy.y = goal_y
+    model.buddy.z = goal_z
+    model.buddy_hard_follow_suppressed_remaining = 0.0
+    model.update_buddy(camera, 1.0 / 60.0)
+
+    assert model.buddy.x == pytest.approx(goal_x)
+    assert model.buddy.y == pytest.approx(goal_y)
+    assert model.buddy.z == pytest.approx(goal_z)
+
+
 def test_bat005_failure_round_does_not_enter_victory_cue() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)
