@@ -967,6 +967,13 @@ def test_bat004_perfect_enters_bubble_counter_window() -> None:
     assert model.combat_counter_action_mode() == "BUBBLE"
 
 
+def test_combat_counter_windows_allow_slightly_longer_input() -> None:
+    model, _camera = make_model()
+
+    assert model.combat_bubble_window_sec() == pytest.approx(1.65)
+    assert model.combat_zap_window_sec() == pytest.approx(1.35)
+
+
 def test_bat004_bubble_timeout_deflects_without_spending_water() -> None:
     model, camera = make_model()
     start_perfect_freeze(model, camera)
@@ -1016,6 +1023,30 @@ def test_bat004_bubble_success_opens_zap_window_and_spends_water_once() -> None:
         "bubble_fired",
         "enemy_captured",
     ]
+
+
+def test_combat_bubble_counter_visual_tracks_bubble_branch() -> None:
+    model, camera = make_model()
+    start_perfect_freeze(model, camera)
+    renderer = Renderer(None)
+
+    assert not renderer.combat_bubble_counter_active(model)
+
+    step_to_zap_window(model, camera)
+    session = model.combat_session
+
+    assert session is not None
+    assert renderer.combat_bubble_counter_active(model)
+    assert renderer.combat_bubble_counter_progress(model) == pytest.approx(0.0)
+
+    session.phase_elapsed_sec = 0.35
+    assert 0.0 < renderer.combat_bubble_counter_progress(model) < 1.0
+
+    session.phase = "COMBAT_EXIT_COUNTER"
+    session.outcome = "capture"
+    session.phase_elapsed_sec = 0.0
+    assert renderer.combat_bubble_counter_progress(model) == pytest.approx(1.0)
+    assert renderer.combat_bubble_counter_visibility(model) == pytest.approx(1.0)
 
 
 def test_bat004_zap_timeout_keeps_capture_and_spends_no_energy() -> None:

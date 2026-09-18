@@ -246,6 +246,7 @@ class Renderer:
         self.draw_interaction_marker(model, camera)
         self.draw_action_marker(model, camera)
         self.draw_effects(model, camera, effects)
+        self.draw_combat_bubble_counter(model, camera)
         self.draw_combat_defeat_special(model, camera)
         self.draw_combat_victory_cue(model, camera)
         if debug:
@@ -3037,6 +3038,140 @@ class Renderer:
             return False
         self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
+
+    def combat_bubble_counter_active(self, model: GameModel) -> bool:
+        session = model.combat_session
+        return (
+            session is not None
+            and session.bubble_used
+            and session.phase in {"PERFECT_ZAP_WINDOW", "COMBAT_EXIT_COUNTER", "VICTORY_CUE"}
+            and session.outcome in {None, "capture", "defeat"}
+        )
+
+    def combat_bubble_counter_progress(self, model: GameModel) -> float:
+        session = model.combat_session
+        if session is None or not self.combat_bubble_counter_active(model):
+            return 0.0
+        if session.phase == "PERFECT_ZAP_WINDOW":
+            return _smoothstep(session.phase_elapsed_sec / 0.7)
+        return 1.0
+
+    def combat_bubble_counter_visibility(self, model: GameModel) -> float:
+        session = model.combat_session
+        if session is None or not self.combat_bubble_counter_active(model):
+            return 0.0
+        if session.outcome != "defeat":
+            return 1.0
+        if session.phase == "COMBAT_EXIT_COUNTER":
+            duration = max(model.combat_deflect_knockback_sec(), 1e-6)
+            fade_progress = (session.phase_elapsed_sec - duration * 0.54) / (duration * 0.32)
+            return max(0.0, 1.0 - _smoothstep(fade_progress))
+        return 0.0
+
+    def draw_combat_bubble_counter(self, model: GameModel, camera: CameraState) -> None:
+        if self.pyxel is None or not self.combat_bubble_counter_active(model):
+            return
+        session = model.combat_session
+        if session is None:
+            return
+        enemy = model.enemy_by_id(session.enemy_id)
+        if enemy is None:
+            return
+        player = self.player_actor_presentation(model, camera)
+        enemy_presentation = self.enemy_actor_presentation(model, enemy, camera)
+        source = camera.project(
+            Vec3(
+                player.x,
+                self.player_visual_y_offset(model, 0.0) + player.jump_y + 12.0,
+                player.z,
+            )
+        )
+        target = camera.project(
+            Vec3(enemy_presentation.x, 8.0 + enemy_presentation.jump_y, enemy_presentation.z)
+        )
+        if source is None or target is None:
+            return
+        progress = self.combat_bubble_counter_progress(model)
+        visibility = self.combat_bubble_counter_visibility(model)
+        if visibility <= 0.0:
+            return
+        self.draw_combat_bubble_spray(source, target, progress, session.phase_elapsed_sec)
+        self.draw_combat_bubble_wrap(target, progress, visibility, session.phase_elapsed_sec)
+
+    def draw_combat_bubble_spray(
+        self,
+        source: ProjectedPoint,
+        target: ProjectedPoint,
+        progress: float,
+        elapsed: float,
+    ) -> None:
+        dx = target.x - source.x
+        dy = target.y - source.y
+        length = max(math.hypot(dx, dy), 1.0)
+        dir_x = dx / length
+        dir_y = dy / length
+        side_x = -dir_y
+        side_y = dir_x
+        spray_reach = max(0.18, min(progress * 1.18, 1.0))
+        for index in range(18):
+            stream = (elapsed * 0.72 + index * 0.087) % 1.0
+            amount = 0.08 + 0.88 * stream
+            if amount > spray_reach + 0.12:
+                continue
+            amount = min(amount, spray_reach)
+            taper = math.sin(amount * math.pi)
+            wobble = math.sin(index * 1.81 + elapsed * 5.2) * (2.0 + 5.0 * taper)
+            px = _lerp(source.x + dir_x * 3.0, target.x, amount) + side_x * wobble
+            py = _lerp(source.y + dir_y * 2.0, target.y, amount) + side_y * wobble * 0.55
+            radius = 1 + (1 if index % 5 == 0 else 0)
+            color = (12, 7, 6, 12)[index % 4]
+            self.pyxel.circb(int(px), int(py), radius, color)
+            if radius > 1:
+                self.pyxel.pset(int(px), int(py), 7)
+        mouth_pulse = 1 + int(math.sin(elapsed * math.tau * 2.0) > 0.2)
+        self.pyxel.circb(
+            int(source.x + dir_x * 5.0),
+            int(source.y + dir_y * 3.0),
+            mouth_pulse + 2,
+            12,
+        )
+
+    def draw_combat_bubble_wrap(
+        self,
+        target: ProjectedPoint,
+        progress: float,
+        visibility: float,
+        elapsed: float,
+    ) -> None:
+        wrap = _smoothstep((progress - 0.22) / 0.58)
+        if wrap <= 0.0:
+            return
+        center_x = int(target.x)
+        center_y = int(target.y)
+        radius_x = 8 + int(9 * wrap)
+        radius_y = 5 + int(6 * wrap)
+        ring_color = 12 if visibility > 0.4 else 5
+        self.pyxel.ellib(
+            center_x - radius_x,
+            center_y - radius_y,
+            radius_x * 2,
+            radius_y * 2,
+            ring_color,
+        )
+        self.pyxel.ellib(
+            center_x - max(3, radius_x - 4),
+            center_y - max(2, radius_y - 3),
+            max(6, (radius_x - 4) * 2),
+            max(4, (radius_y - 3) * 2),
+            7,
+        )
+        for index in range(10):
+            angle = elapsed * 1.5 + index * math.tau / 10.0
+            orbit = 0.78 + 0.18 * math.sin(elapsed * 2.0 + index)
+            px = center_x + int(math.cos(angle) * radius_x * orbit)
+            py = center_y + int(math.sin(angle) * radius_y * orbit)
+            color = 7 if index % 3 == 0 else 12
+            self.pyxel.circb(px, py, 1 + (index % 4 == 0), color)
 
     def draw_combat_defeat_special(self, model: GameModel, camera: CameraState) -> None:
         if self.pyxel is None or not self.combat_defeat_special_active(model):

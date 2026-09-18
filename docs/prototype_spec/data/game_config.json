@@ -604,8 +604,8 @@
       "failure_recovery_sec": 0.45
     },
     "counter": {
-      "bubble_window_sec": 1.45,
-      "zap_window_sec": 1.15,
+      "bubble_window_sec": 1.65,
+      "zap_window_sec": 1.35,
       "bubble_requires_existing_water_cost": true,
       "zap_requires_existing_energy_cost": true
     },
