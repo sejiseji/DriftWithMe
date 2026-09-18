@@ -272,6 +272,20 @@ def test_affine_combat_scene_camera_uses_combat_zoom() -> None:
     assert scene_camera.target.z == pytest.approx(192.0)
 
 
+def test_combat_scene_camera_uses_battle_anchor_y() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    base_camera = start_contact_combat(model, raw)
+
+    combat_camera = app.combat_scene_camera(base_camera)
+
+    assert combat_camera.anchor_y == pytest.approx(
+        raw["combat_v1"]["dynamic_camera"]["screen_anchor_y"]
+    )
+    assert combat_camera.anchor_y < base_camera.anchor_y
+
+
 def test_bat006a_parry_timing_holds_camera_zoom_static() -> None:
     raw = make_runtime_raw()
     model = make_model(raw)

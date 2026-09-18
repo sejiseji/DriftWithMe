@@ -1198,7 +1198,7 @@ class DriftWithMeApp:
             near=camera.near,
             far=camera.far,
             anchor_x=camera.anchor_x,
-            anchor_y=camera.anchor_y,
+            anchor_y=self.combat_camera_anchor_y(camera.anchor_y),
             viewport_width=camera.viewport_width,
             viewport_height=camera.viewport_height,
         )
@@ -1242,6 +1242,16 @@ class DriftWithMeApp:
         min_multiplier = float(dynamic.get("min_multiplier", 0.9))
         max_multiplier = float(dynamic.get("max_multiplier", 1.85))
         return max(snapshot_zoom * min_multiplier, min(snapshot_zoom * max_multiplier, zoom))
+
+    def combat_camera_anchor_y(self, fallback: float) -> float:
+        dynamic = self.combat_dynamic_camera_config()
+        try:
+            value = float(dynamic.get("screen_anchor_y", fallback))
+        except (TypeError, ValueError):
+            value = fallback
+        if not math.isfinite(value):
+            value = fallback
+        return max(0.0, min(1.0, value))
 
     def combat_camera_zoom_multiplier(self, session) -> float:
         hold = self.combat_dynamic_camera_multiplier("combat_hold", 1.45)
@@ -1378,7 +1388,7 @@ class DriftWithMeApp:
             near=camera.near,
             far=camera.far,
             anchor_x=camera.anchor_x,
-            anchor_y=camera.anchor_y,
+            anchor_y=from_camera.anchor_y + (camera.anchor_y - from_camera.anchor_y) * progress,
             viewport_width=camera.viewport_width,
             viewport_height=camera.viewport_height,
         )

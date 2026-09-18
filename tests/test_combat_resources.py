@@ -1161,7 +1161,8 @@ def test_combat_defeat_special_moves_buddy_and_fades_enemy() -> None:
     assert buddy_mid.jump_y > 0.0
     assert renderer.combat_zap_spin_view_name(model) is not None
 
-    session.phase_elapsed_sec = model.combat_deflect_knockback_sec() * 0.92
+    session.phase = "VICTORY_CUE"
+    session.phase_elapsed_sec = model.combat_victory_cue_sec() * 0.78
     assert renderer.combat_defeat_enemy_visibility(model, enemy) < 1.0
 
 

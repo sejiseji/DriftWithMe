@@ -544,6 +544,20 @@ class Renderer:
     def buddy_actor_presentation(
         self, model: GameModel, camera: CameraState, presentation_time: float
     ) -> ActorPresentation:
+        if self.combat_defeat_restore_active(model):
+            target = self.combat_actor_anchor_ground(model, camera, "buddy")
+            if target is None:
+                start_x = model.buddy.x
+                start_z = model.buddy.z
+            else:
+                start_x, start_z = target
+            progress = self.combat_actor_restore_progress(model)
+            jump_y = math.sin(max(0.0, min(progress, 1.0)) * math.pi) * 10.0
+            return ActorPresentation(
+                _lerp(start_x, model.buddy.x, progress),
+                _lerp(start_z, model.buddy.z, progress),
+                _lerp(18.0, 0.0, progress) + jump_y,
+            )
         if not self.combat_defeat_special_active(model):
             return ActorPresentation(model.buddy.x, model.buddy.z)
         target = self.combat_actor_anchor_ground(model, camera, "buddy")
@@ -632,6 +646,15 @@ class Renderer:
             and session.phase in {"COMBAT_EXIT_COUNTER", "VICTORY_CUE"}
         )
 
+    def combat_defeat_restore_active(self, model: GameModel) -> bool:
+        session = model.combat_session
+        return (
+            session is not None
+            and session.outcome == "defeat"
+            and session.zap_used
+            and session.phase == "COMBAT_RESTORE_JUMP"
+        )
+
     def combat_defeat_special_progress(self, model: GameModel) -> float:
         session = model.combat_session
         if session is None or not self.combat_defeat_special_active(model):
@@ -663,9 +686,9 @@ class Renderer:
         ):
             return 1.0
         progress = self.combat_defeat_special_progress(model)
-        if progress < 0.38:
+        if progress < 0.76:
             return 1.0
-        return max(0.0, 1.0 - _smoothstep((progress - 0.38) / 0.46))
+        return max(0.0, 1.0 - _smoothstep((progress - 0.76) / 0.2))
 
     def combat_defeat_enemy_flicker_hidden(self, model: GameModel, enemy) -> bool:
         visibility = self.combat_defeat_enemy_visibility(model, enemy)
@@ -3039,9 +3062,9 @@ class Renderer:
     def draw_combat_homing_zaps(
         self, source: ProjectedPoint, target: ProjectedPoint, progress: float
     ) -> None:
-        bolt_starts = (0.28, 0.35, 0.43, 0.52, 0.61)
+        bolt_starts = (0.26, 0.38, 0.5)
         for index, start in enumerate(bolt_starts):
-            local = (progress - start) / 0.2
+            local = (progress - start) / 0.3
             if local < 0.0 or local > 1.25:
                 continue
             travel = _smoothstep(min(local, 1.0))
@@ -3059,6 +3082,45 @@ class Renderer:
             if local >= 0.75:
                 pulse = max(1, int(3.0 * (1.25 - min(local, 1.25))))
                 self.pyxel.circb(int(target.x), int(target.y), 5 + index + pulse, color)
+        self.draw_combat_final_zap(source, target, progress)
+
+    def draw_combat_final_zap(
+        self, source: ProjectedPoint, target: ProjectedPoint, progress: float
+    ) -> None:
+        local = (progress - 0.78) / 0.17
+        if local < 0.0 or local > 1.35:
+            return
+        if local < 0.28:
+            charge = _smoothstep(local / 0.28)
+            radius = 4 + int(charge * 8)
+            self.pyxel.circb(int(source.x), int(source.y), radius, 10)
+            self.pyxel.circb(int(source.x), int(source.y), max(2, radius - 3), 7)
+            return
+        travel = _smoothstep((local - 0.28) / 0.42)
+        end_x = _lerp(source.x, target.x, travel)
+        end_y = _lerp(source.y, target.y, travel)
+        for offset, color in ((0.0, 7), (2.0, 10), (-2.0, 10), (4.0, 9)):
+            self.draw_combat_lightning_bolt(
+                source.x,
+                source.y + offset,
+                end_x,
+                end_y - offset * 0.35,
+                seed=40 + int(progress * 80.0) + int(offset * 3.0),
+                color=color,
+            )
+        if local >= 0.72:
+            impact = _smoothstep((local - 0.72) / 0.3)
+            ring = 7 + int(14 * impact)
+            self.pyxel.circb(int(target.x), int(target.y), ring, 7)
+            self.pyxel.circb(int(target.x), int(target.y), max(2, ring - 4), 10)
+            for index in range(8):
+                angle = index * math.tau / 8.0
+                length = 6 + int(14 * impact)
+                sx = int(target.x + math.cos(angle) * 3)
+                sy = int(target.y + math.sin(angle) * 2)
+                ex = int(target.x + math.cos(angle) * length)
+                ey = int(target.y + math.sin(angle) * length * 0.62)
+                self.pyxel.line(sx, sy, ex, ey, 7 if index % 2 == 0 else 10)
 
     def draw_combat_lightning_bolt(
         self,
@@ -3097,9 +3159,9 @@ class Renderer:
             previous_y = current_y
 
     def draw_combat_enemy_disappear(self, target: ProjectedPoint, progress: float) -> None:
-        if progress < 0.34:
+        if progress < 0.72:
             return
-        vanish = _smoothstep((progress - 0.34) / 0.56)
+        vanish = _smoothstep((progress - 0.72) / 0.25)
         x = int(target.x)
         y = int(target.y)
         radius = 5 + int(18 * vanish)

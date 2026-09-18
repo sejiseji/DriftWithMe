@@ -481,6 +481,7 @@
       "schema_version": "0.1",
       "min_multiplier": 0.9,
       "max_multiplier": 1.85,
+      "screen_anchor_y": 0.53,
       "multipliers": {
         "enter_peak": 1.52,
         "combat_hold": 1.45,
@@ -505,12 +506,12 @@
         "success_recover": 0.2,
         "perfect_push": 0.14,
         "perfect_settle": 0.26,
-        "bubble_settle": 0.18,
-        "zap_pulse_up": 0.08,
-        "zap_pulse_down": 0.16,
-        "deflect_pullback": 0.58,
-        "victory_restore_delay": 0.28,
-        "victory_restore": 0.5
+        "bubble_settle": 0.32,
+        "zap_pulse_up": 0.16,
+        "zap_pulse_down": 0.32,
+        "deflect_pullback": 0.76,
+        "victory_restore_delay": 0.38,
+        "victory_restore": 0.72
       }
     },
     "presentation_medium_512x236": {
@@ -603,22 +604,22 @@
       "failure_recovery_sec": 0.45
     },
     "counter": {
-      "bubble_window_sec": 1.2,
-      "zap_window_sec": 0.85,
+      "bubble_window_sec": 1.45,
+      "zap_window_sec": 1.15,
       "bubble_requires_existing_water_cost": true,
       "zap_requires_existing_energy_cost": true
     },
     "victory": {
-      "cue_sec": 0.78
+      "cue_sec": 1.0
     },
     "exit": {
-      "knockback_visual_sec": 0.52,
+      "knockback_visual_sec": 0.72,
       "enemy_knockback_world": 34.0,
-      "player_knockback_visual_sec": 0.62,
+      "player_knockback_visual_sec": 0.74,
       "player_knockback_world": 108.0,
-      "player_restore_jump_sec": 0.28,
+      "player_restore_jump_sec": 0.52,
       "player_restore_jump_height_world": 16.0,
-      "camera_restore_sec": 0.35,
+      "camera_restore_sec": 0.62,
       "enemy_stun_sec": 1.5,
       "player_invulnerability_sec": 0.5,
       "combat_reentry_cooldown_sec": 2.0,
