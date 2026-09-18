@@ -1664,21 +1664,39 @@ class DriftWithMeApp:
         padding = float(parry.get("track_padding_px", 12)) * (self.runtime.screen_width / 512.0)
         track_x = int(rect.x + padding)
         track_w = max(8, int(rect.width - padding * 2))
-        track_y = int(rect.y + rect.height / 2 + 2)
-        pyxel.rect(track_x, track_y, track_w, 4, 1)
-        pyxel.rectb(track_x, track_y, track_w, 4, 7)
+        track_h = max(6, int(8 * (self.runtime.screen_height / 236.0)))
+        track_y = int(rect.y + rect.height / 2 + 3)
+        slider = self.model.combat_timing_slider_position(session)
+        progress_w = int(track_w * slider) if slider is not None else 0
+        pyxel.rect(track_x - 1, track_y - 1, track_w + 2, track_h + 2, 0)
+        pyxel.rect(track_x, track_y, track_w, track_h, 1)
+        if progress_w > 0:
+            pyxel.rect(track_x, track_y, progress_w, track_h, 5)
+            pyxel.rect(track_x, track_y, max(1, progress_w), max(1, track_h // 2), 6)
+        pyxel.rectb(track_x, track_y, track_w, track_h, 7)
         for index, marker in enumerate(session.marker_positions):
             judgement = (
                 session.marker_judgements[index] if index < len(session.marker_judgements) else None
             )
             color = 11 if judgement == "HIT" else 8 if judgement == "MISS" else 7
             marker_x = int(track_x + marker * track_w)
-            pyxel.line(marker_x, track_y - 4, marker_x, track_y + 7, color)
-            pyxel.rect(marker_x - 1, track_y - 1, 3, 6, color)
-        slider = self.model.combat_timing_slider_position(session)
+            marker_y = int(track_y + track_h / 2)
+            if judgement == "HIT":
+                pyxel.circ(marker_x, marker_y, 4, 11)
+                pyxel.circb(marker_x, marker_y, 5, 7)
+            elif judgement == "MISS":
+                pyxel.circb(marker_x, marker_y, 5, 8)
+                pyxel.line(marker_x - 3, marker_y - 3, marker_x + 3, marker_y + 3, 8)
+                pyxel.line(marker_x - 3, marker_y + 3, marker_x + 3, marker_y - 3, 8)
+            else:
+                pyxel.circb(marker_x, marker_y, 5, color)
+                pyxel.circb(marker_x, marker_y, 3, 13)
         if slider is not None:
             slider_x = int(track_x + slider * track_w)
-            pyxel.line(slider_x, track_y - 7, slider_x, track_y + 10, 10)
+            slider_y = int(track_y + track_h / 2)
+            pyxel.line(slider_x, track_y - 4, slider_x, track_y + track_h + 4, 0)
+            pyxel.circ(slider_x, slider_y, 4, 10)
+            pyxel.circb(slider_x, slider_y, 6, 7)
         label = "PERFECT" if session.result == "perfect" else "GOOD" if session.result else "PARRY"
         self.draw_ui_text_center(
             int(rect.x + rect.width / 2),

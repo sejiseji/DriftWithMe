@@ -472,7 +472,7 @@
     },
     "entry": {
       "combat_zoom": 1.45,
-      "camera_transition_sec": 0.28,
+      "camera_transition_sec": 0.5,
       "isolation_sec": 0.18,
       "actor_settle_sec": 0.2,
       "battle_banner_sec": 0.45
@@ -496,21 +496,21 @@
         "restore": 1.0
       },
       "durations_sec": {
-        "enter_push": 0.14,
-        "enter_settle": 0.12,
-        "preimpact_push": 0.18,
-        "failure_pullback": 0.07,
-        "failure_recover": 0.13,
-        "success_pulse_up": 0.05,
-        "success_recover": 0.12,
-        "perfect_push": 0.08,
-        "perfect_settle": 0.18,
-        "bubble_settle": 0.1,
-        "zap_pulse_up": 0.04,
-        "zap_pulse_down": 0.1,
-        "deflect_pullback": 0.22,
-        "victory_restore_delay": 0.4,
-        "victory_restore": 0.32
+        "enter_push": 0.24,
+        "enter_settle": 0.22,
+        "preimpact_push": 0.28,
+        "failure_pullback": 0.12,
+        "failure_recover": 0.2,
+        "success_pulse_up": 0.1,
+        "success_recover": 0.2,
+        "perfect_push": 0.14,
+        "perfect_settle": 0.26,
+        "bubble_settle": 0.18,
+        "zap_pulse_up": 0.08,
+        "zap_pulse_down": 0.16,
+        "deflect_pullback": 0.34,
+        "victory_restore_delay": 0.28,
+        "victory_restore": 0.5
       }
     },
     "presentation_medium_512x236": {
@@ -528,16 +528,16 @@
       ],
       "timing_bar_candidates": [
         [
-          154,
-          54,
-          204,
-          24
+          138,
+          48,
+          236,
+          32
         ],
         [
-          154,
-          164,
-          188,
-          24
+          138,
+          152,
+          220,
+          32
         ]
       ]
     },
@@ -548,8 +548,8 @@
       "preimpact_slow_start_sec": 0.22
     },
     "parry": {
-      "sweep_sec": 1.35,
-      "track_padding_px": 12,
+      "sweep_sec": 1.75,
+      "track_padding_px": 16,
       "marker_count": 3,
       "hit_radius_px": 10,
       "gate_radius_px": 20,
