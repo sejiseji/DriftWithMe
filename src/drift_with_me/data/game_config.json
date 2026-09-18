@@ -547,6 +547,11 @@
       "round_gap_sec": 0.55,
       "preimpact_slow_start_sec": 0.22
     },
+    "ready_sequence": {
+      "ready_sec": 0.5,
+      "count_step_sec": 0.42,
+      "go_sec": 0.24
+    },
     "parry": {
       "sweep_sec": 1.75,
       "track_padding_px": 16,
@@ -591,8 +596,9 @@
     },
     "defense": {
       "successful_rounds_to_deflect": 2,
-      "normal_success_min_hits": 1,
+      "normal_success_min_hits": 2,
       "perfect_hits": 3,
+      "failed_rounds_to_knockback": 3,
       "failure_hitstop_sec": 0.09,
       "failure_recovery_sec": 0.45
     },
@@ -608,6 +614,8 @@
     "exit": {
       "knockback_visual_sec": 0.28,
       "enemy_knockback_world": 34.0,
+      "player_knockback_visual_sec": 0.34,
+      "player_knockback_world": 108.0,
       "player_restore_jump_sec": 0.28,
       "player_restore_jump_height_world": 16.0,
       "camera_restore_sec": 0.35,

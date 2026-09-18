@@ -47,6 +47,9 @@ def enable_fast_combat(model: GameModel) -> None:
     )
     model.config["combat_v1"]["parry"]["sweep_sec"] = 0.3
     model.config["combat_v1"]["parry"]["input_debounce_sec"] = 0.0
+    model.config["combat_v1"].setdefault("ready_sequence", {}).update(
+        {"ready_sec": 0.03, "count_step_sec": 0.03, "go_sec": 0.02}
+    )
     model.config["combat_v1"]["defense"]["failure_recovery_sec"] = 0.03
     model.config["combat_v1"].setdefault("victory", {})["cue_sec"] = 0.08
 
@@ -77,9 +80,26 @@ def test_contact_combat_starts_with_entry_settle_phase_before_windup() -> None:
     assert session.phase == "COMBAT_ENTRY"
 
     events = model.step(InputIntent(), camera, 0.02)
-    assert session.phase == "ENEMY_WINDUP"
+    assert session.phase == "COMBAT_READY"
     assert [event.kind for event in events] == ["combat_phase_changed"]
-    assert events[0].payload["phase"] == "ENEMY_WINDUP"
+    assert events[0].payload["phase"] == "COMBAT_READY"
+
+
+def test_combat_ready_sequence_holds_slider_before_first_parry() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "COMBAT_READY")
+    session = model.combat_session
+    assert session is not None
+
+    assert model.combat_timing_slider_position(session) == pytest.approx(0.0)
+    model.step(InputIntent(), camera, model.combat_ready_total_sec() * 0.5)
+    assert session.phase == "COMBAT_READY"
+    assert model.combat_timing_slider_position(session) == pytest.approx(0.0)
+
+    model.step(InputIntent(), camera, model.combat_ready_total_sec())
+    assert session.phase == "PARRY_TIMING"
+    assert model.combat_timing_slider_position(session) == pytest.approx(0.0)
 
 
 def test_combat_entry_actor_presentation_moves_to_screen_anchors() -> None:
@@ -208,9 +228,9 @@ def resolve_round_with_hits(model: GameModel, camera: CameraState, hit_count: in
 
 def start_deflect_exit(model: GameModel, camera: CameraState):
     start_fast_combat(model, camera)
-    resolve_round_with_hits(model, camera, 1)
+    resolve_round_with_hits(model, camera, 2)
     advance_from_resolve(model, camera)
-    session = resolve_round_with_hits(model, camera, 1)
+    session = resolve_round_with_hits(model, camera, 2)
     assert session.outcome == "deflect"
     advance_from_resolve(model, camera)
     session = model.combat_session
@@ -587,7 +607,7 @@ def test_bat002_press_inside_hit_radius_hits_marker_once() -> None:
     assert not [event for event in second_events if event.kind == "combat_marker_judged"]
 
 
-def test_bat002_one_hit_resolves_as_defense_success() -> None:
+def test_bat002_one_hit_or_less_resolves_as_failure() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)
     step_to_combat_phase(model, camera, "PARRY_TIMING")
@@ -601,8 +621,30 @@ def test_bat002_one_hit_resolves_as_defense_success() -> None:
     assert session is not None
     assert session.phase == "PARRY_RESOLVE"
     assert session.hit_count == 1
+    assert session.result == "failure"
+    assert session.successful_defense_count == 0
+    assert session.failed_round_count == 1
+    assert session.outcome is None
+
+
+def test_bat002_two_hits_resolves_as_defense_success() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    hit_combat_marker(model, camera, session.marker_positions[0])
+    hit_combat_marker(model, camera, session.marker_positions[1])
+
+    model.step(InputIntent(), camera, model.combat_parry_sweep_sec() + 0.01)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "PARRY_RESOLVE"
+    assert session.hit_count == 2
     assert session.result == "defense_success"
     assert session.successful_defense_count == 1
+    assert session.failed_round_count == 0
     assert session.outcome is None
 
 
@@ -631,6 +673,8 @@ def test_bat002_three_hits_sets_perfect_result_only() -> None:
 def test_bat002_preimpact_slow_does_not_slow_timing_bar() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)
+    resolve_round_with_hits(model, camera, 0)
+    advance_from_resolve(model, camera)
     step_to_combat_phase(model, camera, "PREIMPACT_SLOW")
 
     assert model.combat_presentation_time_scale() == pytest.approx(0.3)
@@ -675,6 +719,7 @@ def test_bat003_failure_loops_without_increasing_success_count() -> None:
     assert session is not None
     assert session.result == "failure"
     assert session.successful_defense_count == 0
+    assert session.failed_round_count == 1
     assert session.outcome is None
     advance_from_resolve(model, camera)
     assert model.combat_session is not None
@@ -687,12 +732,13 @@ def test_bat003_success_count_survives_a_failed_round() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)
 
-    resolve_round_with_hits(model, camera, 1)
+    resolve_round_with_hits(model, camera, 2)
     advance_from_resolve(model, camera)
     session = resolve_round_with_hits(model, camera, 0)
 
     assert session.result == "failure"
     assert session.successful_defense_count == 1
+    assert session.failed_round_count == 1
     assert session.outcome is None
     advance_from_resolve(model, camera)
     assert model.combat_session is not None
@@ -700,13 +746,55 @@ def test_bat003_success_count_survives_a_failed_round() -> None:
     assert model.combat_session.successful_defense_count == 1
 
 
+def test_three_failed_parries_knock_player_out_of_enemy_aggro() -> None:
+    model, camera = make_model()
+    enemy = start_fast_combat(model, camera)
+    player_start = (model.player.x, model.player.z)
+
+    for round_index in range(3):
+        session = resolve_round_with_hits(model, camera, 1 if round_index == 0 else 0)
+        assert session.result == "failure"
+        if round_index < 2:
+            advance_from_resolve(model, camera)
+
+    session = model.combat_session
+    assert session is not None
+    assert session.failed_round_count == 3
+    assert session.outcome == "player_knockback"
+
+    events = advance_from_resolve(model, camera)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_PLAYER_KNOCKBACK"
+    assert [event.kind for event in events if event.kind == "combat_player_knockback_started"] == [
+        "combat_player_knockback_started"
+    ]
+
+    model.step(InputIntent(), camera, model.combat_player_knockback_sec() + 0.01)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "COMBAT_RESTORE_JUMP"
+    assert math.hypot(session.player_return_x - enemy.x, session.player_return_z - enemy.z) > float(
+        model.config["enemy"]["normal"]["aggro_radius"]
+    )
+
+    restore_events = step_until_combat_restored(model, camera)
+
+    assert restore_events[-1].payload["combat_outcome"] == "player_knockback"
+    assert math.hypot(model.player.x - enemy.x, model.player.z - enemy.z) > float(
+        model.config["enemy"]["normal"]["aggro_radius"]
+    )
+    assert math.hypot(model.player.x - player_start[0], model.player.z - player_start[1]) > 1.0
+    assert enemy.state == "REST"
+
+
 def test_bat003_two_successful_rounds_start_deflect_exit() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)
 
-    resolve_round_with_hits(model, camera, 1)
+    resolve_round_with_hits(model, camera, 2)
     advance_from_resolve(model, camera)
-    session = resolve_round_with_hits(model, camera, 1)
+    session = resolve_round_with_hits(model, camera, 2)
 
     assert session.result == "defense_success"
     assert session.successful_defense_count == 2
@@ -1103,7 +1191,7 @@ def test_bat006_marker_feedback_events_follow_hit_and_miss() -> None:
         "combat_marker_hit"
     ]
     assert len([event for event in resolve_events if event.kind == "combat_marker_miss"]) == 2
-    assert session.result == "defense_success"
+    assert session.result == "failure"
 
 
 def test_bat006_perfect_and_deflect_feedback_events_are_emitted() -> None:
@@ -1121,9 +1209,9 @@ def test_bat006_perfect_and_deflect_feedback_events_are_emitted() -> None:
 
     model, camera = make_model()
     start_fast_combat(model, camera)
-    resolve_round_with_hits(model, camera, 1)
+    resolve_round_with_hits(model, camera, 2)
     advance_from_resolve(model, camera)
-    resolve_round_with_hits(model, camera, 1)
+    resolve_round_with_hits(model, camera, 2)
 
     deflect_events = advance_from_resolve(model, camera)
 

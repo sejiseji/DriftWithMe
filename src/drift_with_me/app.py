@@ -1250,7 +1250,7 @@ class DriftWithMeApp:
         elapsed = max(0.0, session.phase_elapsed_sec)
         if phase == "COMBAT_ENTRY":
             return self.combat_entry_zoom_multiplier(elapsed)
-        if phase in {"ENEMY_WINDUP", "ENEMY_CHARGE"}:
+        if phase in {"COMBAT_READY", "ENEMY_WINDUP", "ENEMY_CHARGE"}:
             return hold
         if phase == "PREIMPACT_SLOW":
             duration = self.combat_dynamic_camera_duration("preimpact_push", 0.18)
@@ -1268,6 +1268,10 @@ class DriftWithMeApp:
         if phase == "COMBAT_EXIT_DEFLECT":
             duration = self.combat_dynamic_camera_duration("deflect_pullback", 0.22)
             target = self.combat_dynamic_camera_multiplier("deflect_pullback", 1.32)
+            return _smooth_lerp(hold, target, elapsed / max(1e-6, duration))
+        if phase == "COMBAT_EXIT_PLAYER_KNOCKBACK":
+            duration = self.combat_dynamic_camera_duration("failure_recover", 0.13)
+            target = self.combat_dynamic_camera_multiplier("failure_pullback", 1.39)
             return _smooth_lerp(hold, target, elapsed / max(1e-6, duration))
         if phase == "VICTORY_CUE":
             return self.combat_victory_zoom_multiplier(elapsed)
@@ -1611,9 +1615,11 @@ class DriftWithMeApp:
                 return counter_mode
             if session.phase in {
                 "COMBAT_ENTRY",
+                "COMBAT_READY",
                 "PARRY_RESOLVE",
                 "PERFECT_FREEZE",
                 "COMBAT_EXIT_DEFLECT",
+                "COMBAT_EXIT_PLAYER_KNOCKBACK",
                 "COMBAT_EXIT_COUNTER",
                 "VICTORY_CUE",
                 "COMBAT_RESTORE_JUMP",
@@ -1655,7 +1661,11 @@ class DriftWithMeApp:
 
     def draw_combat_timing_bar(self) -> None:
         session = self.model.combat_session
-        if session is None or session.phase not in {"PARRY_TIMING", "PARRY_RESOLVE"}:
+        if session is None or session.phase not in {
+            "COMBAT_READY",
+            "PARRY_TIMING",
+            "PARRY_RESOLVE",
+        }:
             return
         pyxel = self.pyxel
         rect = self.combat_timing_bar_rect()
@@ -1705,6 +1715,45 @@ class DriftWithMeApp:
             10 if session.result == "perfect" else 7,
             "auxiliary",
         )
+        self.draw_combat_countdown_cue(session)
+
+    def draw_combat_countdown_cue(self, session) -> None:
+        cue = self.combat_countdown_cue_text(session)
+        if cue is None:
+            return
+        width = 126 if len(cue) > 2 else 72
+        height = 34
+        x = int((self.runtime.screen_width - width) / 2)
+        y = int(self.runtime.screen_height * 0.38 - height / 2)
+        rect = Rect(float(x), float(y), float(width), float(height))
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        self.draw_ui_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y + 8),
+            cue,
+            10 if cue == "GO!" else 7,
+            "button",
+        )
+
+    def combat_countdown_cue_text(self, session) -> str | None:
+        combat = self.runtime.raw.get("combat_v1", {})
+        ready = combat.get("ready_sequence", {}) if isinstance(combat, dict) else {}
+        if not isinstance(ready, dict):
+            ready = {}
+        ready_sec = max(0.0, float(ready.get("ready_sec", 0.45)))
+        step_sec = max(1.0 / 60.0, float(ready.get("count_step_sec", 0.38)))
+        go_sec = max(0.0, float(ready.get("go_sec", 0.22)))
+        if session.phase == "COMBAT_READY":
+            elapsed = max(0.0, session.phase_elapsed_sec)
+            if elapsed < ready_sec:
+                return "READY!"
+            index = int((elapsed - ready_sec) / step_sec)
+            if 0 <= index < 3:
+                return str(3 - index)
+            return None
+        if session.phase == "PARRY_TIMING" and session.timing_elapsed_sec < go_sec:
+            return "GO!"
+        return None
 
     def draw_interaction_chip(self) -> None:
         interaction = self.model.interaction

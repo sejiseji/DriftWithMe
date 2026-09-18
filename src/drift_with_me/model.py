@@ -99,6 +99,7 @@ class CombatSession:
     hit_count: int = 0
     result: str | None = None
     successful_defense_count: int = 0
+    failed_round_count: int = 0
     outcome: str | None = None
     bubble_used: bool = False
     zap_used: bool = False
@@ -1730,7 +1731,11 @@ class GameModel:
 
         if session.phase == "COMBAT_ENTRY":
             if session.phase_elapsed_sec >= self.combat_duration_sec():
-                self.advance_combat_phase(session, "ENEMY_WINDUP", events)
+                self.advance_combat_phase(session, "COMBAT_READY", events)
+            return
+        if session.phase == "COMBAT_READY":
+            if session.phase_elapsed_sec >= self.combat_ready_total_sec():
+                self.advance_combat_phase(session, "PARRY_TIMING", events)
             return
         if session.phase == "ENEMY_WINDUP":
             if session.phase_elapsed_sec >= self.combat_windup_sec():
@@ -1751,6 +1756,8 @@ class GameModel:
             if session.phase_elapsed_sec >= self.combat_resolve_sec(session):
                 if session.result == "perfect":
                     self.advance_combat_phase(session, "PERFECT_FREEZE", events)
+                elif session.outcome == "player_knockback":
+                    self.advance_combat_phase(session, "COMBAT_EXIT_PLAYER_KNOCKBACK", events)
                 elif session.outcome == "deflect":
                     self.advance_combat_phase(session, "COMBAT_EXIT_DEFLECT", events)
                 else:
@@ -1787,6 +1794,10 @@ class GameModel:
         if session.phase == "COMBAT_EXIT_COUNTER":
             if session.phase_elapsed_sec >= self.combat_deflect_knockback_sec():
                 self.start_combat_victory_cue(session, events)
+            return
+        if session.phase == "COMBAT_EXIT_PLAYER_KNOCKBACK":
+            if session.phase_elapsed_sec >= self.combat_player_knockback_sec():
+                self.prepare_combat_restore_jump(session, events)
             return
         if session.phase == "VICTORY_CUE":
             if session.phase_elapsed_sec >= self.combat_victory_cue_sec():
@@ -1839,6 +1850,20 @@ class GameModel:
                     target_id=session.enemy_id,
                     world_position=(self.player.x, 0.0, self.player.z),
                     payload={"combat_outcome": session.outcome},
+                )
+            )
+        elif phase == "COMBAT_EXIT_PLAYER_KNOCKBACK":
+            events.append(
+                self.event_queue.emit(
+                    world_tick=self.world_tick,
+                    kind="combat_player_knockback_started",
+                    actor_id=session.enemy_id,
+                    target_id="player",
+                    world_position=(self.player.x, 0.0, self.player.z),
+                    payload={
+                        "combat_outcome": session.outcome,
+                        "failed_round_count": session.failed_round_count,
+                    },
                 )
             )
 
@@ -1963,8 +1988,12 @@ class GameModel:
         session.result = result
         if result == "defense_success":
             session.successful_defense_count += 1
+        elif result == "failure":
+            session.failed_round_count += 1
         if session.successful_defense_count >= self.combat_successful_rounds_to_deflect():
             session.outcome = "deflect"
+        if session.failed_round_count >= self.combat_failed_rounds_to_knockback():
+            session.outcome = "player_knockback"
         events.append(
             self.event_queue.emit(
                 world_tick=self.world_tick,
@@ -1976,6 +2005,7 @@ class GameModel:
                     "hit_count": hit_count,
                     "result": result,
                     "successful_defense_count": session.successful_defense_count,
+                    "failed_round_count": session.failed_round_count,
                     "outcome": session.outcome,
                 },
             )
@@ -2013,9 +2043,25 @@ class GameModel:
         counter = self.combat_v1_config().get("counter", {})
         return counter if isinstance(counter, dict) else {}
 
+    def combat_ready_config(self) -> dict[str, Any]:
+        ready = self.combat_v1_config().get("ready_sequence", {})
+        return ready if isinstance(ready, dict) else {}
+
     def combat_victory_config(self) -> dict[str, Any]:
         victory = self.combat_v1_config().get("victory", {})
         return victory if isinstance(victory, dict) else {}
+
+    def combat_ready_ready_sec(self) -> float:
+        return max(0.0, float(self.combat_ready_config().get("ready_sec", 0.45)))
+
+    def combat_ready_count_step_sec(self) -> float:
+        return max(1.0 / 60.0, float(self.combat_ready_config().get("count_step_sec", 0.38)))
+
+    def combat_ready_total_sec(self) -> float:
+        return self.combat_ready_ready_sec() + self.combat_ready_count_step_sec() * 3.0
+
+    def combat_ready_go_sec(self) -> float:
+        return max(0.0, float(self.combat_ready_config().get("go_sec", 0.22)))
 
     def combat_windup_sec(self) -> float:
         return max(0.0, float(self.combat_enemy_charge_config().get("windup_sec", 0.7)))
@@ -2072,6 +2118,9 @@ class GameModel:
     def combat_successful_rounds_to_deflect(self) -> int:
         return max(1, int(self.combat_defense_config().get("successful_rounds_to_deflect", 2)))
 
+    def combat_failed_rounds_to_knockback(self) -> int:
+        return max(1, int(self.combat_defense_config().get("failed_rounds_to_knockback", 3)))
+
     def combat_perfect_hold_sec(self) -> float:
         return max(0.0, float(self.combat_time_scale_config().get("perfect_hold_sec", 0.32)))
 
@@ -2098,6 +2147,9 @@ class GameModel:
     def combat_deflect_knockback_sec(self) -> float:
         return max(0.0, float(self.combat_exit_config().get("knockback_visual_sec", 0.28)))
 
+    def combat_player_knockback_sec(self) -> float:
+        return max(0.0, float(self.combat_exit_config().get("player_knockback_visual_sec", 0.32)))
+
     def combat_restore_jump_sec(self) -> float:
         return max(0.0, float(self.combat_exit_config().get("player_restore_jump_sec", 0.28)))
 
@@ -2109,6 +2161,14 @@ class GameModel:
 
     def combat_enemy_knockback_world(self) -> float:
         return max(0.0, float(self.combat_exit_config().get("enemy_knockback_world", 34.0)))
+
+    def combat_player_knockback_world(self, enemy: EnemyState | None = None) -> float:
+        configured = max(0.0, float(self.combat_exit_config().get("player_knockback_world", 104.0)))
+        if enemy is None:
+            return configured
+        aggro = float(self.config["enemy"][enemy.kind].get("aggro_radius", 80.0))
+        clearance = self.enemy_radius(enemy) + max(self.player_half_x, self.player_half_z) + 6.0
+        return max(configured, aggro + clearance)
 
     def combat_enemy_knockback_direction(
         self, session: CombatSession, enemy: EnemyState | None = None
@@ -2197,6 +2257,29 @@ class GameModel:
         enemy = self.enemy_by_id(session.enemy_id)
         player_x = session.snapshot.player.x
         player_z = session.snapshot.player.z
+        if session.outcome == "player_knockback" and enemy is not None:
+            session.enemy_return_x = session.snapshot.enemy.x
+            session.enemy_return_z = session.snapshot.enemy.z
+            dx = session.snapshot.player.x - session.snapshot.enemy.x
+            dz = session.snapshot.player.z - session.snapshot.enemy.z
+            length = math.hypot(dx, dz)
+            if length <= 1e-6:
+                dx, dz = stable_direction(f"{session.enemy_id}:player_knockback")
+                length = math.hypot(dx, dz)
+            dx /= length
+            dz /= length
+            distance = self.combat_player_knockback_world(enemy)
+            desired_x = session.snapshot.player.x + dx * distance
+            desired_z = session.snapshot.player.z + dz * distance
+            player_x, player_z = self.find_combat_player_safe_along_direction(
+                desired_x,
+                desired_z,
+                enemy.x,
+                enemy.z,
+                dx,
+                dz,
+                self.combat_min_safe_separation(enemy),
+            )
         if self.world.collides_player(
             player_x, player_z, self.player_solid_half_x, self.player_solid_half_z
         ):
@@ -2204,7 +2287,7 @@ class GameModel:
             player_z = session.player_return_z
         session.player_return_x = player_x
         session.player_return_z = player_z
-        if enemy is not None:
+        if enemy is not None and session.outcome != "player_knockback":
             dx, dz = self.combat_enemy_knockback_direction(session, enemy)
             desired_x = session.enemy_return_x + dx * self.combat_enemy_knockback_world()
             desired_z = session.enemy_return_z + dz * self.combat_enemy_knockback_world()
@@ -2324,6 +2407,8 @@ class GameModel:
         session = self.combat_session if session is None else session
         if session is None:
             return None
+        if session.phase == "COMBAT_READY":
+            return 0.0
         if session.phase not in {"PARRY_TIMING", "PARRY_RESOLVE"}:
             return None
         return max(0.0, min(session.timing_elapsed_sec / self.combat_parry_sweep_sec(), 1.0))
@@ -2646,6 +2731,38 @@ class GameModel:
         return self.find_combat_enemy_anchor(
             enemy, player_x, player_z, min_separation, start_x=desired_x, start_z=desired_z
         )
+
+    def find_combat_player_safe_along_direction(
+        self,
+        desired_x: float,
+        desired_z: float,
+        enemy_x: float,
+        enemy_z: float,
+        direction_x: float,
+        direction_z: float,
+        min_separation: float,
+    ) -> tuple[float, float]:
+        length = math.hypot(direction_x, direction_z)
+        if length <= 1e-6:
+            direction_x = desired_x - enemy_x
+            direction_z = desired_z - enemy_z
+            length = math.hypot(direction_x, direction_z)
+        if length <= 1e-6:
+            direction_x, direction_z = stable_direction(f"{desired_x:.3f}:{desired_z:.3f}:player")
+            length = math.hypot(direction_x, direction_z)
+        direction_x /= length
+        direction_z /= length
+        if self.combat_player_anchor_safe(desired_x, desired_z, enemy_x, enemy_z, min_separation):
+            return desired_x, desired_z
+        for distance in (8.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0):
+            x = desired_x + direction_x * distance
+            z = desired_z + direction_z * distance
+            if self.combat_player_anchor_safe(x, z, enemy_x, enemy_z, min_separation):
+                return x, z
+        for x, z in self.combat_anchor_candidates(desired_x, desired_z, direction_x, direction_z):
+            if self.combat_player_anchor_safe(x, z, enemy_x, enemy_z, min_separation):
+                return x, z
+        return desired_x, desired_z
 
     def combat_anchor_candidates(
         self, start_x: float, start_z: float, preferred_x: float, preferred_z: float
