@@ -43,6 +43,13 @@ class PointerSnapshot:
     y: float
 
 
+@dataclass
+class CombatCameraRestore:
+    from_camera: CameraState
+    elapsed_sec: float
+    duration_sec: float
+
+
 class DriftWithMeApp:
     def __init__(
         self,
@@ -106,6 +113,8 @@ class DriftWithMeApp:
         self.location_label_remaining = 0.0
         self.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
         self.browser_pointer_sequence_seen = 0
+        self.last_combat_scene_camera: CameraState | None = None
+        self.combat_camera_restore: CombatCameraRestore | None = None
 
         pyxel.init(
             self.runtime.screen_width,
@@ -177,6 +186,7 @@ class DriftWithMeApp:
         self.pointer_snapshot = self.read_pointer_snapshot()
         self.update_denied_feedback(elapsed)
         self.update_location_label(elapsed)
+        self.update_combat_camera_restore(elapsed)
 
         f1_key = getattr(pyxel, "KEY_F1", None)
         if f1_key is not None and pyxel.btnp(f1_key):
@@ -241,6 +251,8 @@ class DriftWithMeApp:
         self.hitstop_remaining = 0.0
         self.pending_auto_move_goal = None
         self.pending_cancel_auto_move = False
+        self.last_combat_scene_camera = None
+        self.combat_camera_restore = None
         self.screen = AppScreen.PLAY
         self.show_location_label()
 
@@ -295,6 +307,8 @@ class DriftWithMeApp:
         self.accumulator = 0.0
         self.hitstop_remaining = 0.0
         self._processed_hitstop_event_ids.clear()
+        self.last_combat_scene_camera = None
+        self.combat_camera_restore = None
 
     def fill_resources_for_debug(self) -> None:
         self.model.water = self.model.water_max
@@ -484,7 +498,11 @@ class DriftWithMeApp:
         if not events:
             return
         for event in events:
-            if event.kind == "action_denied":
+            if event.kind == "combat_started":
+                self.combat_camera_restore = None
+            elif event.kind == "combat_restored":
+                self.start_combat_camera_restore()
+            elif event.kind == "action_denied":
                 self.set_denied_reason(str(event.payload.get("reason", "denied")))
             elif event.kind == "inspection_completed":
                 self.show_location_label()
@@ -1127,6 +1145,7 @@ class DriftWithMeApp:
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
         camera = self.combat_scene_camera(camera)
+        camera = self.combat_restore_scene_camera(camera)
         if self.projection_mode != "affine":
             return self.presentation_camera(camera)
         return self.affine_scene_camera(camera)
@@ -1161,12 +1180,61 @@ class DriftWithMeApp:
             float(camera_config["zoom_min"]),
             min(float(camera_config["zoom_max"]), next_zoom),
         )
-        return CameraState(
+        combat_camera = CameraState(
             target=_lerp_vec3(camera.target, combat_target, progress),
             yaw_deg=camera.yaw_deg,
             pitch_deg=camera.pitch_deg,
             horizontal_fov_deg=camera.horizontal_fov_deg,
             distance=base_distance / next_zoom,
+            near=camera.near,
+            far=camera.far,
+            anchor_x=camera.anchor_x,
+            anchor_y=camera.anchor_y,
+            viewport_width=camera.viewport_width,
+            viewport_height=camera.viewport_height,
+        )
+        self.last_combat_scene_camera = combat_camera
+        return combat_camera
+
+    def start_combat_camera_restore(self) -> None:
+        from_camera = self.last_combat_scene_camera
+        if from_camera is None:
+            return
+        combat = self.runtime.raw.get("combat_v1", {})
+        exit_config = combat.get("exit", {}) if isinstance(combat, dict) else {}
+        duration = max(0.0, float(exit_config.get("camera_restore_sec", 0.35)))
+        if duration <= 0.0:
+            self.combat_camera_restore = None
+            self.last_combat_scene_camera = None
+            return
+        self.combat_camera_restore = CombatCameraRestore(
+            from_camera=from_camera,
+            elapsed_sec=0.0,
+            duration_sec=duration,
+        )
+
+    def update_combat_camera_restore(self, elapsed: float) -> None:
+        restore = self.combat_camera_restore
+        if restore is None:
+            return
+        restore.elapsed_sec += max(0.0, elapsed)
+        if restore.elapsed_sec >= restore.duration_sec:
+            self.combat_camera_restore = None
+            self.last_combat_scene_camera = None
+
+    def combat_restore_scene_camera(self, camera: CameraState) -> CameraState:
+        restore = self.combat_camera_restore
+        if restore is None:
+            return camera
+        progress = _smoothstep(restore.elapsed_sec / max(1e-6, restore.duration_sec))
+        from_camera = restore.from_camera
+        distance = from_camera.distance + (camera.distance - from_camera.distance) * progress
+        return CameraState(
+            target=_lerp_vec3(from_camera.target, camera.target, progress),
+            yaw_deg=camera.yaw_deg,
+            pitch_deg=camera.pitch_deg,
+            horizontal_fov_deg=camera.horizontal_fov_deg,
+            distance=distance,
             near=camera.near,
             far=camera.far,
             anchor_x=camera.anchor_x,

@@ -58,6 +58,8 @@ def make_app(raw: dict, model: GameModel) -> DriftWithMeApp:
     app.hitstop_remaining = 0.0
     app.accumulator = 0.0
     app._processed_hitstop_event_ids = set()
+    app.last_combat_scene_camera = None
+    app.combat_camera_restore = None
     app.camera_controller = CameraController(
         raw,
         model.world,
@@ -176,6 +178,47 @@ def test_combat_scene_camera_zooms_to_battle_pair_without_moving_world() -> None
     assert scene_camera.target.z == pytest.approx(192.0)
 
 
+def test_combat_restored_camera_smoothly_zooms_back_to_follow() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    app.projection_mode = "perspective"
+    base_camera = start_contact_combat(model, raw)
+    assert model.combat_session is not None
+    model.combat_session.elapsed_sec = float(raw["combat_v1"]["entry"]["camera_transition_sec"])
+    combat_camera = app.scene_camera(base_camera)
+    assert isinstance(combat_camera, CameraState)
+
+    model.combat_session = None
+    restored = model.event_queue.emit(
+        world_tick=model.world_tick,
+        kind="combat_restored",
+        actor_id="urchin_normal_01",
+        target_id="player",
+        world_position=(model.player.x, 0.0, model.player.z),
+    )
+    app.process_events([restored])
+
+    restore_start = app.scene_camera(base_camera)
+    assert isinstance(restore_start, CameraState)
+    assert restore_start.distance == pytest.approx(combat_camera.distance)
+    assert restore_start.target.x == pytest.approx(combat_camera.target.x)
+
+    duration = float(raw["combat_v1"]["exit"]["camera_restore_sec"])
+    app.update_combat_camera_restore(duration * 0.5)
+    restore_mid = app.scene_camera(base_camera)
+    assert isinstance(restore_mid, CameraState)
+    assert combat_camera.distance < restore_mid.distance < base_camera.distance
+    assert base_camera.target.x < restore_mid.target.x < combat_camera.target.x
+
+    app.update_combat_camera_restore(duration)
+    restore_done = app.scene_camera(base_camera)
+    assert isinstance(restore_done, CameraState)
+    assert restore_done.distance == pytest.approx(base_camera.distance)
+    assert restore_done.target.x == pytest.approx(base_camera.target.x)
+    assert app.combat_camera_restore is None
+
+
 def test_affine_scene_camera_applies_reactions_as_zoom_and_fx_offset() -> None:
     raw = make_runtime_raw(shake=True, pulse=True)
     model = make_model(raw)
@@ -213,6 +256,40 @@ def test_affine_combat_scene_camera_uses_combat_zoom() -> None:
     assert scene_camera.zoom == pytest.approx(float(raw["combat_v1"]["entry"]["combat_zoom"]))
     assert scene_camera.target.x == pytest.approx(303.5)
     assert scene_camera.target.z == pytest.approx(192.0)
+
+
+def test_affine_combat_restore_camera_blends_zoom_back_to_follow() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    app.projection_mode = "affine"
+    app.affine_projection_profile = AffineProjectionProfile.from_config(raw)
+    base_camera = start_contact_combat(model, raw)
+    assert model.combat_session is not None
+    model.combat_session.elapsed_sec = float(raw["combat_v1"]["entry"]["camera_transition_sec"])
+    combat_camera = app.scene_camera(base_camera)
+    assert isinstance(combat_camera, AffineCameraState)
+
+    model.combat_session = None
+    restored = model.event_queue.emit(
+        world_tick=model.world_tick,
+        kind="combat_restored",
+        actor_id="urchin_normal_01",
+        target_id="player",
+        world_position=(model.player.x, 0.0, model.player.z),
+    )
+    app.process_events([restored])
+
+    restore_start = app.scene_camera(base_camera)
+    assert isinstance(restore_start, AffineCameraState)
+    assert restore_start.zoom == pytest.approx(float(raw["combat_v1"]["entry"]["combat_zoom"]))
+
+    app.update_combat_camera_restore(float(raw["combat_v1"]["exit"]["camera_restore_sec"]))
+    restore_done = app.scene_camera(base_camera)
+    assert isinstance(restore_done, AffineCameraState)
+    assert restore_done.zoom == pytest.approx(
+        float(raw["camera"]["base_distance"]) / base_camera.distance
+    )
 
 
 def test_affine_scene_camera_keeps_projection_fixed_for_overview_like_camera() -> None:
