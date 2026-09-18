@@ -1137,6 +1137,34 @@ def test_bat005_defeat_commits_enemy_state_after_victory_cue() -> None:
     assert enemy.state == "DEFEATED"
 
 
+def test_combat_defeat_special_moves_buddy_and_fades_enemy() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+    renderer = Renderer(None)
+    buddy_world = (model.buddy.x, model.buddy.z)
+
+    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_COUNTER"
+    assert renderer.combat_defeat_special_active(model)
+
+    session.phase_elapsed_sec = model.combat_deflect_knockback_sec() * 0.45
+    buddy_mid = renderer.buddy_actor_presentation(model, camera, 0.0)
+    target = renderer.combat_actor_anchor_ground(model, camera, "buddy")
+    assert target is not None
+    assert math.hypot(buddy_mid.x - buddy_world[0], buddy_mid.z - buddy_world[1]) > 1.0
+    assert math.hypot(buddy_mid.x - target[0], buddy_mid.z - target[1]) < math.hypot(
+        buddy_world[0] - target[0], buddy_world[1] - target[1]
+    )
+    assert buddy_mid.jump_y > 0.0
+    assert renderer.combat_zap_spin_view_name(model) is not None
+
+    session.phase_elapsed_sec = model.combat_deflect_knockback_sec() * 0.92
+    assert renderer.combat_defeat_enemy_visibility(model, enemy) < 1.0
+
+
 def test_bat005_failure_round_does_not_enter_victory_cue() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)

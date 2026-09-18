@@ -246,6 +246,7 @@ class Renderer:
         self.draw_interaction_marker(model, camera)
         self.draw_action_marker(model, camera)
         self.draw_effects(model, camera, effects)
+        self.draw_combat_defeat_special(model, camera)
         self.draw_combat_victory_cue(model, camera)
         if debug:
             self.draw_affine_debug_grid(model, camera)
@@ -436,14 +437,23 @@ class Renderer:
                         atmosphere_strength=0.0,
                     )
                 )
-        buddy_anchor = camera.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
+        buddy_presentation = self.buddy_actor_presentation(model, camera, presentation_time)
+        buddy_anchor = camera.project(
+            Vec3(
+                buddy_presentation.x,
+                model.buddy.y + buddy_presentation.jump_y,
+                buddy_presentation.z,
+            )
+        )
         if buddy_anchor is not None:
             commands.append(
                 DrawCommand(
                     depth=buddy_anchor.depth,
                     layer_bias=0,
                     stable_id="buddy",
-                    draw=lambda: self.draw_buddy(model, camera, presentation_time),
+                    draw=lambda presentation=buddy_presentation: self.draw_buddy(
+                        model, camera, presentation_time, presentation
+                    ),
                     atmosphere_strength=self.atmosphere_strength_config(
                         "buddy_strength", ATMOSPHERE_BUDDY_STRENGTH
                     ),
@@ -531,6 +541,28 @@ class Renderer:
         offset_x, offset_z = model.combat_enemy_presentation_offset(enemy)
         return ActorPresentation(target_x + offset_x, target_z + offset_z)
 
+    def buddy_actor_presentation(
+        self, model: GameModel, camera: CameraState, presentation_time: float
+    ) -> ActorPresentation:
+        if not self.combat_defeat_special_active(model):
+            return ActorPresentation(model.buddy.x, model.buddy.z)
+        target = self.combat_actor_anchor_ground(model, camera, "buddy")
+        if target is None:
+            target_x = model.buddy.x
+            target_z = model.buddy.z
+        else:
+            target_x, target_z = target
+        progress = self.combat_defeat_special_progress(model)
+        move_progress = _smoothstep(progress / 0.34)
+        float_progress = _smoothstep(progress / 0.24)
+        float_y = 18.0 * float_progress
+        float_y += math.sin(max(0.0, progress - 0.18) * math.tau * 2.2) * 1.8
+        return ActorPresentation(
+            _lerp(model.buddy.x, target_x, move_progress),
+            _lerp(model.buddy.z, target_z, move_progress),
+            float_y,
+        )
+
     def combat_actor_anchor_ground(
         self, model: GameModel, camera: CameraState, actor: str
     ) -> tuple[float, float] | None:
@@ -557,8 +589,15 @@ class Renderer:
         )
         if not isinstance(presentation, dict):
             presentation = {}
-        key = "player_anchor_px" if actor == "player" else "enemy_anchor_px"
-        fallback = (214.0, 142.0) if actor == "player" else (318.0, 112.0)
+        if actor == "player":
+            key = "player_anchor_px"
+            fallback = (214.0, 142.0)
+        elif actor == "buddy":
+            key = "fuse_victory_anchor_px"
+            fallback = (175.0, 132.0)
+        else:
+            key = "enemy_anchor_px"
+            fallback = (318.0, 112.0)
         raw_anchor = presentation.get(key, fallback)
         if not isinstance(raw_anchor, (list, tuple)) or len(raw_anchor) != 2:
             raw_anchor = fallback
@@ -583,6 +622,65 @@ class Renderer:
         if settle_sec <= 1e-6:
             return 1.0 if session.phase_elapsed_sec >= isolation_sec else 0.0
         return _smoothstep((session.phase_elapsed_sec - isolation_sec) / settle_sec)
+
+    def combat_defeat_special_active(self, model: GameModel) -> bool:
+        session = model.combat_session
+        return (
+            session is not None
+            and session.outcome == "defeat"
+            and session.zap_used
+            and session.phase in {"COMBAT_EXIT_COUNTER", "VICTORY_CUE"}
+        )
+
+    def combat_defeat_special_progress(self, model: GameModel) -> float:
+        session = model.combat_session
+        if session is None or not self.combat_defeat_special_active(model):
+            return 0.0
+        exit_duration = max(0.0, model.combat_deflect_knockback_sec())
+        victory_duration = max(0.0, model.combat_victory_cue_sec())
+        if session.phase == "COMBAT_EXIT_COUNTER":
+            elapsed = session.phase_elapsed_sec
+        else:
+            elapsed = exit_duration + session.phase_elapsed_sec
+        total = max(exit_duration + victory_duration, 1e-6)
+        return max(0.0, min(elapsed / total, 1.0))
+
+    def combat_defeat_exit_progress(self, model: GameModel) -> float:
+        session = model.combat_session
+        if session is None or not self.combat_defeat_special_active(model):
+            return 0.0
+        if session.phase == "VICTORY_CUE":
+            return 1.0
+        duration = max(model.combat_deflect_knockback_sec(), 1e-6)
+        return max(0.0, min(session.phase_elapsed_sec / duration, 1.0))
+
+    def combat_defeat_enemy_visibility(self, model: GameModel, enemy) -> float:
+        session = model.combat_session
+        if (
+            session is None
+            or session.enemy_id != enemy.id
+            or not self.combat_defeat_special_active(model)
+        ):
+            return 1.0
+        progress = self.combat_defeat_special_progress(model)
+        if progress < 0.38:
+            return 1.0
+        return max(0.0, 1.0 - _smoothstep((progress - 0.38) / 0.46))
+
+    def combat_defeat_enemy_flicker_hidden(self, model: GameModel, enemy) -> bool:
+        visibility = self.combat_defeat_enemy_visibility(model, enemy)
+        if visibility >= 0.95:
+            return False
+        if visibility <= 0.05:
+            return True
+        session = model.combat_session
+        elapsed = session.phase_elapsed_sec if session is not None else 0.0
+        tick = int(elapsed * 30.0) + sum(ord(char) for char in enemy.id)
+        if visibility < 0.35:
+            return tick % 2 == 0
+        if visibility < 0.7:
+            return tick % 4 == 0
+        return False
 
     def combat_actor_entry_jump_y(self, model: GameModel, progress: float) -> float:
         session = model.combat_session
@@ -2323,6 +2421,8 @@ class Renderer:
     ) -> None:
         if enemy.state == "DEFEATED":
             return
+        if self.combat_defeat_enemy_flicker_hidden(model, enemy):
+            return
         if presentation is None:
             presentation = self.enemy_actor_presentation(model, enemy, camera)
         enemy_x = presentation.x
@@ -2632,6 +2732,9 @@ class Renderer:
         elif actor == "enemy":
             origin = enemy_presentation
             target = player
+        elif actor == "buddy":
+            origin = self.buddy_actor_presentation(model, camera, 0.0)
+            target = enemy_presentation
         else:
             return None
         if math.hypot(target.x - origin.x, target.z - origin.z) <= 1e-6:
@@ -2654,6 +2757,10 @@ class Renderer:
         return asset
 
     def buddy_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        spin_view = self.combat_zap_spin_view_name(model)
+        if spin_view is not None:
+            self.buddy_sprite_view_name = spin_view
+            return spin_view
         spin_view = self.combat_victory_spin_view_name(model, "buddy")
         if spin_view is not None:
             self.buddy_sprite_view_name = spin_view
@@ -2662,7 +2769,11 @@ class Renderer:
         if spin_view is not None:
             self.buddy_sprite_view_name = spin_view
             return spin_view
-        facing_delta = self.actor_screen_facing_delta(model, camera, model.buddy.x, model.buddy.z)
+        facing_delta = self.combat_actor_screen_facing_delta(model, camera, "buddy")
+        if facing_delta is None:
+            facing_delta = self.actor_screen_facing_delta(
+                model, camera, model.buddy.x, model.buddy.z
+            )
         if facing_delta is not None:
             screen_dx, screen_dy = facing_delta
             next_view = self.screen_direction_view_name(screen_dx, screen_dy)
@@ -2719,6 +2830,23 @@ class Renderer:
             return 0.0
         height = float(model.config["interaction"].get("actor_jump_height", 0.0))
         return math.sin(max(0.0, min(interaction.progress, 1.0)) * math.pi) * height
+
+    def combat_zap_spin_view_name(self, model: GameModel) -> str | None:
+        session = model.combat_session
+        if (
+            session is None
+            or session.outcome != "defeat"
+            or not session.zap_used
+            or session.phase != "COMBAT_EXIT_COUNTER"
+        ):
+            return None
+        progress = self.combat_defeat_exit_progress(model)
+        if progress < 0.16 or progress > 0.72:
+            return None
+        spin_progress = max(0.0, min((progress - 0.16) / 0.56, 0.999999))
+        direction_count = len(self.SPIN_DIRECTION_VIEWS)
+        index = int(spin_progress * direction_count) % direction_count
+        return self.SPIN_DIRECTION_VIEWS[index]
 
     def combat_victory_spin_view_name(self, model: GameModel, actor: str) -> str | None:
         session = model.combat_session
@@ -2816,9 +2944,17 @@ class Renderer:
         self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
 
-    def draw_buddy(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:
+    def draw_buddy(
+        self,
+        model: GameModel,
+        camera: CameraState,
+        presentation_time: float,
+        presentation: ActorPresentation | None = None,
+    ) -> None:
         buddy = model.buddy
-        shadow = camera.project(Vec3(buddy.x, 0.0, buddy.z))
+        if presentation is None:
+            presentation = self.buddy_actor_presentation(model, camera, presentation_time)
+        shadow = camera.project(Vec3(presentation.x, 0.0, presentation.z))
         if shadow is not None:
             radius = self.depth_scaled_radius(camera, shadow.depth, numerator=700, minimum=2)
             self.draw_shadow_ellipse(
@@ -2831,13 +2967,14 @@ class Renderer:
         bob = math.sin(presentation_time * math.tau / 1.3) * 2.0
         bob += self.interaction_actor_jump(model, "energy_refill")
         bob += self.combat_victory_actor_jump(model, "buddy")
-        if self.draw_buddy_sprite(model, camera, bob):
+        bob += presentation.jump_y
+        if self.draw_buddy_sprite(model, camera, bob, presentation.x, presentation.z):
             return
         half = model.buddy_cube_size / 2.0
         self.draw_box(
             camera,
-            buddy.x,
-            buddy.z,
+            presentation.x,
+            presentation.z,
             half,
             half,
             model.buddy_cube_size,
@@ -2845,22 +2982,137 @@ class Renderer:
             10,
         )
 
-    def buddy_sprite_placement(self, model: GameModel, camera: CameraState, bob: float):
+    def buddy_sprite_placement(
+        self,
+        model: GameModel,
+        camera: CameraState,
+        bob: float,
+        x: float | None = None,
+        z: float | None = None,
+    ):
         asset = self.buddy_sprite_asset(model, camera)
         if asset is None:
             return None
-        anchor = Vec3(model.buddy.x, model.buddy.y + bob, model.buddy.z)
+        draw_x = model.buddy.x if x is None else x
+        draw_z = model.buddy.z if z is None else z
+        anchor = Vec3(draw_x, model.buddy.y + bob, draw_z)
         return placement_for_upright_height_billboard(camera, asset.definition, anchor)
 
-    def draw_buddy_sprite(self, model: GameModel, camera: CameraState, bob: float) -> bool:
+    def draw_buddy_sprite(
+        self,
+        model: GameModel,
+        camera: CameraState,
+        bob: float,
+        x: float | None = None,
+        z: float | None = None,
+    ) -> bool:
         asset = self.buddy_sprite_asset(model, camera)
         if asset is None:
             return False
-        placement = self.buddy_sprite_placement(model, camera, bob)
+        placement = self.buddy_sprite_placement(model, camera, bob, x, z)
         if placement is None:
             return False
         self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
+
+    def draw_combat_defeat_special(self, model: GameModel, camera: CameraState) -> None:
+        if self.pyxel is None or not self.combat_defeat_special_active(model):
+            return
+        session = model.combat_session
+        if session is None:
+            return
+        enemy = model.enemy_by_id(session.enemy_id)
+        if enemy is None:
+            return
+        progress = self.combat_defeat_special_progress(model)
+        buddy = self.buddy_actor_presentation(model, camera, 0.0)
+        enemy_presentation = self.enemy_actor_presentation(model, enemy, camera)
+        source = camera.project(Vec3(buddy.x, model.buddy.y + buddy.jump_y + 5.0, buddy.z))
+        target = camera.project(
+            Vec3(enemy_presentation.x, 8.0 + enemy_presentation.jump_y, enemy_presentation.z)
+        )
+        if source is None or target is None:
+            return
+        self.draw_combat_homing_zaps(source, target, progress)
+        self.draw_combat_enemy_disappear(target, progress)
+
+    def draw_combat_homing_zaps(
+        self, source: ProjectedPoint, target: ProjectedPoint, progress: float
+    ) -> None:
+        bolt_starts = (0.28, 0.35, 0.43, 0.52, 0.61)
+        for index, start in enumerate(bolt_starts):
+            local = (progress - start) / 0.2
+            if local < 0.0 or local > 1.25:
+                continue
+            travel = _smoothstep(min(local, 1.0))
+            end_x = _lerp(source.x, target.x, travel)
+            end_y = _lerp(source.y, target.y, travel)
+            color = (10, 7, 9, 10, 7)[index % 5]
+            self.draw_combat_lightning_bolt(
+                source.x,
+                source.y,
+                end_x,
+                end_y,
+                seed=index + int(progress * 60.0),
+                color=color,
+            )
+            if local >= 0.75:
+                pulse = max(1, int(3.0 * (1.25 - min(local, 1.25))))
+                self.pyxel.circb(int(target.x), int(target.y), 5 + index + pulse, color)
+
+    def draw_combat_lightning_bolt(
+        self,
+        start_x: float,
+        start_y: float,
+        end_x: float,
+        end_y: float,
+        *,
+        seed: int,
+        color: int,
+    ) -> None:
+        dx = end_x - start_x
+        dy = end_y - start_y
+        length = max(math.hypot(dx, dy), 1.0)
+        perp_x = -dy / length
+        perp_y = dx / length
+        previous_x = start_x
+        previous_y = start_y
+        segments = 5
+        for step in range(1, segments + 1):
+            amount = step / segments
+            taper = math.sin(amount * math.pi)
+            jitter = math.sin(seed * 1.71 + step * 2.43) * 5.0 * taper
+            if step == segments:
+                jitter = 0.0
+            current_x = _lerp(start_x, end_x, amount) + perp_x * jitter
+            current_y = _lerp(start_y, end_y, amount) + perp_y * jitter
+            self.pyxel.line(
+                int(previous_x),
+                int(previous_y),
+                int(current_x),
+                int(current_y),
+                color,
+            )
+            previous_x = current_x
+            previous_y = current_y
+
+    def draw_combat_enemy_disappear(self, target: ProjectedPoint, progress: float) -> None:
+        if progress < 0.34:
+            return
+        vanish = _smoothstep((progress - 0.34) / 0.56)
+        x = int(target.x)
+        y = int(target.y)
+        radius = 5 + int(18 * vanish)
+        self.pyxel.circb(x, y, radius, 10 if vanish < 0.7 else 13)
+        for index in range(10):
+            angle = index * math.tau / 10.0 + vanish * math.tau * 0.35
+            distance = radius * (0.35 + 0.75 * ((index % 3) / 2.0))
+            sx = int(x + math.cos(angle) * distance)
+            sy = int(y + math.sin(angle) * distance * 0.62)
+            color = (10, 7, 13, 9)[index % 4]
+            self.pyxel.pset(sx, sy, color)
+            if index % 3 == 0:
+                self.pyxel.pset(sx + 1, sy, color)
 
     def draw_combat_victory_cue(self, model: GameModel, camera: CameraState) -> None:
         session = model.combat_session
@@ -2869,9 +3121,15 @@ class Renderer:
         actor = model.combat_victory_actor(session)
         progress = model.combat_victory_progress(session)
         if actor == "buddy":
-            x = model.buddy.x
-            y = model.buddy.y + self.combat_victory_actor_jump(model, "buddy") + 12.0
-            z = model.buddy.z
+            presentation = self.buddy_actor_presentation(model, camera, 0.0)
+            x = presentation.x
+            y = (
+                model.buddy.y
+                + presentation.jump_y
+                + self.combat_victory_actor_jump(model, "buddy")
+                + 12.0
+            )
+            z = presentation.z
             label = "YAY!"
         else:
             x = model.player.x
