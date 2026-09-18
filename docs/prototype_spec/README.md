@@ -18,7 +18,7 @@ Codexへこのフォルダ一式を渡し、[CODEX_START_HERE.md](CODEX_START_HE
 | [ACCEPTANCE.md](ACCEPTANCE.md) | 自動／手動を分けた112件の受入テスト計画 |
 | [data/game_config.json](data/game_config.json) | 単位付きの初期調整値 |
 | [data/prototype_world.json](data/prototype_world.json) | 大きな正方形地面と検証用オブジェクト配置 |
-| [data/audio_events.json](data/audio_events.json) | 5種類のSEと判定イベントの対応 |
+| [data/audio_events.json](data/audio_events.json) | 探索・戦闘SEと判定イベントの対応 |
 | [tools/validate_spec_data.py](tools/validate_spec_data.py) | 標準ライブラリだけで動く初期データ検証器 |
 | [SOURCES.md](SOURCES.md) | API・端末表示・Web配布の公式参照先 |
 | [VALIDATION_REPORT.md](VALIDATION_REPORT.md) | このパック作成時に実施した検査と未実施範囲 |
@@ -36,7 +36,7 @@ Codexへこのフォルダ一式を渡し、[CODEX_START_HERE.md](CODEX_START_HE
 | 敵 | 通常ウニ2、異常個体1 |
 | 対処 | 水バリアで押す／泡で捕獲して手動電撃 |
 | 資源 | 水100、行動電力60を仮値。補給地点から回復 |
-| 音 | 発射・捕獲・押し返し・電撃成功・使用不可の5SE |
+| 音 | 発射・捕獲・押し返し・電撃成功・使用不可・戦闘フィードバックSE |
 | 対象外 | 完成絵、BGM、リアルタイム昼夜、自由カメラ、HP・死亡、複雑な地形 |
 
 寸法・速度・消費量・UI閾値は実装開始のための仮値で、実機計測で決めた最適値ではありません。確定している世界観と、調整可能な実装値を分けて扱います。

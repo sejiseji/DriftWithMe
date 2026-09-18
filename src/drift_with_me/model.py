@@ -1811,6 +1811,28 @@ class GameModel:
                 payload={"phase": phase},
             )
         )
+        if phase == "PERFECT_FREEZE":
+            events.append(
+                self.event_queue.emit(
+                    world_tick=self.world_tick,
+                    kind="combat_perfect_started",
+                    actor_id="player",
+                    target_id=session.enemy_id,
+                    world_position=(self.player.x, 0.0, self.player.z),
+                    payload={"hit_count": session.hit_count},
+                )
+            )
+        elif phase == "COMBAT_EXIT_DEFLECT":
+            events.append(
+                self.event_queue.emit(
+                    world_tick=self.world_tick,
+                    kind="combat_deflect_started",
+                    actor_id="player",
+                    target_id=session.enemy_id,
+                    world_position=(self.player.x, 0.0, self.player.z),
+                    payload={"combat_outcome": session.outcome},
+                )
+            )
 
     def update_combat_parry_timing(
         self,
@@ -1894,6 +1916,21 @@ class GameModel:
             self.event_queue.emit(
                 world_tick=self.world_tick,
                 kind="combat_marker_judged",
+                actor_id="player",
+                target_id=session.enemy_id,
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={
+                    "index": index,
+                    "judgement": judgement,
+                    "marker": session.marker_positions[index],
+                    "slider": slider,
+                },
+            )
+        )
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind="combat_marker_hit" if judgement == "HIT" else "combat_marker_miss",
                 actor_id="player",
                 target_id=session.enemy_id,
                 world_position=(self.player.x, 0.0, self.player.z),

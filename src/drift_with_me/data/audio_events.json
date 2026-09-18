@@ -41,6 +41,46 @@
       "priority": 5,
       "duration_target_sec": 0.05,
       "character": "小さく控えめ。成功音とは異なる。"
+    },
+    {
+      "event": "combat_marker_hit",
+      "sound_key": "combat_marker_hit",
+      "channel": 2,
+      "priority": 20,
+      "duration_target_sec": 0.04,
+      "character": "パリィマーカー命中の短いクリック。連続しても重くならない。"
+    },
+    {
+      "event": "combat_marker_miss",
+      "sound_key": "combat_marker_miss",
+      "channel": 2,
+      "priority": 15,
+      "duration_target_sec": 0.06,
+      "character": "パリィミスの短い減衰音。拒否音より軽い。"
+    },
+    {
+      "event": "combat_perfect_started",
+      "sound_key": "combat_perfect",
+      "channel": 1,
+      "priority": 70,
+      "duration_target_sec": 0.1,
+      "character": "PERFECT成立を強調する上向きの短音。"
+    },
+    {
+      "event": "combat_deflect_started",
+      "sound_key": "combat_deflect",
+      "channel": 1,
+      "priority": 65,
+      "duration_target_sec": 0.08,
+      "character": "防御離脱時の弾く音。"
+    },
+    {
+      "event": "combat_victory_cue_started",
+      "sound_key": "combat_victory",
+      "channel": 1,
+      "priority": 75,
+      "duration_target_sec": 0.12,
+      "character": "勝利演出開始を示す短い明るい音。"
     }
   ]
 }

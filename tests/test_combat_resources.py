@@ -874,6 +874,51 @@ def test_bat005_victory_cue_keeps_world_frozen_until_restore() -> None:
     assert (enemy.x, enemy.z) == enemy_before
 
 
+def test_bat006_marker_feedback_events_follow_hit_and_miss() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+
+    hit_events = hit_combat_marker(model, camera, session.marker_positions[0])
+    resolve_events = finish_current_parry_round(model, camera)
+
+    assert [event.kind for event in hit_events if event.kind == "combat_marker_hit"] == [
+        "combat_marker_hit"
+    ]
+    assert len([event for event in resolve_events if event.kind == "combat_marker_miss"]) == 2
+    assert session.result == "defense_success"
+
+
+def test_bat006_perfect_and_deflect_feedback_events_are_emitted() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    resolve_round_with_hits(model, camera, 3)
+
+    perfect_events = advance_from_resolve(model, camera)
+
+    assert model.combat_session is not None
+    assert model.combat_session.phase == "PERFECT_FREEZE"
+    assert [event.kind for event in perfect_events if event.kind == "combat_perfect_started"] == [
+        "combat_perfect_started"
+    ]
+
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    resolve_round_with_hits(model, camera, 1)
+    advance_from_resolve(model, camera)
+    resolve_round_with_hits(model, camera, 1)
+
+    deflect_events = advance_from_resolve(model, camera)
+
+    assert model.combat_session is not None
+    assert model.combat_session.phase == "COMBAT_EXIT_DEFLECT"
+    assert [event.kind for event in deflect_events if event.kind == "combat_deflect_started"] == [
+        "combat_deflect_started"
+    ]
+
+
 def test_safe_zone_blocks_contact_and_enemy_entry() -> None:
     model, camera = make_model()
     enemy = normal_enemy(model)

@@ -44,7 +44,7 @@ python3 tools/validate_spec_data.py --self-test
   "enemy_count": 3,
   "passable_sample_cells": 4028,
   "reachable_sample_cells": 4028,
-  "audio_events": 5,
+  "audio_events": 10,
   "rejected_invalid_mutations": 7
 }
 ```

@@ -207,10 +207,15 @@ def validate(
         "barrier_repelled",
         "discharge_succeeded",
         "action_denied",
+        "combat_marker_hit",
+        "combat_marker_miss",
+        "combat_perfect_started",
+        "combat_deflect_started",
+        "combat_victory_cue_started",
     }
     actual_events = [e["event"] for e in audio["events"]]
     require(
-        set(actual_events) == expected_events and len(actual_events) == 5,
+        set(actual_events) == expected_events and len(actual_events) == len(expected_events),
         "audio event list mismatch",
     )
     for event in audio["events"]:

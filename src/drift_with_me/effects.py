@@ -188,6 +188,21 @@ def presentation_cue_for_event(event: GameEvent) -> str | None:
         return "DWF_ZAP_HIT"
     if event.kind == "abnormal_windup_started":
         return "DWF_ABNORMAL_WINDUP"
+    if event.kind == "combat_marker_hit":
+        return "DWF_COMBAT_MARKER_HIT"
+    if event.kind == "combat_marker_miss":
+        return "DWF_COMBAT_MARKER_MISS"
+    if event.kind == "combat_perfect_started":
+        return "DWF_COMBAT_PERFECT"
+    if event.kind == "combat_deflect_started":
+        return "DWF_COMBAT_DEFLECT"
+    if event.kind == "combat_victory_cue_started":
+        outcome = event.payload.get("combat_outcome")
+        if outcome == "capture":
+            return "DWF_COMBAT_VICTORY_CAPTURE"
+        if outcome == "defeat":
+            return "DWF_COMBAT_VICTORY_DEFEAT"
+        return "DWF_COMBAT_VICTORY_DEFLECT"
     return None
 
 
@@ -309,6 +324,70 @@ class EffectSystem:
             dz = float(event.payload.get("dash_z", 0.0))
             if math.hypot(dx, dz) > 1e-6:
                 self.add_stroke(x, 1.0, z, x + dx * 28.0, 1.0, z + dz * 28.0, 8, 0.35)
+        elif cue_id == "DWF_COMBAT_MARKER_HIT":
+            self.spawn_burst_palette(
+                model.player.x,
+                model.player_cube_size * 0.6,
+                model.player.z,
+                colors=(7, 10),
+                count=3,
+                speed=8.0,
+            )
+            self.add_glint_strokes(model.player.x, model.player.z, 7.0, 10, 0.12)
+        elif cue_id == "DWF_COMBAT_MARKER_MISS":
+            self.add_ring(model.player.x, model.player.z, 5.0, 8.0, 5, 0.14)
+            self.add_emote("player", "player", model.player.x, model.player.z, "x", 5, 0.22)
+        elif cue_id == "DWF_COMBAT_PERFECT":
+            self.spawn_burst_palette(
+                model.player.x,
+                model.player_cube_size * 0.8,
+                model.player.z,
+                colors=(7, 10, 12),
+                count=8,
+                speed=16.0,
+            )
+            self.add_ring(model.player.x, model.player.z, 8.0, 20.0, 10, 0.28)
+            self.add_glint_strokes(model.player.x, model.player.z, 16.0, 7, 0.24)
+            self.add_screen_cue("focus_lines", 0.2)
+        elif cue_id == "DWF_COMBAT_DEFLECT":
+            enemy = model.enemy_by_id(event.target_id or "")
+            target_x = enemy.x if enemy is not None else x
+            target_z = enemy.z if enemy is not None else z
+            self.spawn_burst_palette(target_x, y, target_z, colors=(7, 10, 13), count=6, speed=18.0)
+            self.add_ring(target_x, target_z, 7.0, 18.0, 7, 0.24)
+            self.add_direction_strokes(
+                model.player.x, model.player.z, target_x, target_z, 16.0, 7, 0.18
+            )
+        elif cue_id == "DWF_COMBAT_VICTORY_DEFLECT":
+            self.spawn_burst_palette(
+                model.player.x,
+                model.player_cube_size * 0.9,
+                model.player.z,
+                colors=(7, 10),
+                count=6,
+                speed=12.0,
+            )
+            self.add_glint_strokes(model.player.x, model.player.z, 14.0, 7, 0.28)
+        elif cue_id == "DWF_COMBAT_VICTORY_CAPTURE":
+            self.spawn_burst_palette(
+                model.player.x,
+                model.player_cube_size * 0.9,
+                model.player.z,
+                colors=(5, 12, 7),
+                count=7,
+                speed=11.0,
+            )
+            self.add_ring(model.player.x, model.player.z, 7.0, 16.0, 12, 0.3)
+        elif cue_id == "DWF_COMBAT_VICTORY_DEFEAT":
+            self.spawn_burst_palette(
+                model.player.x,
+                model.player_cube_size * 0.9,
+                model.player.z,
+                colors=(7, 10, 9),
+                count=8,
+                speed=15.0,
+            )
+            self.add_glint_strokes(model.player.x, model.player.z, 18.0, 10, 0.28)
 
     def process_camera_cue(
         self, cue_id: str, event: GameEvent, camera_reaction_delay: float

@@ -515,8 +515,8 @@
       "sweep_sec": 1.35,
       "track_padding_px": 12,
       "marker_count": 3,
-      "hit_radius_px": 9,
-      "gate_radius_px": 18,
+      "hit_radius_px": 10,
+      "gate_radius_px": 20,
       "input_debounce_sec": 0.08,
       "patterns_normalized": [
         [
@@ -550,7 +550,7 @@
       "exploration": 1.0,
       "preimpact_world": 0.3,
       "perfect_world": 0.12,
-      "perfect_hold_sec": 0.32,
+      "perfect_hold_sec": 0.38,
       "combat_ui": 1.0
     },
     "defense": {
@@ -567,7 +567,7 @@
       "zap_requires_existing_energy_cost": true
     },
     "victory": {
-      "cue_sec": 0.72
+      "cue_sec": 0.78
     },
     "exit": {
       "knockback_visual_sec": 0.28,
@@ -591,7 +591,10 @@
     "hitstop_event_ms": {
       "barrier_repelled": 16.6666666667,
       "enemy_captured": 33.3333333333,
-      "discharge_succeeded": 50.0
+      "discharge_succeeded": 50.0,
+      "combat_marker_hit": 10.0,
+      "combat_perfect_started": 45.0,
+      "combat_deflect_started": 25.0
     },
     "combat_camera_pulse_enabled": false,
     "camera_offset_cap_px": 2.0,
@@ -607,6 +610,26 @@
         "zoom_attack_ms": 40.0,
         "zoom_hold_ms": 30.0,
         "zoom_return_ms": 170.0
+      },
+      "DWF_COMBAT_PERFECT": {
+        "shake_amplitude_px": 1.0,
+        "shake_duration_ms": 90.0,
+        "zoom_peak": 0.035,
+        "zoom_attack_ms": 35.0,
+        "zoom_hold_ms": 45.0,
+        "zoom_return_ms": 180.0
+      },
+      "DWF_COMBAT_DEFLECT": {
+        "shake_amplitude_px": 1.2,
+        "shake_duration_ms": 90.0
+      },
+      "DWF_COMBAT_VICTORY_DEFEAT": {
+        "shake_amplitude_px": 1.0,
+        "shake_duration_ms": 80.0,
+        "zoom_peak": 0.025,
+        "zoom_attack_ms": 30.0,
+        "zoom_hold_ms": 35.0,
+        "zoom_return_ms": 150.0
       }
     },
     "flash_enabled": false,
@@ -642,7 +665,12 @@
       "barrier_repelled": 30,
       "enemy_captured": 60,
       "discharge_succeeded": 80,
-      "action_denied": 5
+      "action_denied": 5,
+      "combat_marker_hit": 20,
+      "combat_marker_miss": 15,
+      "combat_perfect_started": 70,
+      "combat_deflect_started": 65,
+      "combat_victory_cue_started": 75
     }
   }
 }

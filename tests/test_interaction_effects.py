@@ -464,6 +464,42 @@ def test_presentation_cue_mapping_for_existing_events() -> None:
         )
         == "DWF_ABNORMAL_WINDUP"
     )
+    assert (
+        presentation_cue_for_event(
+            event(model, "combat_marker_hit", model.player.x, model.player.z)
+        )
+        == "DWF_COMBAT_MARKER_HIT"
+    )
+    assert (
+        presentation_cue_for_event(
+            event(model, "combat_marker_miss", model.player.x, model.player.z)
+        )
+        == "DWF_COMBAT_MARKER_MISS"
+    )
+    assert (
+        presentation_cue_for_event(
+            event(model, "combat_perfect_started", model.player.x, model.player.z)
+        )
+        == "DWF_COMBAT_PERFECT"
+    )
+    assert (
+        presentation_cue_for_event(
+            event(model, "combat_deflect_started", model.player.x, model.player.z)
+        )
+        == "DWF_COMBAT_DEFLECT"
+    )
+    assert (
+        presentation_cue_for_event(
+            event(
+                model,
+                "combat_victory_cue_started",
+                model.player.x,
+                model.player.z,
+                payload={"combat_outcome": "defeat"},
+            )
+        )
+        == "DWF_COMBAT_VICTORY_DEFEAT"
+    )
 
 
 def test_presentation_cues_create_local_fx_once_per_event() -> None:

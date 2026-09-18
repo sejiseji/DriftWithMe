@@ -62,6 +62,18 @@ def test_hitstop_uses_max_duration_cap_and_event_deduplication() -> None:
     assert app.accumulator == 0.5
 
 
+def test_hitstop_supports_bat006_combat_feedback_events_when_enabled() -> None:
+    app = make_hitstop_app(enabled=True)
+    app.runtime.raw["effects"]["hitstop_hard_cap_ms"] = 40.0
+
+    app.request_hitstop_from_events(
+        [event(app, "combat_marker_hit"), event(app, "combat_perfect_started")]
+    )
+
+    assert app.hitstop_remaining == pytest.approx(0.04)
+    assert app.accumulator == 0.0
+
+
 def test_hitstop_freezes_model_clock_but_advances_fx() -> None:
     app = make_hitstop_app(enabled=True)
     app.hitstop_remaining = 0.05

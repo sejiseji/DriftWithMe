@@ -21,6 +21,11 @@ SOUND_SHAPES = {
     "barrier_repel": ("g1c2g1", "ppp", "764", "nfn", 6),
     "discharge_success": ("c3g2c3e3", "nnnn", "7764", "ffff", 5),
     "action_denied": ("c1", "t", "4", "f", 5),
+    "combat_marker_hit": ("e3", "t", "7", "n", 4),
+    "combat_marker_miss": ("c2", "t", "4", "f", 6),
+    "combat_perfect": ("e3g3c4", "ttt", "776", "nnn", 5),
+    "combat_deflect": ("g2c3", "pp", "76", "nf", 5),
+    "combat_victory": ("c3e3g3c4", "tttt", "6675", "nnnn", 5),
 }
 
 

@@ -104,6 +104,23 @@ def test_camera_reactions_create_delayed_non_additive_transform() -> None:
     assert abs(transform.offset_y) <= 2.0
 
 
+def test_bat006_combat_camera_reaction_uses_existing_gates() -> None:
+    raw = make_runtime_raw(shake=True, pulse=True)
+    model = make_model(raw)
+    effects = EffectSystem(raw)
+    perfect = make_event(model, "combat_perfect_started")
+
+    effects.process_events([perfect], model)
+    effects.update(0.04, model)
+    transform = effects.camera_transform(512, 236)
+
+    assert len(effects.camera_impulses) == 1
+    assert transform.zoom_multiplier > 1.0
+    assert transform.zoom_multiplier <= 1.035
+    assert abs(transform.offset_x) <= 2.0
+    assert abs(transform.offset_y) <= 2.0
+
+
 def test_presentation_camera_changes_render_only_and_respects_focus_mode() -> None:
     raw = make_runtime_raw(shake=True, pulse=True)
     model = make_model(raw)
