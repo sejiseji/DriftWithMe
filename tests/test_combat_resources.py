@@ -62,6 +62,67 @@ def start_fast_combat(model: GameModel, camera: CameraState):
     return enemy
 
 
+def test_contact_combat_starts_with_entry_settle_phase_before_windup() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "COMBAT_ENTRY"
+    assert session.duration_sec == pytest.approx(model.combat_duration_sec())
+
+    remaining = max(0.0, model.combat_duration_sec() - session.phase_elapsed_sec - 0.01)
+    model.step(InputIntent(), camera, remaining)
+    assert session.phase == "COMBAT_ENTRY"
+
+    events = model.step(InputIntent(), camera, 0.02)
+    assert session.phase == "ENEMY_WINDUP"
+    assert [event.kind for event in events] == ["combat_phase_changed"]
+    assert events[0].payload["phase"] == "ENEMY_WINDUP"
+
+
+def test_combat_entry_actor_presentation_moves_to_screen_anchors() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    session = model.combat_session
+    assert session is not None
+    renderer = Renderer(None)
+    enemy = normal_enemy(model)
+
+    session.phase_elapsed_sec = 0.0
+    player_start = renderer.player_actor_presentation(model, camera)
+    enemy_start = renderer.enemy_actor_presentation(model, enemy, camera)
+    assert player_start.x == pytest.approx(session.snapshot.player.x)
+    assert player_start.z == pytest.approx(session.snapshot.player.z)
+    assert enemy_start.x == pytest.approx(session.snapshot.enemy.x)
+    assert enemy_start.z == pytest.approx(session.snapshot.enemy.z)
+    assert player_start.jump_y == pytest.approx(0.0)
+
+    entry = model.combat_v1_config()["entry"]
+    session.phase_elapsed_sec = (
+        float(entry["isolation_sec"]) + float(entry["actor_settle_sec"]) * 0.5
+    )
+    player_mid = renderer.player_actor_presentation(model, camera)
+    enemy_mid = renderer.enemy_actor_presentation(model, enemy, camera)
+    assert player_mid.jump_y > 0.0
+    assert enemy_mid.jump_y > 0.0
+    assert (
+        abs(player_mid.x - session.snapshot.player.x)
+        + abs(player_mid.z - session.snapshot.player.z)
+        > 1e-6
+    )
+
+    session.phase = "ENEMY_WINDUP"
+    session.phase_elapsed_sec = 0.0
+    player_settled = renderer.player_actor_presentation(model, camera)
+    expected_player_screen = renderer.combat_actor_screen_anchor(model, camera, "player")
+    assert expected_player_screen is not None
+    projected_player = camera.project(Vec3(player_settled.x, 0.0, player_settled.z))
+    assert projected_player is not None
+    assert projected_player.x == pytest.approx(expected_player_screen[0], abs=1e-6)
+    assert projected_player.y == pytest.approx(expected_player_screen[1], abs=1e-6)
+    assert player_settled.jump_y == pytest.approx(0.0)
+
+
 def step_to_combat_phase(model: GameModel, camera: CameraState, phase: str) -> list:
     events = []
     for _ in range(80):

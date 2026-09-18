@@ -163,6 +163,13 @@ class BakedGroundImage:
     reference_center_y: float
 
 
+@dataclass(frozen=True)
+class ActorPresentation:
+    x: float
+    z: float
+    jump_y: float = 0.0
+
+
 class Renderer:
     SPIN_DIRECTION_VIEWS = (
         "right",
@@ -232,7 +239,9 @@ class Renderer:
             with self.atmosphere_depth_effects(camera, command.depth, command.atmosphere_strength):
                 command.draw()
         self.draw_barrier(model, camera)
-        if self.player_is_occluded(model, camera, presentation_time):
+        if model.combat_session is None and self.player_is_occluded(
+            model, camera, presentation_time
+        ):
             self.draw_player_outline(model, camera, presentation_time)
         self.draw_interaction_marker(model, camera)
         self.draw_action_marker(model, camera)
@@ -380,8 +389,8 @@ class Renderer:
         for enemy in model.enemies:
             if combat_isolated and enemy.id != combat_enemy_id:
                 continue
-            enemy_x, enemy_z = model.enemy_presentation_position(enemy)
-            anchor = camera.project(Vec3(enemy_x, 0.0, enemy_z))
+            enemy_presentation = self.enemy_actor_presentation(model, enemy, camera)
+            anchor = camera.project(Vec3(enemy_presentation.x, 0.0, enemy_presentation.z))
             if anchor is None:
                 continue
             commands.append(
@@ -389,7 +398,9 @@ class Renderer:
                     depth=anchor.depth,
                     layer_bias=0,
                     stable_id=enemy.id,
-                    draw=lambda enemy=enemy: self.draw_enemy(model, enemy, camera),
+                    draw=lambda enemy=enemy, presentation=enemy_presentation: self.draw_enemy(
+                        model, enemy, camera, presentation
+                    ),
                     atmosphere_strength=self.atmosphere_strength_config(
                         "enemy_strength", ATMOSPHERE_ENEMY_STRENGTH
                     ),
@@ -446,14 +457,17 @@ class Renderer:
                     ),
                 )
             )
-        player_anchor = camera.project(Vec3(model.player.x, 0.0, model.player.z))
+        player_presentation = self.player_actor_presentation(model, camera)
+        player_anchor = camera.project(Vec3(player_presentation.x, 0.0, player_presentation.z))
         if player_anchor is not None:
             commands.append(
                 DrawCommand(
                     depth=player_anchor.depth,
                     layer_bias=0,
                     stable_id="player",
-                    draw=lambda: self.draw_player(model, camera, presentation_time),
+                    draw=lambda presentation=player_presentation: self.draw_player(
+                        model, camera, presentation_time, presentation
+                    ),
                     atmosphere_strength=self.atmosphere_strength_config(
                         "player_strength", ATMOSPHERE_PLAYER_STRENGTH
                     ),
@@ -473,6 +487,111 @@ class Renderer:
             dormant_enemies=model.debug.dormant_enemies,
         )
         return commands
+
+    def player_actor_presentation(self, model: GameModel, camera: CameraState) -> ActorPresentation:
+        session = model.combat_session
+        if session is None:
+            return ActorPresentation(model.player.x, model.player.z)
+        target = self.combat_actor_anchor_ground(model, camera, "player")
+        if target is None:
+            target_x = model.player.x
+            target_z = model.player.z
+        else:
+            target_x, target_z = target
+        if session.phase == "COMBAT_ENTRY":
+            progress = self.combat_actor_settle_progress(model)
+            return ActorPresentation(
+                _lerp(session.snapshot.player.x, target_x, progress),
+                _lerp(session.snapshot.player.z, target_z, progress),
+                self.combat_actor_entry_jump_y(model, progress),
+            )
+        return ActorPresentation(target_x, target_z)
+
+    def enemy_actor_presentation(
+        self, model: GameModel, enemy, camera: CameraState
+    ) -> ActorPresentation:
+        session = model.combat_session
+        if session is None or session.enemy_id != enemy.id:
+            enemy_x, enemy_z = model.enemy_presentation_position(enemy)
+            return ActorPresentation(enemy_x, enemy_z)
+        target = self.combat_actor_anchor_ground(model, camera, "enemy")
+        if target is None:
+            target_x = enemy.x
+            target_z = enemy.z
+        else:
+            target_x, target_z = target
+        if session.phase == "COMBAT_ENTRY":
+            progress = self.combat_actor_settle_progress(model)
+            return ActorPresentation(
+                _lerp(session.snapshot.enemy.x, target_x, progress),
+                _lerp(session.snapshot.enemy.z, target_z, progress),
+                self.combat_actor_entry_jump_y(model, progress),
+            )
+        offset_x, offset_z = model.combat_enemy_presentation_offset(enemy)
+        return ActorPresentation(target_x + offset_x, target_z + offset_z)
+
+    def combat_actor_anchor_ground(
+        self, model: GameModel, camera: CameraState, actor: str
+    ) -> tuple[float, float] | None:
+        screen_anchor = self.combat_actor_screen_anchor(model, camera, actor)
+        if screen_anchor is None:
+            return None
+        screen_x, screen_y = screen_anchor
+        ground = (
+            screen_to_ground_affine(camera, screen_x, screen_y)
+            if self.camera_is_affine(camera)
+            else screen_to_ground_point(camera, screen_x, screen_y)
+        )
+        if ground is None:
+            return None
+        return ground.x, ground.y
+
+    def combat_actor_screen_anchor(
+        self, model: GameModel, camera: CameraState, actor: str
+    ) -> tuple[float, float] | None:
+        presentation = (
+            model.combat_v1_config().get("presentation_medium_512x236", {})
+            if hasattr(model, "combat_v1_config")
+            else {}
+        )
+        if not isinstance(presentation, dict):
+            presentation = {}
+        key = "player_anchor_px" if actor == "player" else "enemy_anchor_px"
+        fallback = (214.0, 142.0) if actor == "player" else (318.0, 112.0)
+        raw_anchor = presentation.get(key, fallback)
+        if not isinstance(raw_anchor, (list, tuple)) or len(raw_anchor) != 2:
+            raw_anchor = fallback
+        ref_w = 512.0
+        ref_h = 236.0
+        return (
+            float(raw_anchor[0]) * camera.viewport_width / ref_w,
+            float(raw_anchor[1]) * camera.viewport_height / ref_h,
+        )
+
+    def combat_actor_settle_progress(self, model: GameModel) -> float:
+        session = model.combat_session
+        if session is None:
+            return 0.0
+        if session.phase != "COMBAT_ENTRY":
+            return 1.0
+        entry = model.combat_v1_config().get("entry", {})
+        if not isinstance(entry, dict):
+            entry = {}
+        isolation_sec = max(0.0, float(entry.get("isolation_sec", 0.18)))
+        settle_sec = max(0.0, float(entry.get("actor_settle_sec", 0.2)))
+        if settle_sec <= 1e-6:
+            return 1.0 if session.phase_elapsed_sec >= isolation_sec else 0.0
+        return _smoothstep((session.phase_elapsed_sec - isolation_sec) / settle_sec)
+
+    def combat_actor_entry_jump_y(self, model: GameModel, progress: float) -> float:
+        session = model.combat_session
+        if session is None or session.phase != "COMBAT_ENTRY":
+            return 0.0
+        entry = model.combat_v1_config().get("entry", {})
+        if not isinstance(entry, dict):
+            entry = {}
+        height = float(entry.get("actor_jump_height_world", 18.0))
+        return math.sin(max(0.0, min(progress, 1.0)) * math.pi) * height
 
     def draw_grassland_micro_layer(self, model: GameModel, camera: CameraState) -> int:
         config = model.config.get("grassland_micro", {})
@@ -2178,11 +2297,20 @@ class Renderer:
         pyxel.circ(bounds.x + bounds.width * 2 // 3, bounds.y + crown_h // 2, crown_w // 4, 3)
         pyxel.line(bounds.x + 2, bounds.max_y - 1, bounds.max_x - 2, bounds.max_y - 1, 0)
 
-    def draw_enemy(self, model: GameModel, enemy, camera: CameraState) -> None:
+    def draw_enemy(
+        self,
+        model: GameModel,
+        enemy,
+        camera: CameraState,
+        presentation: ActorPresentation | None = None,
+    ) -> None:
         if enemy.state == "DEFEATED":
             return
-        enemy_x, enemy_z = model.enemy_presentation_position(enemy)
-        point = camera.project(Vec3(enemy_x, 4.0, enemy_z))
+        if presentation is None:
+            presentation = self.enemy_actor_presentation(model, enemy, camera)
+        enemy_x = presentation.x
+        enemy_z = presentation.z
+        point = camera.project(Vec3(enemy_x, 4.0 + presentation.jump_y, enemy_z))
         if point is None:
             return
         pyxel = self.pyxel
@@ -2202,7 +2330,9 @@ class Renderer:
             color = 13
         x = int(point.x)
         y = int(point.y)
-        sprite_placement = self.draw_enemy_sprite(model, enemy, camera, enemy_x, enemy_z)
+        sprite_placement = self.draw_enemy_sprite(
+            model, enemy, camera, enemy_x, enemy_z, presentation.jump_y
+        )
         if sprite_placement is not None:
             left, top, width, height = sprite_placement.rect
             x = left + width // 2
@@ -2256,6 +2386,7 @@ class Renderer:
         camera: CameraState,
         x: float | None = None,
         z: float | None = None,
+        y: float = 0.0,
     ):
         asset = self.enemy_sprite_asset(model, enemy)
         if asset is None:
@@ -2265,7 +2396,7 @@ class Renderer:
         return placement_for_upright_height_billboard(
             camera,
             asset.definition,
-            Vec3(draw_x, 0.0, draw_z),
+            Vec3(draw_x, y, draw_z),
         )
 
     def draw_enemy_sprite(
@@ -2275,8 +2406,9 @@ class Renderer:
         camera: CameraState,
         x: float | None = None,
         z: float | None = None,
+        y: float = 0.0,
     ):
-        placement = self.enemy_sprite_placement(model, enemy, camera, x, z)
+        placement = self.enemy_sprite_placement(model, enemy, camera, x, z, y)
         if placement is None:
             return None
         asset = self.enemy_sprite_asset(model, enemy)
@@ -2354,9 +2486,17 @@ class Renderer:
         self.pyxel.circb(x, y, radius, 12)
         self.pyxel.pset(x, y, 7)
 
-    def draw_player(self, model: GameModel, camera: CameraState, presentation_time: float) -> None:
-        hover = self.player_visual_y_offset(model, presentation_time)
-        shadow = camera.project(Vec3(model.player.x, 0.0, model.player.z))
+    def draw_player(
+        self,
+        model: GameModel,
+        camera: CameraState,
+        presentation_time: float,
+        presentation: ActorPresentation | None = None,
+    ) -> None:
+        if presentation is None:
+            presentation = self.player_actor_presentation(model, camera)
+        hover = self.player_visual_y_offset(model, presentation_time) + presentation.jump_y
+        shadow = camera.project(Vec3(presentation.x, 0.0, presentation.z))
         if shadow is not None:
             radius = self.depth_scaled_radius(camera, shadow.depth, numerator=1200, minimum=3)
             self.draw_shadow_ellipse(
@@ -2366,11 +2506,20 @@ class Renderer:
                 max(2, radius // 2),
                 self.atmosphere_shadow_dither_cells(camera, shadow.depth, important_actor=True),
             )
-        if self.draw_player_sprite(model, camera, presentation_time):
+        if self.draw_player_sprite(
+            model, camera, presentation_time, presentation.x, presentation.z, hover
+        ):
             return
         half = model.player_cube_size / 2.0
         self.draw_box(
-            camera, model.player.x, model.player.z, half, half, model.player_cube_size, hover, 11
+            camera,
+            presentation.x,
+            presentation.z,
+            half,
+            half,
+            model.player_cube_size,
+            hover,
+            11,
         )
 
     def player_visual_y_offset(self, model: GameModel, presentation_time: float) -> float:
@@ -2559,16 +2708,25 @@ class Renderer:
         return self.sprite_assets.get(asset_id)
 
     def player_sprite_placement(
-        self, model: GameModel, camera: CameraState, presentation_time: float
+        self,
+        model: GameModel,
+        camera: CameraState,
+        presentation_time: float,
+        x: float | None = None,
+        z: float | None = None,
+        y: float | None = None,
     ):
         selection = self.player_sprite_selection(model, camera)
         if selection is None:
             return None
         asset, flip_x = selection
+        draw_x = model.player.x if x is None else x
+        draw_z = model.player.z if z is None else z
+        draw_y = self.player_visual_y_offset(model, presentation_time) if y is None else y
         anchor = Vec3(
-            model.player.x,
-            self.player_visual_y_offset(model, presentation_time),
-            model.player.z,
+            draw_x,
+            draw_y,
+            draw_z,
         )
         return placement_for_upright_height_billboard(
             camera,
@@ -2591,12 +2749,18 @@ class Renderer:
         return self.player_sprite_flipped_x
 
     def draw_player_sprite(
-        self, model: GameModel, camera: CameraState, presentation_time: float
+        self,
+        model: GameModel,
+        camera: CameraState,
+        presentation_time: float,
+        x: float | None = None,
+        z: float | None = None,
+        y: float | None = None,
     ) -> bool:
         asset = self.player_sprite_asset(model, camera)
         if asset is None:
             return False
-        placement = self.player_sprite_placement(model, camera, presentation_time)
+        placement = self.player_sprite_placement(model, camera, presentation_time, x, z, y)
         if placement is None:
             return False
         self.draw_atmospheric_scaled_sprite(asset, placement)
@@ -3443,3 +3607,13 @@ class Renderer:
             return
         self.pyxel.rectb(bounds.x - 2, bounds.y - 2, bounds.width + 4, bounds.height + 4, 7)
         self.pyxel.rectb(bounds.x - 1, bounds.y - 1, bounds.width + 2, bounds.height + 2, 12)
+
+
+def _lerp(start: float, end: float, amount: float) -> float:
+    t = max(0.0, min(amount, 1.0))
+    return start + (end - start) * t
+
+
+def _smoothstep(value: float) -> float:
+    t = max(0.0, min(value, 1.0))
+    return t * t * (3.0 - 2.0 * t)

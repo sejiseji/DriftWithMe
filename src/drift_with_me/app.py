@@ -1462,6 +1462,7 @@ class DriftWithMeApp:
             if counter_mode != "NONE":
                 return counter_mode
             if session.phase in {
+                "COMBAT_ENTRY",
                 "PARRY_RESOLVE",
                 "PERFECT_FREEZE",
                 "COMBAT_EXIT_DEFLECT",

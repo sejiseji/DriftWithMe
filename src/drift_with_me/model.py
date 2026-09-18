@@ -87,7 +87,7 @@ class CombatSession:
     enemy_return_x: float
     enemy_return_z: float
     duration_sec: float
-    phase: str = "ENEMY_WINDUP"
+    phase: str = "COMBAT_ENTRY"
     elapsed_sec: float = 0.0
     phase_elapsed_sec: float = 0.0
     pattern_id: str = ""
@@ -1728,6 +1728,10 @@ class GameModel:
         )
         session.defense_was_down = intent.barrier
 
+        if session.phase == "COMBAT_ENTRY":
+            if session.phase_elapsed_sec >= self.combat_duration_sec():
+                self.advance_combat_phase(session, "ENEMY_WINDUP", events)
+            return
         if session.phase == "ENEMY_WINDUP":
             if session.phase_elapsed_sec >= self.combat_windup_sec():
                 self.advance_combat_phase(session, "ENEMY_CHARGE", events)
