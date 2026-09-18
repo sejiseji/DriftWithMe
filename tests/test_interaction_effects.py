@@ -550,6 +550,33 @@ def test_zap_cue_creates_draw_only_enemy_snapshot() -> None:
     assert snapshot_model(model) == before
 
 
+def test_combat_defeat_restore_adds_linger_particles_at_committed_enemy_position() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    enemy = normal_enemy(model)
+    enemy.state = "DEFEATED"
+    enemy.x += 34.0
+    enemy.z += 12.0
+    before = snapshot_model(model)
+    restored = model.event_queue.emit(
+        world_tick=model.world_tick,
+        kind="combat_restored",
+        actor_id=enemy.id,
+        target_id="player",
+        world_position=(model.player.x, 0.0, model.player.z),
+        payload={"combat_outcome": "defeat"},
+    )
+
+    effects.process_events([restored, restored], model)
+
+    assert snapshot_model(model) == before
+    assert len(effects.particles) == 6
+    assert {particle.color for particle in effects.particles} >= {1, 5, 13}
+    assert all(abs(particle.x - enemy.x) <= 1.6 for particle in effects.particles)
+    assert all(abs(particle.z - enemy.z) <= 1.6 for particle in effects.particles)
+    assert all(particle.lifetime >= 0.82 for particle in effects.particles)
+
+
 def test_grass_reaction_uses_cooldown() -> None:
     model, _camera = make_model()
     effects = EffectSystem(model.config)

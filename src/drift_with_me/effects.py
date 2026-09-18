@@ -261,6 +261,9 @@ class EffectSystem:
     ) -> None:
         for event in events:
             x, y, z = event.world_position
+            combat_defeat_restored = (
+                event.kind == "combat_restored" and event.payload.get("combat_outcome") == "defeat"
+            )
             cue_id = presentation_cue_for_event(event)
             if cue_id is not None:
                 key = (event.event_id, cue_id)
@@ -272,6 +275,8 @@ class EffectSystem:
                     self.process_camera_cue(cue_id, event, camera_reaction_delay)
             elif event.kind == "bubble_fired":
                 self.spawn_burst(x, y, z, color=12, count=5, speed=16.0)
+            elif combat_defeat_restored:
+                self.add_defeated_enemy_linger(event, model)
             elif event.kind == "action_denied":
                 self.add_emote("player", "player", model.player.x, model.player.z, "?", 8, 0.45)
             elif event.kind == "inspection_completed":
@@ -572,6 +577,37 @@ class EffectSystem:
                     vz=math.sin(angle) * speed,
                     color=colors[index % len(colors)],
                     lifetime=0.45 + (index % 2) * 0.1,
+                )
+            )
+
+    def add_defeated_enemy_linger(self, event: GameEvent, model) -> None:
+        cue_id = "DWF_ENEMY_DEFEAT_LINGER"
+        key = (event.event_id, cue_id)
+        if key in self._processed_cues:
+            return
+        self._processed_cues.add(key)
+
+        enemy = model.enemy_by_id(event.actor_id or event.target_id or "")
+        if enemy is None:
+            return
+        count = min(6, self.max_particles_per_event)
+        colors = (13, 5, 1, 7)
+        phase = (event.event_id % 7) * 0.31
+        for index in range(count):
+            if len(self.particles) >= self.max_particles:
+                return
+            angle = phase + index * math.tau / max(count, 1)
+            speed = 4.0 + (index % 3) * 1.6
+            self.particles.append(
+                WorldParticle(
+                    x=enemy.x + math.cos(angle) * 1.5,
+                    y=3.0 + (index % 2) * 2.0,
+                    z=enemy.z + math.sin(angle) * 1.5,
+                    vx=math.cos(angle) * speed,
+                    vy=6.0 + (index % 4) * 1.3,
+                    vz=math.sin(angle) * speed,
+                    color=colors[index % len(colors)],
+                    lifetime=0.82 + (index % 3) * 0.14,
                 )
             )
 
