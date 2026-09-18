@@ -1790,6 +1790,10 @@ class GameModel:
             return
         if session.phase == "VICTORY_CUE":
             if session.phase_elapsed_sec >= self.combat_victory_cue_sec():
+                self.prepare_combat_restore_jump(session, events)
+            return
+        if session.phase == "COMBAT_RESTORE_JUMP":
+            if session.phase_elapsed_sec >= self.combat_restore_jump_sec():
                 self.restore_combat_session(events)
             return
 
@@ -2094,19 +2098,25 @@ class GameModel:
     def combat_deflect_knockback_sec(self) -> float:
         return max(0.0, float(self.combat_exit_config().get("knockback_visual_sec", 0.28)))
 
-    def combat_enemy_presentation_offset(self, enemy: EnemyState) -> tuple[float, float]:
-        session = self.combat_session
-        if session is None or session.enemy_id != enemy.id:
-            return (0.0, 0.0)
-        if session.phase not in {"COMBAT_EXIT_DEFLECT", "COMBAT_EXIT_COUNTER"}:
-            return (0.0, 0.0)
-        duration = self.combat_deflect_knockback_sec()
-        if duration <= 1e-6:
-            return (0.0, 0.0)
+    def combat_restore_jump_sec(self) -> float:
+        return max(0.0, float(self.combat_exit_config().get("player_restore_jump_sec", 0.28)))
+
+    def combat_restore_jump_height_world(self) -> float:
+        return max(
+            0.0,
+            float(self.combat_exit_config().get("player_restore_jump_height_world", 16.0)),
+        )
+
+    def combat_enemy_knockback_world(self) -> float:
+        return max(0.0, float(self.combat_exit_config().get("enemy_knockback_world", 34.0)))
+
+    def combat_enemy_knockback_direction(
+        self, session: CombatSession, enemy: EnemyState | None = None
+    ) -> tuple[float, float]:
         dx = session.snapshot.enemy.x - session.snapshot.player.x
         dz = session.snapshot.enemy.z - session.snapshot.player.z
         length = math.hypot(dx, dz)
-        if length <= 1e-6:
+        if length <= 1e-6 and enemy is not None:
             dx = enemy.x - self.player.x
             dz = enemy.z - self.player.z
             length = math.hypot(dx, dz)
@@ -2114,10 +2124,23 @@ class GameModel:
             dx = 1.0
             dz = 0.0
             length = 1.0
-        t = max(0.0, min(session.phase_elapsed_sec / duration, 1.0))
+        return dx / length, dz / length
+
+    def combat_enemy_presentation_offset(self, enemy: EnemyState) -> tuple[float, float]:
+        session = self.combat_session
+        if session is None or session.enemy_id != enemy.id:
+            return (0.0, 0.0)
+        if session.phase not in {"COMBAT_EXIT_DEFLECT", "COMBAT_EXIT_COUNTER", "VICTORY_CUE"}:
+            return (0.0, 0.0)
+        duration = self.combat_deflect_knockback_sec()
+        dx, dz = self.combat_enemy_knockback_direction(session, enemy)
+        if session.phase == "VICTORY_CUE" or duration <= 1e-6:
+            t = 1.0
+        else:
+            t = max(0.0, min(session.phase_elapsed_sec / duration, 1.0))
         eased = 1.0 - (1.0 - t) * (1.0 - t)
-        distance = 34.0 * eased
-        return (dx / length * distance, dz / length * distance)
+        distance = self.combat_enemy_knockback_world() * eased
+        return (dx * distance, dz * distance)
 
     def enemy_presentation_position(self, enemy: EnemyState) -> tuple[float, float]:
         offset_x, offset_z = self.combat_enemy_presentation_offset(enemy)
@@ -2169,6 +2192,36 @@ class GameModel:
                 },
             )
         )
+
+    def prepare_combat_restore_jump(self, session: CombatSession, events: list[GameEvent]) -> None:
+        enemy = self.enemy_by_id(session.enemy_id)
+        player_x = session.snapshot.player.x
+        player_z = session.snapshot.player.z
+        if self.world.collides_player(
+            player_x, player_z, self.player_solid_half_x, self.player_solid_half_z
+        ):
+            player_x = session.player_return_x
+            player_z = session.player_return_z
+        session.player_return_x = player_x
+        session.player_return_z = player_z
+        if enemy is not None:
+            dx, dz = self.combat_enemy_knockback_direction(session, enemy)
+            desired_x = session.enemy_return_x + dx * self.combat_enemy_knockback_world()
+            desired_z = session.enemy_return_z + dz * self.combat_enemy_knockback_world()
+            min_separation = self.combat_min_safe_separation(enemy)
+            session.enemy_return_x, session.enemy_return_z = (
+                self.find_combat_enemy_safe_along_direction(
+                    enemy,
+                    desired_x,
+                    desired_z,
+                    player_x,
+                    player_z,
+                    dx,
+                    dz,
+                    min_separation,
+                )
+            )
+        self.advance_combat_phase(session, "COMBAT_RESTORE_JUMP", events)
 
     def combat_counter_enemy(self, session: CombatSession | None = None) -> EnemyState | None:
         session = self.combat_session if session is None else session
@@ -2449,8 +2502,12 @@ class GameModel:
         if enemy is not None:
             enemy_kind = enemy.kind
             min_separation = self.combat_min_safe_separation(enemy)
-            enemy_x, enemy_z = self.find_combat_enemy_anchor(
-                enemy, player_x, player_z, min_separation, start_x=enemy_x, start_z=enemy_z
+            dx = enemy_x - player_x
+            dz = enemy_z - player_z
+            if math.hypot(dx, dz) <= 1e-6:
+                dx, dz = self.combat_enemy_knockback_direction(session, enemy)
+            enemy_x, enemy_z = self.find_combat_enemy_safe_along_direction(
+                enemy, enemy_x, enemy_z, player_x, player_z, dx, dz, min_separation
             )
             if not self.combat_player_anchor_safe(
                 player_x, player_z, enemy_x, enemy_z, min_separation
@@ -2555,6 +2612,40 @@ class GameModel:
             if self.combat_enemy_anchor_safe(enemy, x, z, player_x, player_z, min_separation):
                 return x, z
         return origin_x, origin_z
+
+    def find_combat_enemy_safe_along_direction(
+        self,
+        enemy: EnemyState,
+        desired_x: float,
+        desired_z: float,
+        player_x: float,
+        player_z: float,
+        direction_x: float,
+        direction_z: float,
+        min_separation: float,
+    ) -> tuple[float, float]:
+        length = math.hypot(direction_x, direction_z)
+        if length <= 1e-6:
+            direction_x = desired_x - player_x
+            direction_z = desired_z - player_z
+            length = math.hypot(direction_x, direction_z)
+        if length <= 1e-6:
+            direction_x, direction_z = stable_direction(f"{desired_x:.3f}:{desired_z:.3f}")
+            length = math.hypot(direction_x, direction_z)
+        direction_x /= length
+        direction_z /= length
+        if self.combat_enemy_anchor_safe(
+            enemy, desired_x, desired_z, player_x, player_z, min_separation
+        ):
+            return desired_x, desired_z
+        for distance in (8.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0):
+            x = desired_x + direction_x * distance
+            z = desired_z + direction_z * distance
+            if self.combat_enemy_anchor_safe(enemy, x, z, player_x, player_z, min_separation):
+                return x, z
+        return self.find_combat_enemy_anchor(
+            enemy, player_x, player_z, min_separation, start_x=desired_x, start_z=desired_z
+        )
 
     def combat_anchor_candidates(
         self, start_x: float, start_z: float, preferred_x: float, preferred_z: float

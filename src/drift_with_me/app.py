@@ -1468,6 +1468,7 @@ class DriftWithMeApp:
                 "COMBAT_EXIT_DEFLECT",
                 "COMBAT_EXIT_COUNTER",
                 "VICTORY_CUE",
+                "COMBAT_RESTORE_JUMP",
             }:
                 return "NONE"
             return "GUARD"

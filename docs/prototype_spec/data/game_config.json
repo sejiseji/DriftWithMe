@@ -571,6 +571,9 @@
     },
     "exit": {
       "knockback_visual_sec": 0.28,
+      "enemy_knockback_world": 34.0,
+      "player_restore_jump_sec": 0.28,
+      "player_restore_jump_height_world": 16.0,
       "camera_restore_sec": 0.35,
       "enemy_stun_sec": 1.5,
       "player_invulnerability_sec": 0.5,

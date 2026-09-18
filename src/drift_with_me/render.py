@@ -505,6 +505,13 @@ class Renderer:
                 _lerp(session.snapshot.player.z, target_z, progress),
                 self.combat_actor_entry_jump_y(model, progress),
             )
+        if session.phase == "COMBAT_RESTORE_JUMP":
+            progress = self.combat_actor_restore_progress(model)
+            return ActorPresentation(
+                _lerp(target_x, session.player_return_x, progress),
+                _lerp(target_z, session.player_return_z, progress),
+                self.combat_actor_restore_jump_y(model, progress),
+            )
         return ActorPresentation(target_x, target_z)
 
     def enemy_actor_presentation(
@@ -527,6 +534,8 @@ class Renderer:
                 _lerp(session.snapshot.enemy.z, target_z, progress),
                 self.combat_actor_entry_jump_y(model, progress),
             )
+        if session.phase == "COMBAT_RESTORE_JUMP":
+            return ActorPresentation(session.enemy_return_x, session.enemy_return_z)
         offset_x, offset_z = model.combat_enemy_presentation_offset(enemy)
         return ActorPresentation(target_x + offset_x, target_z + offset_z)
 
@@ -591,6 +600,22 @@ class Renderer:
         if not isinstance(entry, dict):
             entry = {}
         height = float(entry.get("actor_jump_height_world", 18.0))
+        return math.sin(max(0.0, min(progress, 1.0)) * math.pi) * height
+
+    def combat_actor_restore_progress(self, model: GameModel) -> float:
+        session = model.combat_session
+        if session is None or session.phase != "COMBAT_RESTORE_JUMP":
+            return 1.0
+        duration = model.combat_restore_jump_sec()
+        if duration <= 1e-6:
+            return 1.0
+        return _smoothstep(session.phase_elapsed_sec / duration)
+
+    def combat_actor_restore_jump_y(self, model: GameModel, progress: float) -> float:
+        session = model.combat_session
+        if session is None or session.phase != "COMBAT_RESTORE_JUMP":
+            return 0.0
+        height = model.combat_restore_jump_height_world()
         return math.sin(max(0.0, min(progress, 1.0)) * math.pi) * height
 
     def draw_grassland_micro_layer(self, model: GameModel, camera: CameraState) -> int:

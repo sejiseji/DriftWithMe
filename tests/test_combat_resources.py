@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from drift_with_me.config import load_runtime_config
@@ -747,6 +749,92 @@ def test_bat003_deflect_restore_sets_safety_windows_and_cooldown() -> None:
     assert model.combat_reentry_cooldowns[enemy.id] == pytest.approx(2.0)
     assert events[-1].payload["combat_outcome"] == "deflect"
     assert events[-1].payload["successful_defense_count"] == 2
+
+
+def test_combat_restore_jump_returns_player_to_combat_start() -> None:
+    model, camera = make_model()
+    start_deflect_exit(model, camera)
+    step_exit_to_victory_cue(model, camera)
+    session = model.combat_session
+    assert session is not None
+    player_start = (session.snapshot.player.x, session.snapshot.player.z)
+
+    events = model.step(InputIntent(), camera, model.combat_victory_cue_sec() + 0.01)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "COMBAT_RESTORE_JUMP"
+    assert session.player_return_x == pytest.approx(player_start[0])
+    assert session.player_return_z == pytest.approx(player_start[1])
+    assert [event.payload["phase"] for event in events if event.kind == "combat_phase_changed"] == [
+        "COMBAT_RESTORE_JUMP"
+    ]
+
+    renderer = Renderer(None)
+    session.phase_elapsed_sec = model.combat_restore_jump_sec() * 0.5
+    presentation = renderer.player_actor_presentation(model, camera)
+    assert presentation.jump_y > 0.0
+
+    model.step(InputIntent(), camera, model.combat_restore_jump_sec() + 0.01)
+    assert model.combat_session is None
+    assert model.player.x == pytest.approx(player_start[0])
+    assert model.player.z == pytest.approx(player_start[1])
+
+
+def test_deflect_restore_commits_enemy_knockback_position() -> None:
+    model, camera = make_model()
+    enemy = start_deflect_exit(model, camera)
+    session = model.combat_session
+    assert session is not None
+    base_enemy_return = (session.enemy_return_x, session.enemy_return_z)
+    dx, dz = model.combat_enemy_knockback_direction(session, enemy)
+
+    step_exit_to_victory_cue(model, camera)
+    model.step(InputIntent(), camera, model.combat_victory_cue_sec() + 0.01)
+    session = model.combat_session
+    assert session is not None
+    expected_x = base_enemy_return[0] + dx * model.combat_enemy_knockback_world()
+    expected_z = base_enemy_return[1] + dz * model.combat_enemy_knockback_world()
+    assert session.enemy_return_x == pytest.approx(expected_x)
+    assert session.enemy_return_z == pytest.approx(expected_z)
+
+    step_until_combat_restored(model, camera)
+
+    assert enemy.x == pytest.approx(expected_x)
+    assert enemy.z == pytest.approx(expected_z)
+
+
+def test_enemy_restore_moves_farther_when_knockback_target_is_blocked(monkeypatch) -> None:
+    model, camera = make_model()
+    enemy = start_deflect_exit(model, camera)
+    session = model.combat_session
+    assert session is not None
+    dx, dz = model.combat_enemy_knockback_direction(session, enemy)
+    desired_x = session.enemy_return_x + dx * model.combat_enemy_knockback_world()
+    desired_z = session.enemy_return_z + dz * model.combat_enemy_knockback_world()
+    original_collides = model.world.collides_enemy_circle
+
+    def collides_first_knockback_target(x: float, z: float, radius: float) -> bool:
+        along = (x - desired_x) * dx + (z - desired_z) * dz
+        lateral = abs((x - desired_x) * -dz + (z - desired_z) * dx)
+        if math.isclose(along, 0.0, abs_tol=0.01) and lateral <= 0.01:
+            return True
+        return original_collides(x, z, radius)
+
+    monkeypatch.setattr(model.world, "collides_enemy_circle", collides_first_knockback_target)
+
+    step_exit_to_victory_cue(model, camera)
+    model.step(InputIntent(), camera, model.combat_victory_cue_sec() + 0.01)
+    session = model.combat_session
+    assert session is not None
+
+    moved_farther = (session.enemy_return_x - desired_x) * dx + (
+        session.enemy_return_z - desired_z
+    ) * dz
+    assert moved_farther > 0.0
+    assert not model.world.collides_enemy_circle(
+        session.enemy_return_x, session.enemy_return_z, model.enemy_radius(enemy)
+    )
 
 
 def test_bat004_perfect_enters_bubble_counter_window() -> None:
