@@ -11,7 +11,7 @@ from drift_with_me.config import load_runtime_config
 from drift_with_me.effects import EffectSystem
 from drift_with_me.events import GameEvent
 from drift_with_me.math3d import AffineCameraState, AffineProjectionProfile, CameraState, Vec3
-from drift_with_me.model import GameModel
+from drift_with_me.model import GameModel, InputIntent
 from drift_with_me.world import load_world_data
 
 
@@ -71,6 +71,22 @@ def make_app(raw: dict, model: GameModel) -> DriftWithMeApp:
 class SilentAudio:
     def play_events(self, events) -> None:
         self.last_events = list(events)
+
+
+def start_contact_combat(model: GameModel, raw: dict) -> CameraState:
+    model.player.x = 300.0
+    model.player.z = 192.0
+    enemy = model.enemy_by_id("urchin_normal_01")
+    assert enemy is not None
+    enemy.x = 307.0
+    enemy.z = 192.0
+    camera = camera_for_model(raw, model)
+
+    events = model.step(InputIntent(), camera, 1.0 / 60.0)
+
+    assert [event.kind for event in events] == ["combat_started"]
+    assert model.combat_session is not None
+    return camera
 
 
 def test_camera_reactions_default_off_do_not_create_impulses() -> None:
@@ -140,6 +156,26 @@ def test_presentation_camera_changes_render_only_and_respects_focus_mode() -> No
     assert app.presentation_camera(base_camera) is base_camera
 
 
+def test_combat_scene_camera_zooms_to_battle_pair_without_moving_world() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    app.projection_mode = "perspective"
+    base_camera = start_contact_combat(model, raw)
+    assert model.combat_session is not None
+    model.combat_session.elapsed_sec = float(raw["combat_v1"]["entry"]["camera_transition_sec"])
+
+    scene_camera = app.scene_camera(base_camera)
+
+    assert isinstance(scene_camera, CameraState)
+    assert scene_camera.distance < base_camera.distance
+    assert scene_camera.distance == pytest.approx(
+        float(raw["camera"]["base_distance"]) / float(raw["combat_v1"]["entry"]["combat_zoom"])
+    )
+    assert scene_camera.target.x == pytest.approx(303.5)
+    assert scene_camera.target.z == pytest.approx(192.0)
+
+
 def test_affine_scene_camera_applies_reactions_as_zoom_and_fx_offset() -> None:
     raw = make_runtime_raw(shake=True, pulse=True)
     model = make_model(raw)
@@ -159,6 +195,24 @@ def test_affine_scene_camera_applies_reactions_as_zoom_and_fx_offset() -> None:
     assert scene_camera.anchor_y == pytest.approx(base_camera.anchor_y)
     assert scene_camera.yaw_deg == pytest.approx(float(raw["camera"]["yaw_deg"]))
     assert scene_camera.pitch_deg == pytest.approx(float(raw["camera"]["pitch_deg"]))
+
+
+def test_affine_combat_scene_camera_uses_combat_zoom() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    app.projection_mode = "affine"
+    app.affine_projection_profile = AffineProjectionProfile.from_config(raw)
+    base_camera = start_contact_combat(model, raw)
+    assert model.combat_session is not None
+    model.combat_session.elapsed_sec = float(raw["combat_v1"]["entry"]["camera_transition_sec"])
+
+    scene_camera = app.scene_camera(base_camera)
+
+    assert isinstance(scene_camera, AffineCameraState)
+    assert scene_camera.zoom == pytest.approx(float(raw["combat_v1"]["entry"]["combat_zoom"]))
+    assert scene_camera.target.x == pytest.approx(303.5)
+    assert scene_camera.target.z == pytest.approx(192.0)
 
 
 def test_affine_scene_camera_keeps_projection_fixed_for_overview_like_camera() -> None:

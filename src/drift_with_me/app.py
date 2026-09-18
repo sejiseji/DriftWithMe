@@ -1126,9 +1126,54 @@ class DriftWithMeApp:
             self.draw_interaction_chip()
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
+        camera = self.combat_scene_camera(camera)
         if self.projection_mode != "affine":
             return self.presentation_camera(camera)
         return self.affine_scene_camera(camera)
+
+    def combat_scene_camera(self, camera: CameraState) -> CameraState:
+        session = self.model.combat_session
+        if session is None:
+            return camera
+        combat = self.runtime.raw.get("combat_v1", {})
+        entry = combat.get("entry", {}) if isinstance(combat, dict) else {}
+        target_zoom = float(entry.get("combat_zoom", 1.0))
+        if target_zoom <= 1.0:
+            return camera
+        transition = max(1e-6, float(entry.get("camera_transition_sec", 0.28)))
+        progress = _smoothstep(min(1.0, max(session.elapsed_sec, 1.0 / 60.0) / transition))
+        enemy = self.model.enemy_by_id(session.enemy_id)
+        if enemy is None:
+            enemy_x = session.snapshot.enemy.x
+            enemy_z = session.snapshot.enemy.z
+        else:
+            enemy_x, enemy_z = self.model.enemy_presentation_position(enemy)
+        combat_target = Vec3(
+            (self.model.player.x + enemy_x) * 0.5,
+            0.0,
+            (self.model.player.z + enemy_z) * 0.5,
+        )
+        camera_config = self.runtime.raw["camera"]
+        base_distance = float(camera_config["base_distance"])
+        current_zoom = base_distance / camera.distance
+        next_zoom = current_zoom + (target_zoom - current_zoom) * progress
+        next_zoom = max(
+            float(camera_config["zoom_min"]),
+            min(float(camera_config["zoom_max"]), next_zoom),
+        )
+        return CameraState(
+            target=_lerp_vec3(camera.target, combat_target, progress),
+            yaw_deg=camera.yaw_deg,
+            pitch_deg=camera.pitch_deg,
+            horizontal_fov_deg=camera.horizontal_fov_deg,
+            distance=base_distance / next_zoom,
+            near=camera.near,
+            far=camera.far,
+            anchor_x=camera.anchor_x,
+            anchor_y=camera.anchor_y,
+            viewport_width=camera.viewport_width,
+            viewport_height=camera.viewport_height,
+        )
 
     def affine_scene_camera(self, camera: CameraState) -> AffineCameraState:
         transform = self.effects.camera_transform(camera.viewport_width, camera.viewport_height)
@@ -2064,6 +2109,19 @@ class DriftWithMeApp:
                 if lines:
                     return lines
         return tuple(self.ui_renderer.resources.raw_text(line) for line in interaction.lines)
+
+
+def _smoothstep(value: float) -> float:
+    amount = max(0.0, min(1.0, value))
+    return amount * amount * (3.0 - 2.0 * amount)
+
+
+def _lerp_vec3(origin: Vec3, target: Vec3, amount: float) -> Vec3:
+    return Vec3(
+        origin.x + (target.x - origin.x) * amount,
+        origin.y + (target.y - origin.y) * amount,
+        origin.z + (target.z - origin.z) * amount,
+    )
 
 
 def main() -> None:
