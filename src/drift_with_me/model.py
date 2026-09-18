@@ -7,7 +7,14 @@ from typing import Any
 
 from drift_with_me.camera import camera_ground_axes, smoothing_alpha
 from drift_with_me.events import EventQueue, GameEvent
-from drift_with_me.math3d import CameraState, Vec3, screen_to_world_direction
+from drift_with_me.math3d import (
+    AffineCameraState,
+    CameraState,
+    Vec3,
+    screen_to_ground_affine,
+    screen_to_ground_point,
+    screen_to_world_direction,
+)
 from drift_with_me.world import StaticObject, WorldData
 
 
@@ -385,7 +392,7 @@ class GameModel:
         self.update_combat_reentry_cooldowns(dt)
         if self.combat_session is not None:
             self.player.barrier_active = False
-            self.update_combat_session(intent, dt, events)
+            self.update_combat_session(intent, camera, dt, events)
             self.last_events = events
             return events
 
@@ -1719,7 +1726,11 @@ class GameModel:
             self.combat_reentry_cooldowns.pop(enemy_id, None)
 
     def update_combat_session(
-        self, intent: InputIntent, dt: float, events: list[GameEvent]
+        self,
+        intent: InputIntent,
+        camera: CameraState | AffineCameraState,
+        dt: float,
+        events: list[GameEvent],
     ) -> None:
         session = self.combat_session
         if session is None:
@@ -1803,11 +1814,11 @@ class GameModel:
             return
         if session.phase == "COMBAT_EXIT_PLAYER_KNOCKBACK":
             if session.phase_elapsed_sec >= self.combat_player_knockback_sec():
-                self.prepare_combat_restore_jump(session, events)
+                self.prepare_combat_restore_jump(session, camera, events)
             return
         if session.phase == "VICTORY_CUE":
             if session.phase_elapsed_sec >= self.combat_victory_cue_sec():
-                self.prepare_combat_restore_jump(session, events)
+                self.prepare_combat_restore_jump(session, camera, events)
             return
         if session.phase == "COMBAT_RESTORE_JUMP":
             if session.phase_elapsed_sec >= self.combat_restore_jump_sec():
@@ -2168,6 +2179,47 @@ class GameModel:
     def combat_buddy_follow_grace_sec(self) -> float:
         return max(0.0, float(self.combat_exit_config().get("buddy_follow_snap_grace_sec", 0.6)))
 
+    def combat_actor_anchor_ground(
+        self, camera: CameraState | AffineCameraState, actor: str
+    ) -> tuple[float, float] | None:
+        screen_anchor = self.combat_actor_screen_anchor(camera, actor)
+        if screen_anchor is None:
+            return None
+        screen_x, screen_y = screen_anchor
+        ground = (
+            screen_to_ground_affine(camera, screen_x, screen_y)
+            if isinstance(camera, AffineCameraState)
+            else screen_to_ground_point(camera, screen_x, screen_y)
+        )
+        if ground is None:
+            return None
+        return ground.x, ground.y
+
+    def combat_actor_screen_anchor(
+        self, camera: CameraState | AffineCameraState, actor: str
+    ) -> tuple[float, float] | None:
+        presentation = self.combat_v1_config().get("presentation_medium_512x236", {})
+        if not isinstance(presentation, dict):
+            presentation = {}
+        if actor == "player":
+            key = "player_anchor_px"
+            fallback = (214.0, 142.0)
+        elif actor == "buddy":
+            key = "fuse_victory_anchor_px"
+            fallback = (175.0, 132.0)
+        else:
+            key = "enemy_anchor_px"
+            fallback = (318.0, 112.0)
+        raw_anchor = presentation.get(key, fallback)
+        if not isinstance(raw_anchor, (list, tuple)) or len(raw_anchor) != 2:
+            raw_anchor = fallback
+        ref_w = 512.0
+        ref_h = 236.0
+        return (
+            float(raw_anchor[0]) * camera.viewport_width / ref_w,
+            float(raw_anchor[1]) * camera.viewport_height / ref_h,
+        )
+
     def combat_enemy_knockback_world(self) -> float:
         return max(0.0, float(self.combat_exit_config().get("enemy_knockback_world", 34.0)))
 
@@ -2262,7 +2314,12 @@ class GameModel:
             )
         )
 
-    def prepare_combat_restore_jump(self, session: CombatSession, events: list[GameEvent]) -> None:
+    def prepare_combat_restore_jump(
+        self,
+        session: CombatSession,
+        camera: CameraState | AffineCameraState,
+        events: list[GameEvent],
+    ) -> None:
         enemy = self.enemy_by_id(session.enemy_id)
         player_x = session.snapshot.player.x
         player_z = session.snapshot.player.z
@@ -2298,8 +2355,14 @@ class GameModel:
         session.player_return_z = player_z
         if enemy is not None and session.outcome != "player_knockback":
             dx, dz = self.combat_enemy_knockback_direction(session, enemy)
-            desired_x = session.enemy_return_x + dx * self.combat_enemy_knockback_world()
-            desired_z = session.enemy_return_z + dz * self.combat_enemy_knockback_world()
+            enemy_anchor = self.combat_actor_anchor_ground(camera, "enemy")
+            base_enemy_x, base_enemy_z = (
+                enemy_anchor
+                if enemy_anchor is not None
+                else (session.enemy_return_x, session.enemy_return_z)
+            )
+            desired_x = base_enemy_x + dx * self.combat_enemy_knockback_world()
+            desired_z = base_enemy_z + dz * self.combat_enemy_knockback_world()
             min_separation = self.combat_min_safe_separation(enemy)
             session.enemy_return_x, session.enemy_return_z = (
                 self.find_combat_enemy_safe_along_direction(

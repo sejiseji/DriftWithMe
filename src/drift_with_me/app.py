@@ -476,7 +476,12 @@ class DriftWithMeApp:
             )
             self.pending_action_pressed = False
             self.pending_interact_pressed = False
-            events = self.model.step(step_intent, input_camera, fixed_dt)
+            model_camera = (
+                self.scene_camera(input_camera)
+                if self.model.combat_session is not None
+                else input_camera
+            )
+            events = self.model.step(step_intent, model_camera, fixed_dt)
             if first_step:
                 self.pending_auto_move_goal = None
                 self.pending_cancel_auto_move = False

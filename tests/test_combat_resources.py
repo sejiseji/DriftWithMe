@@ -882,60 +882,55 @@ def test_combat_defeat_restore_timings_leave_room_for_linger() -> None:
 def test_deflect_restore_commits_enemy_knockback_position() -> None:
     model, camera = make_model()
     enemy = start_deflect_exit(model, camera)
-    session = model.combat_session
-    assert session is not None
-    base_enemy_return = (session.enemy_return_x, session.enemy_return_z)
-    dx, dz = model.combat_enemy_knockback_direction(session, enemy)
+    renderer = Renderer(None)
 
     step_exit_to_victory_cue(model, camera)
+    expected = renderer.enemy_actor_presentation(model, enemy, camera)
     model.step(InputIntent(), camera, model.combat_victory_cue_sec() + 0.01)
     session = model.combat_session
     assert session is not None
-    expected_x = base_enemy_return[0] + dx * model.combat_enemy_knockback_world()
-    expected_z = base_enemy_return[1] + dz * model.combat_enemy_knockback_world()
-    assert session.enemy_return_x == pytest.approx(expected_x)
-    assert session.enemy_return_z == pytest.approx(expected_z)
+    assert session.enemy_return_x == pytest.approx(expected.x)
+    assert session.enemy_return_z == pytest.approx(expected.z)
 
     step_until_combat_restored(model, camera)
 
-    assert enemy.x == pytest.approx(expected_x)
-    assert enemy.z == pytest.approx(expected_z)
+    assert enemy.x == pytest.approx(expected.x)
+    assert enemy.z == pytest.approx(expected.z)
 
 
 def test_capture_restore_keeps_enemy_captured_at_knockback_position() -> None:
     model, camera = make_model()
     enemy = start_perfect_freeze(model, camera)
     step_to_zap_window(model, camera)
-    session = model.combat_session
-    assert session is not None
-    base_enemy_return = (session.enemy_return_x, session.enemy_return_z)
-    dx, dz = model.combat_enemy_knockback_direction(session, enemy)
+    renderer = Renderer(None)
 
     model.step(InputIntent(), camera, model.combat_zap_window_sec() + 0.01)
     step_exit_to_victory_cue(model, camera)
+    expected = renderer.enemy_actor_presentation(model, enemy, camera)
     model.step(InputIntent(), camera, model.combat_victory_cue_sec() + 0.01)
     session = model.combat_session
     assert session is not None
-    expected_x = base_enemy_return[0] + dx * model.combat_enemy_knockback_world()
-    expected_z = base_enemy_return[1] + dz * model.combat_enemy_knockback_world()
-    assert session.enemy_return_x == pytest.approx(expected_x)
-    assert session.enemy_return_z == pytest.approx(expected_z)
+    assert session.enemy_return_x == pytest.approx(expected.x)
+    assert session.enemy_return_z == pytest.approx(expected.z)
 
     step_until_combat_restored(model, camera)
 
     assert enemy.state == "CAPTURED"
-    assert enemy.x == pytest.approx(expected_x)
-    assert enemy.z == pytest.approx(expected_z)
+    assert enemy.x == pytest.approx(expected.x)
+    assert enemy.z == pytest.approx(expected.z)
 
 
 def test_enemy_restore_moves_farther_when_knockback_target_is_blocked(monkeypatch) -> None:
     model, camera = make_model()
     enemy = start_deflect_exit(model, camera)
+    renderer = Renderer(None)
     session = model.combat_session
     assert session is not None
     dx, dz = model.combat_enemy_knockback_direction(session, enemy)
-    desired_x = session.enemy_return_x + dx * model.combat_enemy_knockback_world()
-    desired_z = session.enemy_return_z + dz * model.combat_enemy_knockback_world()
+    step_exit_to_victory_cue(model, camera)
+    expected = renderer.enemy_actor_presentation(model, enemy, camera)
+    desired_x = expected.x
+    desired_z = expected.z
     original_collides = model.world.collides_enemy_circle
 
     def collides_first_knockback_target(x: float, z: float, radius: float) -> bool:
@@ -947,7 +942,6 @@ def test_enemy_restore_moves_farther_when_knockback_target_is_blocked(monkeypatc
 
     monkeypatch.setattr(model.world, "collides_enemy_circle", collides_first_knockback_target)
 
-    step_exit_to_victory_cue(model, camera)
     model.step(InputIntent(), camera, model.combat_victory_cue_sec() + 0.01)
     session = model.combat_session
     assert session is not None
@@ -959,6 +953,27 @@ def test_enemy_restore_moves_farther_when_knockback_target_is_blocked(monkeypatc
     assert not model.world.collides_enemy_circle(
         session.enemy_return_x, session.enemy_return_z, model.enemy_radius(enemy)
     )
+
+
+def test_enemy_restore_starts_from_victory_visual_endpoint() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+    renderer = Renderer(None)
+
+    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    step_exit_to_victory_cue(model, camera)
+    victory_end = renderer.enemy_actor_presentation(model, enemy, camera)
+    assert math.hypot(victory_end.x - enemy.x, victory_end.z - enemy.z) > 1.0
+
+    model.step(InputIntent(), camera, model.combat_victory_cue_sec() + 0.01)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "COMBAT_RESTORE_JUMP"
+    restore_start = renderer.enemy_actor_presentation(model, enemy, camera)
+
+    assert restore_start.x == pytest.approx(victory_end.x)
+    assert restore_start.z == pytest.approx(victory_end.z)
 
 
 def test_bat004_perfect_enters_bubble_counter_window() -> None:
