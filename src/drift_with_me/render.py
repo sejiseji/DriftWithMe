@@ -687,9 +687,9 @@ class Renderer:
         ):
             return 1.0
         progress = self.combat_defeat_special_progress(model)
-        if progress < 0.76:
+        if progress < 0.91:
             return 1.0
-        return max(0.0, 1.0 - _smoothstep((progress - 0.76) / 0.2))
+        return max(0.0, 1.0 - _smoothstep((progress - 0.91) / 0.09))
 
     def combat_defeat_enemy_flicker_hidden(self, model: GameModel, enemy) -> bool:
         visibility = self.combat_defeat_enemy_visibility(model, enemy)
@@ -3294,9 +3294,9 @@ class Renderer:
             previous_y = current_y
 
     def draw_combat_enemy_disappear(self, target: ProjectedPoint, progress: float) -> None:
-        if progress < 0.72:
+        if progress < 0.9:
             return
-        vanish = _smoothstep((progress - 0.72) / 0.25)
+        vanish = _smoothstep((progress - 0.9) / 0.1)
         x = int(target.x)
         y = int(target.y)
         radius = 5 + int(18 * vanish)

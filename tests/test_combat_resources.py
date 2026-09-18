@@ -870,6 +870,15 @@ def test_combat_restore_jump_returns_player_to_combat_start() -> None:
     assert model.player.z == pytest.approx(player_start[1])
 
 
+def test_combat_defeat_restore_timings_leave_room_for_linger() -> None:
+    model, _camera = make_model()
+
+    assert model.combat_deflect_knockback_sec() == pytest.approx(0.95)
+    assert model.combat_victory_cue_sec() == pytest.approx(1.35)
+    assert model.combat_restore_jump_sec() == pytest.approx(0.9)
+    assert model.combat_player_knockback_sec() == pytest.approx(0.9)
+
+
 def test_deflect_restore_commits_enemy_knockback_position() -> None:
     model, camera = make_model()
     enemy = start_deflect_exit(model, camera)
@@ -1193,7 +1202,11 @@ def test_combat_defeat_special_moves_buddy_and_fades_enemy() -> None:
     assert renderer.combat_zap_spin_view_name(model) is not None
 
     session.phase = "VICTORY_CUE"
-    session.phase_elapsed_sec = model.combat_victory_cue_sec() * 0.78
+    total = model.combat_deflect_knockback_sec() + model.combat_victory_cue_sec()
+    session.phase_elapsed_sec = total * 0.89 - model.combat_deflect_knockback_sec()
+    assert renderer.combat_defeat_enemy_visibility(model, enemy) == pytest.approx(1.0)
+
+    session.phase_elapsed_sec = total * 0.95 - model.combat_deflect_knockback_sec()
     assert renderer.combat_defeat_enemy_visibility(model, enemy) < 1.0
 
 
