@@ -462,13 +462,13 @@
       }
     }
   },
-  "combat_v1_enabled": false,
+  "combat_v1_enabled": true,
   "combat_v1": {
     "profile_id": "urchin_ram_parry_v1",
     "feature_flag": {
       "key": "combat_v1_enabled",
-      "bat001_default": false,
-      "enable_for_manual_playtest_from": "BAT003"
+      "bat001_default": true,
+      "enabled_for_playtest_from": "BAT006"
     },
     "entry": {
       "combat_zoom": 1.45,

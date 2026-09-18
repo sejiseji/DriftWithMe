@@ -254,6 +254,7 @@ def test_barrier_depletion_requires_release_before_redeploy() -> None:
 
 def test_unprotected_contact_knocks_player_once_during_invulnerability() -> None:
     model, camera = make_model()
+    model.config["combat_v1_enabled"] = False
     model.player.x = 300.0
     model.player.z = 192.0
     camera = camera_for_model(model)
@@ -270,6 +271,22 @@ def test_unprotected_contact_knocks_player_once_during_invulnerability() -> None
     assert model.player.invulnerable_remaining > 0.0
     assert [event.kind for event in first_events] == ["player_contacted"]
     assert second_events == []
+
+
+def test_bat006_contact_combat_is_enabled_by_default() -> None:
+    model, camera = make_model()
+    model.player.x = 300.0
+    model.player.z = 192.0
+    camera = camera_for_model(model)
+    enemy = normal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+
+    events = model.step(InputIntent(), camera, 1.0 / 60.0)
+
+    assert model.combat_v1_enabled()
+    assert [event.kind for event in events] == ["combat_started"]
+    assert model.combat_session is not None
 
 
 def test_bat001_contact_starts_isolated_combat_without_world_knockback() -> None:
