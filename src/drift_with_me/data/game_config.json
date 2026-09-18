@@ -499,8 +499,8 @@
         "enter_push": 0.24,
         "enter_settle": 0.22,
         "preimpact_push": 0.28,
-        "failure_pullback": 0.12,
-        "failure_recover": 0.2,
+        "failure_pullback": 0.28,
+        "failure_recover": 0.34,
         "success_pulse_up": 0.1,
         "success_recover": 0.2,
         "perfect_push": 0.14,
@@ -508,7 +508,7 @@
         "bubble_settle": 0.18,
         "zap_pulse_up": 0.08,
         "zap_pulse_down": 0.16,
-        "deflect_pullback": 0.34,
+        "deflect_pullback": 0.58,
         "victory_restore_delay": 0.28,
         "victory_restore": 0.5
       }
@@ -561,29 +561,29 @@
       "input_debounce_sec": 0.08,
       "patterns_normalized": [
         [
-          0.22,
-          0.5,
-          0.78
-        ],
-        [
-          0.18,
-          0.44,
-          0.74
-        ],
-        [
-          0.27,
+          0.34,
           0.58,
-          0.86
-        ],
-        [
-          0.16,
-          0.54,
           0.82
         ],
         [
-          0.25,
-          0.48,
-          0.72
+          0.38,
+          0.62,
+          0.86
+        ],
+        [
+          0.32,
+          0.56,
+          0.8
+        ],
+        [
+          0.36,
+          0.6,
+          0.84
+        ],
+        [
+          0.4,
+          0.64,
+          0.88
         ]
       ]
     },
@@ -612,9 +612,9 @@
       "cue_sec": 0.78
     },
     "exit": {
-      "knockback_visual_sec": 0.28,
+      "knockback_visual_sec": 0.52,
       "enemy_knockback_world": 34.0,
-      "player_knockback_visual_sec": 0.34,
+      "player_knockback_visual_sec": 0.62,
       "player_knockback_world": 108.0,
       "player_restore_jump_sec": 0.28,
       "player_restore_jump_height_world": 16.0,

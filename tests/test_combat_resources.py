@@ -480,7 +480,7 @@ def test_bat001_combat_render_filter_hides_surrounding_objects_without_world_mut
     commands = Renderer(object()).world_commands(model, camera, 0.0)
 
     assert model.world.objects is before_objects
-    assert {command.stable_id for command in commands} == {"player", enemy.id}
+    assert {command.stable_id for command in commands} == {"buddy", "player", enemy.id}
 
 
 def test_bat001_combat_does_not_mutate_affine_projection_basis() -> None:
@@ -548,6 +548,7 @@ def test_bat002_parry_patterns_have_three_markers_with_safe_spacing() -> None:
     for pattern in patterns:
         assert len(pattern) == 3
         assert tuple(sorted(pattern)) == pattern
+        assert pattern[0] >= 0.32
         assert pattern[0] >= radius
         assert pattern[-1] <= 1.0 - radius
         assert all(b - a >= radius * 2.0 for a, b in zip(pattern, pattern[1:], strict=False))

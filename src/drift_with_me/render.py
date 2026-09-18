@@ -436,15 +436,7 @@ class Renderer:
                         atmosphere_strength=0.0,
                     )
                 )
-        buddy_anchor = None
-        combat_victory_buddy = (
-            combat_isolated
-            and combat_session is not None
-            and combat_session.phase == "VICTORY_CUE"
-            and model.combat_victory_actor(combat_session) == "buddy"
-        )
-        if not combat_isolated or combat_victory_buddy:
-            buddy_anchor = camera.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
+        buddy_anchor = camera.project(Vec3(model.buddy.x, model.buddy.y, model.buddy.z))
         if buddy_anchor is not None:
             commands.append(
                 DrawCommand(
