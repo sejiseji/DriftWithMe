@@ -123,6 +123,29 @@ def test_combat_entry_actor_presentation_moves_to_screen_anchors() -> None:
     assert player_settled.jump_y == pytest.approx(0.0)
 
 
+def test_combat_player_faces_enemy_presentation_after_settling() -> None:
+    model, camera = make_model()
+    enemy = start_fast_combat(model, camera)
+    session = model.combat_session
+    assert session is not None
+    renderer = Renderer(None)
+
+    model.player.moved_distance = 0.0
+    session.phase = "ENEMY_WINDUP"
+    session.phase_elapsed_sec = 0.0
+    delta = renderer.combat_actor_screen_facing_delta(model, camera, "player")
+    assert delta is not None
+
+    assert renderer.player_sprite_direction_view(
+        model, camera
+    ) == renderer.screen_direction_view_name(*delta)
+    enemy_delta = renderer.combat_actor_screen_facing_delta(model, camera, "enemy")
+    assert enemy_delta is not None
+    assert enemy_delta[0] == pytest.approx(-delta[0])
+    assert enemy_delta[1] == pytest.approx(-delta[1])
+    assert enemy is normal_enemy(model)
+
+
 def step_to_combat_phase(model: GameModel, camera: CameraState, phase: str) -> list:
     events = []
     for _ in range(80):

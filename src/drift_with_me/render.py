@@ -2570,7 +2570,11 @@ class Renderer:
         if spin_view is not None:
             self.player_sprite_view_name = spin_view
             return spin_view
-        facing_delta = self.actor_screen_facing_delta(model, camera, model.player.x, model.player.z)
+        facing_delta = self.combat_actor_screen_facing_delta(model, camera, "player")
+        if facing_delta is None:
+            facing_delta = self.actor_screen_facing_delta(
+                model, camera, model.player.x, model.player.z
+            )
         if facing_delta is not None:
             screen_dx, screen_dy = facing_delta
             next_view = self.screen_direction_view_name(screen_dx, screen_dy)
@@ -2593,6 +2597,33 @@ class Renderer:
         self, model: GameModel, camera: CameraState
     ) -> tuple[float, float] | None:
         return model.player_screen_move_delta(camera)
+
+    def combat_actor_screen_facing_delta(
+        self, model: GameModel, camera: CameraState, actor: str
+    ) -> tuple[float, float] | None:
+        session = model.combat_session
+        if session is None or session.phase == "VICTORY_CUE":
+            return None
+        enemy = model.enemy_by_id(session.enemy_id)
+        if enemy is None:
+            return None
+        player = self.player_actor_presentation(model, camera)
+        enemy_presentation = self.enemy_actor_presentation(model, enemy, camera)
+        if actor == "player":
+            origin = player
+            target = enemy_presentation
+        elif actor == "enemy":
+            origin = enemy_presentation
+            target = player
+        else:
+            return None
+        if math.hypot(target.x - origin.x, target.z - origin.z) <= 1e-6:
+            return None
+        origin_point = camera.project(Vec3(origin.x, 0.0, origin.z))
+        target_point = camera.project(Vec3(target.x, 0.0, target.z))
+        if origin_point is None or target_point is None:
+            return None
+        return target_point.x - origin_point.x, target_point.y - origin_point.y
 
     def buddy_sprite_asset(
         self, model: GameModel, camera: CameraState | None = None
@@ -2736,7 +2767,9 @@ class Renderer:
         )
 
     def player_sprite_flip_x(self, model: GameModel, camera: CameraState) -> bool:
-        delta = self.actor_screen_facing_delta(model, camera, model.player.x, model.player.z)
+        delta = self.combat_actor_screen_facing_delta(model, camera, "player")
+        if delta is None:
+            delta = self.actor_screen_facing_delta(model, camera, model.player.x, model.player.z)
         if delta is None:
             delta = self.player_screen_move_delta(model, camera)
         if delta is None:
