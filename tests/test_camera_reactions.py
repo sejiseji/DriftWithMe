@@ -47,6 +47,10 @@ def camera_for_model(raw: dict, model: GameModel) -> CameraState:
     )
 
 
+def camera_zoom(raw: dict, camera: CameraState | AffineCameraState) -> float:
+    return float(raw["camera"]["base_distance"]) / camera.distance
+
+
 def make_app(raw: dict, model: GameModel) -> DriftWithMeApp:
     runtime = load_runtime_config("medium")
     app = DriftWithMeApp.__new__(DriftWithMeApp)
@@ -60,6 +64,7 @@ def make_app(raw: dict, model: GameModel) -> DriftWithMeApp:
     app._processed_hitstop_event_ids = set()
     app.last_combat_scene_camera = None
     app.combat_camera_restore = None
+    app.combat_camera_snapshot_zoom = None
     app.camera_controller = CameraController(
         raw,
         model.world,
@@ -166,6 +171,9 @@ def test_combat_scene_camera_zooms_to_battle_pair_without_moving_world() -> None
     base_camera = start_contact_combat(model, raw)
     assert model.combat_session is not None
     model.combat_session.elapsed_sec = float(raw["combat_v1"]["entry"]["camera_transition_sec"])
+    model.combat_session.phase_elapsed_sec = float(
+        raw["combat_v1"]["entry"]["camera_transition_sec"]
+    )
 
     scene_camera = app.scene_camera(base_camera)
 
@@ -186,6 +194,9 @@ def test_combat_restored_camera_smoothly_zooms_back_to_follow() -> None:
     base_camera = start_contact_combat(model, raw)
     assert model.combat_session is not None
     model.combat_session.elapsed_sec = float(raw["combat_v1"]["entry"]["camera_transition_sec"])
+    model.combat_session.phase_elapsed_sec = float(
+        raw["combat_v1"]["entry"]["camera_transition_sec"]
+    )
     combat_camera = app.scene_camera(base_camera)
     assert isinstance(combat_camera, CameraState)
 
@@ -249,6 +260,9 @@ def test_affine_combat_scene_camera_uses_combat_zoom() -> None:
     base_camera = start_contact_combat(model, raw)
     assert model.combat_session is not None
     model.combat_session.elapsed_sec = float(raw["combat_v1"]["entry"]["camera_transition_sec"])
+    model.combat_session.phase_elapsed_sec = float(
+        raw["combat_v1"]["entry"]["camera_transition_sec"]
+    )
 
     scene_camera = app.scene_camera(base_camera)
 
@@ -256,6 +270,74 @@ def test_affine_combat_scene_camera_uses_combat_zoom() -> None:
     assert scene_camera.zoom == pytest.approx(float(raw["combat_v1"]["entry"]["combat_zoom"]))
     assert scene_camera.target.x == pytest.approx(303.5)
     assert scene_camera.target.z == pytest.approx(192.0)
+
+
+def test_bat006a_parry_timing_holds_camera_zoom_static() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    app.projection_mode = "affine"
+    app.affine_projection_profile = AffineProjectionProfile.from_config(raw)
+    base_camera = start_contact_combat(model, raw)
+    session = model.combat_session
+    assert session is not None
+    session.phase = "PARRY_TIMING"
+    session.phase_elapsed_sec = 0.0
+    start_camera = app.scene_camera(base_camera)
+    assert isinstance(start_camera, AffineCameraState)
+
+    session.phase_elapsed_sec = 0.8
+    later_camera = app.scene_camera(base_camera)
+    assert isinstance(later_camera, AffineCameraState)
+
+    assert start_camera.zoom == pytest.approx(1.6)
+    assert later_camera.zoom == pytest.approx(start_camera.zoom)
+
+
+def test_bat006a_perfect_reaches_snapshot_relative_peak_above_follow_zoom_max() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    app.projection_mode = "affine"
+    app.affine_projection_profile = AffineProjectionProfile.from_config(raw)
+    base_camera = start_contact_combat(model, raw)
+    session = model.combat_session
+    assert session is not None
+    session.phase = "PARRY_RESOLVE"
+    session.result = "perfect"
+    session.phase_elapsed_sec = float(
+        raw["combat_v1"]["dynamic_camera"]["durations_sec"]["perfect_push"]
+    )
+
+    scene_camera = app.scene_camera(base_camera)
+
+    assert isinstance(scene_camera, AffineCameraState)
+    assert scene_camera.zoom == pytest.approx(1.8)
+    assert scene_camera.zoom > float(raw["camera"]["zoom_max"])
+
+
+def test_bat006a_victory_cue_restores_to_snapshot_zoom_before_restore() -> None:
+    raw = make_runtime_raw()
+    model = make_model(raw)
+    app = make_app(raw, model)
+    app.projection_mode = "affine"
+    app.affine_projection_profile = AffineProjectionProfile.from_config(raw)
+    base_camera = start_contact_combat(model, raw)
+    session = model.combat_session
+    assert session is not None
+    session.phase = "VICTORY_CUE"
+    session.phase_elapsed_sec = 0.0
+    early_camera = app.scene_camera(base_camera)
+    assert isinstance(early_camera, AffineCameraState)
+
+    session.phase_elapsed_sec = float(
+        raw["combat_v1"]["dynamic_camera"]["durations_sec"]["victory_restore_delay"]
+    ) + float(raw["combat_v1"]["dynamic_camera"]["durations_sec"]["victory_restore"])
+    restored_camera = app.scene_camera(base_camera)
+    assert isinstance(restored_camera, AffineCameraState)
+
+    assert early_camera.zoom == pytest.approx(1.36)
+    assert restored_camera.zoom == pytest.approx(camera_zoom(raw, base_camera))
 
 
 def test_affine_combat_restore_camera_blends_zoom_back_to_follow() -> None:
@@ -267,6 +349,9 @@ def test_affine_combat_restore_camera_blends_zoom_back_to_follow() -> None:
     base_camera = start_contact_combat(model, raw)
     assert model.combat_session is not None
     model.combat_session.elapsed_sec = float(raw["combat_v1"]["entry"]["camera_transition_sec"])
+    model.combat_session.phase_elapsed_sec = float(
+        raw["combat_v1"]["entry"]["camera_transition_sec"]
+    )
     combat_camera = app.scene_camera(base_camera)
     assert isinstance(combat_camera, AffineCameraState)
 

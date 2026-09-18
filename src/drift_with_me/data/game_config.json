@@ -477,6 +477,42 @@
       "actor_settle_sec": 0.2,
       "battle_banner_sec": 0.45
     },
+    "dynamic_camera": {
+      "schema_version": "0.1",
+      "min_multiplier": 0.9,
+      "max_multiplier": 1.85,
+      "multipliers": {
+        "enter_peak": 1.52,
+        "combat_hold": 1.45,
+        "preimpact": 1.6,
+        "failure_pullback": 1.39,
+        "success_pulse": 1.66,
+        "perfect_peak": 1.8,
+        "perfect_hold": 1.62,
+        "counter_hold": 1.56,
+        "zap_pulse": 1.68,
+        "deflect_pullback": 1.32,
+        "victory_hold": 1.36,
+        "restore": 1.0
+      },
+      "durations_sec": {
+        "enter_push": 0.14,
+        "enter_settle": 0.12,
+        "preimpact_push": 0.18,
+        "failure_pullback": 0.07,
+        "failure_recover": 0.13,
+        "success_pulse_up": 0.05,
+        "success_recover": 0.12,
+        "perfect_push": 0.08,
+        "perfect_settle": 0.18,
+        "bubble_settle": 0.1,
+        "zap_pulse_up": 0.04,
+        "zap_pulse_down": 0.1,
+        "deflect_pullback": 0.22,
+        "victory_restore_delay": 0.4,
+        "victory_restore": 0.32
+      }
+    },
     "presentation_medium_512x236": {
       "player_anchor_px": [
         214,

@@ -115,6 +115,7 @@ class DriftWithMeApp:
         self.browser_pointer_sequence_seen = 0
         self.last_combat_scene_camera: CameraState | None = None
         self.combat_camera_restore: CombatCameraRestore | None = None
+        self.combat_camera_snapshot_zoom: float | None = None
 
         pyxel.init(
             self.runtime.screen_width,
@@ -186,7 +187,8 @@ class DriftWithMeApp:
         self.pointer_snapshot = self.read_pointer_snapshot()
         self.update_denied_feedback(elapsed)
         self.update_location_label(elapsed)
-        self.update_combat_camera_restore(elapsed)
+        if self.screen != AppScreen.PAUSE:
+            self.update_combat_camera_restore(elapsed)
 
         f1_key = getattr(pyxel, "KEY_F1", None)
         if f1_key is not None and pyxel.btnp(f1_key):
@@ -500,6 +502,7 @@ class DriftWithMeApp:
         for event in events:
             if event.kind == "combat_started":
                 self.combat_camera_restore = None
+                self.combat_camera_snapshot_zoom = self.camera_zoom(self.camera())
             elif event.kind == "combat_restored":
                 self.start_combat_camera_restore()
             elif event.kind == "action_denied":
@@ -1156,10 +1159,19 @@ class DriftWithMeApp:
             return camera
         combat = self.runtime.raw.get("combat_v1", {})
         entry = combat.get("entry", {}) if isinstance(combat, dict) else {}
-        target_zoom = float(entry.get("combat_zoom", 1.0))
-        if target_zoom <= 1.0:
+        multiplier = self.combat_camera_zoom_multiplier(session)
+        if multiplier <= 0.0:
             return camera
-        transition = max(1e-6, float(entry.get("camera_transition_sec", 0.28)))
+        transition = max(
+            1e-6,
+            float(
+                entry.get(
+                    "camera_transition_sec",
+                    self.combat_dynamic_camera_duration("enter_push", 0.14)
+                    + self.combat_dynamic_camera_duration("enter_settle", 0.12),
+                )
+            ),
+        )
         progress = _smoothstep(min(1.0, max(session.elapsed_sec, 1.0 / 60.0) / transition))
         enemy = self.model.enemy_by_id(session.enemy_id)
         if enemy is None:
@@ -1174,12 +1186,9 @@ class DriftWithMeApp:
         )
         camera_config = self.runtime.raw["camera"]
         base_distance = float(camera_config["base_distance"])
-        current_zoom = base_distance / camera.distance
-        next_zoom = current_zoom + (target_zoom - current_zoom) * progress
-        next_zoom = max(
-            float(camera_config["zoom_min"]),
-            min(float(camera_config["zoom_max"]), next_zoom),
-        )
+        snapshot_zoom = self.combat_snapshot_zoom(camera)
+        target_zoom = snapshot_zoom * multiplier
+        next_zoom = self.clamp_combat_zoom(target_zoom, snapshot_zoom)
         combat_camera = CameraState(
             target=_lerp_vec3(camera.target, combat_target, progress),
             yaw_deg=camera.yaw_deg,
@@ -1196,6 +1205,131 @@ class DriftWithMeApp:
         self.last_combat_scene_camera = combat_camera
         return combat_camera
 
+    def camera_zoom(self, camera: CameraState) -> float:
+        base_distance = float(self.runtime.raw["camera"]["base_distance"])
+        return base_distance / camera.distance
+
+    def combat_snapshot_zoom(self, camera: CameraState) -> float:
+        if self.combat_camera_snapshot_zoom is None:
+            self.combat_camera_snapshot_zoom = self.camera_zoom(camera)
+        return self.combat_camera_snapshot_zoom
+
+    def combat_dynamic_camera_config(self) -> dict:
+        combat = self.runtime.raw.get("combat_v1", {})
+        if not isinstance(combat, dict):
+            return {}
+        dynamic = combat.get("dynamic_camera", {})
+        return dynamic if isinstance(dynamic, dict) else {}
+
+    def combat_dynamic_camera_multipliers(self) -> dict:
+        dynamic = self.combat_dynamic_camera_config()
+        values = dynamic.get("multipliers", {})
+        return values if isinstance(values, dict) else {}
+
+    def combat_dynamic_camera_durations(self) -> dict:
+        dynamic = self.combat_dynamic_camera_config()
+        values = dynamic.get("durations_sec", {})
+        return values if isinstance(values, dict) else {}
+
+    def combat_dynamic_camera_multiplier(self, key: str, default: float) -> float:
+        return float(self.combat_dynamic_camera_multipliers().get(key, default))
+
+    def combat_dynamic_camera_duration(self, key: str, default: float) -> float:
+        return max(0.0, float(self.combat_dynamic_camera_durations().get(key, default)))
+
+    def clamp_combat_zoom(self, zoom: float, snapshot_zoom: float) -> float:
+        dynamic = self.combat_dynamic_camera_config()
+        min_multiplier = float(dynamic.get("min_multiplier", 0.9))
+        max_multiplier = float(dynamic.get("max_multiplier", 1.85))
+        return max(snapshot_zoom * min_multiplier, min(snapshot_zoom * max_multiplier, zoom))
+
+    def combat_camera_zoom_multiplier(self, session) -> float:
+        hold = self.combat_dynamic_camera_multiplier("combat_hold", 1.45)
+        preimpact = self.combat_dynamic_camera_multiplier("preimpact", 1.6)
+        phase = session.phase
+        elapsed = max(0.0, session.phase_elapsed_sec)
+        if phase == "COMBAT_ENTRY":
+            return self.combat_entry_zoom_multiplier(elapsed)
+        if phase in {"ENEMY_WINDUP", "ENEMY_CHARGE"}:
+            return hold
+        if phase == "PREIMPACT_SLOW":
+            duration = self.combat_dynamic_camera_duration("preimpact_push", 0.18)
+            return _smooth_lerp(hold, preimpact, elapsed / max(1e-6, duration))
+        if phase == "PARRY_TIMING":
+            return preimpact
+        if phase == "PARRY_RESOLVE":
+            return self.combat_result_zoom_multiplier(session, elapsed)
+        if phase in {"PERFECT_FREEZE", "PERFECT_BUBBLE_WINDOW"}:
+            return self.combat_dynamic_camera_multiplier("perfect_hold", 1.62)
+        if phase == "PERFECT_ZAP_WINDOW":
+            return self.combat_bubble_settle_zoom_multiplier(elapsed)
+        if phase == "COMBAT_EXIT_COUNTER":
+            return self.combat_counter_exit_zoom_multiplier(session, elapsed)
+        if phase == "COMBAT_EXIT_DEFLECT":
+            duration = self.combat_dynamic_camera_duration("deflect_pullback", 0.22)
+            target = self.combat_dynamic_camera_multiplier("deflect_pullback", 1.32)
+            return _smooth_lerp(hold, target, elapsed / max(1e-6, duration))
+        if phase == "VICTORY_CUE":
+            return self.combat_victory_zoom_multiplier(elapsed)
+        if phase == "COMBAT_RESTORE_JUMP":
+            return self.combat_dynamic_camera_multiplier("restore", 1.0)
+        return hold
+
+    def combat_entry_zoom_multiplier(self, elapsed: float) -> float:
+        peak = self.combat_dynamic_camera_multiplier("enter_peak", 1.52)
+        hold = self.combat_dynamic_camera_multiplier("combat_hold", 1.45)
+        push = self.combat_dynamic_camera_duration("enter_push", 0.14)
+        settle = self.combat_dynamic_camera_duration("enter_settle", 0.12)
+        if elapsed < push:
+            return _smooth_lerp(1.0, peak, elapsed / max(1e-6, push))
+        if elapsed < push + settle:
+            return _smooth_lerp(peak, hold, (elapsed - push) / max(1e-6, settle))
+        return hold
+
+    def combat_result_zoom_multiplier(self, session, elapsed: float) -> float:
+        preimpact = self.combat_dynamic_camera_multiplier("preimpact", 1.6)
+        hold = self.combat_dynamic_camera_multiplier("combat_hold", 1.45)
+        result = session.result
+        if result == "failure":
+            pullback = self.combat_dynamic_camera_multiplier("failure_pullback", 1.39)
+            down = self.combat_dynamic_camera_duration("failure_pullback", 0.07)
+            recover = self.combat_dynamic_camera_duration("failure_recover", 0.13)
+            return _two_segment_smooth_lerp(preimpact, pullback, hold, down, recover, elapsed)
+        if result == "perfect":
+            peak = self.combat_dynamic_camera_multiplier("perfect_peak", 1.8)
+            settle = self.combat_dynamic_camera_multiplier("perfect_hold", 1.62)
+            up = self.combat_dynamic_camera_duration("perfect_push", 0.08)
+            down = self.combat_dynamic_camera_duration("perfect_settle", 0.18)
+            return _two_segment_smooth_lerp(preimpact, peak, settle, up, down, elapsed)
+        pulse = self.combat_dynamic_camera_multiplier("success_pulse", 1.66)
+        up = self.combat_dynamic_camera_duration("success_pulse_up", 0.05)
+        down = self.combat_dynamic_camera_duration("success_recover", 0.12)
+        return _two_segment_smooth_lerp(preimpact, pulse, hold, up, down, elapsed)
+
+    def combat_bubble_settle_zoom_multiplier(self, elapsed: float) -> float:
+        start = self.combat_dynamic_camera_multiplier("perfect_hold", 1.62)
+        target = self.combat_dynamic_camera_multiplier("counter_hold", 1.56)
+        duration = self.combat_dynamic_camera_duration("bubble_settle", 0.1)
+        return _smooth_lerp(start, target, elapsed / max(1e-6, duration))
+
+    def combat_counter_exit_zoom_multiplier(self, session, elapsed: float) -> float:
+        hold = self.combat_dynamic_camera_multiplier("counter_hold", 1.56)
+        if session.outcome != "defeat":
+            return hold
+        peak = self.combat_dynamic_camera_multiplier("zap_pulse", 1.68)
+        up = self.combat_dynamic_camera_duration("zap_pulse_up", 0.04)
+        down = self.combat_dynamic_camera_duration("zap_pulse_down", 0.1)
+        return _two_segment_smooth_lerp(hold, peak, hold, up, down, elapsed)
+
+    def combat_victory_zoom_multiplier(self, elapsed: float) -> float:
+        hold = self.combat_dynamic_camera_multiplier("victory_hold", 1.36)
+        restore = self.combat_dynamic_camera_multiplier("restore", 1.0)
+        delay = self.combat_dynamic_camera_duration("victory_restore_delay", 0.4)
+        duration = self.combat_dynamic_camera_duration("victory_restore", 0.32)
+        if elapsed < delay:
+            return hold
+        return _smooth_lerp(hold, restore, (elapsed - delay) / max(1e-6, duration))
+
     def start_combat_camera_restore(self) -> None:
         from_camera = self.last_combat_scene_camera
         if from_camera is None:
@@ -1206,6 +1340,7 @@ class DriftWithMeApp:
         if duration <= 0.0:
             self.combat_camera_restore = None
             self.last_combat_scene_camera = None
+            self.combat_camera_snapshot_zoom = None
             return
         self.combat_camera_restore = CombatCameraRestore(
             from_camera=from_camera,
@@ -1221,6 +1356,7 @@ class DriftWithMeApp:
         if restore.elapsed_sec >= restore.duration_sec:
             self.combat_camera_restore = None
             self.last_combat_scene_camera = None
+            self.combat_camera_snapshot_zoom = None
 
     def combat_restore_scene_camera(self, camera: CameraState) -> CameraState:
         restore = self.combat_camera_restore
@@ -1250,10 +1386,16 @@ class DriftWithMeApp:
         camera_config = self.runtime.raw["camera"]
         base_distance = float(camera_config["base_distance"])
         current_zoom = base_distance / camera.distance
-        target_zoom = min(
-            float(camera_config["zoom_max"]),
-            max(float(camera_config["zoom_min"]), current_zoom * transform.zoom_multiplier),
-        )
+        target_zoom = current_zoom * transform.zoom_multiplier
+        if self.model.combat_session is not None or self.combat_camera_restore is not None:
+            target_zoom = self.clamp_combat_zoom(
+                target_zoom, self.combat_camera_snapshot_zoom or current_zoom
+            )
+        else:
+            target_zoom = min(
+                float(camera_config["zoom_max"]),
+                max(float(camera_config["zoom_min"]), target_zoom),
+            )
         affine_camera = affine_camera_from_perspective(
             camera,
             self.affine_projection_profile,
@@ -1280,10 +1422,16 @@ class DriftWithMeApp:
         camera_config = self.runtime.raw["camera"]
         base_distance = float(camera_config["base_distance"])
         current_zoom = base_distance / camera.distance
-        target_zoom = min(
-            float(camera_config["zoom_max"]),
-            max(float(camera_config["zoom_min"]), current_zoom * transform.zoom_multiplier),
-        )
+        target_zoom = current_zoom * transform.zoom_multiplier
+        if self.model.combat_session is not None or self.combat_camera_restore is not None:
+            target_zoom = self.clamp_combat_zoom(
+                target_zoom, self.combat_camera_snapshot_zoom or current_zoom
+            )
+        else:
+            target_zoom = min(
+                float(camera_config["zoom_max"]),
+                max(float(camera_config["zoom_min"]), target_zoom),
+            )
         return CameraState(
             target=camera.target,
             yaw_deg=camera.yaw_deg,
@@ -2184,6 +2332,28 @@ class DriftWithMeApp:
 def _smoothstep(value: float) -> float:
     amount = max(0.0, min(1.0, value))
     return amount * amount * (3.0 - 2.0 * amount)
+
+
+def _smooth_lerp(origin: float, target: float, amount: float) -> float:
+    eased = _smoothstep(amount)
+    return origin + (target - origin) * eased
+
+
+def _two_segment_smooth_lerp(
+    origin: float,
+    peak: float,
+    target: float,
+    first_duration: float,
+    second_duration: float,
+    elapsed: float,
+) -> float:
+    if elapsed < first_duration:
+        return _smooth_lerp(origin, peak, elapsed / max(1e-6, first_duration))
+    return _smooth_lerp(
+        peak,
+        target,
+        (elapsed - first_duration) / max(1e-6, second_duration),
+    )
 
 
 def _lerp_vec3(origin: Vec3, target: Vec3, amount: float) -> Vec3:
