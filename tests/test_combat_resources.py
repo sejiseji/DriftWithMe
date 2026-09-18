@@ -1224,6 +1224,11 @@ def test_combat_defeat_special_moves_buddy_and_fades_enemy() -> None:
     session.phase_elapsed_sec = total * 0.95 - model.combat_deflect_knockback_sec()
     assert renderer.combat_defeat_enemy_visibility(model, enemy) < 1.0
 
+    session.phase = "COMBAT_RESTORE_JUMP"
+    session.phase_elapsed_sec = 0.0
+    assert renderer.combat_defeat_enemy_visibility(model, enemy) == pytest.approx(0.0)
+    assert renderer.combat_defeat_enemy_flicker_hidden(model, enemy)
+
 
 def test_combat_defeat_victory_buddy_matches_restore_start() -> None:
     model, camera = make_model()

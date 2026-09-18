@@ -683,6 +683,12 @@ class Renderer:
     def combat_defeat_enemy_visibility(self, model: GameModel, enemy) -> float:
         session = model.combat_session
         if (
+            session is not None
+            and session.enemy_id == enemy.id
+            and self.combat_defeat_restore_active(model)
+        ):
+            return 0.0
+        if (
             session is None
             or session.enemy_id != enemy.id
             or not self.combat_defeat_special_active(model)
