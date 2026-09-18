@@ -804,6 +804,32 @@ def test_deflect_restore_commits_enemy_knockback_position() -> None:
     assert enemy.z == pytest.approx(expected_z)
 
 
+def test_capture_restore_keeps_enemy_captured_at_knockback_position() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+    session = model.combat_session
+    assert session is not None
+    base_enemy_return = (session.enemy_return_x, session.enemy_return_z)
+    dx, dz = model.combat_enemy_knockback_direction(session, enemy)
+
+    model.step(InputIntent(), camera, model.combat_zap_window_sec() + 0.01)
+    step_exit_to_victory_cue(model, camera)
+    model.step(InputIntent(), camera, model.combat_victory_cue_sec() + 0.01)
+    session = model.combat_session
+    assert session is not None
+    expected_x = base_enemy_return[0] + dx * model.combat_enemy_knockback_world()
+    expected_z = base_enemy_return[1] + dz * model.combat_enemy_knockback_world()
+    assert session.enemy_return_x == pytest.approx(expected_x)
+    assert session.enemy_return_z == pytest.approx(expected_z)
+
+    step_until_combat_restored(model, camera)
+
+    assert enemy.state == "CAPTURED"
+    assert enemy.x == pytest.approx(expected_x)
+    assert enemy.z == pytest.approx(expected_z)
+
+
 def test_enemy_restore_moves_farther_when_knockback_target_is_blocked(monkeypatch) -> None:
     model, camera = make_model()
     enemy = start_deflect_exit(model, camera)
