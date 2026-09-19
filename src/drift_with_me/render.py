@@ -342,22 +342,25 @@ class Renderer:
         combat_isolated = combat_enemy_id is not None
         margin = float(model.config["culling"]["screen_margin_ref_px"])
         visible_query = model.world.query_visible_static_objects(camera, margin)
-        if combat_isolated:
-            visible_objects = []
-            visible_details = []
-        else:
-            visible_objects = [
-                obj for obj in visible_query.objects if self.object_is_visible(obj, camera, margin)
-            ]
-            visible_details = [
-                detail
-                for detail in model.world.ground_details_for_chunks(visible_query.chunk_ids)
-                if self.ground_detail_is_visible(detail, camera, margin)
-                and not self.point_in_active_baked_ground_patch(detail.x, detail.z)
-            ]
+        combat_background_depth_floor = (
+            self.combat_background_depth_floor(model, camera) if combat_isolated else None
+        )
+        visible_objects = [
+            obj for obj in visible_query.objects if self.object_is_visible(obj, camera, margin)
+        ]
+        visible_details = [
+            detail
+            for detail in model.world.ground_details_for_chunks(visible_query.chunk_ids)
+            if self.ground_detail_is_visible(detail, camera, margin)
+            and not self.point_in_active_baked_ground_patch(detail.x, detail.z)
+        ]
         for detail in visible_details:
             anchor = camera.project(Vec3(detail.x, 0.0, detail.z))
             if anchor is None:
+                continue
+            if not self.combat_background_command_is_visible(
+                combat_background_depth_floor, anchor.depth
+            ):
                 continue
             commands.append(
                 DrawCommand(
@@ -374,10 +377,23 @@ class Renderer:
             )
         for obj in visible_objects:
             if self.camera_is_affine(camera) and self.object_uses_box_geometry(obj):
-                commands.extend(self.solid_box_face_commands(obj, camera))
+                box_commands = self.solid_box_face_commands(obj, camera)
+                if combat_background_depth_floor is not None:
+                    box_commands = [
+                        command
+                        for command in box_commands
+                        if self.combat_background_command_is_visible(
+                            combat_background_depth_floor, command.depth
+                        )
+                    ]
+                commands.extend(box_commands)
                 continue
             anchor = camera.project(Vec3(obj.x, 0.0, obj.z))
             if anchor is None:
+                continue
+            if not self.combat_background_command_is_visible(
+                combat_background_depth_floor, anchor.depth
+            ):
                 continue
             commands.append(
                 DrawCommand(
@@ -490,6 +506,24 @@ class Renderer:
             dormant_enemies=model.debug.dormant_enemies,
         )
         return commands
+
+    def combat_background_depth_floor(self, model: GameModel, camera: CameraState) -> float | None:
+        depths: list[float] = []
+        for actor in ("player", "buddy", "enemy"):
+            anchor_ground = model.combat_actor_anchor_ground(camera, actor)
+            if anchor_ground is None:
+                continue
+            projected = camera.project(Vec3(anchor_ground[0], 0.0, anchor_ground[1]))
+            if projected is not None and math.isfinite(projected.depth):
+                depths.append(projected.depth)
+        return min(depths) if depths else None
+
+    def combat_background_command_is_visible(
+        self, depth_floor: float | None, command_depth: float
+    ) -> bool:
+        if depth_floor is None:
+            return True
+        return command_depth >= depth_floor - 1e-6
 
     def player_actor_presentation(self, model: GameModel, camera: CameraState) -> ActorPresentation:
         session = model.combat_session

@@ -512,7 +512,7 @@ def test_bat001_combat_session_freezes_world_until_restore() -> None:
     assert model.world_tick == start_tick
 
 
-def test_bat001_combat_render_filter_hides_surrounding_objects_without_world_mutation() -> None:
+def test_bat001_combat_render_filter_draws_only_background_objects_without_world_mutation() -> None:
     model, camera = make_model()
     model.config["combat_v1_enabled"] = True
     model.player.x = 300.0
@@ -524,10 +524,23 @@ def test_bat001_combat_render_filter_hides_surrounding_objects_without_world_mut
     before_objects = model.world.objects
 
     model.step(InputIntent(), camera, 1.0 / 60.0)
-    commands = Renderer(object()).world_commands(model, camera, 0.0)
+    renderer = Renderer(object())
+    commands = renderer.world_commands(model, camera, 0.0)
+    command_ids = {command.stable_id for command in commands}
+    actor_ids = {"buddy", "player", enemy.id}
+    background_commands = [command for command in commands if command.stable_id not in actor_ids]
+    depth_floor = renderer.combat_background_depth_floor(model, camera)
+    assert depth_floor is not None
 
     assert model.world.objects is before_objects
-    assert {command.stable_id for command in commands} == {"buddy", "player", enemy.id}
+    assert actor_ids.issubset(command_ids)
+    assert background_commands
+    assert all(command.depth >= depth_floor - 1e-6 for command in background_commands)
+    assert {
+        other_enemy.id
+        for other_enemy in model.enemies
+        if other_enemy.id != enemy.id and other_enemy.id in command_ids
+    } == set()
 
 
 def test_bat001_combat_does_not_mutate_affine_projection_basis() -> None:
