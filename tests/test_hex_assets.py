@@ -125,9 +125,6 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "giant_tree_02x_b": "0416f9512913932031523391660a2466642037ac28c811f8b9e6890b84cde9d6",
     "giant_tree_02x_c": "468c2d8da16069f85eb7d652e94f9a90536413be5d1603b88ca0dbe6288bb830",
     "giant_tree_02x_d": "7065feea96acf079fb9f979a3c17337b622e76a9f5b5f30be12cd8822f64ab79",
-    "water_surface_glint_horizontal": (
-        "0447e5a059faee3fb1a107ba380b7daf13f290197b1f75173a1a0839b007dd8c"
-    ),
 }
 TALL_GRASS_REACTIVE_POSE_HASHES = {
     "idle_00": "3e4c7c8d338024e5acb5af09d519dc8a8697feea0c807f9c76489feddbe5be46",
@@ -419,10 +416,7 @@ def test_environment_wave1_source_hex_preserves_received_pixels(asset_id: str) -
         .splitlines()
     )
 
-    if asset_id == "water_surface_glint_horizontal":
-        expected_height = 243
-        expected_width = 357
-    elif asset_id.startswith(("water_", "solar_", "tree_")):
+    if asset_id.startswith(("water_", "solar_", "tree_")):
         expected_height = 128
         expected_width = 96
     elif asset_id.startswith("giant_tree_02x_"):
@@ -879,7 +873,6 @@ environment_asset_ids = {{
     "giant_tree_02x_b": "giant_tree_02x_b_256",
     "giant_tree_02x_c": "giant_tree_02x_c_256",
     "giant_tree_02x_d": "giant_tree_02x_d_256",
-    "water_surface_glint_horizontal": "water_surface_glint_horizontal_357",
 }}
 environment_world_sizes = {{
     "water_station_active": (36.0, 48.0),
@@ -925,7 +918,6 @@ environment_world_sizes = {{
     "giant_tree_02x_b": (192.0, 192.0),
     "giant_tree_02x_c": (192.0, 192.0),
     "giant_tree_02x_d": (192.0, 192.0),
-    "water_surface_glint_horizontal": (256.0, 174.3),
 }}
 environment_colkeys = {{
     "water_station_active": 8,
@@ -965,7 +957,6 @@ environment_colkeys = {{
     "giant_tree_02x_b": 8,
     "giant_tree_02x_c": 8,
     "giant_tree_02x_d": 8,
-    "water_surface_glint_horizontal": 8,
 }}
 environment_anchors = {{
     "water_station_active": (48.0, 127.0),
@@ -1005,7 +996,6 @@ environment_anchors = {{
     "giant_tree_02x_b": (128.0, 255.0),
     "giant_tree_02x_c": (128.0, 255.0),
     "giant_tree_02x_d": (128.0, 255.0),
-    "water_surface_glint_horizontal": (178.5, 121.5),
 }}
 fuse_frame = None
 for direction, expected_hash in fuse_assets.items():
@@ -1056,7 +1046,6 @@ for source_id, expected_hash in environment_hashes.items():
         "grass_patch_low_b",
         "grass_edge_a",
         "grass_scatter_a",
-        "water_surface_glint_horizontal",
     }}:
         assert env_asset.definition.projection_mode == "ground_decal_source_v1"
     else:
@@ -1071,9 +1060,6 @@ assert runtime.raw["assets"]["grass_patch_low_a_asset"] == "grass_patch_low_a_64
 assert runtime.raw["assets"]["grass_patch_tall_a_asset"] == "grass_patch_tall_a_64"
 assert runtime.raw["assets"]["giant_tree_root_arch_a_asset"] == "giant_tree_root_arch_a_128"
 assert runtime.raw["assets"]["giant_tree_02x_c_asset"] == "giant_tree_02x_c_256"
-assert runtime.raw["assets"]["water_surface_glint_horizontal_asset"] == (
-    "water_surface_glint_horizontal_357"
-)
 assert runtime.raw["assets"]["giant_tree_root_spire_b_asset"] == "giant_tree_root_spire_b_128"
 assert runtime.raw["assets"]["giant_tree_root_hollow_c_asset"] == "giant_tree_root_hollow_c_128"
 assert runtime.raw["assets"]["giant_tree_root_arch_d_asset"] == "giant_tree_root_arch_d_128"
@@ -1155,14 +1141,10 @@ assert renderer.object_sprite_asset(model, east_tree).definition.asset_id == (
     "giant_tree_root_spire_b_128"
 )
 assert len(model.world.ground_details) == 0
-assert len(model.world.ground_surfaces) == 1
-assert model.world.ground_surfaces[0].layers == ("water_surface_glint_horizontal",)
+assert len(model.world.ground_surfaces) == 0
 assert renderer.ground_surface_sprite_asset(model, "concrete_clean_a").definition.asset_id == (
     "concrete_clean_a_64"
 )
-assert renderer.ground_surface_sprite_asset(
-    model, "water_surface_glint_horizontal"
-).definition.asset_id == "water_surface_glint_horizontal_357"
 assert len(model.world.baked_ground_patches) == 14
 legacy_patch = model.world.baked_ground_patches[0]
 assert legacy_patch.id == "spawn_affine_ground_patch"

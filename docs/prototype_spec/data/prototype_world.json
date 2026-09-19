@@ -3501,17 +3501,6 @@
       ]
     }
   ],
-  "ground_surfaces": [
-    {
-      "id": "env005_spawn_shallow_water_surface",
-      "center_xz": [
-        192.0,
-        192.0
-      ],
-      "layers": [
-        "water_surface_glint_horizontal"
-      ]
-    }
-  ],
+  "ground_surfaces": [],
   "ground_details": []
 }

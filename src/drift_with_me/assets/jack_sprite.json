@@ -2301,36 +2301,6 @@
       "render_mode": "upright_billboard",
       "source_policy": "giant_tree_02x_direct_v0_1_hex",
       "environment_role": "forest_landmark_giant_tree"
-    },
-    {
-      "schema_version": 1,
-      "id": "water_surface_glint_horizontal_357",
-      "palette_id": "pyxel_default_16",
-      "hex_width": 357,
-      "hex_height": 243,
-      "colkey": 8,
-      "anchor_px": [
-        178.5,
-        121.5
-      ],
-      "world_size": [
-        256.0,
-        174.3
-      ],
-      "projection_mode": "ground_decal_source_v1",
-      "flip_policy": "none",
-      "animation": "static",
-      "frames": [
-        {
-          "id": "idle_00",
-          "path": "water_surface_glint_horizontal.hex",
-          "source_hash": "0447e5a059faee3fb1a107ba380b7daf13f290197b1f75173a1a0839b007dd8c"
-        }
-      ],
-      "source_hash": "0447e5a059faee3fb1a107ba380b7daf13f290197b1f75173a1a0839b007dd8c",
-      "render_mode": "ground_decal_source",
-      "source_policy": "water_pyxel_palette_v0_1_hex",
-      "environment_role": "shallow_water_surface"
     }
   ],
   "notes": [
@@ -2358,7 +2328,6 @@
     "Grassland direct v0.1 source HEX assets are loaded as source_assets. They are direct extractions from approved images, use colkey 8, and keep color index 0 visible black.",
     "Giant tree roots direct v0.1 source HEX assets are loaded as source_assets. They use colkey 8, keep color index 0 visible black, and are bound as solid obstacle visuals while the existing AABB collision remains authoritative.",
     "Giant tree 02x direct v0.1 source HEX assets are loaded as source_assets. They use colkey 8, keep color index 0 visible black, and are available as solid obstacle visuals while existing AABB collision remains authoritative.",
-    "Giant tree roots approved v0.1 source HEX assets supersede the active root/stump obstacle visuals. They are direct approved-image extractions, use colkey 8, keep color index 0 visible black, and retain authored AABB collision as the gameplay source of truth.",
-    "Water Pyxel palette v0.1 surface_glint_horizontal is connected as a shallow-water review surface. The supplied pack is mechanically converted and not yet normalized into final shoreline chunks."
+    "Giant tree roots approved v0.1 source HEX assets supersede the active root/stump obstacle visuals. They are direct approved-image extractions, use colkey 8, keep color index 0 visible black, and retain authored AABB collision as the gameplay source of truth."
   ]
 }
