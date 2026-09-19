@@ -2443,6 +2443,20 @@
       ]
     },
     {
+      "id": "urchin_normal_06",
+      "kind": "normal",
+      "position": [
+        704.0,
+        0.0,
+        760.0
+      ],
+      "home": [
+        704.0,
+        0.0,
+        760.0
+      ]
+    },
+    {
       "id": "urchin_abnormal_01",
       "kind": "abnormal",
       "position": [
@@ -2482,6 +2496,20 @@
         432.0,
         0.0,
         840.0
+      ]
+    },
+    {
+      "id": "urchin_abnormal_04",
+      "kind": "abnormal",
+      "position": [
+        800.0,
+        0.0,
+        704.0
+      ],
+      "home": [
+        800.0,
+        0.0,
+        704.0
       ]
     }
   ],
