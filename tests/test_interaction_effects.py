@@ -336,28 +336,23 @@ def test_reactive_environment_state_uses_nearby_query_and_recovers() -> None:
     assert effects.reactive_environment_states == {}
 
 
-def test_env004_reed_profile_uses_slower_timing_values() -> None:
+def test_env004_hard_grass_is_static_until_explicitly_profiled() -> None:
     model, _camera = make_model()
     effects = EffectSystem(model.config)
-    reed = model.world.object_by_id("grassland_tall_b_01")
-    assert reed is not None
-    profile = effects.reactive_environment_profile(reed)
-    assert profile is not None
-    radius = effects.profile_enter_radius(model, profile)
-    model.player.x = reed.x - radius - 4.0
-    model.player.z = reed.z
+    hard_grass = model.world.object_by_id("grassland_tall_b_01")
+    assert hard_grass is not None
+
+    assert hard_grass.visual == "grass_patch_tall_b"
+    assert effects.reactive_environment_profile(hard_grass) is None
+
+    model.player.x = hard_grass.x - 24.0
+    model.player.z = hard_grass.z
     effects.sync_reactive_environment_player_position(model)
-    model.player.x = reed.x + radius + 4.0
+    model.player.x = hard_grass.x + 24.0
 
     effects.update(1.0 / 60.0, model)
 
-    state = effects.reactive_environment_states[reed.id]
-    assert state.kind == "grass_patch_tall_b"
-    assert state.trigger_radius == pytest.approx(16.8)
-    assert state.push_sec == pytest.approx(0.14)
-    assert state.release_hold_sec == pytest.approx(0.12)
-    assert state.recover_bend1_sec == pytest.approx(0.18)
-    assert state.recover_near_idle_sec == pytest.approx(0.32)
+    assert hard_grass.id not in effects.reactive_environment_states
 
 
 def test_env004_low_grass_is_not_reactive_until_explicitly_profiled() -> None:
@@ -415,9 +410,9 @@ def test_env004_active_limit_skips_new_state_without_evicting_existing() -> None
     effects = EffectSystem(model.config)
     effects.max_active_reactive_environment = 1
     grass = model.world.object_by_id("grass_01")
-    reed = model.world.object_by_id("grassland_tall_b_01")
+    other_grass = model.world.object_by_id("grassland_tall_a_01")
     assert grass is not None
-    assert reed is not None
+    assert other_grass is not None
     model.player.x = grass.x - 20.0
     model.player.z = grass.z
     effects.sync_reactive_environment_player_position(model)
@@ -425,13 +420,13 @@ def test_env004_active_limit_skips_new_state_without_evicting_existing() -> None
     effects.update(0.1, model)
     assert set(effects.reactive_environment_states) == {"grass_01"}
 
-    profile = effects.reactive_environment_profile(reed)
+    profile = effects.reactive_environment_profile(other_grass)
     assert profile is not None
     radius = effects.profile_enter_radius(model, profile)
-    model.player.x = reed.x - radius - 4.0
-    model.player.z = reed.z
+    model.player.x = other_grass.x - radius - 4.0
+    model.player.z = other_grass.z
     effects.sync_reactive_environment_player_position(model)
-    model.player.x = reed.x + radius + 4.0
+    model.player.x = other_grass.x + radius + 4.0
     effects.update(1.0 / 60.0, model)
 
     assert set(effects.reactive_environment_states) == {"grass_01"}

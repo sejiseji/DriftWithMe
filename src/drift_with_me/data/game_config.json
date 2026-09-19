@@ -712,18 +712,6 @@
         "recover_bend1_sec": 0.12,
         "recover_near_idle_sec": 0.24,
         "redirect_step_sec": 0.04
-      },
-      "reed": {
-        "visuals": [
-          "grass_patch_tall_b"
-        ],
-        "enter_radius_factor": 1.4,
-        "exit_radius_extra_factor": 0.3,
-        "push_sec": 0.14,
-        "release_hold_sec": 0.12,
-        "recover_bend1_sec": 0.18,
-        "recover_near_idle_sec": 0.32,
-        "redirect_step_sec": 0.05
       }
     }
   },
