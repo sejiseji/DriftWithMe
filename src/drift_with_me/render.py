@@ -345,6 +345,9 @@ class Renderer:
         combat_background_depth_floor = (
             self.combat_background_depth_floor(model, camera) if combat_isolated else None
         )
+        combat_background_screen_rect = (
+            self.combat_background_screen_exclusion_rect(model, camera) if combat_isolated else None
+        )
         visible_objects = [
             obj for obj in visible_query.objects if self.object_is_visible(obj, camera, margin)
         ]
@@ -358,8 +361,12 @@ class Renderer:
             anchor = camera.project(Vec3(detail.x, 0.0, detail.z))
             if anchor is None:
                 continue
+            detail_bounds = ScreenRect(int(anchor.x - 4), int(anchor.y - 4), 8, 8)
             if not self.combat_background_command_is_visible(
-                combat_background_depth_floor, anchor.depth
+                combat_background_depth_floor,
+                anchor.depth,
+                combat_background_screen_rect,
+                detail_bounds,
             ):
                 continue
             commands.append(
@@ -376,6 +383,7 @@ class Renderer:
                 )
             )
         for obj in visible_objects:
+            object_bounds = self.object_screen_bounds(obj, camera)
             if self.camera_is_affine(camera) and self.object_uses_box_geometry(obj):
                 box_commands = self.solid_box_face_commands(obj, camera)
                 if combat_background_depth_floor is not None:
@@ -383,7 +391,10 @@ class Renderer:
                         command
                         for command in box_commands
                         if self.combat_background_command_is_visible(
-                            combat_background_depth_floor, command.depth
+                            combat_background_depth_floor,
+                            command.depth,
+                            combat_background_screen_rect,
+                            object_bounds,
                         )
                     ]
                 commands.extend(box_commands)
@@ -392,7 +403,10 @@ class Renderer:
             if anchor is None:
                 continue
             if not self.combat_background_command_is_visible(
-                combat_background_depth_floor, anchor.depth
+                combat_background_depth_floor,
+                anchor.depth,
+                combat_background_screen_rect,
+                object_bounds,
             ):
                 continue
             commands.append(
@@ -518,10 +532,38 @@ class Renderer:
                 depths.append(projected.depth)
         return min(depths) if depths else None
 
+    def combat_background_screen_exclusion_rect(
+        self, model: GameModel, camera: CameraState
+    ) -> ScreenRect | None:
+        anchors = [
+            self.combat_actor_screen_anchor(model, camera, actor)
+            for actor in ("player", "buddy", "enemy")
+        ]
+        xs = [anchor[0] for anchor in anchors if anchor is not None]
+        if not xs:
+            return None
+        margin = max(16.0, 24.0 * camera.viewport_width / 512.0)
+        min_x = int(math.floor(min(xs) - margin))
+        max_x = int(math.ceil(max(xs) + margin))
+        return ScreenRect(min_x, 0, max(1, max_x - min_x), int(camera.viewport_height))
+
     def combat_background_command_is_visible(
-        self, depth_floor: float | None, command_depth: float
+        self,
+        depth_floor: float | None,
+        command_depth: float,
+        screen_exclusion_rect: ScreenRect | None = None,
+        command_bounds: ScreenRect | None = None,
     ) -> bool:
         if depth_floor is None:
+            return True
+        if (
+            screen_exclusion_rect is not None
+            and command_bounds is not None
+            and (
+                command_bounds.max_x <= screen_exclusion_rect.x
+                or command_bounds.x >= screen_exclusion_rect.max_x
+            )
+        ):
             return True
         return command_depth >= depth_floor - 1e-6
 

@@ -7,7 +7,7 @@ import pytest
 from drift_with_me.config import load_runtime_config
 from drift_with_me.math3d import AffineProjectionProfile, CameraState, Vec3
 from drift_with_me.model import GameModel, InputIntent
-from drift_with_me.render import Renderer
+from drift_with_me.render import Renderer, ScreenRect
 from drift_with_me.world import load_world_data
 
 
@@ -535,12 +535,44 @@ def test_bat001_combat_render_filter_draws_only_background_objects_without_world
     assert model.world.objects is before_objects
     assert actor_ids.issubset(command_ids)
     assert background_commands
-    assert all(command.depth >= depth_floor - 1e-6 for command in background_commands)
     assert {
         other_enemy.id
         for other_enemy in model.enemies
         if other_enemy.id != enemy.id and other_enemy.id in command_ids
     } == set()
+
+
+def test_bat001_combat_render_filter_allows_lateral_foreground_background() -> None:
+    model, camera = make_model()
+    model.config["combat_v1_enabled"] = True
+    model.player.x = 300.0
+    model.player.z = 192.0
+    camera = camera_for_model(model)
+    enemy = normal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+
+    model.step(InputIntent(), camera, 1.0 / 60.0)
+    renderer = Renderer(object())
+    depth_floor = renderer.combat_background_depth_floor(model, camera)
+    exclusion_rect = renderer.combat_background_screen_exclusion_rect(model, camera)
+    assert depth_floor is not None
+    assert exclusion_rect is not None
+
+    foreground_depth = depth_floor - 20.0
+    left_bounds = ScreenRect(exclusion_rect.x - 32, 80, 16, 16)
+    right_bounds = ScreenRect(exclusion_rect.max_x + 16, 80, 16, 16)
+    center_bounds = ScreenRect(exclusion_rect.x + 8, 80, 16, 16)
+
+    assert renderer.combat_background_command_is_visible(
+        depth_floor, foreground_depth, exclusion_rect, left_bounds
+    )
+    assert renderer.combat_background_command_is_visible(
+        depth_floor, foreground_depth, exclusion_rect, right_bounds
+    )
+    assert not renderer.combat_background_command_is_visible(
+        depth_floor, foreground_depth, exclusion_rect, center_bounds
+    )
 
 
 def test_bat001_combat_does_not_mutate_affine_projection_basis() -> None:
