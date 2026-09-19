@@ -686,7 +686,7 @@
   },
   "reactive_environment": {
     "enabled": true,
-    "pose_frames_enabled": false,
+    "pose_frames_enabled": true,
     "max_active": 32,
     "search_radius_world": 0.0,
     "player_radius_world": 12.0,

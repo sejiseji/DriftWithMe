@@ -126,6 +126,20 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "giant_tree_02x_c": "468c2d8da16069f85eb7d652e94f9a90536413be5d1603b88ca0dbe6288bb830",
     "giant_tree_02x_d": "7065feea96acf079fb9f979a3c17337b622e76a9f5b5f30be12cd8822f64ab79",
 }
+TALL_GRASS_REACTIVE_POSE_HASHES = {
+    "idle_00": "3e4c7c8d338024e5acb5af09d519dc8a8697feea0c807f9c76489feddbe5be46",
+    "bend_left_1": "2528e2d8645f2225e46c64819530c75821d3132101fd7f354568d8703921340c",
+    "bend_left_2": "fb334e1eaf82a9e0b4694dccaf12f8a44416e97c37232a371ac30f3fc8efee0e",
+    "recover_left": "606625f04d48519eb0d69bd76d4669316e8f02c989e69f967ee7cd41d74a8c20",
+    "bend_right_1": "9584d3c0f7c240d6f7bd90f87e5b2a591ce1c87023e6c2b6d11a9101cee4bd12",
+    "bend_right_2": "5bdfb43ce90760a026fde5ba8c1bafe27d08f68f4d60df39bc8fb1f84ce9ce24",
+    "recover_right": "a98030ae11e9c285bc35ca8cc83883607978b75cd42771df3bded293f471536c",
+}
+TALL_GRASS_REACTIVE_SOURCE_HASH = "a7d38ecaa752a6c27d309143ecc2f468d65fa458c4ecc7e2b348838694e3d029"
+ENVIRONMENT_WAVE1_RUNTIME_HASHES = {
+    **ENVIRONMENT_WAVE1_SOURCE_HASHES,
+    "grass_tall_a": TALL_GRASS_REACTIVE_POSE_HASHES["idle_00"],
+}
 ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "water_station_active": {
         "0",
@@ -419,6 +433,21 @@ def test_environment_wave1_source_hex_preserves_received_pixels(asset_id: str) -
     assert pixel_hash(rows) == ENVIRONMENT_WAVE1_SOURCE_HASHES[asset_id]
     if asset_id in ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8:
         assert set("".join(rows)) - {"8"} == ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8[asset_id]
+
+
+@pytest.mark.parametrize("pose_id", tuple(TALL_GRASS_REACTIVE_POSE_HASHES))
+def test_tall_grass_reactive_pose_hex_preserves_received_pixels(pose_id: str) -> None:
+    rows = tuple(
+        (ROOT / f"src/drift_with_me/assets/grass_tall_a_reactive_{pose_id}.hex")
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+
+    assert len(rows) == 64
+    assert {len(row) for row in rows} == {64}
+    assert pixel_hash(rows) == TALL_GRASS_REACTIVE_POSE_HASHES[pose_id]
+    assert set("".join(rows)) <= set("0123456789ABCDEF")
 
 
 def valid_asset(asset_id: str = "jack_test", frame_path: str = "jack.hex") -> dict:
@@ -796,7 +825,9 @@ assert abnormal.definition.world_size == (20.0, 20.0)
 assert runtime.raw["assets"]["abnormal_urchin_idle_asset"] == "abnormal_urchin_inward_hands_64"
 fuse_assets = {FUSE_DIRECTION_HASHES!r}
 fuse_rects = {FUSE_DIRECTION_RECTS!r}
-environment_hashes = {ENVIRONMENT_WAVE1_SOURCE_HASHES!r}
+environment_hashes = {ENVIRONMENT_WAVE1_RUNTIME_HASHES!r}
+tall_grass_pose_hashes = {TALL_GRASS_REACTIVE_POSE_HASHES!r}
+tall_grass_source_hash = {TALL_GRASS_REACTIVE_SOURCE_HASH!r}
 low_grass_expected_colors = {ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8["grass_low_a"]!r}
 environment_asset_ids = {{
     "water_station_active": "water_station_active_96",
@@ -995,6 +1026,12 @@ for source_id, expected_hash in environment_hashes.items():
     env_frame = env_asset.frame()
     assert env_frame.source is not None
     assert env_frame.source_hash == expected_hash
+    if source_id == "grass_tall_a":
+        assert env_asset.definition.animation == "reactive_pose_set"
+        assert env_asset.definition.source_hash == tall_grass_source_hash
+        assert tuple(env_asset.frames) == tuple(tall_grass_pose_hashes)
+        for pose_id, expected_pose_hash in tall_grass_pose_hashes.items():
+            assert env_asset.frame(pose_id).source_hash == expected_pose_hash
     assert env_asset.definition.world_size == environment_world_sizes[source_id]
     if source_id in environment_colkeys:
         assert env_asset.definition.colkey == environment_colkeys[source_id]

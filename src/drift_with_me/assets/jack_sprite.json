@@ -1572,17 +1572,47 @@
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
-      "animation": "static",
+      "animation": "reactive_pose_set",
       "frames": [
         {
           "id": "idle_00",
-          "path": "grass_tall_a.hex",
-          "source_hash": "6d0a65997436af94a5b16727f167e81eb26e249887083e9819cad312bb65c243"
+          "path": "grass_tall_a_reactive_idle_00.hex",
+          "source_hash": "3e4c7c8d338024e5acb5af09d519dc8a8697feea0c807f9c76489feddbe5be46"
+        },
+        {
+          "id": "bend_left_1",
+          "path": "grass_tall_a_reactive_bend_left_1.hex",
+          "source_hash": "2528e2d8645f2225e46c64819530c75821d3132101fd7f354568d8703921340c"
+        },
+        {
+          "id": "bend_left_2",
+          "path": "grass_tall_a_reactive_bend_left_2.hex",
+          "source_hash": "fb334e1eaf82a9e0b4694dccaf12f8a44416e97c37232a371ac30f3fc8efee0e"
+        },
+        {
+          "id": "recover_left",
+          "path": "grass_tall_a_reactive_recover_left.hex",
+          "source_hash": "606625f04d48519eb0d69bd76d4669316e8f02c989e69f967ee7cd41d74a8c20"
+        },
+        {
+          "id": "bend_right_1",
+          "path": "grass_tall_a_reactive_bend_right_1.hex",
+          "source_hash": "9584d3c0f7c240d6f7bd90f87e5b2a591ce1c87023e6c2b6d11a9101cee4bd12"
+        },
+        {
+          "id": "bend_right_2",
+          "path": "grass_tall_a_reactive_bend_right_2.hex",
+          "source_hash": "5bdfb43ce90760a026fde5ba8c1bafe27d08f68f4d60df39bc8fb1f84ce9ce24"
+        },
+        {
+          "id": "recover_right",
+          "path": "grass_tall_a_reactive_recover_right.hex",
+          "source_hash": "a98030ae11e9c285bc35ca8cc83883607978b75cd42771df3bded293f471536c"
         }
       ],
-      "source_hash": "6d0a65997436af94a5b16727f167e81eb26e249887083e9819cad312bb65c243",
+      "source_hash": "a7d38ecaa752a6c27d309143ecc2f468d65fa458c4ecc7e2b348838694e3d029",
       "render_mode": "sprite_prop_billboard",
-      "source_policy": "nature_clean_v0_3_hex"
+      "source_policy": "env004b_tall_grass_reactive_hex_v0_2"
     },
     {
       "schema_version": 1,

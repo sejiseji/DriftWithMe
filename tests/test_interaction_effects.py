@@ -621,6 +621,7 @@ def test_env004_pose_frame_selection_is_opt_in_and_frame_safe() -> None:
         pose_id="bend_right_2",
     )
 
+    model.config["reactive_environment"]["pose_frames_enabled"] = False
     assert renderer.reactive_environment_pose_frame(model, asset, state) is None
 
     model.config["reactive_environment"]["pose_frames_enabled"] = True
