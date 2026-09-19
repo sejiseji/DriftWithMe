@@ -2401,6 +2401,48 @@
       ]
     },
     {
+      "id": "urchin_normal_03",
+      "kind": "normal",
+      "position": [
+        224.0,
+        0.0,
+        616.0
+      ],
+      "home": [
+        224.0,
+        0.0,
+        616.0
+      ]
+    },
+    {
+      "id": "urchin_normal_04",
+      "kind": "normal",
+      "position": [
+        560.0,
+        0.0,
+        688.0
+      ],
+      "home": [
+        560.0,
+        0.0,
+        688.0
+      ]
+    },
+    {
+      "id": "urchin_normal_05",
+      "kind": "normal",
+      "position": [
+        880.0,
+        0.0,
+        824.0
+      ],
+      "home": [
+        880.0,
+        0.0,
+        824.0
+      ]
+    },
+    {
       "id": "urchin_abnormal_01",
       "kind": "abnormal",
       "position": [
@@ -2412,6 +2454,34 @@
         736.0,
         0.0,
         384.0
+      ]
+    },
+    {
+      "id": "urchin_abnormal_02",
+      "kind": "abnormal",
+      "position": [
+        824.0,
+        0.0,
+        560.0
+      ],
+      "home": [
+        824.0,
+        0.0,
+        560.0
+      ]
+    },
+    {
+      "id": "urchin_abnormal_03",
+      "kind": "abnormal",
+      "position": [
+        432.0,
+        0.0,
+        840.0
+      ],
+      "home": [
+        432.0,
+        0.0,
+        840.0
       ]
     }
   ],

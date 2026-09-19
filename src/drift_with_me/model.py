@@ -1764,7 +1764,7 @@ class GameModel:
             return
         if session.phase == "PREIMPACT_SLOW":
             if session.phase_elapsed_sec >= self.combat_preimpact_slow_sec():
-                self.advance_combat_phase(session, "PARRY_TIMING", events)
+                self.advance_combat_phase(session, "COMBAT_READY", events)
             return
         if session.phase == "PARRY_TIMING":
             self.update_combat_parry_timing(session, defense_pressed, elapsed, events)
@@ -2543,7 +2543,7 @@ class GameModel:
             return False
         if self.combat_session is not None:
             return False
-        if enemy.kind != "normal":
+        if enemy.kind not in {"normal", "abnormal"}:
             return False
         return not self.combat_contact_on_cooldown(enemy)
 
@@ -2898,7 +2898,7 @@ class GameModel:
             if enemy.state in {"DEFEATED", "REPELLED", "REST", "CAPTURED"}:
                 continue
             if self.player_overlaps_enemy(enemy):
-                if self.combat_v1_enabled() and enemy.kind == "normal":
+                if self.combat_v1_enabled() and enemy.kind in {"normal", "abnormal"}:
                     if self.combat_contact_on_cooldown(enemy):
                         return
                     if self.can_start_contact_combat(enemy):

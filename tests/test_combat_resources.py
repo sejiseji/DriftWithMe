@@ -35,6 +35,12 @@ def normal_enemy(model: GameModel):
     return enemy
 
 
+def abnormal_enemy(model: GameModel):
+    enemy = model.enemy_by_id("urchin_abnormal_01")
+    assert enemy is not None
+    return enemy
+
+
 def enable_fast_combat(model: GameModel) -> None:
     model.config["combat_v1_enabled"] = True
     model.config["combat_v1"]["enemy_charge"].update(
@@ -88,6 +94,27 @@ def test_contact_combat_starts_with_entry_settle_phase_before_windup() -> None:
 def test_combat_ready_sequence_holds_slider_before_first_parry() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "COMBAT_READY")
+    session = model.combat_session
+    assert session is not None
+
+    assert model.combat_timing_slider_position(session) == pytest.approx(0.0)
+    model.step(InputIntent(), camera, model.combat_ready_total_sec() * 0.5)
+    assert session.phase == "COMBAT_READY"
+    assert model.combat_timing_slider_position(session) == pytest.approx(0.0)
+
+    model.step(InputIntent(), camera, model.combat_ready_total_sec())
+    assert session.phase == "PARRY_TIMING"
+    assert model.combat_timing_slider_position(session) == pytest.approx(0.0)
+
+
+def test_combat_ready_sequence_repeats_before_later_parry() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+
+    finish_current_parry_round(model, camera)
+    advance_from_resolve(model, camera)
     step_to_combat_phase(model, camera, "COMBAT_READY")
     session = model.combat_session
     assert session is not None
@@ -393,6 +420,26 @@ def test_bat006_contact_combat_is_enabled_by_default() -> None:
     assert model.combat_v1_enabled()
     assert [event.kind for event in events] == ["combat_started"]
     assert model.combat_session is not None
+
+
+def test_abnormal_urchin_contact_starts_combat() -> None:
+    model, camera = make_model()
+    model.config["combat_v1_enabled"] = True
+    model.player.x = 730.0
+    model.player.z = 384.0
+    camera = camera_for_model(model)
+    enemy = abnormal_enemy(model)
+    enemy.x = 737.0
+    enemy.z = 384.0
+    enemy.state = "APPROACH"
+
+    events = model.step(InputIntent(), camera, 1.0 / 60.0)
+
+    assert "combat_started" in [event.kind for event in events]
+    assert model.combat_session is not None
+    assert model.combat_session.enemy_id == enemy.id
+    combat_events = [event for event in events if event.kind == "combat_started"]
+    assert combat_events[-1].payload["enemy_kind"] == "abnormal"
 
 
 def test_bat001_contact_starts_isolated_combat_without_world_knockback() -> None:
