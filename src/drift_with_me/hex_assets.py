@@ -19,6 +19,8 @@ GROUND_DECAL_PROJECTION_MODE = "ground_decal_source_v1"
 SUPPORTED_PROJECTION_MODES = {SUPPORTED_PROJECTION_MODE, GROUND_DECAL_PROJECTION_MODE}
 SUPPORTED_FLIP_POLICY = "none"
 SUPPORTED_ANIMATION = "static"
+REACTIVE_POSE_SET_ANIMATION = "reactive_pose_set"
+SUPPORTED_ANIMATIONS = {SUPPORTED_ANIMATION, REACTIVE_POSE_SET_ANIMATION}
 HEX_DIGITS = "0123456789ABCDEF"
 
 
@@ -552,7 +554,7 @@ def parse_sprite_definition(raw_asset: Any, path: str) -> SpriteDefinition:
         raise HexAssetError(f"{asset_id}.flip_policy: unsupported value {flip_policy!r}")
 
     animation = require_nonempty_str(raw_asset.get("animation"), f"{asset_id}.animation")
-    if animation != SUPPORTED_ANIMATION:
+    if animation not in SUPPORTED_ANIMATIONS:
         raise HexAssetError(f"{asset_id}.animation: unsupported value {animation!r}")
 
     frames_raw = raw_asset.get("frames")

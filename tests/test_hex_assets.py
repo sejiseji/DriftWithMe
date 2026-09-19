@@ -465,6 +465,59 @@ def write_manifest_assets(tmp_path: Path, assets: list[dict]) -> Path:
     return manifest_path
 
 
+def test_static_manifest_rejects_multiple_hex_frames(tmp_path: Path) -> None:
+    import pyxel
+
+    asset = valid_asset()
+    asset["frames"].append(
+        {"id": "bend_right_1", "path": "bend_right_1.hex", "source_hash": pixel_hash(ROWS)}
+    )
+    (tmp_path / "jack.hex").write_text("\n".join(ROWS) + "\n", encoding="utf-8")
+    (tmp_path / "bend_right_1.hex").write_text("\n".join(ROWS) + "\n", encoding="utf-8")
+    manifest_path = tmp_path / "sprites.json"
+    manifest_path.write_text(
+        json.dumps({"schema_version": 1, "assets": [asset]}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(HexAssetError, match="static assets must have exactly one frame"):
+        load_sprite_manifest_path(pyxel, manifest_path)
+
+
+def test_reactive_pose_set_manifest_loads_multiple_hex_frames(tmp_path: Path) -> None:
+    import pyxel
+
+    left_rows = ("EEE", "CDE", "678", "345", "012")
+    asset = valid_asset("grass_pose_test", "idle.hex")
+    asset["animation"] = "reactive_pose_set"
+    asset["frames"] = [
+        {"id": "idle_00", "path": "idle.hex", "source_hash": pixel_hash(ROWS)},
+        {
+            "id": "bend_left_1",
+            "path": "bend_left_1.hex",
+            "source_hash": pixel_hash(left_rows),
+        },
+    ]
+    asset["source_hash"] = source_hash_for_pixels(
+        bytes([int(char, 16) for row in ROWS for char in row])
+        + bytes([int(char, 16) for row in left_rows for char in row])
+    )
+    (tmp_path / "idle.hex").write_text("\n".join(ROWS) + "\n", encoding="utf-8")
+    (tmp_path / "bend_left_1.hex").write_text("\n".join(left_rows) + "\n", encoding="utf-8")
+    manifest_path = tmp_path / "sprites.json"
+    manifest_path.write_text(
+        json.dumps({"schema_version": 1, "assets": [asset]}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    loaded = load_sprite_manifest_path(pyxel, manifest_path).get("grass_pose_test")
+
+    assert loaded is not None
+    assert loaded.definition.animation == "reactive_pose_set"
+    assert set(loaded.frames) == {"idle_00", "bend_left_1"}
+    assert loaded.frame("bend_left_1").source_hash == pixel_hash(left_rows)
+
+
 def test_parse_hex_rows_accepts_crlf_and_preserves_color_numbers() -> None:
     rows = parse_hex_rows("012\r\nABC\r\n", 3, 2, "test.hex")
 
