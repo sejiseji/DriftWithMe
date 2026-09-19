@@ -2147,12 +2147,32 @@ class Renderer:
         ):
             self.draw_reactive_ground_prop_overlay(model, obj, camera, state)
             return True
-        self.draw_atmospheric_scaled_sprite(asset, placement)
+        self.draw_atmospheric_scaled_sprite(
+            asset,
+            placement,
+            self.reactive_environment_pose_frame(model, asset, state),
+        )
         return True
 
     def reactive_upright_deform_enabled(self, model: GameModel) -> bool:
         config = model.config.get("reactive_environment", {})
         return bool(config.get("upright_deform_enabled", False))
+
+    def reactive_environment_pose_frames_enabled(self, model: GameModel) -> bool:
+        config = model.config.get("reactive_environment", {})
+        return bool(config.get("pose_frames_enabled", False))
+
+    def reactive_environment_pose_frame(
+        self,
+        model: GameModel,
+        asset: LoadedSpriteAsset,
+        state: ReactiveEnvironmentState | None,
+    ):
+        if state is None or not self.reactive_environment_pose_frames_enabled(model):
+            return None
+        if state.pose_id not in asset.frames:
+            return None
+        return asset.frame(state.pose_id)
 
     def reactive_environment_state(
         self, effects: EffectSystem | None, object_id: str
@@ -2160,7 +2180,7 @@ class Renderer:
         if effects is None:
             return None
         state = effects.reactive_environment_states.get(object_id)
-        if state is None or state.progress >= 1.0:
+        if state is None or state.phase == "IDLE":
             return None
         return state
 

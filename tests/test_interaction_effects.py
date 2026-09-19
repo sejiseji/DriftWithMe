@@ -262,41 +262,112 @@ def test_reactive_environment_query_filters_by_world_distance() -> None:
     assert far.objects == ()
 
 
-def test_reactive_environment_state_uses_nearby_query_and_recovers() -> None:
+def test_env004_first_update_only_syncs_player_position() -> None:
     model, _camera = make_model()
     effects = EffectSystem(model.config)
     grass = model.world.object_by_id("grass_01")
     assert grass is not None
     model.player.x = grass.x
     model.player.z = grass.z
-    model.player.last_move_x = 1.0
-    model.player.last_move_z = 0.0
 
     effects.update(1.0 / 60.0, model)
-    first_particle_count = len(effects.particles)
 
-    assert effects.reactive_environment_last_query_count == 1
-    assert first_particle_count == 3
+    assert effects.reactive_environment_states == {}
+    assert effects.reactive_environment_last_query_count == 0
+
+
+def test_env004_swept_segment_triggers_even_when_endpoints_are_outside() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+    profile = effects.reactive_environment_profile(grass)
+    assert profile is not None
+    radius = effects.profile_enter_radius(model, profile)
+    model.player.x = grass.x - radius - 8.0
+    model.player.z = grass.z
+    effects.sync_reactive_environment_player_position(model)
+    model.player.x = grass.x + radius + 8.0
+
+    effects.update(1.0 / 60.0, model)
+
+    assert "grass_01" in effects.reactive_environment_states
+    state = effects.reactive_environment_states["grass_01"]
+    assert state.strength == pytest.approx(1.0)
+    assert state.direction == "right"
+
+
+def test_reactive_environment_state_uses_nearby_query_and_recovers() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+    model.player.x = grass.x - 20.0
+    model.player.z = grass.z
+    effects.sync_reactive_environment_player_position(model)
+    model.player.x = grass.x
+
+    effects.update(1.0 / 60.0, model)
+
+    assert effects.reactive_environment_last_query_count >= 1
+    assert len(effects.particles) == 0
     assert set(effects.reactive_environment_states) == {"grass_01"}
     state = effects.reactive_environment_states["grass_01"]
     assert state.kind == "reactive_grass_tall"
     assert state.direction_x == pytest.approx(1.0)
     assert state.direction_z == pytest.approx(0.0)
+    assert state.direction == "right"
+    assert state.phase == "PUSH"
+    assert state.pose_id in {"bend_right_1", "bend_right_2"}
     assert 0.0 <= state.strength <= 1.0
 
-    model.player.last_move_x = 0.0
-    model.player.last_move_z = 1.0
-    effects.update(1.0 / 60.0, model)
-    assert len(effects.particles) == first_particle_count
+    effects.update(0.2, model)
     refreshed = effects.reactive_environment_states["grass_01"]
-    assert refreshed.direction_x == pytest.approx(0.0)
-    assert refreshed.direction_z == pytest.approx(1.0)
-    assert refreshed.age == pytest.approx(0.0)
+    assert refreshed.phase == "HOLD"
+    assert refreshed.pose_id == "bend_right_2"
 
-    model.player.x = 0.0
-    model.player.z = 0.0
-    effects.update(1.1, model)
+    model.player.x = grass.x + 80.0
+    effects.update(0.1, model)
+    released = effects.reactive_environment_states["grass_01"]
+    assert not released.touching
+    assert released.phase in {"HOLD", "RECOVER"}
+
+    effects.update(0.8, model)
     assert effects.reactive_environment_states == {}
+
+
+def test_env004_reed_profile_uses_slower_timing_values() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    reed = model.world.object_by_id("grassland_tall_b_01")
+    assert reed is not None
+    profile = effects.reactive_environment_profile(reed)
+    assert profile is not None
+    radius = effects.profile_enter_radius(model, profile)
+    model.player.x = reed.x - radius - 4.0
+    model.player.z = reed.z
+    effects.sync_reactive_environment_player_position(model)
+    model.player.x = reed.x + radius + 4.0
+
+    effects.update(1.0 / 60.0, model)
+
+    state = effects.reactive_environment_states[reed.id]
+    assert state.kind == "grass_patch_tall_b"
+    assert state.trigger_radius == pytest.approx(16.8)
+    assert state.push_sec == pytest.approx(0.14)
+    assert state.release_hold_sec == pytest.approx(0.12)
+    assert state.recover_bend1_sec == pytest.approx(0.18)
+    assert state.recover_near_idle_sec == pytest.approx(0.32)
+
+
+def test_env004_low_grass_is_not_reactive_until_explicitly_profiled() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    low_grass = model.world.object_by_id("grass_02")
+    assert low_grass is not None
+
+    assert low_grass.visual == "reactive_grass_low"
+    assert effects.reactive_environment_profile(low_grass) is None
 
 
 def test_reactive_environment_keeps_minimum_strength_at_trigger_edge() -> None:
@@ -304,13 +375,91 @@ def test_reactive_environment_keeps_minimum_strength_at_trigger_edge() -> None:
     effects = EffectSystem(model.config)
     grass = model.world.object_by_id("grass_01")
     assert grass is not None
-    model.player.x = grass.x + grass.reaction_radius
-    model.player.z = grass.z
+    profile = effects.reactive_environment_profile(grass)
+    assert profile is not None
+    radius = effects.profile_enter_radius(model, profile)
+    model.player.x = grass.x - radius
+    model.player.z = grass.z + radius
+    effects.sync_reactive_environment_player_position(model)
+    model.player.x = grass.x + radius
 
     effects.update(1.0 / 60.0, model)
 
     state = effects.reactive_environment_states["grass_01"]
     assert state.strength == pytest.approx(model.config["reactive_environment"]["min_strength"])
+
+
+def test_env004_combat_motion_does_not_trigger_grass_contact() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+    model.player.x = grass.x - 32.0
+    model.player.z = grass.z
+    effects.sync_reactive_environment_player_position(model)
+    model.combat_session = object()
+    model.player.x = grass.x
+
+    effects.update(0.2, model)
+
+    assert effects.reactive_environment_states == {}
+
+    model.combat_session = None
+    effects.update(0.2, model)
+
+    assert effects.reactive_environment_states == {}
+
+
+def test_env004_active_limit_skips_new_state_without_evicting_existing() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    effects.max_active_reactive_environment = 1
+    grass = model.world.object_by_id("grass_01")
+    reed = model.world.object_by_id("grassland_tall_b_01")
+    assert grass is not None
+    assert reed is not None
+    model.player.x = grass.x - 20.0
+    model.player.z = grass.z
+    effects.sync_reactive_environment_player_position(model)
+    model.player.x = grass.x
+    effects.update(0.1, model)
+    assert set(effects.reactive_environment_states) == {"grass_01"}
+
+    profile = effects.reactive_environment_profile(reed)
+    assert profile is not None
+    radius = effects.profile_enter_radius(model, profile)
+    model.player.x = reed.x - radius - 4.0
+    model.player.z = reed.z
+    effects.sync_reactive_environment_player_position(model)
+    model.player.x = reed.x + radius + 4.0
+    effects.update(1.0 / 60.0, model)
+
+    assert set(effects.reactive_environment_states) == {"grass_01"}
+    assert effects.reactive_environment_limit_skipped_count >= 1
+
+
+def test_env004_opposite_direction_contact_redirects_before_switching() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+    model.player.x = grass.x - 20.0
+    model.player.z = grass.z
+    effects.sync_reactive_environment_player_position(model)
+    model.player.x = grass.x
+    effects.update(0.1, model)
+    state = effects.reactive_environment_states["grass_01"]
+    assert state.direction == "right"
+
+    model.player.x = grass.x + 20.0
+    effects.sync_reactive_environment_player_position(model)
+    model.player.x = grass.x
+    effects.update(1.0 / 60.0, model)
+
+    assert state.phase == "REDIRECT"
+    assert state.direction == "right"
+    assert state.pending_direction == "left"
+    assert state.pose_id == "recover_right"
 
 
 def test_reactive_grass_render_helpers_use_active_state_until_recovered() -> None:
@@ -341,7 +490,7 @@ def test_reactive_grass_render_helpers_use_active_state_until_recovered() -> Non
     assert direction[0] > 0.0
     assert abs((direction[0] ** 2 + direction[1] ** 2) ** 0.5 - 1.0) < 1e-6
 
-    state.age = state.recovery_sec
+    state.phase = "IDLE"
     assert renderer.reactive_environment_state(effects, grass.id) is None
     assert renderer.reactive_environment_intensity(state) == pytest.approx(0.0)
 
@@ -415,6 +564,72 @@ def test_env001_reactive_upright_grass_uses_static_billboard_when_active(
 
     assert renderer.draw_reactive_prop_sprite(model, grass, camera, asset, effects) is True
     assert calls == ["static"]
+
+
+def test_env004_pose_frame_selection_is_opt_in_and_frame_safe() -> None:
+    model, _camera = make_model()
+    renderer = Renderer(None)
+    asset = LoadedSpriteAsset(
+        definition=SpriteDefinition(
+            asset_id="test_reactive_grass",
+            palette_id="pyxel_default_16",
+            hex_width=64,
+            hex_height=64,
+            colkey=8,
+            anchor_px=(32.0, 63.0),
+            world_size=(28.0, 28.0),
+            projection_mode="upright_height_billboard_v1",
+            flip_policy="none",
+            animation="static",
+            frames=(),
+            source_hash="0" * 64,
+        ),
+        frames={
+            "idle_00": LoadedSpriteFrame(
+                frame_id="idle_00",
+                image=None,
+                source=None,
+                u=0,
+                v=0,
+                width=64,
+                height=64,
+                source_hash="0" * 64,
+            ),
+            "bend_right_2": LoadedSpriteFrame(
+                frame_id="bend_right_2",
+                image=None,
+                source=None,
+                u=0,
+                v=0,
+                width=64,
+                height=64,
+                source_hash="1" * 64,
+            ),
+        },
+    )
+    state = ReactiveEnvironmentState(
+        object_id="grass_01",
+        kind="reactive_grass_tall",
+        x=0.0,
+        z=0.0,
+        trigger_radius=16.0,
+        visual_radius=24.0,
+        strength=1.0,
+        direction_x=1.0,
+        direction_z=0.0,
+        recovery_sec=1.0,
+        pose_id="bend_right_2",
+    )
+
+    assert renderer.reactive_environment_pose_frame(model, asset, state) is None
+
+    model.config["reactive_environment"]["pose_frames_enabled"] = True
+    selected = renderer.reactive_environment_pose_frame(model, asset, state)
+    assert selected is not None
+    assert selected.frame_id == "bend_right_2"
+
+    state.pose_id = "bend_left_2"
+    assert renderer.reactive_environment_pose_frame(model, asset, state) is None
 
 
 def test_presentation_cue_mapping_for_existing_events() -> None:
@@ -577,20 +792,24 @@ def test_combat_defeat_restore_adds_linger_particles_at_committed_enemy_position
     assert all(particle.lifetime >= 0.82 for particle in effects.particles)
 
 
-def test_grass_reaction_uses_cooldown() -> None:
+def test_env004_existing_contact_refreshes_state_without_particles() -> None:
     model, _camera = make_model()
     effects = EffectSystem(model.config)
-    model.player.x = 224.0
-    model.player.z = 352.0
+    grass = model.world.object_by_id("grass_01")
+    assert grass is not None
+    model.player.x = grass.x - 20.0
+    model.player.z = grass.z
+    effects.sync_reactive_environment_player_position(model)
+    model.player.x = grass.x
 
-    effects.update(0.0, model)
+    effects.update(0.1, model)
     first_count = len(effects.particles)
+    first_state = effects.reactive_environment_states["grass_01"]
+    first_phase_elapsed = first_state.phase_elapsed
     effects.update(0.1, model)
     second_count = len(effects.particles)
-    effects.update(0.8, model)
 
-    assert first_count > 0
+    assert first_count == 0
     assert second_count == first_count
-    assert all(particle.age > 0.0 for particle in effects.particles)
-    assert len(effects.particles) <= first_count
+    assert effects.reactive_environment_states["grass_01"].phase_elapsed >= first_phase_elapsed
     assert "grass_01" in effects.reactive_environment_states

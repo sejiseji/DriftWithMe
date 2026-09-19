@@ -164,12 +164,26 @@ class ReactiveEnvironmentState:
     direction_z: float
     recovery_sec: float
     age: float = 0.0
+    phase: str = "PUSH"
+    direction: str = "right"
+    pose_id: str = "bend_right_1"
+    phase_elapsed: float = 0.0
+    touching: bool = True
+    pending_direction: str | None = None
+    push_sec: float = 0.1
+    release_hold_sec: float = 0.08
+    recover_bend1_sec: float = 0.12
+    recover_near_idle_sec: float = 0.24
+    redirect_step_sec: float = 0.04
 
     @property
     def progress(self) -> float:
-        if self.recovery_sec <= 1e-6:
+        if self.phase == "IDLE":
             return 1.0
-        return max(0.0, min(self.age / self.recovery_sec, 1.0))
+        if self.phase != "RECOVER":
+            return 0.0
+        recover_sec = max(1e-6, self.recover_bend1_sec + self.recover_near_idle_sec)
+        return max(0.0, min(self.phase_elapsed / recover_sec, 1.0))
 
 
 def presentation_cue_for_event(event: GameEvent) -> str | None:
@@ -225,6 +239,14 @@ class EffectSystem:
         self.reactive_environment_retrigger_sec = float(reactive.get("retrigger_sec", 0.8))
         self.reactive_environment_min_strength = float(reactive.get("min_strength", 0.0))
         self.max_active_reactive_environment = int(reactive.get("max_active", 32))
+        self.reactive_environment_profiles = reactive.get("profiles", {})
+        self.reactive_environment_player_radius = float(reactive.get("player_radius_world", 12.0))
+        self.reactive_environment_min_move_speed = float(
+            reactive.get("min_real_move_speed_world_per_sec", 1.2)
+        )
+        self.reactive_environment_horizontal_deadzone_ratio = float(
+            reactive.get("horizontal_deadzone_ratio", 0.2)
+        )
         self.particles: list[WorldParticle] = []
         self.rings: list[WorldRing] = []
         self.strokes: list[WorldStroke] = []
@@ -234,7 +256,10 @@ class EffectSystem:
         self.camera_impulses: list[CameraImpulse] = []
         self.reactive_environment_states: dict[str, ReactiveEnvironmentState] = {}
         self.reactive_environment_last_query_count = 0
+        self.reactive_environment_limit_skipped_count = 0
         self._grass_cooldowns: dict[str, float] = {}
+        self._reactive_last_player_position: tuple[float, float] | None = None
+        self._reactive_last_direction: str = "right"
         self._processed_cues: set[tuple[int, str]] = set()
         self._processed_camera_cues: set[tuple[int, str]] = set()
 
@@ -248,7 +273,10 @@ class EffectSystem:
         self.camera_impulses.clear()
         self.reactive_environment_states.clear()
         self.reactive_environment_last_query_count = 0
+        self.reactive_environment_limit_skipped_count = 0
         self._grass_cooldowns.clear()
+        self._reactive_last_player_position = None
+        self._reactive_last_direction = "right"
         self._processed_cues.clear()
         self._processed_camera_cues.clear()
 
@@ -478,80 +506,336 @@ class EffectSystem:
         for object_id in tuple(self._grass_cooldowns):
             self._grass_cooldowns[object_id] = max(0.0, self._grass_cooldowns[object_id] - dt)
 
-        for state in self.reactive_environment_states.values():
-            state.age += dt
-        self.reactive_environment_states = {
-            object_id: state
-            for object_id, state in self.reactive_environment_states.items()
-            if state.age < state.recovery_sec
-        }
+        reactive_dt = dt if self.reactive_environment_world_active(model) else 0.0
+        if reactive_dt > 0.0:
+            self.update_grass_reactions(model, reactive_dt)
+            for state in self.reactive_environment_states.values():
+                self.advance_reactive_environment_state(state, reactive_dt)
+            self.reactive_environment_states = {
+                object_id: state
+                for object_id, state in self.reactive_environment_states.items()
+                if state.phase != "IDLE"
+            }
+        else:
+            self.sync_reactive_environment_player_position(model)
 
-        self.update_grass_reactions(model)
+    def reactive_environment_world_active(self, model) -> bool:
+        return model.combat_session is None and not model.world_paused
 
-    def update_grass_reactions(self, model) -> None:
+    def sync_reactive_environment_player_position(self, model) -> None:
+        self._reactive_last_player_position = (float(model.player.x), float(model.player.z))
+
+    def update_grass_reactions(self, model, dt: float) -> None:
         self.reactive_environment_last_query_count = 0
+        self.reactive_environment_limit_skipped_count = 0
         if not self.reactive_environment_enabled:
+            self.sync_reactive_environment_player_position(model)
             return
-        query = model.world.query_reactive_environment(
-            model.player.x,
-            model.player.z,
-            self.reactive_environment_search_radius,
-        )
-        self.reactive_environment_last_query_count = query.candidate_object_count
-        for obj in query.objects:
-            was_active = obj.id in self.reactive_environment_states
-            self.activate_reactive_environment(model, obj)
-            if was_active or self._grass_cooldowns.get(obj.id, 0.0) > 0.0:
-                continue
-            self.spawn_burst(obj.x, 0.0, obj.z, color=11, count=3, speed=5.0)
-            self._grass_cooldowns[obj.id] = self.reactive_environment_retrigger_sec
+        current = (float(model.player.x), float(model.player.z))
+        previous = self._reactive_last_player_position
+        if previous is None:
+            self._reactive_last_player_position = current
+            return
+        self._reactive_last_player_position = current
 
-    def activate_reactive_environment(self, model, obj) -> None:
+        moved = math.hypot(current[0] - previous[0], current[1] - previous[1])
+        query_x = (previous[0] + current[0]) * 0.5
+        query_z = (previous[1] + current[1]) * 0.5
+        query_radius = max(
+            self.reactive_environment_search_radius,
+            moved * 0.5 + self.max_reactive_environment_enter_radius(model),
+        )
+        query = model.world.query_reactive_environment(query_x, query_z, query_radius)
+        self.reactive_environment_last_query_count = query.candidate_object_count
+
+        candidate_ids = {obj.id for obj in query.objects}
+        active_ids = set(self.reactive_environment_states)
+        objects_by_id = {obj.id: obj for obj in model.world.reactive_environment_objects}
+        for object_id in sorted(candidate_ids | active_ids):
+            obj = objects_by_id.get(object_id)
+            if obj is None:
+                continue
+            profile = self.reactive_environment_profile(obj)
+            if profile is None:
+                continue
+            self.update_reactive_environment_object(
+                model, obj, profile, previous, current, moved, dt
+            )
+
+    def reactive_environment_profile(self, obj) -> dict | None:
+        profiles = self.reactive_environment_profiles
+        if not isinstance(profiles, dict):
+            return None
+        for profile in profiles.values():
+            if not isinstance(profile, dict):
+                continue
+            visuals = profile.get("visuals", ())
+            if obj.visual in visuals:
+                return profile
+        return None
+
+    def max_reactive_environment_enter_radius(self, model) -> float:
+        maximum = 0.0
+        profiles = self.reactive_environment_profiles
+        if isinstance(profiles, dict):
+            for profile in profiles.values():
+                if not isinstance(profile, dict):
+                    continue
+                maximum = max(maximum, self.profile_enter_radius(model, profile))
+        return maximum
+
+    def profile_enter_radius(self, model, profile: dict) -> float:
+        if "enter_radius_world" in profile:
+            return max(0.0, float(profile.get("enter_radius_world", 0.0)))
+        factor = float(profile.get("enter_radius_factor", 1.6))
+        return max(0.0, factor * self.reactive_player_radius(model))
+
+    def profile_exit_radius(self, model, profile: dict, enter_radius: float) -> float:
+        if "exit_radius_world" in profile:
+            return max(enter_radius, float(profile.get("exit_radius_world", enter_radius)))
+        factor = float(profile.get("exit_radius_extra_factor", 0.3))
+        return max(enter_radius, enter_radius + factor * self.reactive_player_radius(model))
+
+    def reactive_player_radius(self, model) -> float:
+        configured = self.reactive_environment_player_radius
+        if configured > 0.0:
+            return configured
+        return max(float(model.player_solid_half_x), float(model.player_solid_half_z))
+
+    def update_reactive_environment_object(
+        self,
+        model,
+        obj,
+        profile: dict,
+        previous: tuple[float, float],
+        current: tuple[float, float],
+        moved: float,
+        dt: float,
+    ) -> None:
+        enter_radius = self.profile_enter_radius(model, profile)
+        exit_radius = self.profile_exit_radius(model, profile, enter_radius)
+        state = self.reactive_environment_states.get(obj.id)
+        currently_touching = math.hypot(current[0] - obj.x, current[1] - obj.z) <= exit_radius
+        speed = moved / max(dt, 1e-6)
+        swept_hit = (
+            speed >= self.reactive_environment_min_move_speed
+            and self.segment_distance_to_point(previous, current, obj.x, obj.z) <= enter_radius
+        )
+        if state is None:
+            if not swept_hit:
+                return
+            self.activate_reactive_environment(model, obj, profile, previous, current, enter_radius)
+            return
+
+        if currently_touching:
+            self.touch_reactive_environment_state(model, obj, state, profile, previous, current)
+        elif state.touching:
+            state.touching = False
+            state.phase_elapsed = 0.0 if state.phase == "HOLD" else state.phase_elapsed
+
+    def activate_reactive_environment(self, model, obj, profile, previous, current, radius) -> None:
         if self.max_active_reactive_environment <= 0:
             return
         if (
             obj.id not in self.reactive_environment_states
             and len(self.reactive_environment_states) >= self.max_active_reactive_environment
         ):
-            oldest_id = max(
-                self.reactive_environment_states,
-                key=lambda object_id: self.reactive_environment_states[object_id].progress,
-            )
-            self.reactive_environment_states.pop(oldest_id, None)
-        direction_x, direction_z = self.reactive_environment_direction(model, obj)
-        distance = math.hypot(model.player.x - obj.x, model.player.z - obj.z)
-        contact = 1.0 - min(distance / max(obj.reaction_radius, 1e-6), 1.0)
+            self.reactive_environment_limit_skipped_count += 1
+            return
+        direction = self.reactive_environment_direction_label(model, obj, previous, current)
+        self._reactive_last_direction = direction
+        direction_x, direction_z = self.reactive_environment_motion_direction(previous, current)
+        distance = self.segment_distance_to_point(previous, current, obj.x, obj.z)
+        contact = 1.0 - min(distance / max(radius, 1e-6), 1.0)
         min_strength = max(0.0, min(self.reactive_environment_min_strength, 1.0))
         strength = min_strength + (1.0 - min_strength) * contact
         visual_radius = max(
-            obj.reaction_radius,
+            radius,
             obj.sprite_world_width * 0.5,
             obj.sprite_world_height * 0.5,
         )
+        push_sec = max(0.0, float(profile.get("push_sec", 0.1)))
+        release_hold_sec = max(0.0, float(profile.get("release_hold_sec", 0.08)))
+        recover_bend1_sec = max(0.0, float(profile.get("recover_bend1_sec", 0.12)))
+        recover_near_idle_sec = max(0.0, float(profile.get("recover_near_idle_sec", 0.24)))
+        redirect_step_sec = max(0.0, float(profile.get("redirect_step_sec", 0.04)))
         self.reactive_environment_states[obj.id] = ReactiveEnvironmentState(
             object_id=obj.id,
             kind=obj.visual or obj.kind,
             x=obj.x,
             z=obj.z,
-            trigger_radius=obj.reaction_radius,
+            trigger_radius=radius,
             visual_radius=visual_radius,
             strength=strength,
             direction_x=direction_x,
             direction_z=direction_z,
-            recovery_sec=self.reactive_environment_recovery_sec,
+            recovery_sec=push_sec + release_hold_sec + recover_bend1_sec + recover_near_idle_sec,
+            direction=direction,
+            pose_id=self.reactive_environment_pose_for("PUSH", direction, 0.0, push_sec),
+            push_sec=push_sec,
+            release_hold_sec=release_hold_sec,
+            recover_bend1_sec=recover_bend1_sec,
+            recover_near_idle_sec=recover_near_idle_sec,
+            redirect_step_sec=redirect_step_sec,
         )
 
-    def reactive_environment_direction(self, model, obj) -> tuple[float, float]:
-        direction_x = float(getattr(model.player, "last_move_x", 0.0))
-        direction_z = float(getattr(model.player, "last_move_z", 0.0))
+    def touch_reactive_environment_state(
+        self, model, obj, state: ReactiveEnvironmentState, profile, previous, current
+    ) -> None:
+        direction = self.reactive_environment_direction_label(model, obj, previous, current)
+        direction_x, direction_z = self.reactive_environment_motion_direction(previous, current)
+        state.direction_x = direction_x
+        state.direction_z = direction_z
+        state.touching = True
+        if state.phase == "REDIRECT":
+            state.pending_direction = direction
+            self._reactive_last_direction = direction
+            return
+        if direction == state.direction or state.phase == "IDLE":
+            if state.phase == "RECOVER":
+                state.phase = "PUSH"
+                state.phase_elapsed = min(state.phase_elapsed, state.push_sec * 0.5)
+            elif state.phase == "IDLE":
+                state.phase = "PUSH"
+                state.phase_elapsed = 0.0
+            state.direction = direction
+            state.pose_id = self.reactive_environment_pose_for(
+                state.phase, state.direction, state.phase_elapsed, state.push_sec
+            )
+            self._reactive_last_direction = direction
+            return
+        state.pending_direction = direction
+        state.phase = "REDIRECT"
+        state.phase_elapsed = 0.0
+        state.pose_id = f"recover_{state.direction}"
+        self._reactive_last_direction = direction
+
+    def advance_reactive_environment_state(
+        self, state: ReactiveEnvironmentState, dt: float
+    ) -> None:
+        state.age += dt
+        if state.phase == "PUSH":
+            state.phase_elapsed += dt
+            if state.phase_elapsed >= state.push_sec:
+                state.phase = "HOLD"
+                state.phase_elapsed = 0.0
+                state.pose_id = f"bend_{state.direction}_2"
+            else:
+                state.pose_id = self.reactive_environment_pose_for(
+                    "PUSH", state.direction, state.phase_elapsed, state.push_sec
+                )
+            return
+        if state.phase == "HOLD":
+            state.pose_id = f"bend_{state.direction}_2"
+            if state.touching:
+                state.phase_elapsed = 0.0
+                return
+            state.phase_elapsed += dt
+            if state.phase_elapsed >= state.release_hold_sec:
+                state.phase = "RECOVER"
+                state.phase_elapsed = 0.0
+                state.pose_id = f"bend_{state.direction}_1"
+            return
+        if state.phase == "RECOVER":
+            state.phase_elapsed += dt
+            if state.phase_elapsed < state.recover_bend1_sec:
+                state.pose_id = f"bend_{state.direction}_1"
+                return
+            if state.phase_elapsed < state.recover_bend1_sec + state.recover_near_idle_sec:
+                state.pose_id = f"recover_{state.direction}"
+                return
+            state.phase = "IDLE"
+            state.pose_id = "idle"
+            state.touching = False
+            return
+        if state.phase == "REDIRECT":
+            state.phase_elapsed += dt
+            state.pose_id = f"recover_{state.direction}"
+            if state.phase_elapsed >= state.redirect_step_sec:
+                state.direction = state.pending_direction or state.direction
+                state.pending_direction = None
+                state.phase = "PUSH"
+                state.phase_elapsed = 0.0
+                state.pose_id = f"bend_{state.direction}_1"
+
+    def reactive_environment_pose_for(
+        self, phase: str, direction: str, elapsed: float, push_sec: float
+    ) -> str:
+        if phase == "PUSH":
+            return f"bend_{direction}_1" if elapsed < push_sec * 0.5 else f"bend_{direction}_2"
+        if phase == "HOLD":
+            return f"bend_{direction}_2"
+        if phase == "RECOVER":
+            return f"bend_{direction}_1"
+        return "idle"
+
+    def segment_distance_to_point(
+        self, start: tuple[float, float], end: tuple[float, float], x: float, z: float
+    ) -> float:
+        vx = end[0] - start[0]
+        vz = end[1] - start[1]
+        denom = vx * vx + vz * vz
+        if denom <= 1e-9:
+            return math.hypot(x - end[0], z - end[1])
+        t = ((x - start[0]) * vx + (z - start[1]) * vz) / denom
+        t = max(0.0, min(1.0, t))
+        nearest_x = start[0] + vx * t
+        nearest_z = start[1] + vz * t
+        return math.hypot(x - nearest_x, z - nearest_z)
+
+    def reactive_environment_motion_direction(
+        self, previous: tuple[float, float], current: tuple[float, float]
+    ) -> tuple[float, float]:
+        direction_x = current[0] - previous[0]
+        direction_z = current[1] - previous[1]
         length = math.hypot(direction_x, direction_z)
-        if length <= 1e-6:
-            direction_x = obj.x - model.player.x
-            direction_z = obj.z - model.player.z
-            length = math.hypot(direction_x, direction_z)
         if length <= 1e-6:
             return 0.0, 1.0
         return direction_x / length, direction_z / length
+
+    def reactive_environment_direction_label(
+        self, model, obj, previous: tuple[float, float], current: tuple[float, float]
+    ) -> str:
+        dx = current[0] - previous[0]
+        dz = current[1] - previous[1]
+        screen_x, screen_y = self.reactive_environment_affine_vector(model, dx, dz)
+        projected = math.hypot(screen_x, screen_y)
+        if projected > 1e-6 and abs(screen_x) >= projected * max(
+            0.0, self.reactive_environment_horizontal_deadzone_ratio
+        ):
+            return "right" if screen_x > 0.0 else "left"
+
+        nearest = self.nearest_point_on_segment(previous, current, obj.x, obj.z)
+        side_x, side_y = self.reactive_environment_affine_vector(
+            model, obj.x - nearest[0], obj.z - nearest[1]
+        )
+        side_projected = math.hypot(side_x, side_y)
+        if side_projected > 1e-6 and abs(side_x) >= side_projected * 0.1:
+            return "right" if side_x > 0.0 else "left"
+        return self._reactive_last_direction
+
+    def nearest_point_on_segment(
+        self, start: tuple[float, float], end: tuple[float, float], x: float, z: float
+    ) -> tuple[float, float]:
+        vx = end[0] - start[0]
+        vz = end[1] - start[1]
+        denom = vx * vx + vz * vz
+        if denom <= 1e-9:
+            return end
+        t = ((x - start[0]) * vx + (z - start[1]) * vz) / denom
+        t = max(0.0, min(1.0, t))
+        return start[0] + vx * t, start[1] + vz * t
+
+    def reactive_environment_affine_vector(
+        self, model, dx: float, dz: float
+    ) -> tuple[float, float]:
+        affine = model.config.get("projection", {}).get("affine", {})
+        basis_x = affine.get("basis_x", (1.0, 0.0))
+        basis_z = affine.get("basis_z", (0.0, 1.0))
+        return (
+            dx * float(basis_x[0]) + dz * float(basis_z[0]),
+            dx * float(basis_x[1]) + dz * float(basis_z[1]),
+        )
 
     def spawn_burst(
         self, x: float, y: float, z: float, color: int, count: int, speed: float
