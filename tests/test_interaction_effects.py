@@ -809,3 +809,96 @@ def test_env004_existing_contact_refreshes_state_without_particles() -> None:
     assert second_count == first_count
     assert effects.reactive_environment_states["grass_01"].phase_elapsed >= first_phase_elapsed
     assert "grass_01" in effects.reactive_environment_states
+
+
+def test_env005_shallow_water_emits_ripple_and_wake_inside_area() -> None:
+    model, _camera = make_model()
+    model.config["shallow_water"] = {
+        "enabled": True,
+        "areas": [{"id": "test", "rect_xz": [100.0, 100.0, 140.0, 140.0]}],
+        "min_move_world": 1.0,
+        "ripple_spacing_world": 8.0,
+        "ripple_start_radius": 3.0,
+        "ripple_end_radius": 11.0,
+        "ripple_lifetime_sec": 0.4,
+        "ripple_color": 12,
+        "wake_color": 5,
+        "wake_length_world": 6.0,
+        "max_ripples_per_update": 2,
+    }
+    effects = EffectSystem(model.config)
+    model.player.x = 112.0
+    model.player.z = 120.0
+    effects.sync_shallow_water_player_position(model)
+    model.player.x = 124.0
+
+    effects.update(0.1, model)
+
+    assert len(effects.rings) == 1
+    assert len(effects.strokes) == 1
+    ripple = effects.rings[0]
+    assert ripple.x == pytest.approx(120.0)
+    assert ripple.z == pytest.approx(120.0)
+    assert ripple.start_radius == pytest.approx(3.0)
+    assert ripple.end_radius == pytest.approx(11.0)
+    assert ripple.color == 12
+    wake = effects.strokes[0]
+    assert wake.end_x == pytest.approx(ripple.x)
+    assert wake.end_z == pytest.approx(ripple.z)
+    assert wake.start_x < wake.end_x
+
+
+def test_env005_shallow_water_respects_spacing_and_area() -> None:
+    model, _camera = make_model()
+    model.config["shallow_water"] = {
+        "enabled": True,
+        "areas": [{"id": "test", "rect_xz": [100.0, 100.0, 140.0, 140.0]}],
+        "min_move_world": 1.0,
+        "ripple_spacing_world": 16.0,
+        "ripple_lifetime_sec": 0.4,
+    }
+    effects = EffectSystem(model.config)
+    model.player.x = 110.0
+    model.player.z = 120.0
+    effects.sync_shallow_water_player_position(model)
+
+    model.player.x = 118.0
+    effects.update(0.1, model)
+    assert effects.rings == []
+
+    model.player.x = 126.0
+    effects.update(0.1, model)
+    assert len(effects.rings) == 1
+
+    model.player.x = 220.0
+    model.player.z = 220.0
+    effects.sync_shallow_water_player_position(model)
+    model.player.x = 232.0
+    effects.update(0.1, model)
+    assert len(effects.rings) == 1
+
+
+def test_env005_shallow_water_ignores_paused_and_combat_world() -> None:
+    model, _camera = make_model()
+    model.config["shallow_water"] = {
+        "enabled": True,
+        "areas": [{"id": "test", "rect_xz": [100.0, 100.0, 140.0, 140.0]}],
+        "min_move_world": 1.0,
+        "ripple_spacing_world": 2.0,
+        "ripple_lifetime_sec": 0.4,
+    }
+    effects = EffectSystem(model.config)
+    model.player.x = 112.0
+    model.player.z = 120.0
+    effects.sync_shallow_water_player_position(model)
+
+    model.combat_session = object()
+    model.player.x = 124.0
+    effects.update(0.1, model)
+    assert effects.rings == []
+
+    model.combat_session = None
+    model.interaction = object()
+    model.player.x = 132.0
+    effects.update(0.1, model)
+    assert effects.rings == []

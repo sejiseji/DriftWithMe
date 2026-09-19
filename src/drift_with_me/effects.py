@@ -247,6 +247,33 @@ class EffectSystem:
         self.reactive_environment_horizontal_deadzone_ratio = float(
             reactive.get("horizontal_deadzone_ratio", 0.2)
         )
+        shallow_water = config.get("shallow_water", {})
+        self.shallow_water_enabled = bool(shallow_water.get("enabled", False))
+        self.shallow_water_areas = tuple(shallow_water.get("areas", ()))
+        self.shallow_water_min_move_world = max(
+            0.0, float(shallow_water.get("min_move_world", 2.0))
+        )
+        self.shallow_water_ripple_spacing_world = max(
+            0.0, float(shallow_water.get("ripple_spacing_world", 22.0))
+        )
+        self.shallow_water_ripple_start_radius = max(
+            0.0, float(shallow_water.get("ripple_start_radius", 4.0))
+        )
+        self.shallow_water_ripple_end_radius = max(
+            self.shallow_water_ripple_start_radius,
+            float(shallow_water.get("ripple_end_radius", 18.0)),
+        )
+        self.shallow_water_ripple_lifetime_sec = max(
+            0.0, float(shallow_water.get("ripple_lifetime_sec", 0.48))
+        )
+        self.shallow_water_ripple_color = int(shallow_water.get("ripple_color", 12))
+        self.shallow_water_wake_color = int(shallow_water.get("wake_color", 5))
+        self.shallow_water_wake_length_world = max(
+            0.0, float(shallow_water.get("wake_length_world", 10.0))
+        )
+        self.shallow_water_max_ripples_per_update = max(
+            0, int(shallow_water.get("max_ripples_per_update", 2))
+        )
         self.particles: list[WorldParticle] = []
         self.rings: list[WorldRing] = []
         self.strokes: list[WorldStroke] = []
@@ -260,6 +287,8 @@ class EffectSystem:
         self._grass_cooldowns: dict[str, float] = {}
         self._reactive_last_player_position: tuple[float, float] | None = None
         self._reactive_last_direction: str = "right"
+        self._shallow_water_last_player_position: tuple[float, float] | None = None
+        self._shallow_water_distance_since_ripple = 0.0
         self._processed_cues: set[tuple[int, str]] = set()
         self._processed_camera_cues: set[tuple[int, str]] = set()
 
@@ -277,6 +306,8 @@ class EffectSystem:
         self._grass_cooldowns.clear()
         self._reactive_last_player_position = None
         self._reactive_last_direction = "right"
+        self._shallow_water_last_player_position = None
+        self._shallow_water_distance_since_ripple = 0.0
         self._processed_cues.clear()
         self._processed_camera_cues.clear()
 
@@ -509,6 +540,7 @@ class EffectSystem:
         reactive_dt = dt if self.reactive_environment_world_active(model) else 0.0
         if reactive_dt > 0.0:
             self.update_grass_reactions(model, reactive_dt)
+            self.update_shallow_water_reactions(model, reactive_dt)
             for state in self.reactive_environment_states.values():
                 self.advance_reactive_environment_state(state, reactive_dt)
             self.reactive_environment_states = {
@@ -518,12 +550,152 @@ class EffectSystem:
             }
         else:
             self.sync_reactive_environment_player_position(model)
+            self.sync_shallow_water_player_position(model)
 
     def reactive_environment_world_active(self, model) -> bool:
         return model.combat_session is None and not model.world_paused
 
     def sync_reactive_environment_player_position(self, model) -> None:
         self._reactive_last_player_position = (float(model.player.x), float(model.player.z))
+
+    def sync_shallow_water_player_position(self, model) -> None:
+        self._shallow_water_last_player_position = (float(model.player.x), float(model.player.z))
+
+    def update_shallow_water_reactions(self, model, dt: float) -> None:
+        if (
+            not self.shallow_water_enabled
+            or not self.shallow_water_areas
+            or self.shallow_water_ripple_lifetime_sec <= 0.0
+        ):
+            self.sync_shallow_water_player_position(model)
+            self._shallow_water_distance_since_ripple = 0.0
+            return
+        current = (float(model.player.x), float(model.player.z))
+        previous = self._shallow_water_last_player_position
+        if previous is None:
+            self._shallow_water_last_player_position = current
+            return
+        self._shallow_water_last_player_position = current
+
+        dx = current[0] - previous[0]
+        dz = current[1] - previous[1]
+        moved = math.hypot(dx, dz)
+        if moved < self.shallow_water_min_move_world:
+            return
+        if not self.shallow_water_segment_hits(previous, current):
+            self._shallow_water_distance_since_ripple = 0.0
+            return
+
+        self._shallow_water_distance_since_ripple += moved
+        spacing = max(self.shallow_water_ripple_spacing_world, self.shallow_water_min_move_world)
+        emitted = 0
+        while (
+            self._shallow_water_distance_since_ripple >= spacing
+            and emitted < self.shallow_water_max_ripples_per_update
+        ):
+            fraction_from_current = (self._shallow_water_distance_since_ripple - spacing) / max(
+                moved, 1e-6
+            )
+            fraction_from_current = max(0.0, min(1.0, fraction_from_current))
+            ripple_x = current[0] - dx * fraction_from_current
+            ripple_z = current[1] - dz * fraction_from_current
+            if self.shallow_water_point_inside(ripple_x, ripple_z):
+                self.add_shallow_water_ripple(ripple_x, ripple_z, dx, dz)
+                emitted += 1
+            self._shallow_water_distance_since_ripple -= spacing
+
+    def add_shallow_water_ripple(
+        self, x: float, z: float, movement_x: float, movement_z: float
+    ) -> None:
+        self.add_ring(
+            x,
+            z,
+            self.shallow_water_ripple_start_radius,
+            self.shallow_water_ripple_end_radius,
+            self.shallow_water_ripple_color,
+            self.shallow_water_ripple_lifetime_sec,
+        )
+        movement_length = math.hypot(movement_x, movement_z)
+        if movement_length <= 1e-6 or self.shallow_water_wake_length_world <= 0.0:
+            return
+        ux = movement_x / movement_length
+        uz = movement_z / movement_length
+        self.add_stroke(
+            x - ux * self.shallow_water_wake_length_world,
+            0.0,
+            z - uz * self.shallow_water_wake_length_world,
+            x,
+            0.0,
+            z,
+            self.shallow_water_wake_color,
+            min(self.shallow_water_ripple_lifetime_sec, 0.28),
+        )
+
+    def shallow_water_segment_hits(
+        self, previous: tuple[float, float], current: tuple[float, float]
+    ) -> bool:
+        if self.shallow_water_point_inside(*previous) or self.shallow_water_point_inside(*current):
+            return True
+        for area in self.shallow_water_areas:
+            rect = self.shallow_water_area_rect(area)
+            if rect is None:
+                continue
+            if self.segment_intersects_rect(previous, current, rect):
+                return True
+        return False
+
+    def shallow_water_point_inside(self, x: float, z: float) -> bool:
+        for area in self.shallow_water_areas:
+            rect = self.shallow_water_area_rect(area)
+            if rect is None:
+                continue
+            min_x, min_z, max_x, max_z = rect
+            if min_x <= x <= max_x and min_z <= z <= max_z:
+                return True
+        return False
+
+    def shallow_water_area_rect(self, area) -> tuple[float, float, float, float] | None:
+        if not isinstance(area, dict):
+            return None
+        rect = area.get("rect_xz", ())
+        if len(rect) != 4:
+            return None
+        min_x, min_z, max_x, max_z = (float(value) for value in rect)
+        if min_x > max_x:
+            min_x, max_x = max_x, min_x
+        if min_z > max_z:
+            min_z, max_z = max_z, min_z
+        return min_x, min_z, max_x, max_z
+
+    def segment_intersects_rect(
+        self,
+        start: tuple[float, float],
+        end: tuple[float, float],
+        rect: tuple[float, float, float, float],
+    ) -> bool:
+        min_x, min_z, max_x, max_z = rect
+        dx = end[0] - start[0]
+        dz = end[1] - start[1]
+        t_min = 0.0
+        t_max = 1.0
+        for origin, delta, lower, upper in (
+            (start[0], dx, min_x, max_x),
+            (start[1], dz, min_z, max_z),
+        ):
+            if abs(delta) <= 1e-9:
+                if origin < lower or origin > upper:
+                    return False
+                continue
+            inv = 1.0 / delta
+            t1 = (lower - origin) * inv
+            t2 = (upper - origin) * inv
+            if t1 > t2:
+                t1, t2 = t2, t1
+            t_min = max(t_min, t1)
+            t_max = min(t_max, t2)
+            if t_min > t_max:
+                return False
+        return True
 
     def update_grass_reactions(self, model, dt: float) -> None:
         self.reactive_environment_last_query_count = 0
