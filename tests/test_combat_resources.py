@@ -1322,6 +1322,29 @@ def test_combat_defeat_special_moves_buddy_and_fades_enemy() -> None:
     assert renderer.combat_defeat_enemy_flicker_hidden(model, enemy)
 
 
+def test_combat_defeat_zap_target_matches_repositioned_enemy_sprite_center() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+    step_to_zap_window(model, camera)
+    renderer = Renderer(None)
+
+    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    session = model.combat_session
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_COUNTER"
+    session.phase_elapsed_sec = model.combat_deflect_knockback_sec() * 0.42
+
+    presentation = renderer.enemy_actor_presentation(model, enemy, camera)
+    enemy_center = camera.project(Vec3(presentation.x, 4.0 + presentation.jump_y, presentation.z))
+    zap_target = renderer.combat_enemy_effect_target_point(model, enemy, camera)
+
+    assert enemy_center is not None
+    assert zap_target is not None
+    assert zap_target.x == pytest.approx(enemy_center.x)
+    assert zap_target.y == pytest.approx(enemy_center.y)
+    assert zap_target.depth == pytest.approx(enemy_center.depth)
+
+
 def test_combat_defeat_victory_buddy_matches_restore_start() -> None:
     model, camera = make_model()
     start_perfect_freeze(model, camera)

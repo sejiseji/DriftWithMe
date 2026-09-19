@@ -3288,15 +3288,18 @@ class Renderer:
             return
         progress = self.combat_defeat_special_progress(model)
         buddy = self.buddy_actor_presentation(model, camera, 0.0)
-        enemy_presentation = self.enemy_actor_presentation(model, enemy, camera)
         source = camera.project(Vec3(buddy.x, model.buddy.y + buddy.jump_y + 5.0, buddy.z))
-        target = camera.project(
-            Vec3(enemy_presentation.x, 8.0 + enemy_presentation.jump_y, enemy_presentation.z)
-        )
+        target = self.combat_enemy_effect_target_point(model, enemy, camera)
         if source is None or target is None:
             return
         self.draw_combat_homing_zaps(source, target, progress)
         self.draw_combat_enemy_disappear(target, progress)
+
+    def combat_enemy_effect_target_point(
+        self, model: GameModel, enemy, camera: CameraState
+    ) -> ProjectedPoint | None:
+        presentation = self.enemy_actor_presentation(model, enemy, camera)
+        return camera.project(Vec3(presentation.x, 4.0 + presentation.jump_y, presentation.z))
 
     def draw_combat_homing_zaps(
         self, source: ProjectedPoint, target: ProjectedPoint, progress: float
@@ -3321,6 +3324,17 @@ class Renderer:
             if local >= 0.75:
                 pulse = max(1, int(3.0 * (1.25 - min(local, 1.25))))
                 self.pyxel.circb(int(target.x), int(target.y), 5 + index + pulse, color)
+            if local >= 0.35:
+                contact = _smoothstep((min(local, 1.0) - 0.35) / 0.65)
+                spread = 3 + int(5 * contact) + index
+                self.draw_combat_lightning_bolt(
+                    target.x - spread,
+                    target.y - 2,
+                    target.x + spread,
+                    target.y + 2,
+                    seed=20 + index * 7 + int(progress * 90.0),
+                    color=color,
+                )
         self.draw_combat_final_zap(source, target, progress)
 
     def draw_combat_final_zap(
