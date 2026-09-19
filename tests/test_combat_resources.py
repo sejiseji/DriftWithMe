@@ -1047,6 +1047,41 @@ def test_enemy_restore_moves_farther_when_knockback_target_is_blocked(monkeypatc
     )
 
 
+def test_enemy_restore_steers_around_blocked_knockback_lane(monkeypatch) -> None:
+    model, camera = make_model()
+    enemy = start_deflect_exit(model, camera)
+    renderer = Renderer(None)
+    session = model.combat_session
+    assert session is not None
+    dx, dz = model.combat_enemy_knockback_direction(session, enemy)
+    step_exit_to_victory_cue(model, camera)
+    expected = renderer.enemy_actor_presentation(model, enemy, camera)
+    desired_x = expected.x
+    desired_z = expected.z
+    original_collides = model.world.collides_enemy_circle
+
+    def collides_knockback_lane(x: float, z: float, radius: float) -> bool:
+        along = (x - desired_x) * dx + (z - desired_z) * dz
+        lateral = abs((x - desired_x) * -dz + (z - desired_z) * dx)
+        if -0.01 <= along <= 128.0 and lateral <= 0.5:
+            return True
+        return original_collides(x, z, radius)
+
+    monkeypatch.setattr(model.world, "collides_enemy_circle", collides_knockback_lane)
+
+    model.step(InputIntent(), camera, model.combat_victory_cue_sec() + 0.01)
+    session = model.combat_session
+    assert session is not None
+
+    delta_x = session.enemy_return_x - desired_x
+    delta_z = session.enemy_return_z - desired_z
+    lateral = abs(delta_x * -dz + delta_z * dx)
+    assert lateral > 0.5
+    assert not model.world.collides_enemy_circle(
+        session.enemy_return_x, session.enemy_return_z, model.enemy_radius(enemy)
+    )
+
+
 def test_enemy_restore_starts_from_victory_visual_endpoint() -> None:
     model, camera = make_model()
     enemy = start_perfect_freeze(model, camera)

@@ -2799,9 +2799,47 @@ class GameModel:
             enemy, desired_x, desired_z, player_x, player_z, min_separation
         ):
             return desired_x, desired_z
-        for distance in (8.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0, 128.0):
-            x = desired_x + direction_x * distance
-            z = desired_z + direction_z * distance
+        perpendicular_x = -direction_z
+        perpendicular_z = direction_x
+        candidate_offsets = (
+            (8.0, 0.0),
+            (16.0, 0.0),
+            (24.0, 0.0),
+            (32.0, 0.0),
+            (48.0, 0.0),
+            (64.0, 0.0),
+            (96.0, 0.0),
+            (128.0, 0.0),
+            (0.0, 8.0),
+            (0.0, -8.0),
+            (8.0, 8.0),
+            (8.0, -8.0),
+            (16.0, 8.0),
+            (16.0, -8.0),
+            (0.0, 16.0),
+            (0.0, -16.0),
+            (8.0, 16.0),
+            (8.0, -16.0),
+            (16.0, 16.0),
+            (16.0, -16.0),
+            (24.0, 16.0),
+            (24.0, -16.0),
+            (0.0, 24.0),
+            (0.0, -24.0),
+            (16.0, 24.0),
+            (16.0, -24.0),
+            (32.0, 24.0),
+            (32.0, -24.0),
+            (24.0, 32.0),
+            (24.0, -32.0),
+            (48.0, 32.0),
+            (48.0, -32.0),
+            (64.0, 48.0),
+            (64.0, -48.0),
+        )
+        for forward, lateral in candidate_offsets:
+            x = desired_x + direction_x * forward + perpendicular_x * lateral
+            z = desired_z + direction_z * forward + perpendicular_z * lateral
             if self.combat_enemy_anchor_safe(enemy, x, z, player_x, player_z, min_separation):
                 return x, z
         return self.find_combat_enemy_anchor(
