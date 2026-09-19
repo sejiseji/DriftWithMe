@@ -686,17 +686,6 @@
   },
   "shallow_water": {
     "enabled": true,
-    "areas": [
-      {
-        "id": "env005_spawn_shallow_test",
-        "rect_xz": [
-          96.0,
-          96.0,
-          288.0,
-          288.0
-        ]
-      }
-    ],
     "min_move_world": 2.0,
     "ripple_spacing_world": 20.0,
     "ripple_start_radius": 4.0,

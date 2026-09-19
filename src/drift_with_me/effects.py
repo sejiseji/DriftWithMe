@@ -249,7 +249,7 @@ class EffectSystem:
         )
         shallow_water = config.get("shallow_water", {})
         self.shallow_water_enabled = bool(shallow_water.get("enabled", False))
-        self.shallow_water_areas = tuple(shallow_water.get("areas", ()))
+        self.shallow_water_config_areas = tuple(shallow_water.get("areas", ()))
         self.shallow_water_min_move_world = max(
             0.0, float(shallow_water.get("min_move_world", 2.0))
         )
@@ -562,11 +562,12 @@ class EffectSystem:
         self._shallow_water_last_player_position = (float(model.player.x), float(model.player.z))
 
     def update_shallow_water_reactions(self, model, dt: float) -> None:
-        if (
-            not self.shallow_water_enabled
-            or not self.shallow_water_areas
-            or self.shallow_water_ripple_lifetime_sec <= 0.0
-        ):
+        if not self.shallow_water_enabled or self.shallow_water_ripple_lifetime_sec <= 0.0:
+            self.sync_shallow_water_player_position(model)
+            self._shallow_water_distance_since_ripple = 0.0
+            return
+        areas = self.shallow_water_areas_for(model)
+        if not areas:
             self.sync_shallow_water_player_position(model)
             self._shallow_water_distance_since_ripple = 0.0
             return
@@ -582,7 +583,7 @@ class EffectSystem:
         moved = math.hypot(dx, dz)
         if moved < self.shallow_water_min_move_world:
             return
-        if not self.shallow_water_segment_hits(previous, current):
+        if not self.shallow_water_segment_hits(previous, current, areas):
             self._shallow_water_distance_since_ripple = 0.0
             return
 
@@ -599,10 +600,14 @@ class EffectSystem:
             fraction_from_current = max(0.0, min(1.0, fraction_from_current))
             ripple_x = current[0] - dx * fraction_from_current
             ripple_z = current[1] - dz * fraction_from_current
-            if self.shallow_water_point_inside(ripple_x, ripple_z):
+            if self.shallow_water_point_inside(ripple_x, ripple_z, areas):
                 self.add_shallow_water_ripple(ripple_x, ripple_z, dx, dz)
                 emitted += 1
             self._shallow_water_distance_since_ripple -= spacing
+
+    def shallow_water_areas_for(self, model) -> tuple:
+        world_areas = tuple(getattr(getattr(model, "world", None), "shallow_water_areas", ()))
+        return self.shallow_water_config_areas or world_areas
 
     def add_shallow_water_ripple(
         self, x: float, z: float, movement_x: float, movement_z: float
@@ -632,11 +637,16 @@ class EffectSystem:
         )
 
     def shallow_water_segment_hits(
-        self, previous: tuple[float, float], current: tuple[float, float]
+        self,
+        previous: tuple[float, float],
+        current: tuple[float, float],
+        areas: tuple,
     ) -> bool:
-        if self.shallow_water_point_inside(*previous) or self.shallow_water_point_inside(*current):
+        if self.shallow_water_point_inside(*previous, areas) or self.shallow_water_point_inside(
+            *current, areas
+        ):
             return True
-        for area in self.shallow_water_areas:
+        for area in areas:
             rect = self.shallow_water_area_rect(area)
             if rect is None:
                 continue
@@ -644,8 +654,8 @@ class EffectSystem:
                 return True
         return False
 
-    def shallow_water_point_inside(self, x: float, z: float) -> bool:
-        for area in self.shallow_water_areas:
+    def shallow_water_point_inside(self, x: float, z: float, areas: tuple) -> bool:
+        for area in areas:
             rect = self.shallow_water_area_rect(area)
             if rect is None:
                 continue
@@ -655,6 +665,13 @@ class EffectSystem:
         return False
 
     def shallow_water_area_rect(self, area) -> tuple[float, float, float, float] | None:
+        if hasattr(area, "min_x") and hasattr(area, "min_z"):
+            return (
+                float(area.min_x),
+                float(area.min_z),
+                float(area.max_x),
+                float(area.max_z),
+            )
         if not isinstance(area, dict):
             return None
         rect = area.get("rect_xz", ())

@@ -87,6 +87,17 @@
       "radius": 72.0
     }
   ],
+  "shallow_water_areas": [
+    {
+      "id": "env005_spawn_shallow_test",
+      "rect_xz": [
+        96.0,
+        96.0,
+        288.0,
+        288.0
+      ]
+    }
+  ],
   "objects": [
     {
       "id": "tap_start",

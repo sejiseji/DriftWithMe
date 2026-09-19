@@ -106,6 +106,31 @@ class GroundSurface:
 
 
 @dataclass(frozen=True)
+class ShallowWaterArea:
+    id: str
+    rect: WorldRect
+
+    @property
+    def min_x(self) -> float:
+        return self.rect.min_x
+
+    @property
+    def min_z(self) -> float:
+        return self.rect.min_z
+
+    @property
+    def max_x(self) -> float:
+        return self.rect.max_x
+
+    @property
+    def max_z(self) -> float:
+        return self.rect.max_z
+
+    def contains_point(self, x: float, z: float) -> bool:
+        return self.rect.contains_point(x, z)
+
+
+@dataclass(frozen=True)
 class GroundPatchTile:
     cell_x: int
     cell_z: int
@@ -323,6 +348,7 @@ class WorldData:
         self.ground_surfaces = tuple(
             self._load_ground_surface(item) for item in raw.get("ground_surfaces", ())
         )
+        self.shallow_water_areas = self._build_shallow_water_areas()
         self.baked_ground_patches = tuple(
             self._load_baked_ground_patch(item) for item in raw.get("baked_ground_patches", ())
         )
@@ -607,6 +633,22 @@ class WorldData:
                     )
                 )
         return tuple(details)
+
+    def _build_shallow_water_areas(self) -> tuple[ShallowWaterArea, ...]:
+        areas: list[ShallowWaterArea] = []
+        for index, item in enumerate(self.raw.get("shallow_water_areas", ())):
+            if not isinstance(item, dict):
+                continue
+            rect = self._load_world_rect(item.get("rect_xz"), WorldRect(0.0, 0.0, 0.0, 0.0))
+            if rect.width <= 0.0 or rect.depth <= 0.0:
+                continue
+            areas.append(
+                ShallowWaterArea(
+                    id=str(item.get("id", f"shallow_water_{index}")),
+                    rect=rect,
+                )
+            )
+        return tuple(areas)
 
     def ground_details_for_chunks(
         self, chunk_ids: tuple[tuple[int, int], ...]

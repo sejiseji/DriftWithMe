@@ -190,6 +190,16 @@ def test_world_loads_split_bounds_and_legacy_fallback() -> None:
     assert legacy_world.minimap_rect == legacy_world.walkable_rect
 
 
+def test_world_loads_shallow_water_areas_separately_from_config() -> None:
+    world = load_world_data()
+
+    assert len(world.shallow_water_areas) == 1
+    area = world.shallow_water_areas[0]
+    assert area.id == "env005_spawn_shallow_test"
+    assert area.contains_point(160.0, 160.0)
+    assert not area.contains_point(64.0, 160.0)
+
+
 def test_player_collision_uses_walkable_bounds_not_visual_ground() -> None:
     runtime = load_runtime_config()
     world = load_world_data()
