@@ -5,7 +5,7 @@ import math
 import pytest
 
 from drift_with_me.config import load_runtime_config
-from drift_with_me.math3d import AffineProjectionProfile, CameraState, Vec3
+from drift_with_me.math3d import AffineProjectionProfile, CameraState, ProjectedPoint, Vec3
 from drift_with_me.model import GameModel, InputIntent
 from drift_with_me.render import Renderer, ScreenRect
 from drift_with_me.world import load_world_data
@@ -39,6 +39,23 @@ def abnormal_enemy(model: GameModel):
     enemy = model.enemy_by_id("urchin_abnormal_01")
     assert enemy is not None
     return enemy
+
+
+class RecordingPyxel:
+    def __init__(self) -> None:
+        self.calls: list[tuple] = []
+
+    def circ(self, *args) -> None:
+        self.calls.append(("circ", *args))
+
+    def circb(self, *args) -> None:
+        self.calls.append(("circb", *args))
+
+    def line(self, *args) -> None:
+        self.calls.append(("line", *args))
+
+    def pset(self, *args) -> None:
+        self.calls.append(("pset", *args))
 
 
 def enable_fast_combat(model: GameModel) -> None:
@@ -1355,6 +1372,20 @@ def test_combat_defeat_special_moves_buddy_and_fades_enemy() -> None:
     session.phase_elapsed_sec = 0.0
     assert renderer.combat_defeat_enemy_visibility(model, enemy) == pytest.approx(0.0)
     assert renderer.combat_defeat_enemy_flicker_hidden(model, enemy)
+
+
+def test_combat_enemy_disappear_draws_burst_fragments() -> None:
+    pyxel = RecordingPyxel()
+    renderer = Renderer(pyxel)
+
+    renderer.draw_combat_enemy_disappear(ProjectedPoint(120.0, 80.0, 1.0), 0.92)
+
+    line_calls = [call for call in pyxel.calls if call[0] == "line"]
+    pset_calls = [call for call in pyxel.calls if call[0] == "pset"]
+    assert any(call[0] == "circ" for call in pyxel.calls)
+    assert any(call[0] == "circb" for call in pyxel.calls)
+    assert len(line_calls) >= 12
+    assert len(pset_calls) >= 16
 
 
 def test_combat_defeat_zap_target_matches_repositioned_enemy_sprite_center() -> None:

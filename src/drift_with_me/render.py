@@ -3946,15 +3946,35 @@ class Renderer:
         y = int(target.y)
         radius = 5 + int(18 * vanish)
         self.pyxel.circb(x, y, radius, 10 if vanish < 0.7 else 13)
-        for index in range(10):
-            angle = index * math.tau / 10.0 + vanish * math.tau * 0.35
-            distance = radius * (0.35 + 0.75 * ((index % 3) / 2.0))
+        if vanish < 0.42:
+            core = 2 + int((0.42 - vanish) * 8)
+            self.pyxel.circ(x, y, max(2, core), 7)
+            self.pyxel.circb(x, y, max(4, core + 2), 10)
+        for index in range(16):
+            angle = index * math.tau / 16.0 + vanish * math.tau * 0.35
+            distance = radius * (0.3 + 0.95 * ((index % 4) / 3.0))
             sx = int(x + math.cos(angle) * distance)
             sy = int(y + math.sin(angle) * distance * 0.62)
-            color = (10, 7, 13, 9)[index % 4]
+            color = (10, 7, 13, 9, 5)[index % 5]
+            if index % 2 == 0:
+                inner = max(3.0, distance - 5.0 - (index % 3) * 2.0)
+                ix = int(x + math.cos(angle) * inner)
+                iy = int(y + math.sin(angle) * inner * 0.62)
+                self.pyxel.line(ix, iy, sx, sy, color)
             self.pyxel.pset(sx, sy, color)
             if index % 3 == 0:
                 self.pyxel.pset(sx + 1, sy, color)
+            if index % 5 == 0:
+                self.pyxel.pset(sx, sy + 1, color)
+        for index in range(8):
+            angle = index * math.tau / 8.0 + 0.4
+            inner = radius * (0.22 + vanish * 0.16)
+            outer = radius * (0.78 + vanish * 0.52)
+            sx = int(x + math.cos(angle) * inner)
+            sy = int(y + math.sin(angle) * inner * 0.58)
+            ex = int(x + math.cos(angle) * outer)
+            ey = int(y + math.sin(angle) * outer * 0.58)
+            self.pyxel.line(sx, sy, ex, ey, 7 if index % 2 == 0 else 10)
 
     def draw_combat_victory_cue(self, model: GameModel, camera: CameraState) -> None:
         session = model.combat_session
