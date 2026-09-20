@@ -125,6 +125,10 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "giant_tree_02x_b": "0416f9512913932031523391660a2466642037ac28c811f8b9e6890b84cde9d6",
     "giant_tree_02x_c": "468c2d8da16069f85eb7d652e94f9a90536413be5d1603b88ca0dbe6288bb830",
     "giant_tree_02x_d": "7065feea96acf079fb9f979a3c17337b622e76a9f5b5f30be12cd8822f64ab79",
+    "water_base_a": "a0478f8f35d250fcce25e0b5bf481c9af7861a2f0e727c6d17e0238bcaa49efc",
+    "water_base_b": "21c2471139c0588c79eb25fa49eb3505d96f2927c29c67c5916fe2a470a6ebb6",
+    "water_caustics_a": "927f59c886d76c077ed3db5e2ef821a1ef89af6b41f9176970eda205de7d73ea",
+    "water_dark_a": "41e998a4c9d802ce9ab611315f8f7e587bf6526d76251045326388d85b9e5450",
 }
 TALL_GRASS_REACTIVE_POSE_HASHES = {
     "idle_00": "3e4c7c8d338024e5acb5af09d519dc8a8697feea0c807f9c76489feddbe5be46",
@@ -336,7 +340,14 @@ ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "giant_tree_02x_b": {"0", "1", "2", "3", "4", "5", "6", "7", "9", "A", "B", "C", "D", "E", "F"},
     "giant_tree_02x_c": {"0", "1", "2", "3", "4", "5", "6", "7", "9", "A", "B", "C", "D", "E", "F"},
     "giant_tree_02x_d": {"0", "1", "2", "3", "4", "5", "6", "7", "9", "A", "B", "C", "D", "E", "F"},
+    "water_base_a": {"3", "6", "7", "B"},
+    "water_base_b": {"3", "6", "7", "B"},
+    "water_caustics_a": {"3", "6", "7", "B"},
+    "water_dark_a": {"1", "3", "5", "6", "7", "B"},
 }
+WATER_BASE_TILE_IDS = frozenset(
+    {"water_base_a", "water_base_b", "water_caustics_a", "water_dark_a"}
+)
 
 
 class RecordingPyxel:
@@ -416,7 +427,10 @@ def test_environment_wave1_source_hex_preserves_received_pixels(asset_id: str) -
         .splitlines()
     )
 
-    if asset_id.startswith(("water_", "solar_", "tree_")):
+    if asset_id in WATER_BASE_TILE_IDS:
+        expected_height = 64
+        expected_width = 64
+    elif asset_id.startswith(("water_", "solar_", "tree_")):
         expected_height = 128
         expected_width = 96
     elif asset_id.startswith("giant_tree_02x_"):
@@ -873,6 +887,10 @@ environment_asset_ids = {{
     "giant_tree_02x_b": "giant_tree_02x_b_256",
     "giant_tree_02x_c": "giant_tree_02x_c_256",
     "giant_tree_02x_d": "giant_tree_02x_d_256",
+    "water_base_a": "water_base_a_64",
+    "water_base_b": "water_base_b_64",
+    "water_caustics_a": "water_caustics_a_64",
+    "water_dark_a": "water_dark_a_64",
 }}
 environment_world_sizes = {{
     "water_station_active": (36.0, 48.0),
@@ -918,6 +936,10 @@ environment_world_sizes = {{
     "giant_tree_02x_b": (192.0, 192.0),
     "giant_tree_02x_c": (192.0, 192.0),
     "giant_tree_02x_d": (192.0, 192.0),
+    "water_base_a": (64.0, 64.0),
+    "water_base_b": (64.0, 64.0),
+    "water_caustics_a": (64.0, 64.0),
+    "water_dark_a": (64.0, 64.0),
 }}
 environment_colkeys = {{
     "water_station_active": 8,
@@ -957,6 +979,10 @@ environment_colkeys = {{
     "giant_tree_02x_b": 8,
     "giant_tree_02x_c": 8,
     "giant_tree_02x_d": 8,
+    "water_base_a": 8,
+    "water_base_b": 8,
+    "water_caustics_a": 8,
+    "water_dark_a": 8,
 }}
 environment_anchors = {{
     "water_station_active": (48.0, 127.0),
@@ -996,6 +1022,10 @@ environment_anchors = {{
     "giant_tree_02x_b": (128.0, 255.0),
     "giant_tree_02x_c": (128.0, 255.0),
     "giant_tree_02x_d": (128.0, 255.0),
+    "water_base_a": (32.0, 32.0),
+    "water_base_b": (32.0, 32.0),
+    "water_caustics_a": (32.0, 32.0),
+    "water_dark_a": (32.0, 32.0),
 }}
 fuse_frame = None
 for direction, expected_hash in fuse_assets.items():
@@ -1037,6 +1067,10 @@ for source_id, expected_hash in environment_hashes.items():
         assert env_asset.definition.colkey == environment_colkeys[source_id]
         assert env_asset.definition.anchor_px == environment_anchors[source_id]
     if source_id.startswith(("ground_", "concrete_", "decal_")) or source_id in {{
+        "water_base_a",
+        "water_base_b",
+        "water_caustics_a",
+        "water_dark_a",
         "grass_low_a",
         "pebbles_a",
         "fallen_leaves_a",
@@ -1056,6 +1090,8 @@ assert runtime.raw["assets"]["reactive_grass_low_asset"] == "grass_low_a_upright
 assert runtime.raw["assets"]["ground_rubble_asset"] == "rubble_small_a_64"
 assert runtime.raw["assets"]["concrete_clean_a_asset"] == "concrete_clean_a_64"
 assert runtime.raw["assets"]["decal_crack_grass_a_asset"] == "decal_crack_grass_a_64"
+assert runtime.raw["assets"]["water_base_a_asset"] == "water_base_a_64"
+assert runtime.raw["assets"]["water_dark_a_asset"] == "water_dark_a_64"
 assert runtime.raw["assets"]["grass_patch_low_a_asset"] == "grass_patch_low_a_64"
 assert runtime.raw["assets"]["grass_patch_tall_a_asset"] == "grass_patch_tall_a_64"
 assert runtime.raw["assets"]["giant_tree_root_arch_a_asset"] == "giant_tree_root_arch_a_128"
@@ -1145,6 +1181,20 @@ assert len(model.world.ground_surfaces) == 0
 assert renderer.ground_surface_sprite_asset(model, "concrete_clean_a").definition.asset_id == (
     "concrete_clean_a_64"
 )
+assert renderer.ground_surface_sprite_asset(model, "water_base_a").definition.asset_id == (
+    "water_base_a_64"
+)
+assert model.config["shallow_water"]["surface_tiles_enabled"] is True
+assert model.config["shallow_water"]["surface_tile_world_size"] == 64.0
+assert model.config["shallow_water"]["surface_tile_pattern"][0][0] == "water_base_a"
+water_tile_calls = []
+renderer.draw_ground_source_asset = (
+    lambda asset, camera, x, z: water_tile_calls.append((asset.definition.asset_id, x, z))
+)
+renderer.draw_shallow_water_tiles(model, camera)
+assert len(water_tile_calls) == 9
+assert water_tile_calls[0] == ("water_base_a_64", 128.0, 128.0)
+assert water_tile_calls[-1] == ("water_base_a_64", 256.0, 256.0)
 assert len(model.world.baked_ground_patches) == 14
 legacy_patch = model.world.baked_ground_patches[0]
 assert legacy_patch.id == "spawn_affine_ground_patch"

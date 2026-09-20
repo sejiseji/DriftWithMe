@@ -228,6 +228,7 @@ class Renderer:
         self.draw_ground(model.world, camera)
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
+        self.draw_shallow_water_tiles(model, camera)
         self.draw_ground_surfaces(model, camera)
         self.draw_walkable_boundary_overlay(model, camera)
         self.draw_safe_zones(model.world, camera)
@@ -1818,6 +1819,36 @@ class Renderer:
             if self.ground_surface_is_baked(surface):
                 continue
             self.draw_ground_surface(model, surface, camera)
+
+    def draw_shallow_water_tiles(self, model: GameModel, camera: CameraState) -> None:
+        config = model.config.get("shallow_water", {})
+        if not config.get("enabled", False) or not config.get("surface_tiles_enabled", False):
+            return
+        areas = tuple(getattr(model.world, "shallow_water_areas", ()))
+        if not areas:
+            return
+        pattern = config.get("surface_tile_pattern", ())
+        if not isinstance(pattern, list) or not pattern:
+            return
+        tile_world_size = max(1.0, float(config.get("surface_tile_world_size", 64.0)))
+        for area in areas:
+            rect = area.rect
+            columns = max(1, math.ceil(rect.width / tile_world_size))
+            rows = max(1, math.ceil(rect.depth / tile_world_size))
+            for row_index in range(rows):
+                pattern_row = pattern[row_index % len(pattern)]
+                if not isinstance(pattern_row, list) or not pattern_row:
+                    continue
+                z = rect.min_z + tile_world_size * (row_index + 0.5)
+                for column_index in range(columns):
+                    visual = pattern_row[column_index % len(pattern_row)]
+                    if not isinstance(visual, str):
+                        continue
+                    asset = self.ground_surface_sprite_asset(model, visual)
+                    if asset is None:
+                        continue
+                    x = rect.min_x + tile_world_size * (column_index + 0.5)
+                    self.draw_ground_source_asset(asset, camera, x, z)
 
     def draw_ground_surface(
         self, model: GameModel, surface: GroundSurface, camera: CameraState

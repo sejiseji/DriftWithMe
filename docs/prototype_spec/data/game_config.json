@@ -383,6 +383,10 @@
     "decal_crack_grass_a_asset": "decal_crack_grass_a_64",
     "decal_rubble_a_asset": "decal_rubble_a_64",
     "decal_broken_edge_a_asset": "decal_broken_edge_a_64",
+    "water_base_a_asset": "water_base_a_64",
+    "water_base_b_asset": "water_base_b_64",
+    "water_caustics_a_asset": "water_caustics_a_64",
+    "water_dark_a_asset": "water_dark_a_64",
     "grass_tall_a_asset": "grass_tall_a_64",
     "grass_low_a_asset": "grass_low_a_64",
     "pebbles_a_asset": "pebbles_a_64",
@@ -686,6 +690,25 @@
   },
   "shallow_water": {
     "enabled": true,
+    "surface_tiles_enabled": true,
+    "surface_tile_world_size": 64.0,
+    "surface_tile_pattern": [
+      [
+        "water_base_a",
+        "water_base_b",
+        "water_caustics_a"
+      ],
+      [
+        "water_dark_a",
+        "water_base_a",
+        "water_base_b"
+      ],
+      [
+        "water_caustics_a",
+        "water_base_b",
+        "water_base_a"
+      ]
+    ],
     "min_move_world": 2.0,
     "ripple_spacing_world": 20.0,
     "ripple_start_radius": 4.0,

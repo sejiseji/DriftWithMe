@@ -2301,6 +2301,126 @@
       "render_mode": "upright_billboard",
       "source_policy": "giant_tree_02x_direct_v0_1_hex",
       "environment_role": "forest_landmark_giant_tree"
+    },
+    {
+      "schema_version": 1,
+      "id": "water_base_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "water_base_a.hex",
+          "source_hash": "a0478f8f35d250fcce25e0b5bf481c9af7861a2f0e727c6d17e0238bcaa49efc"
+        }
+      ],
+      "source_hash": "a0478f8f35d250fcce25e0b5bf481c9af7861a2f0e727c6d17e0238bcaa49efc",
+      "render_mode": "ground_material_source",
+      "source_policy": "water_base_tiles_pyxel_v0_1_hex",
+      "environment_role": "shallow_water_tile"
+    },
+    {
+      "schema_version": 1,
+      "id": "water_base_b_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "water_base_b.hex",
+          "source_hash": "21c2471139c0588c79eb25fa49eb3505d96f2927c29c67c5916fe2a470a6ebb6"
+        }
+      ],
+      "source_hash": "21c2471139c0588c79eb25fa49eb3505d96f2927c29c67c5916fe2a470a6ebb6",
+      "render_mode": "ground_material_source",
+      "source_policy": "water_base_tiles_pyxel_v0_1_hex",
+      "environment_role": "shallow_water_tile"
+    },
+    {
+      "schema_version": 1,
+      "id": "water_caustics_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "water_caustics_a.hex",
+          "source_hash": "927f59c886d76c077ed3db5e2ef821a1ef89af6b41f9176970eda205de7d73ea"
+        }
+      ],
+      "source_hash": "927f59c886d76c077ed3db5e2ef821a1ef89af6b41f9176970eda205de7d73ea",
+      "render_mode": "ground_material_source",
+      "source_policy": "water_base_tiles_pyxel_v0_1_hex",
+      "environment_role": "shallow_water_tile"
+    },
+    {
+      "schema_version": 1,
+      "id": "water_dark_a_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "water_dark_a.hex",
+          "source_hash": "41e998a4c9d802ce9ab611315f8f7e587bf6526d76251045326388d85b9e5450"
+        }
+      ],
+      "source_hash": "41e998a4c9d802ce9ab611315f8f7e587bf6526d76251045326388d85b9e5450",
+      "render_mode": "ground_material_source",
+      "source_policy": "water_base_tiles_pyxel_v0_1_hex",
+      "environment_role": "shallow_water_tile"
     }
   ],
   "notes": [
@@ -2328,6 +2448,7 @@
     "Grassland direct v0.1 source HEX assets are loaded as source_assets. They are direct extractions from approved images, use colkey 8, and keep color index 0 visible black.",
     "Giant tree roots direct v0.1 source HEX assets are loaded as source_assets. They use colkey 8, keep color index 0 visible black, and are bound as solid obstacle visuals while the existing AABB collision remains authoritative.",
     "Giant tree 02x direct v0.1 source HEX assets are loaded as source_assets. They use colkey 8, keep color index 0 visible black, and are available as solid obstacle visuals while existing AABB collision remains authoritative.",
-    "Giant tree roots approved v0.1 source HEX assets supersede the active root/stump obstacle visuals. They are direct approved-image extractions, use colkey 8, keep color index 0 visible black, and retain authored AABB collision as the gameplay source of truth."
+    "Giant tree roots approved v0.1 source HEX assets supersede the active root/stump obstacle visuals. They are direct approved-image extractions, use colkey 8, keep color index 0 visible black, and retain authored AABB collision as the gameplay source of truth.",
+    "Water base tiles v0.1 are 64x64 opaque ground material sources for shallow water tiling. Runtime metadata uses colkey 8 because the current source-asset schema requires an integer colkey and these water sources contain no color index 8."
   ]
 }
