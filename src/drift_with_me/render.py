@@ -2200,6 +2200,7 @@ class Renderer:
                 continue
             total += self._draw_shallow_water_interior_symbols(
                 camera,
+                rect,
                 visible_rect,
                 grid,
                 color,
@@ -2223,6 +2224,7 @@ class Renderer:
     def _draw_shallow_water_interior_symbols(
         self,
         camera: CameraState,
+        area_rect: WorldRect,
         rect: WorldRect,
         grid: float,
         color: int,
@@ -2245,6 +2247,8 @@ class Renderer:
                 x = (xi + 0.5 + jitter_x * 0.52) * grid
                 z = (zi + 0.5 + jitter_z * 0.52) * grid
                 if not rect.contains_point(x, z):
+                    continue
+                if not self._point_in_shallow_water_ellipse(area_rect, x, z, 10.0):
                     continue
                 point = camera.project(Vec3(x, 0.0, z))
                 if point is None or not self._screen_point_visible(point, camera, 6.0):
@@ -2283,10 +2287,10 @@ class Renderer:
     ) -> int:
         count = 0
 
-        def draw_edge_point(x: float, z: float, seed: int, horizontal: bool) -> None:
+        def draw_edge_point(x: float, z: float, seed: int) -> bool:
             point = camera.project(Vec3(x, 0.0, z))
             if point is None or not self._screen_point_visible(point, camera, 8.0):
-                return
+                return False
             px = int(point.x)
             py = int(point.y)
             pulse = int((presentation_time * 4.0 + (seed & 3)) % 2)
@@ -2295,49 +2299,46 @@ class Renderer:
             self.pyxel.pset(px + 2, py - 1, color)
             if pulse:
                 self.pyxel.circb(px + 4, py - 3, 1, secondary_color)
-            elif horizontal:
-                self.pyxel.pset(px - 3, py + 3, color)
             else:
-                self.pyxel.pset(px + 3, py + 3, color)
+                self.pyxel.pset(px - 3, py + 3, color)
+            return True
 
-        min_index_x = math.floor(visible_rect.min_x / edge_grid) - 1
-        max_index_x = math.ceil(visible_rect.max_x / edge_grid) + 1
-        min_index_z = math.floor(visible_rect.min_z / edge_grid) - 1
-        max_index_z = math.ceil(visible_rect.max_z / edge_grid) + 1
         limit = max_count
         if limit <= 0:
             return 0
-        for xi in range(min_index_x, max_index_x + 1):
-            x = xi * edge_grid
-            if area_rect.min_x <= x <= area_rect.max_x:
-                if visible_rect.min_z <= area_rect.min_z <= visible_rect.max_z:
-                    seed = self._water_symbol_seed(xi, -73)
-                    if seed % 3:
-                        draw_edge_point(x, area_rect.min_z + inner_margin, seed, True)
-                        count += 1
-                if visible_rect.min_z <= area_rect.max_z <= visible_rect.max_z:
-                    seed = self._water_symbol_seed(xi, 73)
-                    if seed % 3:
-                        draw_edge_point(x, area_rect.max_z - inner_margin, seed, True)
-                        count += 1
-            if count >= limit:
-                return count
-        for zi in range(min_index_z, max_index_z + 1):
-            z = zi * edge_grid
-            if area_rect.min_z <= z <= area_rect.max_z:
-                if visible_rect.min_x <= area_rect.min_x <= visible_rect.max_x:
-                    seed = self._water_symbol_seed(-71, zi)
-                    if seed % 3:
-                        draw_edge_point(area_rect.min_x + inner_margin, z, seed, False)
-                        count += 1
-                if visible_rect.min_x <= area_rect.max_x <= visible_rect.max_x:
-                    seed = self._water_symbol_seed(71, zi)
-                    if seed % 3:
-                        draw_edge_point(area_rect.max_x - inner_margin, z, seed, False)
-                        count += 1
+        center_x = (area_rect.min_x + area_rect.max_x) * 0.5
+        center_z = (area_rect.min_z + area_rect.max_z) * 0.5
+        radius_x = max(1.0, area_rect.width * 0.5 - inner_margin)
+        radius_z = max(1.0, area_rect.depth * 0.5 - inner_margin)
+        circumference = math.tau * math.sqrt((radius_x * radius_x + radius_z * radius_z) * 0.5)
+        samples = max(limit * 2, int(circumference / max(8.0, edge_grid * 0.55)))
+        for index in range(samples):
+            seed = self._water_symbol_seed(index, int(area_rect.min_x + area_rect.min_z))
+            if seed % 3 == 0:
+                continue
+            angle = math.tau * ((index + 0.5) / samples)
+            angle += (((seed >> 5) & 7) - 3.5) * 0.018
+            radius_scale = 0.84 + (((seed >> 9) & 7) / 7.0 - 0.5) * 0.08
+            x = center_x + math.cos(angle) * radius_x * radius_scale
+            z = center_z + math.sin(angle) * radius_z * radius_scale
+            if not visible_rect.contains_point(x, z):
+                continue
+            if draw_edge_point(x, z, seed):
+                count += 1
             if count >= limit:
                 return count
         return count
+
+    def _point_in_shallow_water_ellipse(
+        self, rect: WorldRect, x: float, z: float, inset: float
+    ) -> bool:
+        center_x = (rect.min_x + rect.max_x) * 0.5
+        center_z = (rect.min_z + rect.max_z) * 0.5
+        radius_x = max(1.0, rect.width * 0.5 - inset)
+        radius_z = max(1.0, rect.depth * 0.5 - inset)
+        nx = (x - center_x) / radius_x
+        nz = (z - center_z) / radius_z
+        return nx * nx + nz * nz <= 1.0
 
     def _water_symbol_seed(self, x_index: int, z_index: int) -> int:
         value = (x_index * 73856093) ^ (z_index * 19349663) ^ 0x9E3779B9

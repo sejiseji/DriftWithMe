@@ -829,7 +829,7 @@
     "symbol_secondary_color": 12,
     "symbol_edge_color": 7,
     "symbol_edge_secondary_color": 12,
-    "symbol_edge_max_per_area": 34,
+    "symbol_edge_max_per_area": 18,
     "symbol_max_per_area": 54,
     "shoreline_tiles_enabled": false,
     "shoreline_tile_world_size": 64.0,
