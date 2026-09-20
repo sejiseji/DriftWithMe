@@ -2256,13 +2256,14 @@ class Renderer:
                 if style == 0:
                     self.pyxel.circb(px, py, 1 + pulse, color)
                 elif style == 1:
-                    self.pyxel.line(px - 2, py, px + 2, py - 1, color)
-                    self.pyxel.pset(px + 3, py - 1, secondary_color)
+                    self.pyxel.circb(px, py, 1, color)
+                    self.pyxel.pset(px + 2, py - 1, secondary_color)
                 elif style == 2:
                     self.pyxel.pset(px, py, color)
                     self.pyxel.pset(px + 1, py - 1, secondary_color)
                 else:
-                    self.pyxel.line(px - 1, py + 1, px + 2, py, secondary_color)
+                    self.pyxel.circb(px - 1, py, 1, secondary_color)
+                    self.pyxel.pset(px + 2, py + 1, color)
                 count += 1
                 if count >= max_count:
                     return count
@@ -2289,16 +2290,15 @@ class Renderer:
             px = int(point.x)
             py = int(point.y)
             pulse = int((presentation_time * 4.0 + (seed & 3)) % 2)
-            if horizontal:
-                self.pyxel.line(px - 4, py, px + 4, py - 1, color)
-                self.pyxel.pset(px - 2, py + 1, secondary_color)
-                if pulse:
-                    self.pyxel.circb(px + 2, py - 3, 1, color)
+            self.pyxel.circb(px, py, 2, color)
+            self.pyxel.pset(px - 1, py, secondary_color)
+            self.pyxel.pset(px + 2, py - 1, color)
+            if pulse:
+                self.pyxel.circb(px + 4, py - 3, 1, secondary_color)
+            elif horizontal:
+                self.pyxel.pset(px - 3, py + 3, color)
             else:
-                self.pyxel.line(px - 1, py - 4, px, py + 4, color)
-                self.pyxel.pset(px + 1, py - 2, secondary_color)
-                if pulse:
-                    self.pyxel.circb(px + 3, py + 1, 1, color)
+                self.pyxel.pset(px + 3, py + 3, color)
 
         min_index_x = math.floor(visible_rect.min_x / edge_grid) - 1
         max_index_x = math.ceil(visible_rect.max_x / edge_grid) + 1
