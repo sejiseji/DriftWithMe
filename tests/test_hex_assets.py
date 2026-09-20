@@ -1273,6 +1273,9 @@ assert model.config["shallow_water"]["surface_tile_pattern"][0][0] == "water_bas
 assert model.config["shallow_water"]["symbol_layer_enabled"] is True
 assert model.config["shallow_water"]["symbol_combat_hidden"] is True
 assert model.config["shallow_water"]["symbol_grid_world"] == 30.0
+assert model.config["shallow_water"]["symbol_edge_color"] == 7
+assert model.config["shallow_water"]["symbol_edge_secondary_color"] == 12
+assert model.config["shallow_water"]["symbol_edge_max_per_area"] == 34
 assert model.config["shallow_water"]["shoreline_tiles_enabled"] is False
 assert model.config["shallow_water"]["shoreline_tile_world_size"] == 64.0
 assert model.config["shallow_water"]["shoreline_corner_tiles_enabled"] is False

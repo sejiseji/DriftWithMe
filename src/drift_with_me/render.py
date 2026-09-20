@@ -2180,7 +2180,10 @@ class Renderer:
         inner_margin = max(0.0, float(config.get("symbol_inner_margin_world", 14.0)))
         color = int(config.get("symbol_color", 7))
         secondary_color = int(config.get("symbol_secondary_color", color))
+        edge_color = int(config.get("symbol_edge_color", color))
+        edge_secondary_color = int(config.get("symbol_edge_secondary_color", secondary_color))
         max_per_area = max(0, int(config.get("symbol_max_per_area", 54)))
+        edge_max_per_area = max(0, int(config.get("symbol_edge_max_per_area", max_per_area // 2)))
         if max_per_area <= 0:
             return 0
         total = 0
@@ -2210,10 +2213,10 @@ class Renderer:
                 visible_rect,
                 edge_grid,
                 inner_margin,
-                color,
-                secondary_color,
+                edge_color,
+                edge_secondary_color,
                 presentation_time,
-                max_per_area,
+                edge_max_per_area,
             )
         return total
 
@@ -2287,19 +2290,23 @@ class Renderer:
             py = int(point.y)
             pulse = int((presentation_time * 4.0 + (seed & 3)) % 2)
             if horizontal:
-                self.pyxel.line(px - 3, py, px + 3, py - 1, color)
+                self.pyxel.line(px - 4, py, px + 4, py - 1, color)
+                self.pyxel.pset(px - 2, py + 1, secondary_color)
                 if pulse:
-                    self.pyxel.pset(px, py - 2, secondary_color)
+                    self.pyxel.circb(px + 2, py - 3, 1, color)
             else:
-                self.pyxel.line(px - 1, py - 3, px, py + 3, color)
+                self.pyxel.line(px - 1, py - 4, px, py + 4, color)
+                self.pyxel.pset(px + 1, py - 2, secondary_color)
                 if pulse:
-                    self.pyxel.pset(px + 1, py, secondary_color)
+                    self.pyxel.circb(px + 3, py + 1, 1, color)
 
         min_index_x = math.floor(visible_rect.min_x / edge_grid) - 1
         max_index_x = math.ceil(visible_rect.max_x / edge_grid) + 1
         min_index_z = math.floor(visible_rect.min_z / edge_grid) - 1
         max_index_z = math.ceil(visible_rect.max_z / edge_grid) + 1
-        limit = max(8, max_count // 3 if max_count > 0 else 18)
+        limit = max_count
+        if limit <= 0:
+            return 0
         for xi in range(min_index_x, max_index_x + 1):
             x = xi * edge_grid
             if area_rect.min_x <= x <= area_rect.max_x:
