@@ -703,10 +703,6 @@
     "enabled": true,
     "surface_tiles_enabled": true,
     "surface_tilemap_enabled": true,
-    "surface_tilemap_zoom_profiles": [
-      1.0
-    ],
-    "surface_tilemap_zoom_tolerance": 0.025,
     "surface_tile_world_size": 64.0,
     "surface_tile_pattern": [
       [
