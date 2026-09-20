@@ -344,6 +344,11 @@ def test_env004_hard_grass_is_static_until_explicitly_profiled() -> None:
 
     assert hard_grass.visual == "grass_patch_tall_b"
     assert effects.reactive_environment_profile(hard_grass) is None
+    hard_grass_instances = [
+        obj for obj in model.world.objects if obj.visual == "grass_patch_tall_b"
+    ]
+    assert len(hard_grass_instances) >= 13
+    assert all(effects.reactive_environment_profile(obj) is None for obj in hard_grass_instances)
 
     model.player.x = hard_grass.x - 24.0
     model.player.z = hard_grass.z
