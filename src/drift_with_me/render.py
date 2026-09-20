@@ -1863,6 +1863,13 @@ class Renderer:
         if not isinstance(tile_names, dict):
             return
         tile_world_size = max(1.0, float(config.get("shoreline_tile_world_size", 64.0)))
+        corner_inset = max(
+            0.0,
+            min(
+                tile_world_size * 0.5,
+                float(config.get("shoreline_corner_inset_world", 0.0)),
+            ),
+        )
 
         def draw_tile(name_key: str, x: float, z: float) -> None:
             visual = tile_names.get(name_key)
@@ -1885,10 +1892,10 @@ class Renderer:
                 z = rect.min_z + tile_world_size * (row_index + 0.5)
                 draw_tile("left", rect.min_x, z)
                 draw_tile("right", rect.max_x, z)
-            draw_tile("corner_nw", rect.min_x, rect.min_z)
-            draw_tile("corner_ne", rect.max_x, rect.min_z)
-            draw_tile("corner_sw", rect.min_x, rect.max_z)
-            draw_tile("corner_se", rect.max_x, rect.max_z)
+            draw_tile("corner_nw", rect.min_x + corner_inset, rect.min_z + corner_inset)
+            draw_tile("corner_ne", rect.max_x - corner_inset, rect.min_z + corner_inset)
+            draw_tile("corner_sw", rect.min_x + corner_inset, rect.max_z - corner_inset)
+            draw_tile("corner_se", rect.max_x - corner_inset, rect.max_z - corner_inset)
 
     def draw_ground_surface(
         self, model: GameModel, surface: GroundSurface, camera: CameraState
