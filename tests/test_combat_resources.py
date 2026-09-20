@@ -51,6 +51,12 @@ class RecordingPyxel:
     def circb(self, *args) -> None:
         self.calls.append(("circb", *args))
 
+    def rect(self, *args) -> None:
+        self.calls.append(("rect", *args))
+
+    def rectb(self, *args) -> None:
+        self.calls.append(("rectb", *args))
+
     def line(self, *args) -> None:
         self.calls.append(("line", *args))
 
@@ -1379,14 +1385,20 @@ def test_combat_enemy_disappear_draws_burst_fragments() -> None:
     pyxel = RecordingPyxel()
     renderer = Renderer(pyxel)
 
-    renderer.draw_combat_enemy_disappear(ProjectedPoint(120.0, 80.0, 1.0), 0.92)
+    renderer.draw_combat_enemy_disappear(ProjectedPoint(120.0, 80.0, 1.0), 0.92, "normal")
 
     line_calls = [call for call in pyxel.calls if call[0] == "line"]
     pset_calls = [call for call in pyxel.calls if call[0] == "pset"]
-    assert any(call[0] == "circ" for call in pyxel.calls)
     assert any(call[0] == "circb" for call in pyxel.calls)
     assert len(line_calls) >= 12
     assert len(pset_calls) >= 16
+    fragment_colors = {
+        int(call[-1])
+        for call in pyxel.calls
+        if call[0] in {"circb", "line", "pset", "rect", "rectb"}
+    }
+    assert fragment_colors <= {0, 1, 4, 5, 13}
+    assert {7, 10}.isdisjoint(fragment_colors)
 
 
 def test_combat_defeat_zap_target_matches_repositioned_enemy_sprite_center() -> None:
