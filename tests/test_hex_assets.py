@@ -1257,6 +1257,9 @@ assert renderer.ground_surface_sprite_asset(model, "water_base_a").definition.as
 assert model.config["shallow_water"]["surface_tiles_enabled"] is False
 assert model.config["shallow_water"]["surface_tile_world_size"] == 64.0
 assert model.config["shallow_water"]["surface_tile_pattern"][0][0] == "water_base_a"
+assert model.config["shallow_water"]["symbol_layer_enabled"] is True
+assert model.config["shallow_water"]["symbol_combat_hidden"] is True
+assert model.config["shallow_water"]["symbol_grid_world"] == 30.0
 assert model.config["shallow_water"]["shoreline_tiles_enabled"] is False
 assert model.config["shallow_water"]["shoreline_tile_world_size"] == 64.0
 assert model.config["shallow_water"]["shoreline_corner_tiles_enabled"] is False
@@ -1277,6 +1280,11 @@ renderer.draw_ground_source_asset = (
 )
 renderer.draw_shallow_water_shoreline_tiles(model, camera)
 assert shore_tile_calls == []
+symbol_count = renderer.draw_shallow_water_symbols(model, camera, 0.0)
+assert symbol_count > 0
+model.combat_session = object()
+assert renderer.draw_shallow_water_symbols(model, camera, 0.0) == 0
+model.combat_session = None
 assert len(model.world.baked_ground_patches) == 14
 legacy_patch = model.world.baked_ground_patches[0]
 assert legacy_patch.id == "spawn_affine_ground_patch"

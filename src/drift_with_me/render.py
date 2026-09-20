@@ -230,6 +230,7 @@ class Renderer:
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
         self.draw_shallow_water_tiles(model, camera)
         self.draw_shallow_water_shoreline_tiles(model, camera)
+        self.draw_shallow_water_symbols(model, camera, presentation_time)
         self.draw_ground_surfaces(model, camera)
         self.draw_background_effects(camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
@@ -1898,6 +1899,189 @@ class Renderer:
                 draw_tile("corner_ne", rect.max_x - corner_inset, rect.min_z + corner_inset)
                 draw_tile("corner_sw", rect.min_x + corner_inset, rect.max_z - corner_inset)
                 draw_tile("corner_se", rect.max_x - corner_inset, rect.max_z - corner_inset)
+
+    def draw_shallow_water_symbols(
+        self, model: GameModel, camera: CameraState, presentation_time: float
+    ) -> int:
+        config = model.config.get("shallow_water", {})
+        if not config.get("enabled", False) or not config.get("symbol_layer_enabled", False):
+            return 0
+        if config.get("symbol_combat_hidden", True) and model.combat_session is not None:
+            return 0
+        areas = tuple(getattr(model.world, "shallow_water_areas", ()))
+        if not areas:
+            return 0
+
+        grid = max(8.0, float(config.get("symbol_grid_world", 30.0)))
+        edge_grid = max(8.0, float(config.get("symbol_edge_grid_world", 26.0)))
+        inner_margin = max(0.0, float(config.get("symbol_inner_margin_world", 14.0)))
+        color = int(config.get("symbol_color", 7))
+        secondary_color = int(config.get("symbol_secondary_color", color))
+        max_per_area = max(0, int(config.get("symbol_max_per_area", 54)))
+        if max_per_area <= 0:
+            return 0
+        total = 0
+
+        for area in areas:
+            rect = area.rect
+            screen_bounds = self.ground_source_screen_bounds(
+                camera, rect.min_x, rect.min_z, rect.width, rect.depth
+            )
+            if screen_bounds is None or not self.screen_rect_visible(screen_bounds, camera, 24.0):
+                continue
+            visible_rect = self.visible_ground_draw_rect(rect, camera, 24.0)
+            if visible_rect is None:
+                continue
+            total += self._draw_shallow_water_interior_symbols(
+                camera,
+                visible_rect,
+                grid,
+                color,
+                secondary_color,
+                presentation_time,
+                max_per_area,
+            )
+            total += self._draw_shallow_water_edge_symbols(
+                camera,
+                rect,
+                visible_rect,
+                edge_grid,
+                inner_margin,
+                color,
+                secondary_color,
+                presentation_time,
+                max_per_area,
+            )
+        return total
+
+    def _draw_shallow_water_interior_symbols(
+        self,
+        camera: CameraState,
+        rect: WorldRect,
+        grid: float,
+        color: int,
+        secondary_color: int,
+        presentation_time: float,
+        max_count: int,
+    ) -> int:
+        start_x = math.floor(rect.min_x / grid) - 1
+        end_x = math.ceil(rect.max_x / grid) + 1
+        start_z = math.floor(rect.min_z / grid) - 1
+        end_z = math.ceil(rect.max_z / grid) + 1
+        count = 0
+        for zi in range(start_z, end_z + 1):
+            for xi in range(start_x, end_x + 1):
+                seed = self._water_symbol_seed(xi, zi)
+                if seed % 5 == 0:
+                    continue
+                jitter_x = ((seed >> 4) & 15) / 15.0 - 0.5
+                jitter_z = ((seed >> 9) & 15) / 15.0 - 0.5
+                x = (xi + 0.5 + jitter_x * 0.52) * grid
+                z = (zi + 0.5 + jitter_z * 0.52) * grid
+                if not rect.contains_point(x, z):
+                    continue
+                point = camera.project(Vec3(x, 0.0, z))
+                if point is None or not self._screen_point_visible(point, camera, 6.0):
+                    continue
+                style = seed % 4
+                pulse = int((presentation_time * 5.0 + (seed & 7)) % 2)
+                px = int(point.x)
+                py = int(point.y)
+                if style == 0:
+                    self.pyxel.circb(px, py, 1 + pulse, color)
+                elif style == 1:
+                    self.pyxel.line(px - 2, py, px + 2, py - 1, color)
+                    self.pyxel.pset(px + 3, py - 1, secondary_color)
+                elif style == 2:
+                    self.pyxel.pset(px, py, color)
+                    self.pyxel.pset(px + 1, py - 1, secondary_color)
+                else:
+                    self.pyxel.line(px - 1, py + 1, px + 2, py, secondary_color)
+                count += 1
+                if count >= max_count:
+                    return count
+        return count
+
+    def _draw_shallow_water_edge_symbols(
+        self,
+        camera: CameraState,
+        area_rect: WorldRect,
+        visible_rect: WorldRect,
+        edge_grid: float,
+        inner_margin: float,
+        color: int,
+        secondary_color: int,
+        presentation_time: float,
+        max_count: int,
+    ) -> int:
+        count = 0
+
+        def draw_edge_point(x: float, z: float, seed: int, horizontal: bool) -> None:
+            point = camera.project(Vec3(x, 0.0, z))
+            if point is None or not self._screen_point_visible(point, camera, 8.0):
+                return
+            px = int(point.x)
+            py = int(point.y)
+            pulse = int((presentation_time * 4.0 + (seed & 3)) % 2)
+            if horizontal:
+                self.pyxel.line(px - 3, py, px + 3, py - 1, color)
+                if pulse:
+                    self.pyxel.pset(px, py - 2, secondary_color)
+            else:
+                self.pyxel.line(px - 1, py - 3, px, py + 3, color)
+                if pulse:
+                    self.pyxel.pset(px + 1, py, secondary_color)
+
+        min_index_x = math.floor(visible_rect.min_x / edge_grid) - 1
+        max_index_x = math.ceil(visible_rect.max_x / edge_grid) + 1
+        min_index_z = math.floor(visible_rect.min_z / edge_grid) - 1
+        max_index_z = math.ceil(visible_rect.max_z / edge_grid) + 1
+        limit = max(8, max_count // 3 if max_count > 0 else 18)
+        for xi in range(min_index_x, max_index_x + 1):
+            x = xi * edge_grid
+            if area_rect.min_x <= x <= area_rect.max_x:
+                if visible_rect.min_z <= area_rect.min_z <= visible_rect.max_z:
+                    seed = self._water_symbol_seed(xi, -73)
+                    if seed % 3:
+                        draw_edge_point(x, area_rect.min_z + inner_margin, seed, True)
+                        count += 1
+                if visible_rect.min_z <= area_rect.max_z <= visible_rect.max_z:
+                    seed = self._water_symbol_seed(xi, 73)
+                    if seed % 3:
+                        draw_edge_point(x, area_rect.max_z - inner_margin, seed, True)
+                        count += 1
+            if count >= limit:
+                return count
+        for zi in range(min_index_z, max_index_z + 1):
+            z = zi * edge_grid
+            if area_rect.min_z <= z <= area_rect.max_z:
+                if visible_rect.min_x <= area_rect.min_x <= visible_rect.max_x:
+                    seed = self._water_symbol_seed(-71, zi)
+                    if seed % 3:
+                        draw_edge_point(area_rect.min_x + inner_margin, z, seed, False)
+                        count += 1
+                if visible_rect.min_x <= area_rect.max_x <= visible_rect.max_x:
+                    seed = self._water_symbol_seed(71, zi)
+                    if seed % 3:
+                        draw_edge_point(area_rect.max_x - inner_margin, z, seed, False)
+                        count += 1
+            if count >= limit:
+                return count
+        return count
+
+    def _water_symbol_seed(self, x_index: int, z_index: int) -> int:
+        value = (x_index * 73856093) ^ (z_index * 19349663) ^ 0x9E3779B9
+        value ^= value >> 13
+        value *= 1274126177
+        return value & 0xFFFFFFFF
+
+    def _screen_point_visible(
+        self, point: ProjectedPoint, camera: CameraState, margin: float
+    ) -> bool:
+        return (
+            -margin <= point.x <= camera.viewport_width + margin
+            and -margin <= point.y <= camera.viewport_height + margin
+        )
 
     def draw_ground_surface(
         self, model: GameModel, surface: GroundSurface, camera: CameraState
