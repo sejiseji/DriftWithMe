@@ -702,6 +702,7 @@
   "shallow_water": {
     "enabled": true,
     "surface_tiles_enabled": true,
+    "surface_tilemap_enabled": true,
     "surface_tile_world_size": 64.0,
     "surface_tile_pattern": [
       [
