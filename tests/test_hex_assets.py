@@ -1259,6 +1259,7 @@ assert model.config["shallow_water"]["surface_tile_world_size"] == 64.0
 assert model.config["shallow_water"]["surface_tile_pattern"][0][0] == "water_base_a"
 assert model.config["shallow_water"]["shoreline_tiles_enabled"] is True
 assert model.config["shallow_water"]["shoreline_tile_world_size"] == 64.0
+assert model.config["shallow_water"]["shoreline_corner_tiles_enabled"] is False
 assert model.config["shallow_water"]["shoreline_corner_inset_world"] == 16.0
 assert model.config["shallow_water"]["shoreline_tiles"]["top"] == "shore_right_64"
 assert model.config["shallow_water"]["shoreline_tiles"]["bottom"] == "shore_top_64"
@@ -1277,17 +1278,12 @@ renderer.draw_ground_source_asset = (
     lambda asset, camera, x, z: shore_tile_calls.append((asset.definition.asset_id, x, z))
 )
 renderer.draw_shallow_water_shoreline_tiles(model, camera)
-assert len(shore_tile_calls) == 16
+assert len(shore_tile_calls) == 12
 assert shore_tile_calls[0] == ("shore_right_64", 128.0, 96.0)
 assert shore_tile_calls[1] == ("shore_top_64", 128.0, 288.0)
 assert shore_tile_calls[6] == ("shore_left_64", 96.0, 128.0)
 assert shore_tile_calls[7] == ("shore_bottom_64", 288.0, 128.0)
-assert shore_tile_calls[-4:] == [
-    ("shore_corner_outer_se_64", 112.0, 112.0),
-    ("shore_corner_outer_sw_64", 272.0, 112.0),
-    ("shore_corner_outer_ne_64", 112.0, 272.0),
-    ("shore_corner_outer_nw_64", 272.0, 272.0),
-]
+assert not any(call[0].startswith("shore_corner_") for call in shore_tile_calls)
 assert len(model.world.baked_ground_patches) == 14
 legacy_patch = model.world.baked_ground_patches[0]
 assert legacy_patch.id == "spawn_affine_ground_patch"
