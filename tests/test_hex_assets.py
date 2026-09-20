@@ -125,10 +125,18 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "giant_tree_02x_b": "0416f9512913932031523391660a2466642037ac28c811f8b9e6890b84cde9d6",
     "giant_tree_02x_c": "468c2d8da16069f85eb7d652e94f9a90536413be5d1603b88ca0dbe6288bb830",
     "giant_tree_02x_d": "7065feea96acf079fb9f979a3c17337b622e76a9f5b5f30be12cd8822f64ab79",
-    "water_base_a": "a0478f8f35d250fcce25e0b5bf481c9af7861a2f0e727c6d17e0238bcaa49efc",
-    "water_base_b": "21c2471139c0588c79eb25fa49eb3505d96f2927c29c67c5916fe2a470a6ebb6",
-    "water_caustics_a": "927f59c886d76c077ed3db5e2ef821a1ef89af6b41f9176970eda205de7d73ea",
-    "water_dark_a": "41e998a4c9d802ce9ab611315f8f7e587bf6526d76251045326388d85b9e5450",
+    "water_base_a": "73e47c876189f2d786d923aa2e77cf8f27e95edd1f2b1f41ecacbffc26aa3365",
+    "water_base_b": "30f4bc3aa8b8a943529aa1bb52f92feb623b2eecc95beb4225effa04eee62dbe",
+    "water_caustics_a": "1ff25f1b63400559c062e8c1ef298c39c86a8412117bd94594790ba700f4e638",
+    "water_dark_a": "55b1fe88db969cc0c2737d66ba36808d4179435578e18172b9e9765abe2bceee",
+    "shore_top_64": "140d0f754c11012802d7acc76184c5a567229f7c13c992945916c3fe944776f6",
+    "shore_bottom_64": "50fff66775e567ec2b50c5baf47832d82d60f4f6e0c1a6d5e316804e3f0ba460",
+    "shore_left_64": "2b9f4197e56a64bf8a11bd37f17e52c133a4aa79a31590b73435f749a911bf3e",
+    "shore_right_64": "5f9b81192fd08bc8bc037a1ce93c6d1e72a399a3993e81b2181278eb9f3724b2",
+    "shore_corner_outer_nw_64": "6a5b7baf6e90566ef67f35cf81f1d51932ee962dcdab6d2d31e2d1b975d6245c",
+    "shore_corner_outer_ne_64": "f15f9c0888678e35a9c42e806f8ea655a683ff02101ca1807ada6c197a6db4e4",
+    "shore_corner_outer_sw_64": "4a3650cc46f93099eedeb5ab3fcf13788e46ab74066e20f0f34ec2c1174378e0",
+    "shore_corner_outer_se_64": "86abe59c159f027148ea03488ae14570eb3862bc8a1ba5151ba530e6de4dda53",
 }
 TALL_GRASS_REACTIVE_POSE_HASHES = {
     "idle_00": "3e4c7c8d338024e5acb5af09d519dc8a8697feea0c807f9c76489feddbe5be46",
@@ -340,13 +348,33 @@ ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8 = {
     "giant_tree_02x_b": {"0", "1", "2", "3", "4", "5", "6", "7", "9", "A", "B", "C", "D", "E", "F"},
     "giant_tree_02x_c": {"0", "1", "2", "3", "4", "5", "6", "7", "9", "A", "B", "C", "D", "E", "F"},
     "giant_tree_02x_d": {"0", "1", "2", "3", "4", "5", "6", "7", "9", "A", "B", "C", "D", "E", "F"},
-    "water_base_a": {"3", "6", "7", "B"},
-    "water_base_b": {"3", "6", "7", "B"},
-    "water_caustics_a": {"3", "6", "7", "B"},
-    "water_dark_a": {"1", "3", "5", "6", "7", "B"},
+    "water_base_a": {"6", "7", "C"},
+    "water_base_b": {"6", "7", "C"},
+    "water_caustics_a": {"6", "7", "C"},
+    "water_dark_a": {"5", "6", "C"},
+    "shore_top_64": {"0", "3", "4", "6", "7", "C", "D", "F"},
+    "shore_bottom_64": {"3", "4", "6", "7", "C", "D", "F"},
+    "shore_left_64": {"0", "3", "4", "6", "7", "C", "D", "F"},
+    "shore_right_64": {"3", "4", "6", "7", "C", "D", "F"},
+    "shore_corner_outer_nw_64": {"0", "3", "4", "6", "7", "C", "D"},
+    "shore_corner_outer_ne_64": {"0", "3", "4", "6", "7", "C", "D", "F"},
+    "shore_corner_outer_sw_64": {"0", "3", "4", "6", "7", "C", "D", "F"},
+    "shore_corner_outer_se_64": {"0", "3", "4", "6", "7", "C", "D", "F"},
 }
 WATER_BASE_TILE_IDS = frozenset(
     {"water_base_a", "water_base_b", "water_caustics_a", "water_dark_a"}
+)
+SHORELINE_TILE_IDS = frozenset(
+    {
+        "shore_top_64",
+        "shore_bottom_64",
+        "shore_left_64",
+        "shore_right_64",
+        "shore_corner_outer_nw_64",
+        "shore_corner_outer_ne_64",
+        "shore_corner_outer_sw_64",
+        "shore_corner_outer_se_64",
+    }
 )
 
 
@@ -427,7 +455,7 @@ def test_environment_wave1_source_hex_preserves_received_pixels(asset_id: str) -
         .splitlines()
     )
 
-    if asset_id in WATER_BASE_TILE_IDS:
+    if asset_id in WATER_BASE_TILE_IDS or asset_id in SHORELINE_TILE_IDS:
         expected_height = 64
         expected_width = 64
     elif asset_id.startswith(("water_", "solar_", "tree_")):
@@ -891,6 +919,14 @@ environment_asset_ids = {{
     "water_base_b": "water_base_b_64",
     "water_caustics_a": "water_caustics_a_64",
     "water_dark_a": "water_dark_a_64",
+    "shore_top_64": "shore_top_64",
+    "shore_bottom_64": "shore_bottom_64",
+    "shore_left_64": "shore_left_64",
+    "shore_right_64": "shore_right_64",
+    "shore_corner_outer_nw_64": "shore_corner_outer_nw_64",
+    "shore_corner_outer_ne_64": "shore_corner_outer_ne_64",
+    "shore_corner_outer_sw_64": "shore_corner_outer_sw_64",
+    "shore_corner_outer_se_64": "shore_corner_outer_se_64",
 }}
 environment_world_sizes = {{
     "water_station_active": (36.0, 48.0),
@@ -940,6 +976,14 @@ environment_world_sizes = {{
     "water_base_b": (64.0, 64.0),
     "water_caustics_a": (64.0, 64.0),
     "water_dark_a": (64.0, 64.0),
+    "shore_top_64": (64.0, 64.0),
+    "shore_bottom_64": (64.0, 64.0),
+    "shore_left_64": (64.0, 64.0),
+    "shore_right_64": (64.0, 64.0),
+    "shore_corner_outer_nw_64": (64.0, 64.0),
+    "shore_corner_outer_ne_64": (64.0, 64.0),
+    "shore_corner_outer_sw_64": (64.0, 64.0),
+    "shore_corner_outer_se_64": (64.0, 64.0),
 }}
 environment_colkeys = {{
     "water_station_active": 8,
@@ -983,6 +1027,14 @@ environment_colkeys = {{
     "water_base_b": 8,
     "water_caustics_a": 8,
     "water_dark_a": 8,
+    "shore_top_64": 8,
+    "shore_bottom_64": 8,
+    "shore_left_64": 8,
+    "shore_right_64": 8,
+    "shore_corner_outer_nw_64": 8,
+    "shore_corner_outer_ne_64": 8,
+    "shore_corner_outer_sw_64": 8,
+    "shore_corner_outer_se_64": 8,
 }}
 environment_anchors = {{
     "water_station_active": (48.0, 127.0),
@@ -1026,6 +1078,14 @@ environment_anchors = {{
     "water_base_b": (32.0, 32.0),
     "water_caustics_a": (32.0, 32.0),
     "water_dark_a": (32.0, 32.0),
+    "shore_top_64": (32.0, 32.0),
+    "shore_bottom_64": (32.0, 32.0),
+    "shore_left_64": (32.0, 32.0),
+    "shore_right_64": (32.0, 32.0),
+    "shore_corner_outer_nw_64": (32.0, 32.0),
+    "shore_corner_outer_ne_64": (32.0, 32.0),
+    "shore_corner_outer_sw_64": (32.0, 32.0),
+    "shore_corner_outer_se_64": (32.0, 32.0),
 }}
 fuse_frame = None
 for direction, expected_hash in fuse_assets.items():
@@ -1071,6 +1131,14 @@ for source_id, expected_hash in environment_hashes.items():
         "water_base_b",
         "water_caustics_a",
         "water_dark_a",
+        "shore_top_64",
+        "shore_bottom_64",
+        "shore_left_64",
+        "shore_right_64",
+        "shore_corner_outer_nw_64",
+        "shore_corner_outer_ne_64",
+        "shore_corner_outer_sw_64",
+        "shore_corner_outer_se_64",
         "grass_low_a",
         "pebbles_a",
         "fallen_leaves_a",
@@ -1092,6 +1160,8 @@ assert runtime.raw["assets"]["concrete_clean_a_asset"] == "concrete_clean_a_64"
 assert runtime.raw["assets"]["decal_crack_grass_a_asset"] == "decal_crack_grass_a_64"
 assert runtime.raw["assets"]["water_base_a_asset"] == "water_base_a_64"
 assert runtime.raw["assets"]["water_dark_a_asset"] == "water_dark_a_64"
+assert runtime.raw["assets"]["shore_top_64_asset"] == "shore_top_64"
+assert runtime.raw["assets"]["shore_corner_outer_se_64_asset"] == "shore_corner_outer_se_64"
 assert runtime.raw["assets"]["grass_patch_low_a_asset"] == "grass_patch_low_a_64"
 assert runtime.raw["assets"]["grass_patch_tall_a_asset"] == "grass_patch_tall_a_64"
 assert runtime.raw["assets"]["giant_tree_root_arch_a_asset"] == "giant_tree_root_arch_a_128"
@@ -1187,6 +1257,9 @@ assert renderer.ground_surface_sprite_asset(model, "water_base_a").definition.as
 assert model.config["shallow_water"]["surface_tiles_enabled"] is True
 assert model.config["shallow_water"]["surface_tile_world_size"] == 64.0
 assert model.config["shallow_water"]["surface_tile_pattern"][0][0] == "water_base_a"
+assert model.config["shallow_water"]["shoreline_tiles_enabled"] is True
+assert model.config["shallow_water"]["shoreline_tile_world_size"] == 64.0
+assert model.config["shallow_water"]["shoreline_tiles"]["top"] == "shore_top_64"
 water_tile_calls = []
 renderer.draw_ground_source_asset = (
     lambda asset, camera, x, z: water_tile_calls.append((asset.definition.asset_id, x, z))
@@ -1195,6 +1268,23 @@ renderer.draw_shallow_water_tiles(model, camera)
 assert len(water_tile_calls) == 9
 assert water_tile_calls[0] == ("water_base_a_64", 128.0, 128.0)
 assert water_tile_calls[-1] == ("water_base_a_64", 256.0, 256.0)
+shore_tile_calls = []
+renderer.draw_ground_source_asset = (
+    lambda asset, camera, x, z: shore_tile_calls.append((asset.definition.asset_id, x, z))
+)
+renderer.draw_shallow_water_shoreline_tiles(model, camera)
+assert len(shore_tile_calls) == 16
+assert shore_tile_calls[:3] == [
+    ("shore_top_64", 128.0, 96.0),
+    ("shore_bottom_64", 128.0, 288.0),
+    ("shore_top_64", 192.0, 96.0),
+]
+assert shore_tile_calls[-4:] == [
+    ("shore_corner_outer_nw_64", 96.0, 96.0),
+    ("shore_corner_outer_ne_64", 288.0, 96.0),
+    ("shore_corner_outer_sw_64", 96.0, 288.0),
+    ("shore_corner_outer_se_64", 288.0, 288.0),
+]
 assert len(model.world.baked_ground_patches) == 14
 legacy_patch = model.world.baked_ground_patches[0]
 assert legacy_patch.id == "spawn_affine_ground_patch"

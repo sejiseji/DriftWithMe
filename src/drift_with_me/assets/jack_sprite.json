@@ -2324,12 +2324,12 @@
         {
           "id": "idle_00",
           "path": "water_base_a.hex",
-          "source_hash": "a0478f8f35d250fcce25e0b5bf481c9af7861a2f0e727c6d17e0238bcaa49efc"
+          "source_hash": "73e47c876189f2d786d923aa2e77cf8f27e95edd1f2b1f41ecacbffc26aa3365"
         }
       ],
-      "source_hash": "a0478f8f35d250fcce25e0b5bf481c9af7861a2f0e727c6d17e0238bcaa49efc",
+      "source_hash": "73e47c876189f2d786d923aa2e77cf8f27e95edd1f2b1f41ecacbffc26aa3365",
       "render_mode": "ground_material_source",
-      "source_policy": "water_base_tiles_pyxel_v0_1_hex",
+      "source_policy": "water_base_tiles_bluebiased_v0_2_hex",
       "environment_role": "shallow_water_tile"
     },
     {
@@ -2354,12 +2354,12 @@
         {
           "id": "idle_00",
           "path": "water_base_b.hex",
-          "source_hash": "21c2471139c0588c79eb25fa49eb3505d96f2927c29c67c5916fe2a470a6ebb6"
+          "source_hash": "30f4bc3aa8b8a943529aa1bb52f92feb623b2eecc95beb4225effa04eee62dbe"
         }
       ],
-      "source_hash": "21c2471139c0588c79eb25fa49eb3505d96f2927c29c67c5916fe2a470a6ebb6",
+      "source_hash": "30f4bc3aa8b8a943529aa1bb52f92feb623b2eecc95beb4225effa04eee62dbe",
       "render_mode": "ground_material_source",
-      "source_policy": "water_base_tiles_pyxel_v0_1_hex",
+      "source_policy": "water_base_tiles_bluebiased_v0_2_hex",
       "environment_role": "shallow_water_tile"
     },
     {
@@ -2384,12 +2384,12 @@
         {
           "id": "idle_00",
           "path": "water_caustics_a.hex",
-          "source_hash": "927f59c886d76c077ed3db5e2ef821a1ef89af6b41f9176970eda205de7d73ea"
+          "source_hash": "1ff25f1b63400559c062e8c1ef298c39c86a8412117bd94594790ba700f4e638"
         }
       ],
-      "source_hash": "927f59c886d76c077ed3db5e2ef821a1ef89af6b41f9176970eda205de7d73ea",
+      "source_hash": "1ff25f1b63400559c062e8c1ef298c39c86a8412117bd94594790ba700f4e638",
       "render_mode": "ground_material_source",
-      "source_policy": "water_base_tiles_pyxel_v0_1_hex",
+      "source_policy": "water_base_tiles_bluebiased_v0_2_hex",
       "environment_role": "shallow_water_tile"
     },
     {
@@ -2414,13 +2414,253 @@
         {
           "id": "idle_00",
           "path": "water_dark_a.hex",
-          "source_hash": "41e998a4c9d802ce9ab611315f8f7e587bf6526d76251045326388d85b9e5450"
+          "source_hash": "55b1fe88db969cc0c2737d66ba36808d4179435578e18172b9e9765abe2bceee"
         }
       ],
-      "source_hash": "41e998a4c9d802ce9ab611315f8f7e587bf6526d76251045326388d85b9e5450",
+      "source_hash": "55b1fe88db969cc0c2737d66ba36808d4179435578e18172b9e9765abe2bceee",
       "render_mode": "ground_material_source",
-      "source_policy": "water_base_tiles_pyxel_v0_1_hex",
+      "source_policy": "water_base_tiles_bluebiased_v0_2_hex",
       "environment_role": "shallow_water_tile"
+    },
+    {
+      "schema_version": 1,
+      "id": "shore_top_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "shore_top_64.hex",
+          "source_hash": "140d0f754c11012802d7acc76184c5a567229f7c13c992945916c3fe944776f6"
+        }
+      ],
+      "source_hash": "140d0f754c11012802d7acc76184c5a567229f7c13c992945916c3fe944776f6",
+      "render_mode": "ground_material_source",
+      "source_policy": "shoreline_64_pyxel_assets_bluebiased_v0_2_hex",
+      "environment_role": "shallow_water_shoreline_edge"
+    },
+    {
+      "schema_version": 1,
+      "id": "shore_bottom_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "shore_bottom_64.hex",
+          "source_hash": "50fff66775e567ec2b50c5baf47832d82d60f4f6e0c1a6d5e316804e3f0ba460"
+        }
+      ],
+      "source_hash": "50fff66775e567ec2b50c5baf47832d82d60f4f6e0c1a6d5e316804e3f0ba460",
+      "render_mode": "ground_material_source",
+      "source_policy": "shoreline_64_pyxel_assets_bluebiased_v0_2_hex",
+      "environment_role": "shallow_water_shoreline_edge"
+    },
+    {
+      "schema_version": 1,
+      "id": "shore_left_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "shore_left_64.hex",
+          "source_hash": "2b9f4197e56a64bf8a11bd37f17e52c133a4aa79a31590b73435f749a911bf3e"
+        }
+      ],
+      "source_hash": "2b9f4197e56a64bf8a11bd37f17e52c133a4aa79a31590b73435f749a911bf3e",
+      "render_mode": "ground_material_source",
+      "source_policy": "shoreline_64_pyxel_assets_bluebiased_v0_2_hex",
+      "environment_role": "shallow_water_shoreline_edge"
+    },
+    {
+      "schema_version": 1,
+      "id": "shore_right_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "shore_right_64.hex",
+          "source_hash": "5f9b81192fd08bc8bc037a1ce93c6d1e72a399a3993e81b2181278eb9f3724b2"
+        }
+      ],
+      "source_hash": "5f9b81192fd08bc8bc037a1ce93c6d1e72a399a3993e81b2181278eb9f3724b2",
+      "render_mode": "ground_material_source",
+      "source_policy": "shoreline_64_pyxel_assets_bluebiased_v0_2_hex",
+      "environment_role": "shallow_water_shoreline_edge"
+    },
+    {
+      "schema_version": 1,
+      "id": "shore_corner_outer_nw_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "shore_corner_outer_nw_64.hex",
+          "source_hash": "6a5b7baf6e90566ef67f35cf81f1d51932ee962dcdab6d2d31e2d1b975d6245c"
+        }
+      ],
+      "source_hash": "6a5b7baf6e90566ef67f35cf81f1d51932ee962dcdab6d2d31e2d1b975d6245c",
+      "render_mode": "ground_material_source",
+      "source_policy": "shoreline_64_pyxel_assets_bluebiased_v0_2_hex",
+      "environment_role": "shallow_water_shoreline_edge"
+    },
+    {
+      "schema_version": 1,
+      "id": "shore_corner_outer_ne_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "shore_corner_outer_ne_64.hex",
+          "source_hash": "f15f9c0888678e35a9c42e806f8ea655a683ff02101ca1807ada6c197a6db4e4"
+        }
+      ],
+      "source_hash": "f15f9c0888678e35a9c42e806f8ea655a683ff02101ca1807ada6c197a6db4e4",
+      "render_mode": "ground_material_source",
+      "source_policy": "shoreline_64_pyxel_assets_bluebiased_v0_2_hex",
+      "environment_role": "shallow_water_shoreline_edge"
+    },
+    {
+      "schema_version": 1,
+      "id": "shore_corner_outer_sw_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "shore_corner_outer_sw_64.hex",
+          "source_hash": "4a3650cc46f93099eedeb5ab3fcf13788e46ab74066e20f0f34ec2c1174378e0"
+        }
+      ],
+      "source_hash": "4a3650cc46f93099eedeb5ab3fcf13788e46ab74066e20f0f34ec2c1174378e0",
+      "render_mode": "ground_material_source",
+      "source_policy": "shoreline_64_pyxel_assets_bluebiased_v0_2_hex",
+      "environment_role": "shallow_water_shoreline_edge"
+    },
+    {
+      "schema_version": 1,
+      "id": "shore_corner_outer_se_64",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "shore_corner_outer_se_64.hex",
+          "source_hash": "86abe59c159f027148ea03488ae14570eb3862bc8a1ba5151ba530e6de4dda53"
+        }
+      ],
+      "source_hash": "86abe59c159f027148ea03488ae14570eb3862bc8a1ba5151ba530e6de4dda53",
+      "render_mode": "ground_material_source",
+      "source_policy": "shoreline_64_pyxel_assets_bluebiased_v0_2_hex",
+      "environment_role": "shallow_water_shoreline_edge"
     }
   ],
   "notes": [

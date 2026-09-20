@@ -229,6 +229,7 @@ class Renderer:
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
         self.draw_shallow_water_tiles(model, camera)
+        self.draw_shallow_water_shoreline_tiles(model, camera)
         self.draw_ground_surfaces(model, camera)
         self.draw_background_effects(camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
@@ -1850,6 +1851,44 @@ class Renderer:
                         continue
                     x = rect.min_x + tile_world_size * (column_index + 0.5)
                     self.draw_ground_source_asset(asset, camera, x, z)
+
+    def draw_shallow_water_shoreline_tiles(self, model: GameModel, camera: CameraState) -> None:
+        config = model.config.get("shallow_water", {})
+        if not config.get("enabled", False) or not config.get("shoreline_tiles_enabled", False):
+            return
+        areas = tuple(getattr(model.world, "shallow_water_areas", ()))
+        if not areas:
+            return
+        tile_names = config.get("shoreline_tiles", {})
+        if not isinstance(tile_names, dict):
+            return
+        tile_world_size = max(1.0, float(config.get("shoreline_tile_world_size", 64.0)))
+
+        def draw_tile(name_key: str, x: float, z: float) -> None:
+            visual = tile_names.get(name_key)
+            if not isinstance(visual, str):
+                return
+            asset = self.ground_surface_sprite_asset(model, visual)
+            if asset is None:
+                return
+            self.draw_ground_source_asset(asset, camera, x, z)
+
+        for area in areas:
+            rect = area.rect
+            columns = max(1, math.ceil(rect.width / tile_world_size))
+            rows = max(1, math.ceil(rect.depth / tile_world_size))
+            for column_index in range(columns):
+                x = rect.min_x + tile_world_size * (column_index + 0.5)
+                draw_tile("top", x, rect.min_z)
+                draw_tile("bottom", x, rect.max_z)
+            for row_index in range(rows):
+                z = rect.min_z + tile_world_size * (row_index + 0.5)
+                draw_tile("left", rect.min_x, z)
+                draw_tile("right", rect.max_x, z)
+            draw_tile("corner_nw", rect.min_x, rect.min_z)
+            draw_tile("corner_ne", rect.max_x, rect.min_z)
+            draw_tile("corner_sw", rect.min_x, rect.max_z)
+            draw_tile("corner_se", rect.max_x, rect.max_z)
 
     def draw_ground_surface(
         self, model: GameModel, surface: GroundSurface, camera: CameraState
