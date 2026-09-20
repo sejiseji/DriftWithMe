@@ -137,6 +137,15 @@ def test_directional_lookahead_follow_target_uses_dedicated_smoothing() -> None:
     assert controller.follow_target.x - model.player.x < controller.lookahead_offset.x
 
 
+def test_directional_lookahead_starts_gently() -> None:
+    controller, model = make_controller()
+
+    controller.update(1.0 / 60.0, model.player.x, model.player.z, 1.0, 0.0)
+    first_offset = controller.follow_target.x - model.player.x
+
+    assert first_offset < 0.2
+
+
 def test_directional_lookahead_clamps_to_camera_target_bounds() -> None:
     controller, _model = make_controller()
     rect = controller.world.camera_target_rect
