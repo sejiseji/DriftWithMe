@@ -218,6 +218,56 @@ def test_combat_player_faces_enemy_presentation_after_settling() -> None:
     assert enemy is normal_enemy(model)
 
 
+def test_bat007a_enemy_approach_tracks_parry_slider_without_world_move() -> None:
+    model, camera = make_model()
+    enemy = start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    renderer = Renderer(None)
+    enemy_world = (enemy.x, enemy.z)
+
+    def enemy_distance_to_player() -> float:
+        player = renderer.player_actor_presentation(model, camera)
+        presented_enemy = renderer.enemy_actor_presentation(model, enemy, camera)
+        return math.hypot(presented_enemy.x - player.x, presented_enemy.z - player.z)
+
+    session.timing_elapsed_sec = 0.0
+    start_distance = enemy_distance_to_player()
+    assert model.combat_enemy_charge_progress(session) == pytest.approx(0.0)
+
+    session.timing_elapsed_sec = model.combat_parry_sweep_sec() * 0.5
+    mid_distance = enemy_distance_to_player()
+    assert model.combat_enemy_charge_progress(session) == pytest.approx(0.5)
+
+    session.timing_elapsed_sec = model.combat_parry_sweep_sec()
+    end_distance = enemy_distance_to_player()
+    assert model.combat_enemy_charge_progress(session) == pytest.approx(1.0)
+
+    assert start_distance > mid_distance > end_distance
+    assert end_distance == pytest.approx(model.combat_charge_closest_approach_world())
+    assert (enemy.x, enemy.z) == enemy_world
+
+
+def test_bat007a_enemy_approach_holds_at_collision_point_during_resolve() -> None:
+    model, camera = make_model()
+    enemy = start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    renderer = Renderer(None)
+
+    session.timing_elapsed_sec = model.combat_parry_sweep_sec()
+    timing_position = renderer.enemy_actor_presentation(model, enemy, camera)
+    session.phase = "PARRY_RESOLVE"
+    session.phase_elapsed_sec = 0.0
+    resolve_position = renderer.enemy_actor_presentation(model, enemy, camera)
+
+    assert model.combat_enemy_charge_progress(session) == pytest.approx(1.0)
+    assert resolve_position.x == pytest.approx(timing_position.x)
+    assert resolve_position.z == pytest.approx(timing_position.z)
+
+
 def step_to_combat_phase(model: GameModel, camera: CameraState, phase: str) -> list:
     events = []
     for _ in range(80):

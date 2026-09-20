@@ -651,7 +651,8 @@
       "windup_sec": 0.7,
       "charge_sec": 0.38,
       "round_gap_sec": 0.55,
-      "preimpact_slow_start_sec": 0.22
+      "preimpact_slow_start_sec": 0.22,
+      "closest_approach_world": 18.0
     },
     "ready_sequence": {
       "ready_sec": 0.5,

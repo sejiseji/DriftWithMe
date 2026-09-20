@@ -628,6 +628,20 @@ class Renderer:
             )
         if session.phase == "COMBAT_RESTORE_JUMP":
             return ActorPresentation(session.enemy_return_x, session.enemy_return_z)
+        charge_progress = model.combat_enemy_charge_progress(session)
+        if charge_progress > 0.0 and session.phase in {"PARRY_TIMING", "PARRY_RESOLVE"}:
+            player_target = self.combat_actor_anchor_ground(model, camera, "player")
+            if player_target is not None:
+                player_x, player_z = player_target
+                dx = target_x - player_x
+                dz = target_z - player_z
+                distance = math.hypot(dx, dz)
+                if distance > 1e-6:
+                    closest = min(model.combat_charge_closest_approach_world(), distance)
+                    end_x = player_x + dx / distance * closest
+                    end_z = player_z + dz / distance * closest
+                    target_x = _lerp(target_x, end_x, charge_progress)
+                    target_z = _lerp(target_z, end_z, charge_progress)
         offset_x, offset_z = model.combat_enemy_presentation_offset(enemy)
         return ActorPresentation(target_x + offset_x, target_z + offset_z)
 

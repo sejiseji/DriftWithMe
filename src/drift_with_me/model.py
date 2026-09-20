@@ -2131,6 +2131,23 @@ class GameModel:
     def combat_charge_normal_sec(self) -> float:
         return max(0.0, self.combat_charge_sec() - self.combat_preimpact_slow_sec())
 
+    def combat_charge_closest_approach_world(self) -> float:
+        return max(
+            0.0,
+            float(self.combat_enemy_charge_config().get("closest_approach_world", 18.0)),
+        )
+
+    def combat_enemy_charge_progress(self, session: CombatSession | None = None) -> float:
+        session = self.combat_session if session is None else session
+        if session is None:
+            return 0.0
+        if session.phase == "PARRY_TIMING":
+            slider = self.combat_timing_slider_position(session)
+            return 0.0 if slider is None else max(0.0, min(slider, 1.0))
+        if session.phase == "PARRY_RESOLVE":
+            return 1.0
+        return 0.0
+
     def combat_round_gap_sec(self) -> float:
         return max(0.0, float(self.combat_enemy_charge_config().get("round_gap_sec", 0.55)))
 
