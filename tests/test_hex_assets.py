@@ -1257,9 +1257,12 @@ assert renderer.ground_surface_sprite_asset(model, "water_base_a").definition.as
 assert model.config["shallow_water"]["surface_tiles_enabled"] is True
 assert model.config["shallow_water"]["surface_tile_world_size"] == 64.0
 assert model.config["shallow_water"]["surface_tile_pattern"][0][0] == "water_base_a"
-assert model.config["shallow_water"]["shoreline_tiles_enabled"] is False
+assert model.config["shallow_water"]["shoreline_tiles_enabled"] is True
 assert model.config["shallow_water"]["shoreline_tile_world_size"] == 64.0
-assert model.config["shallow_water"]["shoreline_tiles"]["top"] == "shore_top_64"
+assert model.config["shallow_water"]["shoreline_tiles"]["top"] == "shore_right_64"
+assert model.config["shallow_water"]["shoreline_tiles"]["bottom"] == "shore_top_64"
+assert model.config["shallow_water"]["shoreline_tiles"]["left"] == "shore_left_64"
+assert model.config["shallow_water"]["shoreline_tiles"]["right"] == "shore_bottom_64"
 water_tile_calls = []
 renderer.draw_ground_source_asset = (
     lambda asset, camera, x, z: water_tile_calls.append((asset.definition.asset_id, x, z))
@@ -1273,7 +1276,17 @@ renderer.draw_ground_source_asset = (
     lambda asset, camera, x, z: shore_tile_calls.append((asset.definition.asset_id, x, z))
 )
 renderer.draw_shallow_water_shoreline_tiles(model, camera)
-assert shore_tile_calls == []
+assert len(shore_tile_calls) == 16
+assert shore_tile_calls[0] == ("shore_right_64", 128.0, 96.0)
+assert shore_tile_calls[1] == ("shore_top_64", 128.0, 288.0)
+assert shore_tile_calls[6] == ("shore_left_64", 96.0, 128.0)
+assert shore_tile_calls[7] == ("shore_bottom_64", 288.0, 128.0)
+assert shore_tile_calls[-4:] == [
+    ("shore_corner_outer_se_64", 96.0, 96.0),
+    ("shore_corner_outer_sw_64", 288.0, 96.0),
+    ("shore_corner_outer_ne_64", 96.0, 288.0),
+    ("shore_corner_outer_nw_64", 288.0, 288.0),
+]
 assert len(model.world.baked_ground_patches) == 14
 legacy_patch = model.world.baked_ground_patches[0]
 assert legacy_patch.id == "spawn_affine_ground_patch"

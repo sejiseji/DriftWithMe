@@ -730,17 +730,17 @@
     "wake_color": 7,
     "wake_length_world": 10.0,
     "max_ripples_per_update": 2,
-    "shoreline_tiles_enabled": false,
+    "shoreline_tiles_enabled": true,
     "shoreline_tile_world_size": 64.0,
     "shoreline_tiles": {
-      "top": "shore_top_64",
-      "bottom": "shore_bottom_64",
+      "top": "shore_right_64",
+      "bottom": "shore_top_64",
       "left": "shore_left_64",
-      "right": "shore_right_64",
-      "corner_nw": "shore_corner_outer_nw_64",
-      "corner_ne": "shore_corner_outer_ne_64",
-      "corner_sw": "shore_corner_outer_sw_64",
-      "corner_se": "shore_corner_outer_se_64"
+      "right": "shore_bottom_64",
+      "corner_nw": "shore_corner_outer_se_64",
+      "corner_ne": "shore_corner_outer_sw_64",
+      "corner_sw": "shore_corner_outer_ne_64",
+      "corner_se": "shore_corner_outer_nw_64"
     }
   },
   "reactive_environment": {
