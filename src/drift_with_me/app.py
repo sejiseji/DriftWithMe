@@ -1724,12 +1724,13 @@ class DriftWithMeApp:
             pyxel.circ(slider_x, slider_y, 4, 10)
             pyxel.circb(slider_x, slider_y, 6, 7)
         label = "PERFECT" if session.result == "perfect" else "GOOD" if session.result else "PARRY"
+        label_scale = 2
         self.draw_spaced_pixel_text_center(
             int(rect.x + rect.width / 2),
-            int(rect.y + max(4, round(5 * scale_y))),
+            int(rect.y + max(5, round(6 * scale_y))),
             label,
             10 if session.result == "perfect" else 7,
-            scale=1,
+            scale=label_scale,
             gap=1,
         )
         self.draw_combat_countdown_cue(session)
@@ -1738,21 +1739,23 @@ class DriftWithMeApp:
         cue = self.combat_countdown_cue_text(session)
         if cue is None:
             return
-        width = 126 if len(cue) > 2 else 72
-        height = 34
+        cue_scale = 3
+        cue_gap = 2
+        cue_width = self.spaced_pixel_text_width(cue, cue_scale, cue_gap)
+        _, cue_h = pixel_text_size(cue, cue_scale)
+        width = max(92, cue_width + 28)
+        height = max(44, cue_h + 24)
         x = int((self.runtime.screen_width - width) / 2)
         y = int(self.runtime.screen_height * 0.38 - height / 2)
         rect = Rect(float(x), float(y), float(width), float(height))
         self.draw_panel_frame(rect, fill=0, inner=5)
-        cue_scale = 2
-        _, cue_h = pixel_text_size(cue, cue_scale)
         self.draw_spaced_pixel_text_center(
             int(rect.x + rect.width / 2),
             int(rect.y + rect.height / 2 - cue_h / 2),
             cue,
             10 if cue == "GO!" else 7,
             scale=cue_scale,
-            gap=2,
+            gap=cue_gap,
         )
 
     def combat_countdown_cue_text(self, session) -> str | None:
@@ -2200,7 +2203,7 @@ class DriftWithMeApp:
         if rect.x < self.resource_panel_rect().x + self.resource_panel_rect().width + 8:
             return
         self.draw_text_center(
-            int(rect.x + rect.width / 2), int(rect.y + 2), "DRIFTWITHME", 7, scale=1
+            int(rect.x + rect.width / 2), int(rect.y + 1), "DRIFTWITHME", 7, scale=2
         )
         baseline = int(rect.y + rect.height - 2)
         self.pyxel.line(int(rect.x + 8), baseline, int(rect.x + rect.width - 8), baseline, 6)
@@ -2359,6 +2362,12 @@ class DriftWithMeApp:
         for char, width in zip(glyphs, widths, strict=True):
             draw_pixel_text(self.pyxel, cursor_x, y, char, color, scale=scale)
             cursor_x += width + gap
+
+    def spaced_pixel_text_width(self, text: str, scale: int = 1, gap: int = 1) -> int:
+        glyphs = tuple(text.upper())
+        if not glyphs:
+            return 0
+        return sum(pixel_text_size(char, scale)[0] for char in glyphs) + gap * (len(glyphs) - 1)
 
     def fit_text_to_width(self, text: str, max_width: int, scale: int) -> str:
         text = text.upper()

@@ -21,6 +21,7 @@ from drift_with_me.math3d import (
     screen_to_ground_point,
 )
 from drift_with_me.model import GameModel
+from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.world import (
     BakedGroundPatch,
     GroundDetail,
@@ -3984,7 +3985,9 @@ class Renderer:
         py = int(point.y)
         color = {"capture": 12, "defeat": 10, "deflect": 7}.get(session.outcome or "", 7)
         pulse = 1 + int(math.sin(progress * math.pi) * 2)
-        self.pyxel.text(px - len(label) * 2, py - 15, label, color)
+        label_scale = 2
+        label_w, label_h = pixel_text_size(label, label_scale)
+        draw_pixel_text(self.pyxel, px - label_w // 2, py - 18 - label_h, label, color, label_scale)
         for index in range(6):
             angle = progress * math.tau + index * math.tau / 6.0
             radius = 7 + progress * 10 + (index % 2) * 3
