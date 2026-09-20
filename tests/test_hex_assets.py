@@ -759,7 +759,6 @@ def test_runtime_pyxres_manifest_loads_jack_and_preserves_nonimage_banks() -> No
     env["PYTHONPATH"] = str(ROOT / "src") + os.pathsep + env.get("PYTHONPATH", "")
     code = f"""
 import json
-from dataclasses import replace
 
 import pyxel
 
@@ -1256,7 +1255,6 @@ assert renderer.ground_surface_sprite_asset(model, "water_base_a").definition.as
     "water_base_a_64"
 )
 assert model.config["shallow_water"]["surface_tiles_enabled"] is True
-assert model.config["shallow_water"]["surface_tilemap_enabled"] is True
 assert model.config["shallow_water"]["surface_tile_world_size"] == 64.0
 assert model.config["shallow_water"]["surface_tile_pattern"][0][0] == "water_base_a"
 assert model.config["shallow_water"]["shoreline_tiles_enabled"] is True
@@ -1324,9 +1322,6 @@ affine = affine_camera_from_perspective(
 )
 renderer.max_baked_ground_builds_per_frame = 8
 pyxel.cls(3)
-assert renderer.draw_shallow_water_tilemap_layer(model, affine)
-assert len(renderer._shallow_water_tilemap_cache) == 1
-pyxel.cls(3)
 active_patches = renderer.draw_baked_ground_patches(model, affine)
 assert active_patches == ()
 assert not renderer.point_in_active_baked_ground_patch(patch_probe_x, patch_probe_z)
@@ -1353,25 +1348,6 @@ shifted_key = renderer.baked_ground_cache_key(patch, shifted_camera, *shifted_bu
 assert bucket == (patch.x, patch.z)
 assert shifted_bucket == (patch.x, patch.z)
 assert first_key == shifted_key
-water_area = model.world.shallow_water_areas[0]
-water_config = model.config["shallow_water"]
-water_baked = renderer.shallow_water_tilemap_image(model, affine, water_area, water_config)
-water_shifted_camera = replace(
-    affine,
-    fx_offset_x=affine.fx_offset_x + 8.0,
-    fx_offset_y=affine.fx_offset_y + 4.0,
-)
-shifted_water_baked = renderer.shallow_water_tilemap_image(
-    model, water_shifted_camera, water_area, water_config
-)
-assert water_baked is not None
-assert shifted_water_baked is not None
-assert shifted_water_baked.tilemap is water_baked.tilemap
-assert (shifted_water_baked.left, shifted_water_baked.top) != (
-    water_baked.left,
-    water_baked.top,
-)
-assert len(renderer._shallow_water_tilemap_cache) == 1
 pyxel.cls(3)
 assert renderer.draw_player_sprite(model, camera, presentation_time=0.0)
 placement = renderer.player_sprite_placement(model, camera, presentation_time=0.0)
