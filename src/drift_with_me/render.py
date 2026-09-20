@@ -2248,7 +2248,7 @@ class Renderer:
                 z = (zi + 0.5 + jitter_z * 0.52) * grid
                 if not rect.contains_point(x, z):
                     continue
-                if not self._point_in_shallow_water_ellipse(area_rect, x, z, 10.0):
+                if not self._point_in_shallow_water_ellipse(area_rect, x, z, 18.0):
                     continue
                 point = camera.project(Vec3(x, 0.0, z))
                 if point is None or not self._screen_point_visible(point, camera, 6.0):
@@ -2308,8 +2308,9 @@ class Renderer:
             return 0
         center_x = (area_rect.min_x + area_rect.max_x) * 0.5
         center_z = (area_rect.min_z + area_rect.max_z) * 0.5
-        radius_x = max(1.0, area_rect.width * 0.5 - inner_margin)
-        radius_z = max(1.0, area_rect.depth * 0.5 - inner_margin)
+        ring_inset = min(inner_margin * 0.35, 6.0)
+        radius_x = max(1.0, area_rect.width * 0.5 - ring_inset)
+        radius_z = max(1.0, area_rect.depth * 0.5 - ring_inset)
         circumference = math.tau * math.sqrt((radius_x * radius_x + radius_z * radius_z) * 0.5)
         samples = max(limit * 2, int(circumference / max(8.0, edge_grid * 0.55)))
         for index in range(samples):
@@ -2318,7 +2319,7 @@ class Renderer:
                 continue
             angle = math.tau * ((index + 0.5) / samples)
             angle += (((seed >> 5) & 7) - 3.5) * 0.018
-            radius_scale = 0.84 + (((seed >> 9) & 7) / 7.0 - 0.5) * 0.08
+            radius_scale = 0.97 + (((seed >> 9) & 7) / 7.0 - 0.5) * 0.04
             x = center_x + math.cos(angle) * radius_x * radius_scale
             z = center_z + math.sin(angle) * radius_z * radius_scale
             if not visible_rect.contains_point(x, z):
