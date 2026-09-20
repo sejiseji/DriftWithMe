@@ -1284,6 +1284,10 @@ assert model.config["shallow_water"]["shoreline_tiles"]["right"] == "shore_botto
 assert model.config["forest_light"]["enabled"] is True
 assert model.config["forest_light"]["combat_hidden"] is True
 assert model.config["forest_light"]["cell_world"] == 72.0
+assert model.config["ambient_motes"]["enabled"] is True
+assert model.config["ambient_motes"]["combat_hidden"] is True
+assert model.config["ambient_motes"]["cell_world"] == 58.0
+assert model.config["ambient_motes"]["max_visible_motes"] == 92
 model.config["forest_light"]["areas"] = [
     {{
         "id": "test_visible_forest_light",
@@ -1307,6 +1311,30 @@ forest_light_count = renderer.draw_forest_light_layer(model, forest_light_camera
 assert forest_light_count > 0
 model.combat_session = object()
 assert renderer.draw_forest_light_layer(model, forest_light_camera) == 0
+model.combat_session = None
+model.config["ambient_motes"]["areas"] = [
+    {{
+        "id": "test_visible_ambient_motes",
+        "kind": "green_mote",
+        "rect_xz": [
+            model.player.x - 96.0,
+            model.player.z - 96.0,
+            model.player.x + 96.0,
+            model.player.z + 96.0,
+        ],
+        "density": 1.0,
+        "min_y": 8.0,
+        "max_y": 28.0,
+        "color": 11,
+        "secondary_color": 3,
+        "phase": 9,
+    }}
+]
+assert renderer.draw_ambient_motes_layer(model, camera) == 0
+ambient_mote_count = renderer.draw_ambient_motes_layer(model, forest_light_camera)
+assert ambient_mote_count > 0
+model.combat_session = object()
+assert renderer.draw_ambient_motes_layer(model, forest_light_camera) == 0
 model.combat_session = None
 water_tile_calls = []
 renderer.draw_ground_source_asset = (

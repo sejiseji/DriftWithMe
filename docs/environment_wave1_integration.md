@@ -202,6 +202,7 @@ World data changes are limited to:
 - `objects` includes multiple upright grass `reactive_prop` entries for low grass and grassland tall grass. They are visual-only and do not change collision or pathing. The current review positions keep tall/low grass away from tree roots so their billboards do not visibly occupy the same foreground/background slot.
 - `reactive_prop_strength` is `1.0`, so upright reactive grass and reeds receive the same atmospheric depth treatment as other distant nature props. This keeps them integrated with the forest/grassland depth pass while the runtime deformation path remains disabled.
 - `reactive_environment.upright_deform_enabled` is `false`, so those upright grass/reed sprites are not bent, split, or redrawn through the row-sliced reactive pass.
+- `forest_light` and `ambient_motes` add static, world-space atmosphere marks. They are drawn only in affine mode, hidden during combat, and do not use the runtime particle system. `forest_light` is ground-adjacent dapple light; `ambient_motes` is fixed-height photon / green mote scenery in selected forest and water-edge areas.
 - `visual_detail_per_chunk` is `0`; random small-detail scatter is deferred until a cheaper tiling/sprite path is available.
 - `player.solid_collision_margin` adds a small margin only for player-vs-solid movement/pathing so Jack does not visually sink into the box faces. Enemy contact still uses the original player collider size.
 

@@ -143,6 +143,7 @@ class RenderStats:
     visible_ground_details: int = 0
     visible_grassland_micro_areas: int = 0
     visible_forest_light_spots: int = 0
+    visible_ambient_motes: int = 0
     visible_baked_ground_patches: int = 0
     baked_ground_cache_size: int = 0
     draw_commands: int = 0
@@ -214,6 +215,7 @@ class Renderer:
         ] = {}
         self._visible_grassland_micro_areas = 0
         self._visible_forest_light_spots = 0
+        self._visible_ambient_motes = 0
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -231,6 +233,7 @@ class Renderer:
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
         self._visible_forest_light_spots = self.draw_forest_light_layer(model, camera)
+        self._visible_ambient_motes = self.draw_ambient_motes_layer(model, camera)
         self.draw_shallow_water_tiles(model, camera)
         self.draw_shallow_water_shoreline_tiles(model, camera)
         self.draw_shallow_water_symbols(model, camera, presentation_time)
@@ -521,6 +524,7 @@ class Renderer:
             visible_ground_details=len(visible_details),
             visible_grassland_micro_areas=self._visible_grassland_micro_areas,
             visible_forest_light_spots=self._visible_forest_light_spots,
+            visible_ambient_motes=self._visible_ambient_motes,
             visible_baked_ground_patches=len(self._active_baked_ground_patches),
             baked_ground_cache_size=len(self._baked_ground_cache),
             draw_commands=len(commands),
@@ -1515,6 +1519,131 @@ class Renderer:
         value = (x_index * 83492791) ^ (z_index * 2654435761) ^ (phase * 374761393)
         value ^= value >> 16
         value *= 2246822519
+        return value & 0xFFFFFFFF
+
+    def draw_ambient_motes_layer(self, model: GameModel, camera: CameraState) -> int:
+        config = model.config.get("ambient_motes", {})
+        if not bool(config.get("enabled", False)):
+            return 0
+        if bool(config.get("affine_only", True)) and not self.camera_is_affine(camera):
+            return 0
+        if bool(config.get("combat_hidden", True)) and model.combat_session is not None:
+            return 0
+        areas = config.get("areas", ())
+        if not isinstance(areas, (list, tuple)):
+            return 0
+
+        cell_world = max(12.0, float(config.get("cell_world", 64.0)))
+        max_motes = max(0, int(config.get("max_visible_motes", 80)))
+        if max_motes <= 0:
+            return 0
+        total = 0
+        for area in areas:
+            if not isinstance(area, dict):
+                continue
+            area_rect = self.forest_light_world_rect(model.world, area)
+            if area_rect is None:
+                continue
+            draw_rect = self.visible_ground_draw_rect(WorldRect(*area_rect), camera, margin_px=48.0)
+            if draw_rect is None:
+                continue
+            total += self.draw_ambient_motes_area(
+                camera,
+                area,
+                area_rect,
+                draw_rect,
+                cell_world,
+                max_motes - total,
+            )
+            if total >= max_motes:
+                return total
+        return total
+
+    def draw_ambient_motes_area(
+        self,
+        camera: CameraState,
+        area: dict,
+        area_rect: tuple[float, float, float, float],
+        draw_rect: WorldRect,
+        cell_world: float,
+        max_count: int,
+    ) -> int:
+        if max_count <= 0:
+            return 0
+        density = max(0.0, min(float(area.get("density", 0.22)), 1.0))
+        if density <= 0.0:
+            return 0
+        phase = int(area.get("phase", 0))
+        min_y = max(0.0, float(area.get("min_y", 6.0)))
+        max_y = max(min_y, float(area.get("max_y", 36.0)))
+        kind = str(area.get("kind", "green_mote"))
+        color = self.clamped_palette_color(area.get("color", 11))
+        secondary_color = self.clamped_palette_color(area.get("secondary_color", color))
+        start_x = math.floor(draw_rect.min_x / cell_world) - 1
+        end_x = math.ceil(draw_rect.max_x / cell_world) + 1
+        start_z = math.floor(draw_rect.min_z / cell_world) - 1
+        end_z = math.ceil(draw_rect.max_z / cell_world) + 1
+        area_x0, area_z0, area_x1, area_z1 = area_rect
+        count = 0
+        for zi in range(start_z, end_z + 1):
+            for xi in range(start_x, end_x + 1):
+                seed = self._ambient_mote_seed(xi, zi, phase)
+                if ((seed & 1023) / 1023.0) > density:
+                    continue
+                jitter_x = (((seed >> 10) & 63) / 63.0 - 0.5) * 0.84
+                jitter_z = (((seed >> 16) & 63) / 63.0 - 0.5) * 0.84
+                x = (xi + 0.5 + jitter_x) * cell_world
+                z = (zi + 0.5 + jitter_z) * cell_world
+                if not (area_x0 <= x <= area_x1 and area_z0 <= z <= area_z1):
+                    continue
+                if not draw_rect.contains_point(x, z):
+                    continue
+                height_t = ((seed >> 22) & 255) / 255.0
+                y = min_y + (max_y - min_y) * height_t
+                point = camera.project(Vec3(x, y, z))
+                if point is None or not self._screen_point_visible(point, camera, 10.0):
+                    continue
+                self.draw_ambient_mote(
+                    int(point.x), int(point.y), seed, kind, color, secondary_color
+                )
+                count += 1
+                if count >= max_count:
+                    return count
+        return count
+
+    def draw_ambient_mote(
+        self, x: int, y: int, seed: int, kind: str, color: int, secondary_color: int
+    ) -> None:
+        style = seed % 5
+        if kind == "photon":
+            if style in {0, 1}:
+                self.pyxel.pset(x, y, color)
+                self.pyxel.pset(x + 1, y - 1, secondary_color)
+            elif style == 2:
+                self.pyxel.line(x - 1, y, x + 1, y, color)
+                self.pyxel.pset(x, y - 1, secondary_color)
+            else:
+                self.pyxel.pset(x, y, secondary_color)
+            return
+
+        if style == 0:
+            self.pyxel.pset(x, y, color)
+            self.pyxel.pset(x + 1, y, secondary_color)
+        elif style == 1:
+            self.pyxel.pset(x, y, color)
+            self.pyxel.pset(x, y + 1, secondary_color)
+        elif style == 2:
+            self.pyxel.line(x - 1, y, x + 1, y, color)
+        elif style == 3:
+            self.pyxel.pset(x, y, secondary_color)
+            self.pyxel.pset(x + 1, y - 1, color)
+        else:
+            self.pyxel.pset(x, y, color)
+
+    def _ambient_mote_seed(self, x_index: int, z_index: int, phase: int) -> int:
+        value = (x_index * 1597334677) ^ (z_index * 3812015801) ^ (phase * 958689179)
+        value ^= value >> 15
+        value *= 846930887
         return value & 0xFFFFFFFF
 
     def grassland_transition_world(self, area: dict, config: dict) -> float:
