@@ -112,6 +112,8 @@ ENV004-B1 connects the approved `ENV004B_tall_grass_reactive_HEX_v0.2.zip` pack 
 
 ENV004-B1 placement follow-up adds 32 additional small `reactive_grass_tall` instances after device review confirmed the 7-pose motion works. The new instances are deterministic world-data placements concentrated around the meadow-to-forest transition, tree bases, and the northern forest floor. They are non-solid and keep the same `24x24` world size and `reaction_radius=24` as the original `grass_01`, so collision, pathing, camera, combat, and Fuse behavior are unchanged. The existing `grass_01` remains in place as the stable test fixture and nearby query baseline.
 
+LIGHT001 adds a first static forest-light layer. This is not a dynamic lighting system and does not alter sprites, palette remaps, collision, pathing, camera projection, or atmospheric depth. It draws a sparse deterministic world-space pattern of small light flecks over configured forest/grove rectangles during affine exploration only. The layer is culled to the visible ground range, capped by `forest_light.max_visible_spots`, and hidden during combat so battle timing and zoom transitions are not affected. The current values are intended as a low-risk composition prototype before any future light-shaft, cloud-shadow, or particle work.
+
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
 - `concrete_clean_a`: source hash `e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640`

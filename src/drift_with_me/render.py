@@ -142,6 +142,7 @@ class RenderStats:
     visible_static_objects: int = 0
     visible_ground_details: int = 0
     visible_grassland_micro_areas: int = 0
+    visible_forest_light_spots: int = 0
     visible_baked_ground_patches: int = 0
     baked_ground_cache_size: int = 0
     draw_commands: int = 0
@@ -212,6 +213,7 @@ class Renderer:
             tuple[GrasslandTransitionCell, ...],
         ] = {}
         self._visible_grassland_micro_areas = 0
+        self._visible_forest_light_spots = 0
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -228,6 +230,7 @@ class Renderer:
         self.draw_ground(model.world, camera)
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
+        self._visible_forest_light_spots = self.draw_forest_light_layer(model, camera)
         self.draw_shallow_water_tiles(model, camera)
         self.draw_shallow_water_shoreline_tiles(model, camera)
         self.draw_shallow_water_symbols(model, camera, presentation_time)
@@ -517,6 +520,7 @@ class Renderer:
             visible_static_objects=len(visible_objects),
             visible_ground_details=len(visible_details),
             visible_grassland_micro_areas=self._visible_grassland_micro_areas,
+            visible_forest_light_spots=self._visible_forest_light_spots,
             visible_baked_ground_patches=len(self._active_baked_ground_patches),
             baked_ground_cache_size=len(self._baked_ground_cache),
             draw_commands=len(commands),
@@ -1383,6 +1387,135 @@ class Renderer:
         if not all(math.isfinite(value) for value in (min_x, min_z, max_x, max_z)):
             return None
         return min_x, min_z, max_x, max_z
+
+    def draw_forest_light_layer(self, model: GameModel, camera: CameraState) -> int:
+        config = model.config.get("forest_light", {})
+        if not bool(config.get("enabled", False)):
+            return 0
+        if bool(config.get("affine_only", True)) and not self.camera_is_affine(camera):
+            return 0
+        if bool(config.get("combat_hidden", True)) and model.combat_session is not None:
+            return 0
+        areas = config.get("areas", ())
+        if not isinstance(areas, (list, tuple)):
+            return 0
+
+        cell_world = max(16.0, float(config.get("cell_world", 72.0)))
+        max_spots = max(0, int(config.get("max_visible_spots", 56)))
+        if max_spots <= 0:
+            return 0
+        color = self.clamped_palette_color(config.get("color", 7))
+        secondary_color = self.clamped_palette_color(config.get("secondary_color", color))
+        total = 0
+        for area in areas:
+            if not isinstance(area, dict):
+                continue
+            area_rect = self.forest_light_world_rect(model.world, area)
+            if area_rect is None:
+                continue
+            draw_rect = self.visible_ground_draw_rect(WorldRect(*area_rect), camera, margin_px=32.0)
+            if draw_rect is None:
+                continue
+            total += self.draw_forest_light_area(
+                camera,
+                area,
+                area_rect,
+                draw_rect,
+                cell_world,
+                color,
+                secondary_color,
+                max_spots - total,
+            )
+            if total >= max_spots:
+                return total
+        return total
+
+    def forest_light_world_rect(
+        self, world: WorldData, area: dict
+    ) -> tuple[float, float, float, float] | None:
+        if area.get("bounds_ref") == "visual_ground":
+            rect = world.visual_ground_rect
+            return rect.min_x, rect.min_z, rect.max_x, rect.max_z
+        raw_rect = area.get("rect_xz")
+        if not isinstance(raw_rect, (list, tuple)) or len(raw_rect) != 4:
+            return None
+        try:
+            x0, z0, x1, z1 = (float(value) for value in raw_rect)
+        except (TypeError, ValueError):
+            return None
+        if not all(math.isfinite(value) for value in (x0, z0, x1, z1)):
+            return None
+        if abs(x1 - x0) <= 1e-6 or abs(z1 - z0) <= 1e-6:
+            return None
+        return min(x0, x1), min(z0, z1), max(x0, x1), max(z0, z1)
+
+    def draw_forest_light_area(
+        self,
+        camera: CameraState,
+        area: dict,
+        area_rect: tuple[float, float, float, float],
+        draw_rect: WorldRect,
+        cell_world: float,
+        color: int,
+        secondary_color: int,
+        max_count: int,
+    ) -> int:
+        if max_count <= 0:
+            return 0
+        density = max(0.0, min(float(area.get("density", 0.28)), 1.0))
+        if density <= 0.0:
+            return 0
+        phase = int(area.get("phase", 0))
+        start_x = math.floor(draw_rect.min_x / cell_world) - 1
+        end_x = math.ceil(draw_rect.max_x / cell_world) + 1
+        start_z = math.floor(draw_rect.min_z / cell_world) - 1
+        end_z = math.ceil(draw_rect.max_z / cell_world) + 1
+        area_x0, area_z0, area_x1, area_z1 = area_rect
+        count = 0
+        for zi in range(start_z, end_z + 1):
+            for xi in range(start_x, end_x + 1):
+                seed = self._forest_light_seed(xi, zi, phase)
+                if ((seed & 1023) / 1023.0) > density:
+                    continue
+                jitter_x = (((seed >> 10) & 31) / 31.0 - 0.5) * 0.72
+                jitter_z = (((seed >> 15) & 31) / 31.0 - 0.5) * 0.72
+                x = (xi + 0.5 + jitter_x) * cell_world
+                z = (zi + 0.5 + jitter_z) * cell_world
+                if not (area_x0 <= x <= area_x1 and area_z0 <= z <= area_z1):
+                    continue
+                if not draw_rect.contains_point(x, z):
+                    continue
+                point = camera.project(Vec3(x, 0.0, z))
+                if point is None or not self._screen_point_visible(point, camera, 8.0):
+                    continue
+                self.draw_forest_light_spot(
+                    int(point.x), int(point.y), seed, color, secondary_color
+                )
+                count += 1
+                if count >= max_count:
+                    return count
+        return count
+
+    def draw_forest_light_spot(
+        self, x: int, y: int, seed: int, color: int, secondary_color: int
+    ) -> None:
+        style = seed % 4
+        if style == 0:
+            self.pyxel.pset(x, y, color)
+            self.pyxel.pset(x + 1, y, secondary_color)
+        elif style == 1:
+            self.pyxel.line(x - 2, y, x + 2, y - 1, color)
+        elif style == 2:
+            self.pyxel.rect(x - 1, y - 1, 2, 1, secondary_color)
+            self.pyxel.pset(x + 1, y, color)
+        else:
+            self.pyxel.pset(x, y, secondary_color)
+
+    def _forest_light_seed(self, x_index: int, z_index: int, phase: int) -> int:
+        value = (x_index * 83492791) ^ (z_index * 2654435761) ^ (phase * 374761393)
+        value ^= value >> 16
+        value *= 2246822519
+        return value & 0xFFFFFFFF
 
     def grassland_transition_world(self, area: dict, config: dict) -> float:
         try:

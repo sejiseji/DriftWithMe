@@ -381,9 +381,22 @@ SHORELINE_TILE_IDS = frozenset(
 class RecordingPyxel:
     def __init__(self) -> None:
         self.blt_calls = []
+        self.draw_calls = []
 
     def blt(self, *args, **kwargs) -> None:
         self.blt_calls.append((args, kwargs))
+
+    def pset(self, *args, **kwargs) -> None:
+        self.draw_calls.append(("pset", args, kwargs))
+
+    def line(self, *args, **kwargs) -> None:
+        self.draw_calls.append(("line", args, kwargs))
+
+    def rect(self, *args, **kwargs) -> None:
+        self.draw_calls.append(("rect", args, kwargs))
+
+    def circb(self, *args, **kwargs) -> None:
+        self.draw_calls.append(("circb", args, kwargs))
 
 
 def pixel_hash(rows: tuple[str, ...]) -> str:
@@ -1268,6 +1281,33 @@ assert model.config["shallow_water"]["shoreline_tiles"]["top"] == "shore_right_6
 assert model.config["shallow_water"]["shoreline_tiles"]["bottom"] == "shore_top_64"
 assert model.config["shallow_water"]["shoreline_tiles"]["left"] == "shore_left_64"
 assert model.config["shallow_water"]["shoreline_tiles"]["right"] == "shore_bottom_64"
+assert model.config["forest_light"]["enabled"] is True
+assert model.config["forest_light"]["combat_hidden"] is True
+assert model.config["forest_light"]["cell_world"] == 72.0
+model.config["forest_light"]["areas"] = [
+    {{
+        "id": "test_visible_forest_light",
+        "rect_xz": [
+            model.player.x - 96.0,
+            model.player.z - 96.0,
+            model.player.x + 96.0,
+            model.player.z + 96.0,
+        ],
+        "density": 1.0,
+        "phase": 5,
+    }}
+]
+forest_light_camera = affine_camera_from_perspective(
+    camera,
+    AffineProjectionProfile.from_config(runtime.raw),
+    base_distance=float(runtime.raw["camera"]["base_distance"]),
+)
+assert renderer.draw_forest_light_layer(model, camera) == 0
+forest_light_count = renderer.draw_forest_light_layer(model, forest_light_camera)
+assert forest_light_count > 0
+model.combat_session = object()
+assert renderer.draw_forest_light_layer(model, forest_light_camera) == 0
+model.combat_session = None
 water_tile_calls = []
 renderer.draw_ground_source_asset = (
     lambda asset, camera, x, z: water_tile_calls.append((asset.definition.asset_id, x, z))
