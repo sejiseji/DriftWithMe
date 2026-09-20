@@ -692,7 +692,40 @@
           0.64,
           0.88
         ]
-      ]
+      ],
+      "enemy_profiles": {
+        "abnormal": {
+          "timing_bar_px": [
+            96,
+            42,
+            320,
+            46
+          ],
+          "marker_count": 4,
+          "success_min_hits": 2,
+          "perfect_hits": 4,
+          "patterns_normalized": [
+            [
+              0.28,
+              0.48,
+              0.68,
+              0.88
+            ],
+            [
+              0.26,
+              0.46,
+              0.66,
+              0.86
+            ],
+            [
+              0.3,
+              0.5,
+              0.7,
+              0.9
+            ]
+          ]
+        }
+      }
     },
     "time_scale": {
       "exploration": 1.0,

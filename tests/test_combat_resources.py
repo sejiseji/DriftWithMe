@@ -96,6 +96,22 @@ def start_fast_combat(model: GameModel, camera: CameraState):
     return enemy
 
 
+def start_fast_abnormal_combat(model: GameModel, camera: CameraState):
+    enable_fast_combat(model)
+    model.player.x = 730.0
+    model.player.z = 384.0
+    enemy = abnormal_enemy(model)
+    enemy.x = 737.0
+    enemy.z = 384.0
+    enemy.state = "APPROACH"
+    events: list = []
+    model.start_contact_combat(enemy, events)
+    assert [event.kind for event in events] == ["combat_started"]
+    assert model.combat_session is not None
+    assert model.combat_session.enemy_id == enemy.id
+    return enemy
+
+
 def test_contact_combat_starts_with_entry_settle_phase_before_windup() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)
@@ -719,6 +735,31 @@ def test_bat002_parry_patterns_have_three_markers_with_safe_spacing() -> None:
         assert all(b - a >= radius * 2.0 for a, b in zip(pattern, pattern[1:], strict=False))
 
 
+def test_abnormal_urchin_uses_four_markers_and_longer_timing_bar() -> None:
+    model, camera = make_model()
+    start_fast_abnormal_combat(model, camera)
+    session = model.combat_session
+
+    assert session is not None
+    assert len(session.marker_positions) == 4
+    assert len(session.marker_judgements) == 4
+    assert model.combat_perfect_hits(session) == 4
+    assert model.combat_success_min_hits(session) == 2
+    assert model.combat_parry_track_width_px(session=session) > model.combat_parry_track_width_px(
+        enemy_kind="normal"
+    )
+
+    patterns = model.combat_marker_patterns("abnormal")
+    radius = model.combat_parry_hit_radius_normalized(enemy_kind="abnormal")
+    assert patterns
+    for pattern in patterns:
+        assert len(pattern) == 4
+        assert tuple(sorted(pattern)) == pattern
+        assert pattern[0] >= radius
+        assert pattern[-1] <= 1.0 - radius
+        assert all(b - a >= radius * 2.0 for a, b in zip(pattern, pattern[1:], strict=False))
+
+
 def test_bat002_slider_advances_monotonically_during_parry_timing() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)
@@ -834,6 +875,35 @@ def test_bat002_three_hits_sets_perfect_result_only() -> None:
     assert session.successful_defense_count == 0
     assert session.outcome is None
     assert session.marker_judgements == ("HIT", "HIT", "HIT")
+
+
+@pytest.mark.parametrize(
+    ("hit_count", "expected_result"),
+    [
+        (1, "failure"),
+        (2, "defense_success"),
+        (3, "defense_success"),
+        (4, "perfect"),
+    ],
+)
+def test_abnormal_urchin_four_marker_thresholds(hit_count: int, expected_result: str) -> None:
+    model, camera = make_model()
+    start_fast_abnormal_combat(model, camera)
+    session = resolve_round_with_hits(model, camera, hit_count)
+
+    assert len(session.marker_positions) == 4
+    assert session.hit_count == hit_count
+    assert session.result == expected_result
+    if expected_result == "failure":
+        assert session.successful_defense_count == 0
+        assert session.failed_round_count == 1
+    elif expected_result == "defense_success":
+        assert session.successful_defense_count == 1
+        assert session.failed_round_count == 0
+    else:
+        assert session.successful_defense_count == 0
+        assert session.failed_round_count == 0
+        assert session.outcome is None
 
 
 def test_bat002_preimpact_slow_does_not_slow_timing_bar() -> None:

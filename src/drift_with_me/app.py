@@ -1654,17 +1654,8 @@ class DriftWithMeApp:
             return "BUBBLE"
         return "NONE"
 
-    def combat_timing_bar_rect(self) -> Rect:
-        combat = self.runtime.raw.get("combat_v1", {})
-        presentation = (
-            combat.get("presentation_medium_512x236", {}) if isinstance(combat, dict) else {}
-        )
-        candidates = (
-            presentation.get("timing_bar_candidates", []) if isinstance(presentation, dict) else []
-        )
-        raw_rect = (
-            candidates[0] if isinstance(candidates, list) and candidates else [154, 54, 204, 24]
-        )
+    def combat_timing_bar_rect(self, session=None) -> Rect:
+        raw_rect = self.model.combat_parry_timing_bar_rect_ref(session=session)
         scale_x = self.runtime.screen_width / 512.0
         scale_y = self.runtime.screen_height / 236.0
         return Rect(
@@ -1683,11 +1674,12 @@ class DriftWithMeApp:
         }:
             return
         pyxel = self.pyxel
-        rect = self.combat_timing_bar_rect()
+        rect = self.combat_timing_bar_rect(session)
         self.draw_panel_frame(rect, fill=0, inner=5)
-        parry = self.runtime.raw.get("combat_v1", {}).get("parry", {})
         scale_y = self.runtime.screen_height / 236.0
-        padding = float(parry.get("track_padding_px", 12)) * (self.runtime.screen_width / 512.0)
+        padding = float(self.model.combat_parry_value("track_padding_px", 12, session=session)) * (
+            self.runtime.screen_width / 512.0
+        )
         track_x = int(rect.x + padding)
         track_w = max(8, int(rect.width - padding * 2))
         track_h = max(6, int(8 * scale_y))

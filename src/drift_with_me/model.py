@@ -1927,7 +1927,7 @@ class GameModel:
         events: list[GameEvent],
     ) -> None:
         sweep_sec = self.combat_parry_sweep_sec()
-        radius = self.combat_parry_hit_radius_normalized()
+        radius = self.combat_parry_hit_radius_normalized(session)
         session.timing_elapsed_sec = min(sweep_sec, session.timing_elapsed_sec + max(0.0, dt))
         slider = self.combat_timing_slider_position(session)
         if slider is None:
@@ -2030,9 +2030,9 @@ class GameModel:
 
     def resolve_combat_round(self, session: CombatSession, events: list[GameEvent]) -> None:
         hit_count = sum(1 for item in session.marker_judgements if item == "HIT")
-        if hit_count >= self.combat_perfect_hits():
+        if hit_count >= self.combat_perfect_hits(session):
             result = "perfect"
-        elif hit_count >= self.combat_success_min_hits():
+        elif hit_count >= self.combat_success_min_hits(session):
             result = "defense_success"
         else:
             result = "failure"
@@ -2082,6 +2082,36 @@ class GameModel:
     def combat_parry_config(self) -> dict[str, Any]:
         parry = self.combat_v1_config().get("parry", {})
         return parry if isinstance(parry, dict) else {}
+
+    def combat_parry_profile_config(self, enemy_kind: str | None = None) -> dict[str, Any]:
+        parry = self.combat_parry_config()
+        if enemy_kind:
+            profiles = parry.get("enemy_profiles", {})
+            if isinstance(profiles, dict):
+                profile = profiles.get(enemy_kind, {})
+                if isinstance(profile, dict):
+                    return profile
+        return {}
+
+    def combat_session_enemy_kind(self, session: CombatSession | None = None) -> str | None:
+        session = self.combat_session if session is None else session
+        if session is None:
+            return None
+        enemy = self.enemy_by_id(session.enemy_id)
+        return None if enemy is None else enemy.kind
+
+    def combat_parry_value(
+        self,
+        key: str,
+        default: Any,
+        enemy_kind: str | None = None,
+        session: CombatSession | None = None,
+    ) -> Any:
+        kind = enemy_kind if enemy_kind is not None else self.combat_session_enemy_kind(session)
+        profile = self.combat_parry_profile_config(kind)
+        if key in profile:
+            return profile[key]
+        return self.combat_parry_config().get(key, default)
 
     def combat_time_scale_config(self) -> dict[str, Any]:
         time_scale = self.combat_v1_config().get("time_scale", {})
@@ -2157,31 +2187,74 @@ class GameModel:
     def combat_parry_input_debounce_sec(self) -> float:
         return max(0.0, float(self.combat_parry_config().get("input_debounce_sec", 0.08)))
 
-    def combat_parry_track_width_px(self) -> float:
+    def combat_parry_timing_bar_rect_ref(
+        self,
+        enemy_kind: str | None = None,
+        session: CombatSession | None = None,
+    ) -> tuple[float, float, float, float]:
         presentation = self.combat_v1_config().get("presentation_medium_512x236", {})
-        candidates = []
+        fallback = (126.0, 42.0, 260.0, 46.0)
         if isinstance(presentation, dict):
+            raw_override = self.combat_parry_value(
+                "timing_bar_px", None, enemy_kind=enemy_kind, session=session
+            )
+            if isinstance(raw_override, list | tuple) and len(raw_override) >= 4:
+                return tuple(float(value) for value in raw_override[:4])
             candidates = presentation.get("timing_bar_candidates", [])
-        width = 204.0
-        if isinstance(candidates, list) and candidates:
-            first = candidates[0]
-            if isinstance(first, list | tuple) and len(first) >= 3:
-                width = float(first[2])
-        padding = max(0.0, float(self.combat_parry_config().get("track_padding_px", 12)))
+            if isinstance(candidates, list) and candidates:
+                first = candidates[0]
+                if isinstance(first, list | tuple) and len(first) >= 4:
+                    return tuple(float(value) for value in first[:4])
+        return fallback
+
+    def combat_parry_track_width_px(
+        self,
+        enemy_kind: str | None = None,
+        session: CombatSession | None = None,
+    ) -> float:
+        _x, _y, width, _height = self.combat_parry_timing_bar_rect_ref(
+            enemy_kind=enemy_kind, session=session
+        )
+        padding = max(
+            0.0,
+            float(self.combat_parry_value("track_padding_px", 12, enemy_kind, session)),
+        )
         return max(1.0, width - padding * 2.0)
 
-    def combat_parry_hit_radius_normalized(self) -> float:
-        radius_px = max(0.0, float(self.combat_parry_config().get("hit_radius_px", 9)))
-        return min(0.5, radius_px / self.combat_parry_track_width_px())
+    def combat_parry_hit_radius_normalized(
+        self,
+        session: CombatSession | None = None,
+        enemy_kind: str | None = None,
+    ) -> float:
+        radius_px = max(
+            0.0,
+            float(self.combat_parry_value("hit_radius_px", 9, enemy_kind, session)),
+        )
+        return min(0.5, radius_px / self.combat_parry_track_width_px(enemy_kind, session))
 
-    def combat_parry_gate_radius_normalized(self) -> float:
-        radius_px = max(0.0, float(self.combat_parry_config().get("gate_radius_px", 18)))
-        return min(0.5, radius_px / self.combat_parry_track_width_px())
+    def combat_parry_gate_radius_normalized(
+        self,
+        session: CombatSession | None = None,
+        enemy_kind: str | None = None,
+    ) -> float:
+        radius_px = max(
+            0.0,
+            float(self.combat_parry_value("gate_radius_px", 18, enemy_kind, session)),
+        )
+        return min(0.5, radius_px / self.combat_parry_track_width_px(enemy_kind, session))
 
-    def combat_success_min_hits(self) -> int:
+    def combat_success_min_hits(self, session: CombatSession | None = None) -> int:
+        enemy_kind = self.combat_session_enemy_kind(session)
+        profile = self.combat_parry_profile_config(enemy_kind)
+        if "success_min_hits" in profile:
+            return max(1, int(profile["success_min_hits"]))
         return max(1, int(self.combat_defense_config().get("normal_success_min_hits", 1)))
 
-    def combat_perfect_hits(self) -> int:
+    def combat_perfect_hits(self, session: CombatSession | None = None) -> int:
+        enemy_kind = self.combat_session_enemy_kind(session)
+        profile = self.combat_parry_profile_config(enemy_kind)
+        if "perfect_hits" in profile:
+            return max(1, int(profile["perfect_hits"]))
         return max(1, int(self.combat_defense_config().get("perfect_hits", 3)))
 
     def combat_successful_rounds_to_deflect(self) -> int:
@@ -2537,14 +2610,18 @@ class GameModel:
             return None
         return max(0.0, min(session.timing_elapsed_sec / self.combat_parry_sweep_sec(), 1.0))
 
-    def combat_marker_patterns(self) -> tuple[tuple[float, ...], ...]:
-        parry = self.combat_parry_config()
-        marker_count = max(1, int(parry.get("marker_count", 3)))
-        raw_patterns = parry.get("patterns_normalized", [])
+    def combat_marker_count_for_enemy_kind(self, enemy_kind: str | None = None) -> int:
+        return max(1, int(self.combat_parry_value("marker_count", 3, enemy_kind=enemy_kind)))
+
+    def combat_marker_patterns(
+        self, enemy_kind: str | None = None
+    ) -> tuple[tuple[float, ...], ...]:
+        marker_count = self.combat_marker_count_for_enemy_kind(enemy_kind)
+        raw_patterns = self.combat_parry_value("patterns_normalized", [], enemy_kind=enemy_kind)
         if not isinstance(raw_patterns, list):
             raw_patterns = []
-        hit_radius = self.combat_parry_hit_radius_normalized()
-        gate_radius = self.combat_parry_gate_radius_normalized()
+        hit_radius = self.combat_parry_hit_radius_normalized(enemy_kind=enemy_kind)
+        gate_radius = self.combat_parry_gate_radius_normalized(enemy_kind=enemy_kind)
         edge_margin = min(0.45, max(hit_radius, gate_radius * 0.5))
         min_gap = max(hit_radius * 2.0, 0.12)
         patterns: list[tuple[float, ...]] = []
@@ -2561,10 +2638,12 @@ class GameModel:
             patterns.append(pattern)
         if patterns:
             return tuple(patterns)
+        if marker_count == 4:
+            return ((0.24, 0.44, 0.64, 0.84),)
         return ((0.22, 0.5, 0.78),)
 
     def combat_pattern_for_enemy(self, enemy: EnemyState) -> tuple[str, tuple[float, ...]]:
-        patterns = self.combat_marker_patterns()
+        patterns = self.combat_marker_patterns(enemy.kind)
         seed = sum(ord(char) for char in enemy.id) + self.debug.player_contacts
         index = seed % len(patterns)
         return f"pattern_{index:02d}", patterns[index]
