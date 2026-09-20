@@ -663,7 +663,7 @@
       "sweep_sec": 1.75,
       "track_padding_px": 16,
       "marker_count": 3,
-      "hit_radius_px": 10,
+      "hit_radius_px": 14,
       "gate_radius_px": 20,
       "input_debounce_sec": 0.08,
       "patterns_normalized": [
