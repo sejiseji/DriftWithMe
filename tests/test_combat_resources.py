@@ -1363,10 +1363,11 @@ def test_combat_defeat_special_moves_buddy_and_fades_enemy() -> None:
     session.phase = "VICTORY_CUE"
     total = model.combat_deflect_knockback_sec() + model.combat_victory_cue_sec()
     session.phase_elapsed_sec = total * 0.89 - model.combat_deflect_knockback_sec()
-    assert renderer.combat_defeat_enemy_visibility(model, enemy) == pytest.approx(1.0)
+    visibility_mid_burst = renderer.combat_defeat_enemy_visibility(model, enemy)
+    assert 0.5 < visibility_mid_burst < 1.0
 
     session.phase_elapsed_sec = total * 0.95 - model.combat_deflect_knockback_sec()
-    assert renderer.combat_defeat_enemy_visibility(model, enemy) < 1.0
+    assert renderer.combat_defeat_enemy_visibility(model, enemy) < visibility_mid_burst
 
     session.phase = "COMBAT_RESTORE_JUMP"
     session.phase_elapsed_sec = 0.0

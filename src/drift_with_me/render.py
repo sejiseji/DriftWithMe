@@ -784,9 +784,9 @@ class Renderer:
         ):
             return 1.0
         progress = self.combat_defeat_special_progress(model)
-        if progress < 0.91:
+        if progress < 0.86:
             return 1.0
-        return max(0.0, 1.0 - _smoothstep((progress - 0.91) / 0.09))
+        return max(0.0, 1.0 - _smoothstep((progress - 0.86) / 0.14))
 
     def combat_defeat_enemy_flicker_hidden(self, model: GameModel, enemy) -> bool:
         visibility = self.combat_defeat_enemy_visibility(model, enemy)
@@ -3939,42 +3939,63 @@ class Renderer:
             previous_y = current_y
 
     def draw_combat_enemy_disappear(self, target: ProjectedPoint, progress: float) -> None:
-        if progress < 0.9:
+        if progress < 0.84:
             return
-        vanish = _smoothstep((progress - 0.9) / 0.1)
+        vanish = _smoothstep((progress - 0.84) / 0.16)
         x = int(target.x)
         y = int(target.y)
-        radius = 5 + int(18 * vanish)
-        self.pyxel.circb(x, y, radius, 10 if vanish < 0.7 else 13)
-        if vanish < 0.42:
-            core = 2 + int((0.42 - vanish) * 8)
-            self.pyxel.circ(x, y, max(2, core), 7)
-            self.pyxel.circb(x, y, max(4, core + 2), 10)
-        for index in range(16):
-            angle = index * math.tau / 16.0 + vanish * math.tau * 0.35
-            distance = radius * (0.3 + 0.95 * ((index % 4) / 3.0))
+        snap = _smoothstep(min(vanish / 0.42, 1.0))
+        scatter = _smoothstep(max(0.0, (vanish - 0.18) / 0.82))
+        radius = 6 + int(26 * scatter)
+
+        if vanish < 0.58:
+            flash = 6 + int(8 * snap)
+            self.pyxel.circ(x, y, flash, 7)
+            self.pyxel.circb(x, y, flash + 3, 10)
+            self.pyxel.circb(x, y, flash + 6, 13)
+
+        self.pyxel.circb(x, y, radius, 7 if vanish < 0.55 else 13)
+        self.pyxel.circb(x, y, max(3, radius - 5), 10)
+
+        for index in range(24):
+            angle = index * math.tau / 24.0 + vanish * math.tau * 0.22
+            arm = 0.42 + 0.9 * ((index % 5) / 4.0)
+            distance = radius * arm
             sx = int(x + math.cos(angle) * distance)
             sy = int(y + math.sin(angle) * distance * 0.62)
-            color = (10, 7, 13, 9, 5)[index % 5]
-            if index % 2 == 0:
-                inner = max(3.0, distance - 5.0 - (index % 3) * 2.0)
+            color = (7, 10, 13, 9, 5, 7)[index % 6]
+            if index % 2 == 0 or vanish < 0.48:
+                inner = max(3.0, distance - 9.0 - (index % 4) * 2.0)
                 ix = int(x + math.cos(angle) * inner)
                 iy = int(y + math.sin(angle) * inner * 0.62)
                 self.pyxel.line(ix, iy, sx, sy, color)
+                if vanish < 0.62 and index % 4 == 0:
+                    self.pyxel.line(ix, iy + 1, sx, sy + 1, color)
             self.pyxel.pset(sx, sy, color)
             if index % 3 == 0:
                 self.pyxel.pset(sx + 1, sy, color)
             if index % 5 == 0:
                 self.pyxel.pset(sx, sy + 1, color)
-        for index in range(8):
-            angle = index * math.tau / 8.0 + 0.4
-            inner = radius * (0.22 + vanish * 0.16)
-            outer = radius * (0.78 + vanish * 0.52)
+
+        for index in range(12):
+            angle = index * math.tau / 12.0 + 0.4
+            inner = radius * (0.18 + scatter * 0.2)
+            outer = radius * (0.72 + scatter * 0.6)
             sx = int(x + math.cos(angle) * inner)
             sy = int(y + math.sin(angle) * inner * 0.58)
             ex = int(x + math.cos(angle) * outer)
             ey = int(y + math.sin(angle) * outer * 0.58)
             self.pyxel.line(sx, sy, ex, ey, 7 if index % 2 == 0 else 10)
+
+        for index in range(6):
+            angle = index * math.tau / 6.0 + vanish * 1.7
+            distance = radius * (0.65 + 0.15 * (index % 2))
+            sx = int(x + math.cos(angle) * distance)
+            sy = int(y + math.sin(angle) * distance * 0.62)
+            self.pyxel.line(sx - 2, sy, sx + 2, sy, 7)
+            self.pyxel.line(sx, sy - 2, sx, sy + 2, 7)
+            if index % 2 == 0:
+                self.pyxel.pset(sx + 1, sy + 1, 10)
 
     def draw_combat_victory_cue(self, model: GameModel, camera: CameraState) -> None:
         session = model.combat_session
