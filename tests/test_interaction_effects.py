@@ -844,7 +844,9 @@ def test_env005_shallow_water_emits_ripple_and_wake_inside_area() -> None:
     assert ripple.end_radius == pytest.approx(11.0)
     assert ripple.color == 12
     assert ripple.thickness == 2
+    assert ripple.layer == "background"
     wake = effects.strokes[0]
+    assert wake.layer == "background"
     assert wake.end_x == pytest.approx(ripple.x)
     assert wake.end_z == pytest.approx(ripple.z)
     assert wake.start_x < wake.end_x

@@ -230,6 +230,7 @@ class Renderer:
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
         self.draw_shallow_water_tiles(model, camera)
         self.draw_ground_surfaces(model, camera)
+        self.draw_background_effects(camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
         self.draw_safe_zones(model.world, camera)
         self.draw_auto_move_goal(model, camera, presentation_time)
@@ -4011,20 +4012,34 @@ class Renderer:
     ) -> None:
         if effects is None:
             return
-        self.draw_world_rings(camera, effects)
-        self.draw_world_strokes(camera, effects)
+        self.draw_world_rings(camera, effects, layer="foreground")
+        self.draw_world_strokes(camera, effects, layer="foreground")
         self.draw_world_particles(camera, effects)
         self.draw_actor_emotes(model, camera, effects)
         self.draw_screen_cues(camera, effects)
 
-    def draw_world_rings(self, camera: CameraState, effects: EffectSystem) -> None:
+    def draw_background_effects(self, camera: CameraState, effects: EffectSystem | None) -> None:
+        if effects is None:
+            return
+        self.draw_world_rings(camera, effects, layer="background")
+        self.draw_world_strokes(camera, effects, layer="background")
+
+    def draw_world_rings(
+        self, camera: CameraState, effects: EffectSystem, *, layer: str | None = None
+    ) -> None:
         for ring in effects.rings:
+            if layer is not None and ring.layer != layer:
+                continue
             self.draw_world_circle(
                 camera, ring.x, ring.z, ring.radius, ring.color, thickness=ring.thickness
             )
 
-    def draw_world_strokes(self, camera: CameraState, effects: EffectSystem) -> None:
+    def draw_world_strokes(
+        self, camera: CameraState, effects: EffectSystem, *, layer: str | None = None
+    ) -> None:
         for stroke in effects.strokes:
+            if layer is not None and stroke.layer != layer:
+                continue
             self.draw_world_line(
                 camera,
                 Vec3(stroke.start_x, stroke.start_y, stroke.start_z),
