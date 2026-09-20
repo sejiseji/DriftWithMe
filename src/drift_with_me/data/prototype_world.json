@@ -1770,6 +1770,176 @@
       "reaction_radius": 24.0
     },
     {
+      "id": "grass_low_12",
+      "kind": "reactive_prop",
+      "position": [
+        210.0,
+        0.0,
+        690.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_low_13",
+      "kind": "reactive_prop",
+      "position": [
+        306.0,
+        0.0,
+        680.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_low_14",
+      "kind": "reactive_prop",
+      "position": [
+        438.0,
+        0.0,
+        720.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_low_15",
+      "kind": "reactive_prop",
+      "position": [
+        578.0,
+        0.0,
+        718.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_low_16",
+      "kind": "reactive_prop",
+      "position": [
+        646.0,
+        0.0,
+        740.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_low_17",
+      "kind": "reactive_prop",
+      "position": [
+        736.0,
+        0.0,
+        840.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_low_18",
+      "kind": "reactive_prop",
+      "position": [
+        864.0,
+        0.0,
+        680.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_low_19",
+      "kind": "reactive_prop",
+      "position": [
+        936.0,
+        0.0,
+        760.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_low_20",
+      "kind": "reactive_prop",
+      "position": [
+        130.0,
+        0.0,
+        860.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
+      "id": "grass_low_21",
+      "kind": "reactive_prop",
+      "position": [
+        340.0,
+        0.0,
+        910.0
+      ],
+      "visual": "reactive_grass_low",
+      "sprite_world_size": [
+        28.0,
+        28.0
+      ],
+      "solid": false,
+      "animation": "idle_2_frames",
+      "reaction_radius": 24.0
+    },
+    {
       "id": "grassland_tall_a_05",
       "kind": "reactive_prop",
       "position": [

@@ -114,6 +114,8 @@ ENV004-B1 placement follow-up adds 32 additional small `reactive_grass_tall` ins
 
 The static hard-grass follow-up adds 8 more `grass_patch_tall_b` upright billboard instances around the northern forest edge, giant-tree approach, and east-side meadow. These are visual-only, non-solid placements and intentionally remain outside the reactive pose profile until a dedicated hard-grass/reed animation pack is supplied. They use the existing `52x52` world size, atmospheric depth path, and fixed root/depth anchor; no runtime deformation, collision change, camera change, combat trigger, or new asset source is introduced.
 
+The forest understory pass adds 10 more `reactive_grass_low` upright billboard instances along the north forest floor and meadow-to-forest paths. These low-grass placements are also visual-only and remain outside the reactive animation profile. The goal is to reduce empty forest ground without adding collision, changing movement rules, or reintroducing flattened ground-decal grass.
+
 LIGHT001 adds a first static forest-light layer. This is not a dynamic lighting system and does not alter sprites, palette remaps, collision, pathing, camera projection, or atmospheric depth. It draws a sparse deterministic world-space pattern of small light flecks over configured forest/grove rectangles during affine exploration only. The layer is culled to the visible ground range, capped by `forest_light.max_visible_spots`, and hidden during combat so battle timing and zoom transitions are not affected. The current values are intended as a low-risk composition prototype before any future light-shaft, cloud-shadow, or particle work.
 
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:

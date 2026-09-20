@@ -368,6 +368,9 @@ def test_env004_low_grass_is_not_reactive_until_explicitly_profiled() -> None:
 
     assert low_grass.visual == "reactive_grass_low"
     assert effects.reactive_environment_profile(low_grass) is None
+    low_grass_instances = [obj for obj in model.world.objects if obj.visual == "reactive_grass_low"]
+    assert len(low_grass_instances) >= 20
+    assert all(effects.reactive_environment_profile(obj) is None for obj in low_grass_instances)
 
 
 def test_reactive_environment_keeps_minimum_strength_at_trigger_edge() -> None:
