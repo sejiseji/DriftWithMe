@@ -208,6 +208,8 @@ class GameModel:
         self.auto_move_goal: tuple[float, float] | None = None
         self.auto_move_path: list[tuple[float, float]] = []
         self.auto_move_stuck_elapsed = 0.0
+        self.manual_velocity_x = 0.0
+        self.manual_velocity_z = 0.0
         self.combat_session: CombatSession | None = None
         self.combat_reentry_cooldowns: dict[str, float] = {}
         self.buddy_hard_follow_suppressed_remaining = 0.0
@@ -451,10 +453,11 @@ class GameModel:
                 intent.screen_y,
             )
             move_speed = float(self.config["player"]["move_speed"])
-            distance = move_speed * max(0.0, min(intent.strength, 1.0)) * dt
-            distance *= self.manual_screen_speed_scale(camera, direction)
-            delta_x = direction.x * distance
-            delta_z = direction.y * distance
+            speed = move_speed * max(0.0, min(intent.strength, 1.0))
+            speed *= self.manual_screen_speed_scale(camera, direction)
+            delta_x, delta_z = self.manual_inertia_delta(
+                direction.x * speed, direction.y * speed, dt
+            )
             self.move_player_by_delta(delta_x, delta_z)
         elif (
             not intent.barrier
@@ -463,7 +466,10 @@ class GameModel:
             and self.player.stun_remaining <= 0.0
             and self.auto_move_goal is not None
         ):
+            self.reset_manual_velocity()
             self.update_auto_move(events, dt)
+        else:
+            self.reset_manual_velocity()
 
         self.refresh_active_enemies()
         self.update_enemies(dt, events)
@@ -476,6 +482,35 @@ class GameModel:
 
         self.last_events = events
         return events
+
+    def manual_inertia_delta(
+        self, target_vx: float, target_vz: float, dt: float
+    ) -> tuple[float, float]:
+        player_config = self.config.get("player", {})
+        if not bool(player_config.get("manual_inertia_enabled", True)):
+            self.manual_velocity_x = target_vx
+            self.manual_velocity_z = target_vz
+            return target_vx * dt, target_vz * dt
+        accel_tau = max(1e-6, float(player_config.get("manual_inertia_accel_tau_sec", 0.08)))
+        reverse_tau = max(
+            accel_tau, float(player_config.get("manual_inertia_reverse_tau_sec", 0.18))
+        )
+        current_speed = math.hypot(self.manual_velocity_x, self.manual_velocity_z)
+        target_speed = math.hypot(target_vx, target_vz)
+        dot_velocity = self.manual_velocity_x * target_vx + self.manual_velocity_z * target_vz
+        tau = (
+            reverse_tau
+            if current_speed > 1e-6 and target_speed > 1e-6 and dot_velocity < 0.0
+            else accel_tau
+        )
+        alpha = 1.0 - math.exp(-max(0.0, dt) / tau)
+        self.manual_velocity_x += (target_vx - self.manual_velocity_x) * alpha
+        self.manual_velocity_z += (target_vz - self.manual_velocity_z) * alpha
+        return self.manual_velocity_x * dt, self.manual_velocity_z * dt
+
+    def reset_manual_velocity(self) -> None:
+        self.manual_velocity_x = 0.0
+        self.manual_velocity_z = 0.0
 
     def cancel_auto_move(self) -> None:
         self.auto_move_goal = None

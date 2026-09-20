@@ -45,7 +45,7 @@
     "walkable_boundary_color": 7
   },
   "player": {
-    "move_speed": 96.0,
+    "move_speed": 84.0,
     "collider_half_x": 8.0,
     "collider_half_z": 8.0,
     "solid_collision_margin": 4.0,
@@ -59,7 +59,10 @@
     "has_hp": false,
     "manual_affine_screen_speed_equalize": true,
     "manual_affine_screen_speed_blend": 0.35,
-    "manual_affine_screen_speed_max_scale": 1.55
+    "manual_affine_screen_speed_max_scale": 1.55,
+    "manual_inertia_enabled": true,
+    "manual_inertia_accel_tau_sec": 0.09,
+    "manual_inertia_reverse_tau_sec": 0.22
   },
   "buddy": {
     "cube_size": 6.0,

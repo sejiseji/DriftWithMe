@@ -157,6 +157,36 @@ def test_released_input_stops_on_next_step() -> None:
     assert model.player.z == moved_z
 
 
+def test_manual_movement_eases_in_without_release_coast() -> None:
+    eased_model, camera = make_model()
+    direct_model, _ = make_model()
+    direct_model.config["player"]["manual_inertia_enabled"] = False
+
+    eased_model.step(InputIntent(screen_x=1.0, strength=1.0), camera, 1.0 / 60.0)
+    direct_model.step(InputIntent(screen_x=1.0, strength=1.0), camera, 1.0 / 60.0)
+
+    assert eased_model.player.x > 0.0
+    assert eased_model.player.x < direct_model.player.x
+
+    moved_x = eased_model.player.x
+    moved_z = eased_model.player.z
+    eased_model.step(InputIntent(), camera, 1.0 / 60.0)
+
+    assert eased_model.player.x == moved_x
+    assert eased_model.player.z == moved_z
+
+
+def test_manual_reverse_direction_has_extra_lag() -> None:
+    model, camera = make_model()
+
+    for _ in range(20):
+        model.step(InputIntent(screen_x=1.0, strength=1.0), camera, 1.0 / 60.0)
+    before_reverse = model.player.x
+    model.step(InputIntent(screen_x=-1.0, strength=1.0), camera, 1.0 / 60.0)
+
+    assert model.player.x > before_reverse
+
+
 def test_world_bounds_include_player_half_extent() -> None:
     runtime = load_runtime_config()
     world = load_world_data()
