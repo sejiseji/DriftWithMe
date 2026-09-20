@@ -701,7 +701,7 @@
   },
   "shallow_water": {
     "enabled": true,
-    "surface_tiles_enabled": true,
+    "surface_tiles_enabled": false,
     "surface_tile_world_size": 64.0,
     "surface_tile_pattern": [
       [
@@ -730,7 +730,7 @@
     "wake_color": 7,
     "wake_length_world": 10.0,
     "max_ripples_per_update": 2,
-    "shoreline_tiles_enabled": true,
+    "shoreline_tiles_enabled": false,
     "shoreline_tile_world_size": 64.0,
     "shoreline_corner_tiles_enabled": false,
     "shoreline_corner_inset_world": 16.0,
