@@ -1873,6 +1873,8 @@ class Renderer:
             return False
         if not self.camera_is_affine(camera):
             return False
+        if not self.shallow_water_tilemap_zoom_allowed(camera, config):
+            return False
         if not hasattr(self.pyxel, "Tilemap") or not hasattr(self.pyxel, "bltm"):
             return False
         areas = tuple(getattr(model.world, "shallow_water_areas", ()))
@@ -1901,6 +1903,16 @@ class Renderer:
                 )
                 drew_any = True
         return drew_any
+
+    def shallow_water_tilemap_zoom_allowed(self, camera: CameraState, config: dict) -> bool:
+        zoom = getattr(camera, "zoom", None)
+        if zoom is None:
+            return False
+        profiles = config.get("surface_tilemap_zoom_profiles", [1.0])
+        if not isinstance(profiles, list) or not profiles:
+            profiles = [1.0]
+        tolerance = max(0.0, float(config.get("surface_tilemap_zoom_tolerance", 0.025)))
+        return any(abs(float(zoom) - float(profile)) <= tolerance for profile in profiles)
 
     def shallow_water_tilemap_image(
         self, model: GameModel, camera: CameraState, area, config: dict

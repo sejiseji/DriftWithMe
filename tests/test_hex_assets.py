@@ -1257,6 +1257,8 @@ assert renderer.ground_surface_sprite_asset(model, "water_base_a").definition.as
 )
 assert model.config["shallow_water"]["surface_tiles_enabled"] is True
 assert model.config["shallow_water"]["surface_tilemap_enabled"] is True
+assert model.config["shallow_water"]["surface_tilemap_zoom_profiles"] == [1.0]
+assert model.config["shallow_water"]["surface_tilemap_zoom_tolerance"] == 0.025
 assert model.config["shallow_water"]["surface_tile_world_size"] == 64.0
 assert model.config["shallow_water"]["surface_tile_pattern"][0][0] == "water_base_a"
 assert model.config["shallow_water"]["shoreline_tiles_enabled"] is True
@@ -1325,6 +1327,9 @@ affine = affine_camera_from_perspective(
 renderer.max_baked_ground_builds_per_frame = 8
 pyxel.cls(3)
 assert renderer.draw_shallow_water_tilemap_layer(model, affine)
+assert len(renderer._shallow_water_tilemap_cache) == 1
+combat_zoom_camera = replace(affine, zoom=1.35)
+assert not renderer.draw_shallow_water_tilemap_layer(model, combat_zoom_camera)
 assert len(renderer._shallow_water_tilemap_cache) == 1
 pyxel.cls(3)
 active_patches = renderer.draw_baked_ground_patches(model, affine)
