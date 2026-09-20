@@ -822,6 +822,7 @@ def test_env005_shallow_water_emits_ripple_and_wake_inside_area() -> None:
         "ripple_end_radius": 11.0,
         "ripple_lifetime_sec": 0.4,
         "ripple_color": 12,
+        "ripple_thickness_px": 2,
         "wake_color": 5,
         "wake_length_world": 6.0,
         "max_ripples_per_update": 2,
@@ -842,6 +843,7 @@ def test_env005_shallow_water_emits_ripple_and_wake_inside_area() -> None:
     assert ripple.start_radius == pytest.approx(3.0)
     assert ripple.end_radius == pytest.approx(11.0)
     assert ripple.color == 12
+    assert ripple.thickness == 2
     wake = effects.strokes[0]
     assert wake.end_x == pytest.approx(ripple.x)
     assert wake.end_z == pytest.approx(ripple.z)

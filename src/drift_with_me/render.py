@@ -3903,7 +3903,13 @@ class Renderer:
             self.pyxel.line(int(start.x), int(start.y), int(end.x), int(end.y), 0)
 
     def draw_world_circle(
-        self, camera: CameraState, x: float, z: float, radius: float, color: int
+        self,
+        camera: CameraState,
+        x: float,
+        z: float,
+        radius: float,
+        color: int,
+        thickness: int = 1,
     ) -> None:
         last = None
         for index in range(33):
@@ -3913,6 +3919,22 @@ class Renderer:
             )
             if point is not None and last is not None:
                 self.pyxel.line(int(last.x), int(last.y), int(point.x), int(point.y), color)
+                if thickness >= 2:
+                    self.pyxel.line(
+                        int(last.x),
+                        int(last.y) + 1,
+                        int(point.x),
+                        int(point.y) + 1,
+                        color,
+                    )
+                if thickness >= 3:
+                    self.pyxel.line(
+                        int(last.x) + 1,
+                        int(last.y),
+                        int(point.x) + 1,
+                        int(point.y),
+                        color,
+                    )
             last = point
 
     def draw_world_line(self, camera: CameraState, start: Vec3, end: Vec3, color: int) -> None:
@@ -3997,7 +4019,9 @@ class Renderer:
 
     def draw_world_rings(self, camera: CameraState, effects: EffectSystem) -> None:
         for ring in effects.rings:
-            self.draw_world_circle(camera, ring.x, ring.z, ring.radius, ring.color)
+            self.draw_world_circle(
+                camera, ring.x, ring.z, ring.radius, ring.color, thickness=ring.thickness
+            )
 
     def draw_world_strokes(self, camera: CameraState, effects: EffectSystem) -> None:
         for stroke in effects.strokes:

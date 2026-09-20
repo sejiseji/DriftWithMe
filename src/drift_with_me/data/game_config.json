@@ -714,8 +714,9 @@
     "ripple_start_radius": 4.0,
     "ripple_end_radius": 18.0,
     "ripple_lifetime_sec": 0.48,
-    "ripple_color": 12,
-    "wake_color": 5,
+    "ripple_color": 1,
+    "ripple_thickness_px": 2,
+    "wake_color": 1,
     "wake_length_world": 10.0,
     "max_ripples_per_update": 2
   },

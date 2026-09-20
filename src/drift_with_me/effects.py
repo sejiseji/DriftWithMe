@@ -34,6 +34,7 @@ class WorldRing:
     end_radius: float
     color: int
     lifetime: float
+    thickness: int = 1
     age: float = 0.0
 
     @property
@@ -267,6 +268,9 @@ class EffectSystem:
             0.0, float(shallow_water.get("ripple_lifetime_sec", 0.48))
         )
         self.shallow_water_ripple_color = int(shallow_water.get("ripple_color", 12))
+        self.shallow_water_ripple_thickness_px = max(
+            1, int(shallow_water.get("ripple_thickness_px", 1))
+        )
         self.shallow_water_wake_color = int(shallow_water.get("wake_color", 5))
         self.shallow_water_wake_length_world = max(
             0.0, float(shallow_water.get("wake_length_world", 10.0))
@@ -619,6 +623,7 @@ class EffectSystem:
             self.shallow_water_ripple_end_radius,
             self.shallow_water_ripple_color,
             self.shallow_water_ripple_lifetime_sec,
+            thickness=self.shallow_water_ripple_thickness_px,
         )
         movement_length = math.hypot(movement_x, movement_z)
         if movement_length <= 1e-6 or self.shallow_water_wake_length_world <= 0.0:
@@ -1092,10 +1097,13 @@ class EffectSystem:
         end_radius: float,
         color: int,
         lifetime: float,
+        thickness: int = 1,
     ) -> None:
         if len(self.rings) >= self.max_particles:
             self.rings.pop(0)
-        self.rings.append(WorldRing(x, z, start_radius, end_radius, color, lifetime))
+        self.rings.append(
+            WorldRing(x, z, start_radius, end_radius, color, lifetime, max(1, thickness))
+        )
 
     def add_stroke(
         self,
