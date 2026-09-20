@@ -1686,11 +1686,12 @@ class DriftWithMeApp:
         rect = self.combat_timing_bar_rect()
         self.draw_panel_frame(rect, fill=0, inner=5)
         parry = self.runtime.raw.get("combat_v1", {}).get("parry", {})
+        scale_y = self.runtime.screen_height / 236.0
         padding = float(parry.get("track_padding_px", 12)) * (self.runtime.screen_width / 512.0)
         track_x = int(rect.x + padding)
         track_w = max(8, int(rect.width - padding * 2))
-        track_h = max(6, int(8 * (self.runtime.screen_height / 236.0)))
-        track_y = int(rect.y + rect.height / 2 + 3)
+        track_h = max(6, int(8 * scale_y))
+        track_y = int(rect.y + rect.height - max(11, round(12 * scale_y)))
         slider = self.model.combat_timing_slider_position(session)
         progress_w = int(track_w * slider) if slider is not None else 0
         pyxel.rect(track_x - 1, track_y - 1, track_w + 2, track_h + 2, 0)
@@ -1723,12 +1724,13 @@ class DriftWithMeApp:
             pyxel.circ(slider_x, slider_y, 4, 10)
             pyxel.circb(slider_x, slider_y, 6, 7)
         label = "PERFECT" if session.result == "perfect" else "GOOD" if session.result else "PARRY"
-        self.draw_ui_text_center(
+        self.draw_spaced_pixel_text_center(
             int(rect.x + rect.width / 2),
-            int(rect.y + 4),
+            int(rect.y + max(4, round(5 * scale_y))),
             label,
             10 if session.result == "perfect" else 7,
-            "auxiliary",
+            scale=1,
+            gap=1,
         )
         self.draw_combat_countdown_cue(session)
 
@@ -1742,12 +1744,15 @@ class DriftWithMeApp:
         y = int(self.runtime.screen_height * 0.38 - height / 2)
         rect = Rect(float(x), float(y), float(width), float(height))
         self.draw_panel_frame(rect, fill=0, inner=5)
-        self.draw_ui_text_center(
+        cue_scale = 2
+        _, cue_h = pixel_text_size(cue, cue_scale)
+        self.draw_spaced_pixel_text_center(
             int(rect.x + rect.width / 2),
-            int(rect.y + 8),
+            int(rect.y + rect.height / 2 - cue_h / 2),
             cue,
             10 if cue == "GO!" else 7,
-            "button",
+            scale=cue_scale,
+            gap=2,
         )
 
     def combat_countdown_cue_text(self, session) -> str | None:
@@ -1849,7 +1854,7 @@ class DriftWithMeApp:
         label_w = max(12, meter_x - label_x - 5)
         label = self.fit_ui_text_to_width(self.interaction_title(interaction), label_w, "button")
         text_h = self.ui_renderer.text_height("button")
-        text_y = int(rect.y + rect.height / 2 - text_h / 2 + 5)
+        text_y = int(rect.y + rect.height / 2 - text_h / 2 + 3)
         self.draw_ui_text(self.pyxel, label_x, text_y, label, 7, "button")
         self.draw_meter(
             meter_x,
@@ -1982,7 +1987,7 @@ class DriftWithMeApp:
         label_w = max(8, int(rect.x + rect.width - label_x - 4))
         label = self.fit_ui_text_to_width(self.ui_token(token), label_w, "button")
         text_h = self.ui_renderer.text_height("button")
-        text_y = int(rect.y + rect.height / 2 - text_h / 2 + 5)
+        text_y = int(rect.y + rect.height / 2 - text_h / 2 + 3)
         self.draw_ui_text(self.pyxel, label_x, text_y, label, color, "button")
 
     def action_button_label_rect(self, rect: Rect) -> Rect:
@@ -2276,7 +2281,7 @@ class DriftWithMeApp:
             text_w = self.ui_renderer.text_width(fitted, "tooltip")
             text_h = self.ui_renderer.text_height("tooltip")
             x = int(rect.x + rect.width / 2 - text_w / 2)
-            y = int(rect.y + rect.height / 2 - text_h / 2 + 5)
+            y = int(rect.y + rect.height / 2 - text_h / 2 + 3)
             self.draw_ui_text(
                 self.pyxel,
                 x,
@@ -2340,6 +2345,20 @@ class DriftWithMeApp:
         text = text.upper()
         text_width, _ = pixel_text_size(text, scale)
         draw_pixel_text(self.pyxel, x - text_width // 2, y, text, color, scale=scale)
+
+    def draw_spaced_pixel_text_center(
+        self, x: int, y: int, text: str, color: int, scale: int = 1, gap: int = 1
+    ) -> None:
+        text = text.upper()
+        glyphs = tuple(text)
+        if not glyphs:
+            return
+        widths = tuple(pixel_text_size(char, scale)[0] for char in glyphs)
+        total_width = sum(widths) + gap * max(0, len(glyphs) - 1)
+        cursor_x = x - total_width // 2
+        for char, width in zip(glyphs, widths, strict=True):
+            draw_pixel_text(self.pyxel, cursor_x, y, char, color, scale=scale)
+            cursor_x += width + gap
 
     def fit_text_to_width(self, text: str, max_width: int, scale: int) -> str:
         text = text.upper()
