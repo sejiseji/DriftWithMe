@@ -30,11 +30,11 @@ def test_japanese_ui_resources_translate_existing_tokens() -> None:
     assert resources.raw_text("WATER REFILL") == "給水"
 
 
-def test_japanese_ui_text_draws_five_pixels_higher_than_ascii() -> None:
+def test_japanese_ui_text_draws_eight_pixels_higher_than_ascii() -> None:
     app = make_app("medium")
 
-    assert app.ui_text_language_y(40, "調べる") == 35
-    assert app.ui_text_language_y(40, "水") == 35
+    assert app.ui_text_language_y(40, "調べる") == 32
+    assert app.ui_text_language_y(40, "水") == 32
     assert app.ui_text_language_y(40, "DRIFTWITHME") == 40
     assert app.ui_text_language_y(40, "100%") == 40
 

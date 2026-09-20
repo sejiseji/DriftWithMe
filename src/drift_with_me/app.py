@@ -1691,7 +1691,7 @@ class DriftWithMeApp:
         track_x = int(rect.x + padding)
         track_w = max(8, int(rect.width - padding * 2))
         track_h = max(6, int(8 * scale_y))
-        track_y = int(rect.y + rect.height - max(11, round(12 * scale_y)))
+        track_y = int(rect.y + rect.height - max(17, round(18 * scale_y)))
         slider = self.model.combat_timing_slider_position(session)
         progress_w = int(track_w * slider) if slider is not None else 0
         pyxel.rect(track_x - 1, track_y - 1, track_w + 2, track_h + 2, 0)
@@ -2407,7 +2407,7 @@ class DriftWithMeApp:
         return self.ui_renderer.fit_text(text, max_width, style_name)
 
     def ui_text_language_y(self, y: int, text: str) -> int:
-        return y - 5 if self.ui_text_has_japanese(text) else y
+        return y - 8 if self.ui_text_has_japanese(text) else y
 
     @staticmethod
     def ui_text_has_japanese(text: str) -> bool:
