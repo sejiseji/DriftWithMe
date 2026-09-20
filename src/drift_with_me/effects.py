@@ -36,6 +36,7 @@ class WorldRing:
     lifetime: float
     thickness: int = 1
     layer: str = "foreground"
+    source: str = ""
     age: float = 0.0
 
     @property
@@ -60,6 +61,7 @@ class WorldStroke:
     color: int
     lifetime: float
     layer: str = "foreground"
+    source: str = ""
     age: float = 0.0
 
     @property
@@ -627,6 +629,7 @@ class EffectSystem:
             self.shallow_water_ripple_lifetime_sec,
             thickness=self.shallow_water_ripple_thickness_px,
             layer="background",
+            source="shallow_water",
         )
         movement_length = math.hypot(movement_x, movement_z)
         if movement_length <= 1e-6 or self.shallow_water_wake_length_world <= 0.0:
@@ -643,6 +646,7 @@ class EffectSystem:
             self.shallow_water_wake_color,
             min(self.shallow_water_ripple_lifetime_sec, 0.28),
             layer="background",
+            source="shallow_water",
         )
 
     def shallow_water_segment_hits(
@@ -1103,11 +1107,22 @@ class EffectSystem:
         lifetime: float,
         thickness: int = 1,
         layer: str = "foreground",
+        source: str = "",
     ) -> None:
         if len(self.rings) >= self.max_particles:
             self.rings.pop(0)
         self.rings.append(
-            WorldRing(x, z, start_radius, end_radius, color, lifetime, max(1, thickness), layer)
+            WorldRing(
+                x,
+                z,
+                start_radius,
+                end_radius,
+                color,
+                lifetime,
+                max(1, thickness),
+                layer,
+                source,
+            )
         )
 
     def add_stroke(
@@ -1121,11 +1136,23 @@ class EffectSystem:
         color: int,
         lifetime: float,
         layer: str = "foreground",
+        source: str = "",
     ) -> None:
         if len(self.strokes) >= self.max_particles:
             self.strokes.pop(0)
         self.strokes.append(
-            WorldStroke(start_x, start_y, start_z, end_x, end_y, end_z, color, lifetime, layer)
+            WorldStroke(
+                start_x,
+                start_y,
+                start_z,
+                end_x,
+                end_y,
+                end_z,
+                color,
+                lifetime,
+                layer,
+                source,
+            )
         )
 
     def add_direction_strokes(

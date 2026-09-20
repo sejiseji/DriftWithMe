@@ -232,7 +232,7 @@ class Renderer:
         self.draw_shallow_water_shoreline_tiles(model, camera)
         self.draw_shallow_water_symbols(model, camera, presentation_time)
         self.draw_ground_surfaces(model, camera)
-        self.draw_background_effects(camera, effects)
+        self.draw_background_effects(model, camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
         self.draw_safe_zones(model.world, camera)
         self.draw_auto_move_goal(model, camera, presentation_time)
@@ -4250,27 +4250,44 @@ class Renderer:
         self.draw_actor_emotes(model, camera, effects)
         self.draw_screen_cues(camera, effects)
 
-    def draw_background_effects(self, camera: CameraState, effects: EffectSystem | None) -> None:
+    def draw_background_effects(
+        self, model: GameModel, camera: CameraState, effects: EffectSystem | None
+    ) -> None:
         if effects is None:
             return
-        self.draw_world_rings(camera, effects, layer="background")
-        self.draw_world_strokes(camera, effects, layer="background")
+        hidden_sources = {"shallow_water"} if model.combat_session is not None else set()
+        self.draw_world_rings(camera, effects, layer="background", hidden_sources=hidden_sources)
+        self.draw_world_strokes(camera, effects, layer="background", hidden_sources=hidden_sources)
 
     def draw_world_rings(
-        self, camera: CameraState, effects: EffectSystem, *, layer: str | None = None
+        self,
+        camera: CameraState,
+        effects: EffectSystem,
+        *,
+        layer: str | None = None,
+        hidden_sources: set[str] | None = None,
     ) -> None:
         for ring in effects.rings:
             if layer is not None and ring.layer != layer:
+                continue
+            if hidden_sources is not None and ring.source in hidden_sources:
                 continue
             self.draw_world_circle(
                 camera, ring.x, ring.z, ring.radius, ring.color, thickness=ring.thickness
             )
 
     def draw_world_strokes(
-        self, camera: CameraState, effects: EffectSystem, *, layer: str | None = None
+        self,
+        camera: CameraState,
+        effects: EffectSystem,
+        *,
+        layer: str | None = None,
+        hidden_sources: set[str] | None = None,
     ) -> None:
         for stroke in effects.strokes:
             if layer is not None and stroke.layer != layer:
+                continue
+            if hidden_sources is not None and stroke.source in hidden_sources:
                 continue
             self.draw_world_line(
                 camera,

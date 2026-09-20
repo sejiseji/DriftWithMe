@@ -845,11 +845,40 @@ def test_env005_shallow_water_emits_ripple_and_wake_inside_area() -> None:
     assert ripple.color == 12
     assert ripple.thickness == 2
     assert ripple.layer == "background"
+    assert ripple.source == "shallow_water"
     wake = effects.strokes[0]
     assert wake.layer == "background"
+    assert wake.source == "shallow_water"
     assert wake.end_x == pytest.approx(ripple.x)
     assert wake.end_z == pytest.approx(ripple.z)
     assert wake.start_x < wake.end_x
+
+
+def test_env005_shallow_water_background_fx_hidden_during_combat() -> None:
+    model, camera = make_model()
+    model.config["shallow_water"] = {
+        "enabled": True,
+        "areas": [{"id": "test", "rect_xz": [100.0, 100.0, 140.0, 140.0]}],
+        "ripple_lifetime_sec": 0.4,
+        "wake_length_world": 6.0,
+    }
+    effects = EffectSystem(model.config)
+    effects.add_shallow_water_ripple(120.0, 120.0, 8.0, 0.0)
+    effects.add_ring(126.0, 126.0, 2.0, 8.0, 7, 0.4, layer="background")
+    renderer = Renderer(None)
+    drawn: list[str] = []
+    renderer.draw_world_circle = lambda camera, x, z, radius, color, thickness=1: drawn.append(
+        "ring"
+    )
+    renderer.draw_world_line = lambda camera, start, end, color: drawn.append("stroke")
+
+    renderer.draw_background_effects(model, camera, effects)
+    assert drawn == ["ring", "ring", "stroke"]
+
+    drawn.clear()
+    model.combat_session = object()
+    renderer.draw_background_effects(model, camera, effects)
+    assert drawn == ["ring"]
 
 
 def test_env005_shallow_water_respects_spacing_and_area() -> None:
