@@ -78,6 +78,7 @@ class CombatActorSnapshot:
 @dataclass(frozen=True)
 class CombatSnapshot:
     player: CombatActorSnapshot
+    buddy: CombatActorSnapshot
     enemy: CombatActorSnapshot
     enemy_id: str
     auto_move_goal: tuple[float, float] | None
@@ -2743,6 +2744,10 @@ class GameModel:
                 z=self.player.z,
                 last_move_x=self.player.last_move_x,
                 last_move_z=self.player.last_move_z,
+            ),
+            buddy=CombatActorSnapshot(
+                x=self.buddy.x,
+                z=self.buddy.z,
             ),
             enemy=CombatActorSnapshot(
                 x=enemy.x,

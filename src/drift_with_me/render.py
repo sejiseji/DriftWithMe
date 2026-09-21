@@ -648,21 +648,8 @@ class Renderer:
     def buddy_actor_presentation(
         self, model: GameModel, camera: CameraState, presentation_time: float
     ) -> ActorPresentation:
-        if self.combat_defeat_restore_active(model):
-            target = self.combat_actor_anchor_ground(model, camera, "buddy")
-            if target is None:
-                start_x = model.buddy.x
-                start_z = model.buddy.z
-            else:
-                start_x, start_z = target
-            progress = self.combat_actor_restore_progress(model)
-            jump_y = math.sin(max(0.0, min(progress, 1.0)) * math.pi) * 10.0
-            return ActorPresentation(
-                _lerp(start_x, model.buddy.x, progress),
-                _lerp(start_z, model.buddy.z, progress),
-                _lerp(18.0, 0.0, progress) + jump_y,
-            )
-        if not self.combat_defeat_special_active(model):
+        session = model.combat_session
+        if session is None:
             return ActorPresentation(model.buddy.x, model.buddy.z)
         target = self.combat_actor_anchor_ground(model, camera, "buddy")
         if target is None:
@@ -670,18 +657,35 @@ class Renderer:
             target_z = model.buddy.z
         else:
             target_x, target_z = target
-        progress = self.combat_defeat_special_progress(model)
-        move_progress = _smoothstep(progress / 0.34)
-        float_progress = _smoothstep(progress / 0.24)
-        float_y = 18.0 * float_progress
-        wobble = math.sin(max(0.0, progress - 0.18) * math.tau * 2.2) * 1.8
-        wobble *= 1.0 - _smoothstep((progress - 0.72) / 0.28)
-        float_y += wobble
-        return ActorPresentation(
-            _lerp(model.buddy.x, target_x, move_progress),
-            _lerp(model.buddy.z, target_z, move_progress),
-            float_y,
-        )
+        if session.phase == "COMBAT_ENTRY":
+            progress = self.combat_actor_settle_progress(model)
+            return ActorPresentation(
+                _lerp(session.snapshot.buddy.x, target_x, progress),
+                _lerp(session.snapshot.buddy.z, target_z, progress),
+                self.combat_actor_entry_jump_y(model, progress),
+            )
+        if session.phase == "COMBAT_RESTORE_JUMP":
+            progress = self.combat_actor_restore_progress(model)
+            jump_y = math.sin(max(0.0, min(progress, 1.0)) * math.pi) * 10.0
+            return ActorPresentation(
+                _lerp(target_x, model.buddy.x, progress),
+                _lerp(target_z, model.buddy.z, progress),
+                _lerp(18.0, 0.0, progress) + jump_y,
+            )
+        if self.combat_defeat_special_active(model):
+            progress = self.combat_defeat_special_progress(model)
+            move_progress = _smoothstep(progress / 0.34)
+            float_progress = _smoothstep(progress / 0.24)
+            float_y = 18.0 * float_progress
+            wobble = math.sin(max(0.0, progress - 0.18) * math.tau * 2.2) * 1.8
+            wobble *= 1.0 - _smoothstep((progress - 0.72) / 0.28)
+            float_y += wobble
+            return ActorPresentation(
+                _lerp(model.buddy.x, target_x, move_progress),
+                _lerp(model.buddy.z, target_z, move_progress),
+                float_y,
+            )
+        return ActorPresentation(target_x, target_z)
 
     def combat_actor_anchor_ground(
         self, model: GameModel, camera: CameraState, actor: str

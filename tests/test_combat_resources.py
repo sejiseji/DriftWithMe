@@ -178,37 +178,55 @@ def test_combat_entry_actor_presentation_moves_to_screen_anchors() -> None:
 
     session.phase_elapsed_sec = 0.0
     player_start = renderer.player_actor_presentation(model, camera)
+    buddy_start = renderer.buddy_actor_presentation(model, camera, 0.0)
     enemy_start = renderer.enemy_actor_presentation(model, enemy, camera)
     assert player_start.x == pytest.approx(session.snapshot.player.x)
     assert player_start.z == pytest.approx(session.snapshot.player.z)
+    assert buddy_start.x == pytest.approx(session.snapshot.buddy.x)
+    assert buddy_start.z == pytest.approx(session.snapshot.buddy.z)
     assert enemy_start.x == pytest.approx(session.snapshot.enemy.x)
     assert enemy_start.z == pytest.approx(session.snapshot.enemy.z)
     assert player_start.jump_y == pytest.approx(0.0)
+    assert buddy_start.jump_y == pytest.approx(0.0)
 
     entry = model.combat_v1_config()["entry"]
     session.phase_elapsed_sec = (
         float(entry["isolation_sec"]) + float(entry["actor_settle_sec"]) * 0.5
     )
     player_mid = renderer.player_actor_presentation(model, camera)
+    buddy_mid = renderer.buddy_actor_presentation(model, camera, 0.0)
     enemy_mid = renderer.enemy_actor_presentation(model, enemy, camera)
     assert player_mid.jump_y > 0.0
+    assert buddy_mid.jump_y > 0.0
     assert enemy_mid.jump_y > 0.0
     assert (
         abs(player_mid.x - session.snapshot.player.x)
         + abs(player_mid.z - session.snapshot.player.z)
         > 1e-6
     )
+    assert (
+        abs(buddy_mid.x - session.snapshot.buddy.x) + abs(buddy_mid.z - session.snapshot.buddy.z)
+        > 1e-6
+    )
 
     session.phase = "ENEMY_WINDUP"
     session.phase_elapsed_sec = 0.0
     player_settled = renderer.player_actor_presentation(model, camera)
+    buddy_settled = renderer.buddy_actor_presentation(model, camera, 0.0)
     expected_player_screen = renderer.combat_actor_screen_anchor(model, camera, "player")
+    expected_buddy_screen = renderer.combat_actor_screen_anchor(model, camera, "buddy")
     assert expected_player_screen is not None
+    assert expected_buddy_screen is not None
     projected_player = camera.project(Vec3(player_settled.x, 0.0, player_settled.z))
+    projected_buddy = camera.project(Vec3(buddy_settled.x, 0.0, buddy_settled.z))
     assert projected_player is not None
+    assert projected_buddy is not None
     assert projected_player.x == pytest.approx(expected_player_screen[0], abs=1e-6)
     assert projected_player.y == pytest.approx(expected_player_screen[1], abs=1e-6)
+    assert projected_buddy.x == pytest.approx(expected_buddy_screen[0], abs=1e-6)
+    assert projected_buddy.y == pytest.approx(expected_buddy_screen[1], abs=1e-6)
     assert player_settled.jump_y == pytest.approx(0.0)
+    assert buddy_settled.jump_y == pytest.approx(0.0)
 
 
 def test_combat_player_faces_enemy_presentation_after_settling() -> None:
@@ -1111,6 +1129,38 @@ def test_combat_restore_jump_returns_player_to_combat_start() -> None:
     assert model.combat_session is None
     assert model.player.x == pytest.approx(player_start[0])
     assert model.player.z == pytest.approx(player_start[1])
+
+
+def test_combat_restore_jump_returns_buddy_from_battle_anchor() -> None:
+    model, camera = make_model()
+    start_deflect_exit(model, camera)
+    step_exit_to_victory_cue(model, camera)
+    session = model.combat_session
+    assert session is not None
+    renderer = Renderer(None)
+    target = renderer.combat_actor_anchor_ground(model, camera, "buddy")
+    assert target is not None
+    buddy_world = (model.buddy.x, model.buddy.z)
+
+    session.phase = "COMBAT_RESTORE_JUMP"
+    session.phase_elapsed_sec = 0.0
+    start = renderer.buddy_actor_presentation(model, camera, 0.0)
+    assert start.x == pytest.approx(target[0])
+    assert start.z == pytest.approx(target[1])
+    assert start.jump_y == pytest.approx(18.0)
+
+    session.phase_elapsed_sec = model.combat_restore_jump_sec() * 0.5
+    mid = renderer.buddy_actor_presentation(model, camera, 0.0)
+    assert mid.jump_y > 0.0
+    assert math.hypot(mid.x - buddy_world[0], mid.z - buddy_world[1]) < math.hypot(
+        start.x - buddy_world[0], start.z - buddy_world[1]
+    )
+
+    session.phase_elapsed_sec = model.combat_restore_jump_sec() + 0.01
+    end = renderer.buddy_actor_presentation(model, camera, 0.0)
+    assert end.x == pytest.approx(buddy_world[0])
+    assert end.z == pytest.approx(buddy_world[1])
+    assert end.jump_y == pytest.approx(0.0)
 
 
 def test_combat_defeat_restore_timings_leave_room_for_linger() -> None:
