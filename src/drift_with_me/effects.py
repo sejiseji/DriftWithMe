@@ -217,6 +217,10 @@ def presentation_cue_for_event(event: GameEvent) -> str | None:
         return "DWF_COMBAT_GUARD_FAILED"
     if event.kind == "combat_perfect_started":
         return "DWF_COMBAT_PERFECT"
+    if event.kind == "combat_bubble_chance_started":
+        return "DWF_COMBAT_BUBBLE_CHANCE"
+    if event.kind == "combat_zap_chance_started":
+        return "DWF_COMBAT_ZAP_CHANCE"
     if event.kind == "combat_deflect_started":
         return "DWF_COMBAT_DEFLECT"
     if event.kind == "combat_victory_cue_started":
@@ -460,6 +464,32 @@ class EffectSystem:
             self.add_ring(model.player.x, model.player.z, 8.0, 20.0, 10, 0.28)
             self.add_glint_strokes(model.player.x, model.player.z, 16.0, 7, 0.24)
             self.add_screen_cue("focus_lines", 0.2)
+        elif cue_id == "DWF_COMBAT_BUBBLE_CHANCE":
+            enemy = model.enemy_by_id(event.target_id or "")
+            target_x = enemy.x if enemy is not None else x
+            target_z = enemy.z if enemy is not None else z
+            self.add_screen_cue("combat_bubble_chance", 0.42)
+            self.add_ring(model.player.x, model.player.z, 7.0, 15.0, 12, 0.28)
+            self.add_glint_strokes(model.player.x, model.player.z, 12.0, 12, 0.22)
+            self.add_direction_strokes(
+                model.player.x, model.player.z, target_x, target_z, 12.0, 12, 0.2
+            )
+        elif cue_id == "DWF_COMBAT_ZAP_CHANCE":
+            enemy = model.enemy_by_id(event.target_id or "")
+            target_x = enemy.x if enemy is not None else x
+            target_z = enemy.z if enemy is not None else z
+            self.add_screen_cue("combat_zap_chance", 0.42)
+            self.spawn_burst_palette(
+                model.buddy.x,
+                model.buddy.y,
+                model.buddy.z,
+                colors=(7, 10),
+                count=4,
+                speed=10.0,
+            )
+            self.add_direction_strokes(
+                model.buddy.x, model.buddy.z, target_x, target_z, 14.0, 10, 0.2
+            )
         elif cue_id == "DWF_COMBAT_DEFLECT":
             enemy = model.enemy_by_id(event.target_id or "")
             target_x = enemy.x if enemy is not None else x

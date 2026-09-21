@@ -1113,6 +1113,48 @@ class DriftWithMeApp:
         self.pyxel.rectb(x, y, box_width, box_height, 13)
         draw_pixel_text(self.pyxel, x + 3, y + 2, text, 7, scale=scale)
 
+    def draw_combat_chance_cues(self) -> None:
+        active_cues = [
+            cue
+            for cue in self.effects.screen_cues
+            if cue.kind in {"combat_bubble_chance", "combat_zap_chance"}
+        ]
+        if not active_cues:
+            return
+        cue = active_cues[-1]
+        if cue.kind == "combat_bubble_chance":
+            text = "捕縛チャンス！"
+            color = 12
+        else:
+            text = "電撃チャンス！"
+            color = 10
+        progress = cue.progress
+        text_width = self.ui_renderer.text_width(text, "tooltip")
+        text_height = self.ui_renderer.text_height("tooltip")
+        width = max(116, min(178, text_width + 24))
+        height = max(26, text_height + 12)
+        x = int((self.runtime.screen_width - width) / 2)
+        y = int(self.runtime.screen_height * 0.52 - height / 2 - (1.0 - progress) * 5)
+        rect = Rect(float(x), float(y), float(width), float(height))
+        self.draw_panel_frame(rect, fill=0, inner=color)
+        if progress < 0.18:
+            pulse_w = int(width * (1.0 - progress / 0.18))
+            self.pyxel.line(x - pulse_w // 3, y + height // 2, x - 4, y + height // 2, color)
+            self.pyxel.line(
+                x + width + 4,
+                y + height // 2,
+                x + width + pulse_w // 3,
+                y + height // 2,
+                color,
+            )
+        self.draw_ui_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y + rect.height / 2 - text_height / 2 + 4),
+            text,
+            color,
+            "tooltip",
+        )
+
     def draw_start(self) -> None:
         pyxel = self.pyxel
         pyxel.cls(1)
@@ -1150,6 +1192,7 @@ class DriftWithMeApp:
         self.draw_hud()
         if self.model.interaction is not None:
             self.draw_interaction_chip()
+        self.draw_combat_chance_cues()
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
         camera = self.combat_scene_camera(camera)

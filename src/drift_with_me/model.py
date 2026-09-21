@@ -1893,6 +1893,34 @@ class GameModel:
                     payload={"hit_count": session.hit_count},
                 )
             )
+        elif phase == "PERFECT_BUBBLE_WINDOW":
+            events.append(
+                self.event_queue.emit(
+                    world_tick=self.world_tick,
+                    kind="combat_bubble_chance_started",
+                    actor_id="player",
+                    target_id=session.enemy_id,
+                    world_position=(self.player.x, 0.0, self.player.z),
+                    payload={
+                        "window_sec": self.combat_bubble_window_sec(),
+                        "water_cost": self.combat_bubble_water_cost(),
+                    },
+                )
+            )
+        elif phase == "PERFECT_ZAP_WINDOW":
+            events.append(
+                self.event_queue.emit(
+                    world_tick=self.world_tick,
+                    kind="combat_zap_chance_started",
+                    actor_id="buddy",
+                    target_id=session.enemy_id,
+                    world_position=(self.buddy.x, self.buddy.y, self.buddy.z),
+                    payload={
+                        "window_sec": self.combat_zap_window_sec(),
+                        "energy_cost": self.combat_zap_energy_cost(),
+                    },
+                )
+            )
         elif phase == "COMBAT_EXIT_DEFLECT":
             events.append(
                 self.event_queue.emit(

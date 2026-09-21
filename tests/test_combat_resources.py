@@ -1269,6 +1269,36 @@ def test_bat004_perfect_enters_bubble_counter_window() -> None:
     assert model.combat_counter_action_mode() == "BUBBLE"
 
 
+def test_bat007c_bubble_chance_event_syncs_with_bubble_window() -> None:
+    model, camera = make_model()
+    enemy = start_perfect_freeze(model, camera)
+
+    events = model.step(InputIntent(), camera, model.combat_perfect_hold_sec() + 0.01)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "PERFECT_BUBBLE_WINDOW"
+    assert model.combat_counter_action_mode() == "BUBBLE"
+    chance_events = [event for event in events if event.kind == "combat_bubble_chance_started"]
+    assert len(chance_events) == 1
+    assert chance_events[0].target_id == enemy.id
+    assert chance_events[0].payload["window_sec"] == pytest.approx(model.combat_bubble_window_sec())
+
+
+def test_bat007c_bubble_chance_not_emitted_when_water_is_short() -> None:
+    model, camera = make_model()
+    model.water = model.combat_bubble_water_cost() - 1.0
+    start_perfect_freeze(model, camera)
+
+    events = model.step(InputIntent(), camera, model.combat_perfect_hold_sec() + 0.01)
+    session = model.combat_session
+
+    assert session is not None
+    assert session.phase == "COMBAT_EXIT_DEFLECT"
+    assert model.combat_counter_action_mode() == "NONE"
+    assert not [event for event in events if event.kind == "combat_bubble_chance_started"]
+
+
 def test_combat_counter_windows_allow_slightly_longer_input() -> None:
     model, _camera = make_model()
 
@@ -1325,6 +1355,9 @@ def test_bat004_bubble_success_opens_zap_window_and_spends_water_once() -> None:
         "bubble_fired",
         "enemy_captured",
     ]
+    assert [event.kind for event in events if event.kind == "combat_zap_chance_started"] == [
+        "combat_zap_chance_started"
+    ]
 
 
 def test_combat_bubble_counter_visual_tracks_bubble_branch() -> None:
@@ -1372,7 +1405,7 @@ def test_bat004_insufficient_energy_keeps_capture_without_spending_energy() -> N
     step_to_bubble_window(model, camera)
     energy_before = model.energy
 
-    model.step(InputIntent(action_pressed=True), camera, 0.0)
+    events = model.step(InputIntent(action_pressed=True), camera, 0.0)
     session = model.combat_session
 
     assert session is not None
@@ -1381,6 +1414,7 @@ def test_bat004_insufficient_energy_keeps_capture_without_spending_energy() -> N
     assert enemy.state == "CAPTURED"
     assert model.combat_counter_action_mode() == "NONE"
     assert model.energy == pytest.approx(energy_before)
+    assert not [event for event in events if event.kind == "combat_zap_chance_started"]
 
 
 def test_bat004_zap_success_defeats_enemy_and_spends_energy_once() -> None:

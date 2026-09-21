@@ -715,6 +715,18 @@ def test_presentation_cue_mapping_for_existing_events() -> None:
     )
     assert (
         presentation_cue_for_event(
+            event(model, "combat_bubble_chance_started", model.player.x, model.player.z)
+        )
+        == "DWF_COMBAT_BUBBLE_CHANCE"
+    )
+    assert (
+        presentation_cue_for_event(
+            event(model, "combat_zap_chance_started", model.player.x, model.player.z)
+        )
+        == "DWF_COMBAT_ZAP_CHANCE"
+    )
+    assert (
+        presentation_cue_for_event(
             event(model, "combat_deflect_started", model.player.x, model.player.z)
         )
         == "DWF_COMBAT_DEFLECT"
@@ -751,6 +763,24 @@ def test_presentation_cues_create_local_fx_once_per_event() -> None:
     assert len(effects.strokes) == 4
     assert len(effects.particles) == effects.max_particles_per_event * 2
     assert {particle.color for particle in effects.particles} >= {5, 7, 9, 10, 12}
+
+
+def test_combat_chance_cues_create_nonblocking_screen_cues_once_per_event() -> None:
+    model, _camera = make_model()
+    effects = EffectSystem(model.config)
+    bubble = event(model, "combat_bubble_chance_started", model.player.x, model.player.z)
+
+    effects.process_events([bubble, bubble], model)
+
+    assert [cue.kind for cue in effects.screen_cues] == ["combat_bubble_chance"]
+    assert effects.screen_cues[0].lifetime == pytest.approx(0.42)
+
+    effects = EffectSystem(model.config)
+    zap = event(model, "combat_zap_chance_started", model.buddy.x, model.buddy.z)
+    effects.process_events([zap, zap], model)
+
+    assert [cue.kind for cue in effects.screen_cues] == ["combat_zap_chance"]
+    assert effects.screen_cues[0].lifetime == pytest.approx(0.42)
 
 
 def test_zap_cue_creates_draw_only_enemy_snapshot() -> None:
