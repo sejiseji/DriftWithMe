@@ -774,7 +774,7 @@
     "concentration_line_count": 12,
     "defeated_enemy_snapshot_ms": 100.0,
     "onomatopoeia_enabled": false,
-    "hitstop_enabled": false,
+    "hitstop_enabled": true,
     "hitstop_hard_cap_ms": 66.6666666667,
     "hitstop_event_ms": {
       "barrier_repelled": 16.6666666667,
@@ -831,7 +831,7 @@
       }
     },
     "flash_enabled": false,
-    "shake_enabled": false
+    "shake_enabled": true
   },
   "shallow_water": {
     "enabled": true,
