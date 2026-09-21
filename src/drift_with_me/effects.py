@@ -62,6 +62,7 @@ class WorldStroke:
     lifetime: float
     layer: str = "foreground"
     source: str = ""
+    thickness: int = 1
     age: float = 0.0
 
     @property
@@ -1206,6 +1207,7 @@ class EffectSystem:
         lifetime: float,
         layer: str = "foreground",
         source: str = "",
+        thickness: int = 1,
     ) -> None:
         if len(self.strokes) >= self.max_particles:
             self.strokes.pop(0)
@@ -1221,6 +1223,7 @@ class EffectSystem:
                 lifetime,
                 layer,
                 source,
+                max(1, thickness),
             )
         )
 
@@ -1246,7 +1249,7 @@ class EffectSystem:
         if route == "fork":
             mid_x = start_x + dx * 0.48
             mid_z = start_z + dz * 0.48
-            spread = min(16.0, max(7.0, length * 0.18))
+            spread = min(30.0, max(16.0, length * 0.32))
             for index, offset in enumerate((-spread, spread)):
                 color = 7 if index == 0 else 10
                 self.add_stroke(
@@ -1257,7 +1260,8 @@ class EffectSystem:
                     13.0,
                     mid_z + side_z * offset,
                     color,
-                    0.24,
+                    0.34,
+                    thickness=2,
                 )
                 self.add_stroke(
                     mid_x + side_x * offset,
@@ -1267,22 +1271,65 @@ class EffectSystem:
                     9.0,
                     target_z,
                     color,
-                    0.28,
+                    0.38,
+                    thickness=2,
                 )
-            self.add_stroke(start_x, start_y + 3.0, start_z, target_x, 5.0, target_z, 10, 0.16)
+            self.add_ring(mid_x, mid_z, 4.0, 18.0, 10, 0.24, thickness=2)
+            self.add_ring(target_x, target_z, 3.0, 16.0, 7, 0.22, thickness=2)
+            self.add_stroke(
+                start_x,
+                start_y + 2.0,
+                start_z,
+                target_x,
+                4.0,
+                target_z,
+                10,
+                0.22,
+                thickness=1,
+            )
             return
         if route == "crawl":
             ground_start_x = start_x + ux * min(10.0, length * 0.25)
             ground_start_z = start_z + uz * min(10.0, length * 0.25)
-            ground_end_x = target_x - ux * min(9.0, length * 0.22)
-            ground_end_z = target_z - uz * min(9.0, length * 0.22)
+            ground_mid_x = start_x + dx * 0.5
+            ground_mid_z = start_z + dz * 0.5
+            ground_end_x = target_x - ux * min(12.0, length * 0.28)
+            ground_end_z = target_z - uz * min(12.0, length * 0.28)
             self.add_stroke(
-                start_x, start_y + 5.0, start_z, ground_start_x, 1.0, ground_start_z, 7, 0.2
+                start_x,
+                start_y + 5.0,
+                start_z,
+                ground_start_x,
+                1.0,
+                ground_start_z,
+                7,
+                0.24,
+                thickness=2,
             )
             self.add_stroke(
-                ground_start_x, 1.0, ground_start_z, ground_end_x, 1.0, ground_end_z, 10, 0.34
+                ground_start_x,
+                1.0,
+                ground_start_z,
+                ground_end_x,
+                1.0,
+                ground_end_z,
+                10,
+                0.46,
+                thickness=3,
             )
-            self.add_stroke(ground_end_x, 1.0, ground_end_z, target_x, 10.0, target_z, 7, 0.22)
+            self.add_stroke(
+                ground_end_x,
+                1.0,
+                ground_end_z,
+                target_x,
+                10.0,
+                target_z,
+                7,
+                0.3,
+                thickness=2,
+            )
+            self.add_ring(ground_start_x, ground_start_z, 2.0, 12.0, 10, 0.2, thickness=1)
+            self.add_ring(ground_mid_x, ground_mid_z, 2.0, 15.0, 10, 0.24, thickness=1)
             self.add_ring(ground_end_x, ground_end_z, 3.0, 11.0, 10, 0.24, thickness=2)
             for offset in (-4.0, 4.0):
                 self.add_stroke(
@@ -1294,16 +1341,48 @@ class EffectSystem:
                     ground_start_z + side_z * offset + uz * min(10.0, length * 0.2),
                     7,
                     0.16,
+                    thickness=1,
+                )
+            for index, ratio in enumerate((0.25, 0.42, 0.62, 0.78)):
+                if len(self.particles) >= self.max_particles:
+                    break
+                px = ground_start_x + (ground_end_x - ground_start_x) * ratio
+                pz = ground_start_z + (ground_end_z - ground_start_z) * ratio
+                side = -1.0 if index % 2 == 0 else 1.0
+                self.particles.append(
+                    WorldParticle(
+                        x=px + side_x * side * 2.0,
+                        y=1.0,
+                        z=pz + side_z * side * 2.0,
+                        vx=side_x * side * 2.0,
+                        vy=3.0 + index,
+                        vz=side_z * side * 2.0,
+                        color=10 if index % 2 == 0 else 7,
+                        lifetime=0.34 + index * 0.03,
+                    )
                 )
             return
-        self.add_stroke(start_x, start_y + 6.0, start_z, target_x, 10.0, target_z, 7, 0.28)
-        self.add_stroke(start_x, start_y + 3.0, start_z, target_x, 2.0, target_z, 10, 0.22)
+        self.add_stroke(
+            start_x, start_y + 7.0, start_z, target_x, 11.0, target_z, 7, 0.34, thickness=3
+        )
+        self.add_stroke(
+            start_x, start_y + 3.0, start_z, target_x, 2.0, target_z, 10, 0.26, thickness=2
+        )
         branch_len = min(14.0, max(6.0, length * 0.18))
         branch_x = target_x - ux * branch_len
         branch_z = target_z - uz * branch_len
         self.add_stroke(
-            branch_x, 8.0, branch_z, branch_x + side_x * 6.0, 7.0, branch_z + side_z * 6.0, 7, 0.16
+            branch_x,
+            8.0,
+            branch_z,
+            branch_x + side_x * 9.0,
+            7.0,
+            branch_z + side_z * 9.0,
+            7,
+            0.18,
+            thickness=2,
         )
+        self.add_ring(target_x, target_z, 2.0, 13.0, 7, 0.18, thickness=2)
 
     def add_direction_strokes(
         self,

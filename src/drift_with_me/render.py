@@ -4515,12 +4515,35 @@ class Renderer:
                     )
             last = point
 
-    def draw_world_line(self, camera: CameraState, start: Vec3, end: Vec3, color: int) -> None:
+    def draw_world_line(
+        self, camera: CameraState, start: Vec3, end: Vec3, color: int, thickness: int = 1
+    ) -> None:
         a = camera.project(start)
         b = camera.project(end)
         if a is None or b is None:
             return
-        self.pyxel.line(int(a.x), int(a.y), int(b.x), int(b.y), color)
+        ax = int(a.x)
+        ay = int(a.y)
+        bx = int(b.x)
+        by = int(b.y)
+        self.pyxel.line(ax, ay, bx, by, color)
+        if thickness <= 1:
+            return
+        dx = b.x - a.x
+        dy = b.y - a.y
+        length = math.hypot(dx, dy)
+        if length <= 1e-6:
+            for offset in range(1, thickness):
+                self.pyxel.pset(ax + offset, ay, color)
+            return
+        ox = -dy / length
+        oy = dx / length
+        for offset in range(1, thickness):
+            side = (offset + 1) // 2
+            sign = -1 if offset % 2 == 0 else 1
+            px = int(round(ox * side * sign))
+            py = int(round(oy * side * sign))
+            self.pyxel.line(ax + px, ay + py, bx + px, by + py, color)
 
     def draw_affine_debug_grid(self, model: GameModel, camera: CameraState) -> None:
         if not self.camera_is_affine(camera):
@@ -4639,6 +4662,7 @@ class Renderer:
                 Vec3(stroke.start_x, stroke.start_y, stroke.start_z),
                 Vec3(stroke.end_x, stroke.end_y, stroke.end_z),
                 stroke.color,
+                thickness=stroke.thickness,
             )
 
     def draw_world_particles(self, camera: CameraState, effects: EffectSystem) -> None:

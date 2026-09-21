@@ -759,7 +759,7 @@ def test_presentation_cues_create_local_fx_once_per_event() -> None:
 
     effects.process_events([refill, refill, zap, zap], model)
 
-    assert len(effects.rings) == 2
+    assert len(effects.rings) == 3
     assert len(effects.strokes) == 5
     assert len(effects.particles) == effects.max_particles_per_event * 2
     assert {particle.color for particle in effects.particles} >= {5, 7, 9, 10, 12}
@@ -975,7 +975,7 @@ def test_env005_shallow_water_background_fx_hidden_during_combat() -> None:
     renderer.draw_world_circle = lambda camera, x, z, radius, color, thickness=1: drawn.append(
         "ring"
     )
-    renderer.draw_world_line = lambda camera, start, end, color: drawn.append("stroke")
+    renderer.draw_world_line = lambda camera, start, end, color, thickness=1: drawn.append("stroke")
 
     renderer.draw_background_effects(model, camera, effects)
     assert drawn == ["ring", "ring", "stroke"]
