@@ -781,6 +781,8 @@
       "enemy_captured": 33.3333333333,
       "discharge_succeeded": 50.0,
       "combat_marker_hit": 10.0,
+      "combat_guard_success": 30.0,
+      "combat_guard_failed": 66.0,
       "combat_perfect_started": 45.0,
       "combat_deflect_started": 25.0
     },
@@ -798,6 +800,14 @@
         "zoom_attack_ms": 40.0,
         "zoom_hold_ms": 30.0,
         "zoom_return_ms": 170.0
+      },
+      "DWF_COMBAT_GUARD_SUCCESS": {
+        "shake_amplitude_px": 0.5,
+        "shake_duration_ms": 50.0
+      },
+      "DWF_COMBAT_GUARD_FAILED": {
+        "shake_amplitude_px": 2.8,
+        "shake_duration_ms": 140.0
       },
       "DWF_COMBAT_PERFECT": {
         "shake_amplitude_px": 1.0,

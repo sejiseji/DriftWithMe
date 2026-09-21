@@ -822,7 +822,7 @@ def test_bat002_one_hit_or_less_resolves_as_failure() -> None:
     assert session is not None
     hit_combat_marker(model, camera, session.marker_positions[0])
 
-    model.step(InputIntent(), camera, model.combat_parry_sweep_sec() + 0.01)
+    events = model.step(InputIntent(), camera, model.combat_parry_sweep_sec() + 0.01)
     session = model.combat_session
 
     assert session is not None
@@ -832,6 +832,10 @@ def test_bat002_one_hit_or_less_resolves_as_failure() -> None:
     assert session.successful_defense_count == 0
     assert session.failed_round_count == 1
     assert session.outcome is None
+    failed = [event for event in events if event.kind == "combat_guard_failed"]
+    assert len(failed) == 1
+    assert failed[0].payload["hit_count"] == 1
+    assert failed[0].payload["result"] == "failure"
 
 
 def test_bat002_two_hits_resolves_as_defense_success() -> None:
@@ -843,7 +847,7 @@ def test_bat002_two_hits_resolves_as_defense_success() -> None:
     hit_combat_marker(model, camera, session.marker_positions[0])
     hit_combat_marker(model, camera, session.marker_positions[1])
 
-    model.step(InputIntent(), camera, model.combat_parry_sweep_sec() + 0.01)
+    events = model.step(InputIntent(), camera, model.combat_parry_sweep_sec() + 0.01)
     session = model.combat_session
 
     assert session is not None
@@ -853,6 +857,10 @@ def test_bat002_two_hits_resolves_as_defense_success() -> None:
     assert session.successful_defense_count == 1
     assert session.failed_round_count == 0
     assert session.outcome is None
+    success = [event for event in events if event.kind == "combat_guard_success"]
+    assert len(success) == 1
+    assert success[0].payload["hit_count"] == 2
+    assert success[0].payload["result"] == "defense_success"
 
 
 def test_bat002_three_hits_sets_perfect_result_only() -> None:

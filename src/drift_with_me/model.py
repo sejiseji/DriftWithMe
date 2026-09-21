@@ -2046,6 +2046,23 @@ class GameModel:
             session.outcome = "deflect"
         if session.failed_round_count >= self.combat_failed_rounds_to_knockback():
             session.outcome = "player_knockback"
+        impact_kind = "combat_guard_failed" if result == "failure" else "combat_guard_success"
+        events.append(
+            self.event_queue.emit(
+                world_tick=self.world_tick,
+                kind=impact_kind,
+                actor_id="player",
+                target_id=session.enemy_id,
+                world_position=(self.player.x, 0.0, self.player.z),
+                payload={
+                    "hit_count": hit_count,
+                    "result": result,
+                    "successful_defense_count": session.successful_defense_count,
+                    "failed_round_count": session.failed_round_count,
+                    "outcome": session.outcome,
+                },
+            )
+        )
         events.append(
             self.event_queue.emit(
                 world_tick=self.world_tick,

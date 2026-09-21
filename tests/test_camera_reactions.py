@@ -144,6 +144,23 @@ def test_bat006_combat_camera_reaction_uses_existing_gates() -> None:
     assert abs(transform.offset_y) <= 2.0
 
 
+def test_bat007_guard_failure_camera_reaction_uses_existing_gates() -> None:
+    raw = make_runtime_raw(shake=True, pulse=True)
+    model = make_model(raw)
+    effects = EffectSystem(raw)
+    failed = make_event(model, "combat_guard_failed")
+
+    effects.process_events([failed], model)
+    effects.update(0.05, model)
+    transform = effects.camera_transform(512, 236)
+
+    assert len(effects.camera_impulses) == 1
+    assert transform.zoom_multiplier == pytest.approx(1.0)
+    assert abs(transform.offset_x) <= 2.0
+    assert abs(transform.offset_y) <= 2.0
+    assert abs(transform.offset_x) > 0.0 or abs(transform.offset_y) > 0.0
+
+
 def test_presentation_camera_changes_render_only_and_respects_focus_mode() -> None:
     raw = make_runtime_raw(shake=True, pulse=True)
     model = make_model(raw)

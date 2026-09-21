@@ -697,6 +697,18 @@ def test_presentation_cue_mapping_for_existing_events() -> None:
     )
     assert (
         presentation_cue_for_event(
+            event(model, "combat_guard_success", model.player.x, model.player.z)
+        )
+        == "DWF_COMBAT_GUARD_SUCCESS"
+    )
+    assert (
+        presentation_cue_for_event(
+            event(model, "combat_guard_failed", model.player.x, model.player.z)
+        )
+        == "DWF_COMBAT_GUARD_FAILED"
+    )
+    assert (
+        presentation_cue_for_event(
             event(model, "combat_perfect_started", model.player.x, model.player.z)
         )
         == "DWF_COMBAT_PERFECT"

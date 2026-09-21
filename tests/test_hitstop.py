@@ -74,6 +74,17 @@ def test_hitstop_supports_bat006_combat_feedback_events_when_enabled() -> None:
     assert app.accumulator == 0.0
 
 
+def test_hitstop_supports_bat007_guard_impact_events_when_enabled() -> None:
+    app = make_hitstop_app(enabled=True)
+
+    app.request_hitstop_from_events(
+        [event(app, "combat_guard_success"), event(app, "combat_guard_failed")]
+    )
+
+    assert app.hitstop_remaining == pytest.approx(0.066)
+    assert app.accumulator == 0.0
+
+
 def test_hitstop_freezes_model_clock_but_advances_fx() -> None:
     app = make_hitstop_app(enabled=True)
     app.hitstop_remaining = 0.05

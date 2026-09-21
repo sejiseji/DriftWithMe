@@ -211,6 +211,10 @@ def presentation_cue_for_event(event: GameEvent) -> str | None:
         return "DWF_COMBAT_MARKER_HIT"
     if event.kind == "combat_marker_miss":
         return "DWF_COMBAT_MARKER_MISS"
+    if event.kind == "combat_guard_success":
+        return "DWF_COMBAT_GUARD_SUCCESS"
+    if event.kind == "combat_guard_failed":
+        return "DWF_COMBAT_GUARD_FAILED"
     if event.kind == "combat_perfect_started":
         return "DWF_COMBAT_PERFECT"
     if event.kind == "combat_deflect_started":
@@ -409,6 +413,41 @@ class EffectSystem:
         elif cue_id == "DWF_COMBAT_MARKER_MISS":
             self.add_ring(model.player.x, model.player.z, 5.0, 8.0, 5, 0.14)
             self.add_emote("player", "player", model.player.x, model.player.z, "x", 5, 0.22)
+        elif cue_id == "DWF_COMBAT_GUARD_SUCCESS":
+            enemy = model.enemy_by_id(event.target_id or "")
+            target_x = enemy.x if enemy is not None else x
+            target_z = enemy.z if enemy is not None else z
+            self.spawn_burst_palette(
+                model.player.x,
+                model.player_cube_size * 0.7,
+                model.player.z,
+                colors=(7, 10),
+                count=4,
+                speed=10.0,
+            )
+            self.add_ring(model.player.x, model.player.z, 6.0, 13.0, 7, 0.18)
+            self.add_direction_strokes(
+                model.player.x, model.player.z, target_x, target_z, 10.0, 7, 0.14
+            )
+        elif cue_id == "DWF_COMBAT_GUARD_FAILED":
+            enemy = model.enemy_by_id(event.target_id or "")
+            target_x = enemy.x if enemy is not None else x
+            target_z = enemy.z if enemy is not None else z
+            mid_x = (model.player.x + target_x) * 0.5
+            mid_z = (model.player.z + target_z) * 0.5
+            self.spawn_burst_palette(
+                mid_x,
+                model.player_cube_size * 0.45,
+                mid_z,
+                colors=(8, 2, 7),
+                count=6,
+                speed=16.0,
+            )
+            self.add_ring(mid_x, mid_z, 5.0, 15.0, 8, 0.22)
+            self.add_direction_strokes(
+                target_x, target_z, model.player.x, model.player.z, 14.0, 8, 0.18
+            )
+            self.add_emote("player", "player", model.player.x, model.player.z, "!", 8, 0.35)
         elif cue_id == "DWF_COMBAT_PERFECT":
             self.spawn_burst_palette(
                 model.player.x,
