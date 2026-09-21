@@ -237,8 +237,11 @@ class Renderer:
         self._visible_ambient_motes = self.draw_ambient_motes_layer(
             model, camera, presentation_time
         )
-        self.draw_shallow_water_tiles(model, camera)
-        self.draw_shallow_water_shoreline_tiles(model, camera)
+        shallow_water_config = model.config.get("shallow_water", {})
+        if shallow_water_config.get("surface_tiles_enabled", False):
+            self.draw_shallow_water_tiles(model, camera)
+        if shallow_water_config.get("shoreline_tiles_enabled", False):
+            self.draw_shallow_water_shoreline_tiles(model, camera)
         self.draw_shallow_water_symbols(model, camera, presentation_time)
         self.draw_ground_surfaces(model, camera)
         self.draw_background_effects(model, camera, effects)
@@ -2469,8 +2472,8 @@ class Renderer:
         projection_kind = "affine" if self.camera_is_affine(camera) else "perspective"
         patches = [
             patch
-            for patch in model.world.baked_ground_patches
-            if patch.enabled and patch.projection_kind == projection_kind
+            for patch in model.world.enabled_baked_ground_patches
+            if patch.projection_kind == projection_kind
         ]
         patches.sort(
             key=lambda patch: (

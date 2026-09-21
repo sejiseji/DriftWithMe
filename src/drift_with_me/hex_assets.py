@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Collection, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 from importlib import resources
@@ -208,6 +208,7 @@ def load_runtime_sprite_library(
                 ),
                 read_text=read_text,
                 enabled=True,
+                skip_source_asset_ids=runtime_skipped_source_asset_ids(raw_config),
             )
 
         return load_sprite_manifest(pyxel_module, manifest, read_text, enabled=True)
@@ -253,6 +254,7 @@ def load_pyxres_sprite_manifest(
     *,
     read_text: Callable[[str], str] | None = None,
     enabled: bool,
+    skip_source_asset_ids: Collection[str] = (),
 ) -> SpriteAssetLibrary:
     require_dict(manifest, "manifest")
     schema_version = require_int(manifest.get("schema_version"), "manifest.schema_version")
@@ -334,6 +336,9 @@ def load_pyxres_sprite_manifest(
         if not isinstance(source_assets_raw, list):
             raise HexAssetError("manifest.source_assets: expected list")
         for index, raw_asset in enumerate(source_assets_raw):
+            source_asset_id = raw_asset.get("id") if isinstance(raw_asset, dict) else None
+            if source_asset_id in skip_source_asset_ids:
+                continue
             asset = load_sprite_asset(
                 pyxel_module,
                 raw_asset,
@@ -345,6 +350,40 @@ def load_pyxres_sprite_manifest(
                 raise HexAssetError(f"{asset_id}: duplicate asset id")
             assets[asset_id] = asset
     return SpriteAssetLibrary(enabled=enabled, assets=assets)
+
+
+def runtime_skipped_source_asset_ids(raw_config: dict[str, Any]) -> frozenset[str]:
+    asset_config = raw_config.get("assets", {})
+    shallow_water = raw_config.get("shallow_water", {})
+    if not isinstance(asset_config, dict) or not isinstance(shallow_water, dict):
+        return frozenset()
+
+    skipped: set[str] = set()
+
+    def add_visual_asset_id(visual_name: Any) -> None:
+        if not isinstance(visual_name, str) or not visual_name:
+            return
+        asset_id = asset_config.get(f"{visual_name}_asset")
+        if isinstance(asset_id, str) and asset_id:
+            skipped.add(asset_id)
+
+    water_enabled = bool(shallow_water.get("enabled", False))
+    if not water_enabled or not bool(shallow_water.get("surface_tiles_enabled", False)):
+        pattern = shallow_water.get("surface_tile_pattern", ())
+        if isinstance(pattern, list):
+            for row in pattern:
+                if not isinstance(row, list):
+                    continue
+                for visual_name in row:
+                    add_visual_asset_id(visual_name)
+
+    if not water_enabled or not bool(shallow_water.get("shoreline_tiles_enabled", False)):
+        tiles = shallow_water.get("shoreline_tiles", {})
+        if isinstance(tiles, dict):
+            for visual_name in tiles.values():
+                add_visual_asset_id(visual_name)
+
+    return frozenset(skipped)
 
 
 def parse_pyxres_sprite_definition(

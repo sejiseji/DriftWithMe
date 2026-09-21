@@ -1123,8 +1123,25 @@ assert fuse_frame is not None
 assert runtime.raw["assets"]["buddy_idle_asset"] == "fuse_front_right_neutral_48"
 for direction in fuse_assets:
     assert runtime.raw["assets"][f"buddy_{{direction}}_asset"] == f"fuse_{{direction}}_neutral_48"
+runtime_skipped_environment_source_ids = {{
+    "water_base_a",
+    "water_base_b",
+    "water_caustics_a",
+    "water_dark_a",
+    "shore_top_64",
+    "shore_bottom_64",
+    "shore_left_64",
+    "shore_right_64",
+    "shore_corner_outer_nw_64",
+    "shore_corner_outer_ne_64",
+    "shore_corner_outer_sw_64",
+    "shore_corner_outer_se_64",
+}}
 for source_id, expected_hash in environment_hashes.items():
     env_asset = library.get(environment_asset_ids[source_id])
+    if source_id in runtime_skipped_environment_source_ids:
+        assert env_asset is None, source_id
+        continue
     assert env_asset is not None, source_id
     env_frame = env_asset.frame()
     assert env_frame.source is not None
@@ -1264,9 +1281,7 @@ assert len(model.world.ground_surfaces) == 0
 assert renderer.ground_surface_sprite_asset(model, "concrete_clean_a").definition.asset_id == (
     "concrete_clean_a_64"
 )
-assert renderer.ground_surface_sprite_asset(model, "water_base_a").definition.asset_id == (
-    "water_base_a_64"
-)
+assert renderer.ground_surface_sprite_asset(model, "water_base_a") is None
 assert model.config["shallow_water"]["surface_tiles_enabled"] is False
 assert model.config["shallow_water"]["surface_tile_world_size"] == 64.0
 assert model.config["shallow_water"]["surface_tile_pattern"][0][0] == "water_base_a"
@@ -1353,12 +1368,27 @@ renderer.draw_ground_source_asset = (
 )
 renderer.draw_shallow_water_shoreline_tiles(model, camera)
 assert shore_tile_calls == []
+original_draw_shallow_water_tiles = renderer.draw_shallow_water_tiles
+original_draw_shallow_water_shoreline_tiles = renderer.draw_shallow_water_shoreline_tiles
+original_draw_shallow_water_symbols = renderer.draw_shallow_water_symbols
+scene_water_calls = []
+renderer.draw_shallow_water_tiles = lambda *args, **kwargs: scene_water_calls.append("surface")
+renderer.draw_shallow_water_shoreline_tiles = (
+    lambda *args, **kwargs: scene_water_calls.append("shoreline")
+)
+renderer.draw_shallow_water_symbols = lambda *args, **kwargs: scene_water_calls.append("symbols")
+renderer.draw_scene(model, camera, presentation_time=0.0, debug=False)
+assert scene_water_calls == ["symbols"]
+renderer.draw_shallow_water_tiles = original_draw_shallow_water_tiles
+renderer.draw_shallow_water_shoreline_tiles = original_draw_shallow_water_shoreline_tiles
+renderer.draw_shallow_water_symbols = original_draw_shallow_water_symbols
 symbol_count = renderer.draw_shallow_water_symbols(model, camera, 0.0)
 assert symbol_count > 0
 model.combat_session = object()
 assert renderer.draw_shallow_water_symbols(model, camera, 0.0) == 0
 model.combat_session = None
 assert len(model.world.baked_ground_patches) == 14
+assert model.world.enabled_baked_ground_patches == ()
 legacy_patch = model.world.baked_ground_patches[0]
 assert legacy_patch.id == "spawn_affine_ground_patch"
 assert legacy_patch.group == "spawn_192_legacy_compare"

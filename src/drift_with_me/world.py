@@ -352,6 +352,9 @@ class WorldData:
         self.baked_ground_patches = tuple(
             self._load_baked_ground_patch(item) for item in raw.get("baked_ground_patches", ())
         )
+        self.enabled_baked_ground_patches = tuple(
+            patch for patch in self.baked_ground_patches if patch.enabled
+        )
 
     def _load_world_rect(self, raw_rect: Any, fallback: WorldRect) -> WorldRect:
         if not isinstance(raw_rect, (list, tuple)) or len(raw_rect) != 4:
