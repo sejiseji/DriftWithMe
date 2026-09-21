@@ -300,6 +300,8 @@
     "combat_hidden": true,
     "cell_world": 58.0,
     "max_visible_motes": 92,
+    "twinkle_enabled": true,
+    "twinkle_period_sec": 1.8,
     "areas": [
       {
         "id": "north_forest_green_motes",

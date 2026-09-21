@@ -1291,6 +1291,8 @@ assert model.config["ambient_motes"]["enabled"] is True
 assert model.config["ambient_motes"]["combat_hidden"] is True
 assert model.config["ambient_motes"]["cell_world"] == 58.0
 assert model.config["ambient_motes"]["max_visible_motes"] == 92
+assert model.config["ambient_motes"]["twinkle_enabled"] is True
+assert model.config["ambient_motes"]["twinkle_period_sec"] == 1.8
 model.config["forest_light"]["areas"] = [
     {{
         "id": "test_visible_forest_light",

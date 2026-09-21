@@ -118,6 +118,8 @@ The forest understory pass adds 10 more `reactive_grass_low` upright billboard i
 
 LIGHT001 adds a first static forest-light layer. This is not a dynamic lighting system and does not alter sprites, palette remaps, collision, pathing, camera projection, or atmospheric depth. It draws a sparse deterministic world-space pattern of small light flecks over configured forest/grove rectangles during affine exploration only. The layer is culled to the visible ground range, capped by `forest_light.max_visible_spots`, and hidden during combat so battle timing and zoom transitions are not affected. The current values are intended as a low-risk composition prototype before any future light-shaft, cloud-shadow, or particle work.
 
+LIGHT003 keeps the ambient mote positions fixed in world space but adds deterministic twinkle phases at draw time. The photon / green mote cells do not drift, crawl with camera movement, or use the runtime particle system. Only the drawn shape intensity changes over time, using `ambient_motes.twinkle_enabled` and `ambient_motes.twinkle_period_sec`; the layer remains affine-only and hidden during combat.
+
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
 
 - `concrete_clean_a`: source hash `e2b5cfa4caafd4a1d5f3050d5033a5547c5e8251befba4a2467f1edee39c8640`

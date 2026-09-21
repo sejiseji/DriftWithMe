@@ -234,7 +234,9 @@ class Renderer:
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
         self._visible_forest_light_spots = self.draw_forest_light_layer(model, camera)
-        self._visible_ambient_motes = self.draw_ambient_motes_layer(model, camera)
+        self._visible_ambient_motes = self.draw_ambient_motes_layer(
+            model, camera, presentation_time
+        )
         self.draw_shallow_water_tiles(model, camera)
         self.draw_shallow_water_shoreline_tiles(model, camera)
         self.draw_shallow_water_symbols(model, camera, presentation_time)
@@ -1540,7 +1542,9 @@ class Renderer:
         value *= 2246822519
         return value & 0xFFFFFFFF
 
-    def draw_ambient_motes_layer(self, model: GameModel, camera: CameraState) -> int:
+    def draw_ambient_motes_layer(
+        self, model: GameModel, camera: CameraState, presentation_time: float = 0.0
+    ) -> int:
         config = model.config.get("ambient_motes", {})
         if not bool(config.get("enabled", False)):
             return 0
@@ -1554,6 +1558,8 @@ class Renderer:
 
         cell_world = max(12.0, float(config.get("cell_world", 64.0)))
         max_motes = max(0, int(config.get("max_visible_motes", 80)))
+        twinkle_enabled = bool(config.get("twinkle_enabled", False))
+        twinkle_period_sec = max(0.1, float(config.get("twinkle_period_sec", 1.8)))
         if max_motes <= 0:
             return 0
         total = 0
@@ -1573,6 +1579,9 @@ class Renderer:
                 draw_rect,
                 cell_world,
                 max_motes - total,
+                presentation_time,
+                twinkle_enabled,
+                twinkle_period_sec,
             )
             if total >= max_motes:
                 return total
@@ -1586,6 +1595,9 @@ class Renderer:
         draw_rect: WorldRect,
         cell_world: float,
         max_count: int,
+        presentation_time: float,
+        twinkle_enabled: bool,
+        twinkle_period_sec: float,
     ) -> int:
         if max_count <= 0:
             return 0
@@ -1623,7 +1635,15 @@ class Renderer:
                 if point is None or not self._screen_point_visible(point, camera, 10.0):
                     continue
                 self.draw_ambient_mote(
-                    int(point.x), int(point.y), seed, kind, color, secondary_color
+                    int(point.x),
+                    int(point.y),
+                    seed,
+                    kind,
+                    color,
+                    secondary_color,
+                    presentation_time,
+                    twinkle_enabled,
+                    twinkle_period_sec,
                 )
                 count += 1
                 if count >= max_count:
@@ -1631,21 +1651,44 @@ class Renderer:
         return count
 
     def draw_ambient_mote(
-        self, x: int, y: int, seed: int, kind: str, color: int, secondary_color: int
+        self,
+        x: int,
+        y: int,
+        seed: int,
+        kind: str,
+        color: int,
+        secondary_color: int,
+        presentation_time: float,
+        twinkle_enabled: bool,
+        twinkle_period_sec: float,
     ) -> None:
         style = seed % 5
+        twinkle = 1
+        if twinkle_enabled:
+            phase_offset = ((seed >> 24) & 15) / 16.0
+            twinkle = int(((presentation_time / twinkle_period_sec) + phase_offset) * 4.0) % 4
         if kind == "photon":
-            if style in {0, 1}:
+            if twinkle == 0:
+                self.pyxel.pset(x, y, secondary_color)
+            elif style in {0, 1}:
                 self.pyxel.pset(x, y, color)
                 self.pyxel.pset(x + 1, y - 1, secondary_color)
             elif style == 2:
                 self.pyxel.line(x - 1, y, x + 1, y, color)
                 self.pyxel.pset(x, y - 1, secondary_color)
+            elif twinkle == 2:
+                self.pyxel.pset(x, y, color)
+                self.pyxel.pset(x + 1, y, color)
+                self.pyxel.pset(x - 1, y, color)
+                self.pyxel.pset(x, y - 1, secondary_color)
+                self.pyxel.pset(x, y + 1, secondary_color)
             else:
                 self.pyxel.pset(x, y, secondary_color)
             return
 
-        if style == 0:
+        if twinkle == 0:
+            self.pyxel.pset(x, y, secondary_color)
+        elif style == 0:
             self.pyxel.pset(x, y, color)
             self.pyxel.pset(x + 1, y, secondary_color)
         elif style == 1:
@@ -1656,6 +1699,9 @@ class Renderer:
         elif style == 3:
             self.pyxel.pset(x, y, secondary_color)
             self.pyxel.pset(x + 1, y - 1, color)
+        elif twinkle == 2:
+            self.pyxel.circb(x, y, 1, color)
+            self.pyxel.pset(x + 2, y - 1, secondary_color)
         else:
             self.pyxel.pset(x, y, color)
 
