@@ -1436,9 +1436,21 @@ def test_bat004_zap_success_defeats_enemy_and_spends_energy_once() -> None:
     assert [event.kind for event in events if event.kind == "discharge_succeeded"] == [
         "discharge_succeeded"
     ]
+    zap_event = next(event for event in events if event.kind == "discharge_succeeded")
+    assert zap_event.payload["zap_route"] in {"direct", "fork", "crawl"}
     restore_events = step_until_combat_restored(model, camera)
     assert enemy.state == "DEFEATED"
     assert restore_events[-1].payload["combat_outcome"] == "defeat"
+
+
+def test_bat007d_zap_visual_route_does_not_repeat_consecutively() -> None:
+    model, _camera = make_model()
+    enemy = normal_enemy(model)
+
+    routes = tuple(model.choose_combat_zap_visual_route(enemy) for _ in range(8))
+
+    assert set(routes).issubset({"direct", "fork", "crawl"})
+    assert all(routes[index] != routes[index + 1] for index in range(len(routes) - 1))
 
 
 def test_bat005_deflect_routes_through_victory_cue_before_restore() -> None:

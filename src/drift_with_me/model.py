@@ -212,6 +212,7 @@ class GameModel:
         self.manual_velocity_z = 0.0
         self.combat_session: CombatSession | None = None
         self.combat_reentry_cooldowns: dict[str, float] = {}
+        self.last_zap_visual_route: str | None = None
         self.buddy_hard_follow_suppressed_remaining = 0.0
         self.refresh_active_enemies()
 
@@ -282,6 +283,7 @@ class GameModel:
         self.auto_move_stuck_elapsed = 0.0
         self.combat_session = None
         self.combat_reentry_cooldowns = {}
+        self.last_zap_visual_route = None
         self.buddy_hard_follow_suppressed_remaining = 0.0
         self.refresh_active_enemies()
 
@@ -2633,6 +2635,8 @@ class GameModel:
         session.outcome = "defeat"
         self.face_actor_toward(enemy.x, enemy.z)
         self.debug.discharges += 1
+        zap_route = self.choose_combat_zap_visual_route(enemy)
+        session.pattern_id = zap_route
         events.append(
             self.event_queue.emit(
                 world_tick=self.world_tick,
@@ -2640,10 +2644,19 @@ class GameModel:
                 actor_id="buddy",
                 target_id=enemy.id,
                 world_position=(enemy.x, 0.0, enemy.z),
-                payload={"energy_cost": cost, "combat_counter": True},
+                payload={"energy_cost": cost, "combat_counter": True, "zap_route": zap_route},
             )
         )
         self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
+
+    def choose_combat_zap_visual_route(self, enemy: EnemyState) -> str:
+        routes = ("direct", "fork", "crawl")
+        seed = self.world_tick + sum(ord(char) for char in enemy.id) + self.debug.discharges
+        route = routes[seed % len(routes)]
+        if route == self.last_zap_visual_route:
+            route = routes[(routes.index(route) + 1) % len(routes)]
+        self.last_zap_visual_route = route
+        return route
 
     def combat_timing_slider_position(self, session: CombatSession | None = None) -> float | None:
         session = self.combat_session if session is None else session

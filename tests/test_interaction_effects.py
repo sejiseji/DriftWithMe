@@ -760,7 +760,7 @@ def test_presentation_cues_create_local_fx_once_per_event() -> None:
     effects.process_events([refill, refill, zap, zap], model)
 
     assert len(effects.rings) == 2
-    assert len(effects.strokes) == 4
+    assert len(effects.strokes) == 5
     assert len(effects.particles) == effects.max_particles_per_event * 2
     assert {particle.color for particle in effects.particles} >= {5, 7, 9, 10, 12}
 
@@ -809,6 +809,61 @@ def test_zap_cue_creates_draw_only_enemy_snapshot() -> None:
 
     assert effects.enemy_snapshots == []
     assert snapshot_model(model) == before
+
+
+def test_bat007d_zap_routes_change_only_visual_effects() -> None:
+    model, _camera = make_model()
+    enemy = normal_enemy(model)
+    enemy.state = "DEFEATED"
+    before = snapshot_model(model)
+
+    direct = EffectSystem(model.config)
+    direct.process_events(
+        [
+            event(
+                model,
+                "discharge_succeeded",
+                enemy.x,
+                enemy.z,
+                target_id=enemy.id,
+                payload={"zap_route": "direct"},
+            )
+        ],
+        model,
+    )
+    fork = EffectSystem(model.config)
+    fork.process_events(
+        [
+            event(
+                model,
+                "discharge_succeeded",
+                enemy.x,
+                enemy.z,
+                target_id=enemy.id,
+                payload={"zap_route": "fork"},
+            )
+        ],
+        model,
+    )
+    crawl = EffectSystem(model.config)
+    crawl.process_events(
+        [
+            event(
+                model,
+                "discharge_succeeded",
+                enemy.x,
+                enemy.z,
+                target_id=enemy.id,
+                payload={"zap_route": "crawl"},
+            )
+        ],
+        model,
+    )
+
+    assert snapshot_model(model) == before
+    assert len(fork.strokes) > len(direct.strokes)
+    assert any(stroke.start_y == pytest.approx(1.0) for stroke in crawl.strokes)
+    assert len(crawl.rings) > len(direct.rings)
 
 
 def test_combat_defeat_restore_adds_linger_particles_at_committed_enemy_position() -> None:

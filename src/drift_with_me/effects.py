@@ -394,8 +394,8 @@ class EffectSystem:
             self.add_enemy_snapshot(event, model)
             self.spawn_burst_palette(x, y, z, colors=(9, 10, 7), count=10, speed=14.0)
             self.add_ring(x, z, 6.0, 20.0, 10, 0.62)
-            self.add_stroke(model.buddy.x, model.buddy.y + 6.0, model.buddy.z, x, 10.0, z, 7, 0.28)
-            self.add_stroke(model.buddy.x, model.buddy.y + 3.0, model.buddy.z, x, 2.0, z, 10, 0.22)
+            route = str(event.payload.get("zap_route", "direct"))
+            self.add_combat_zap_route(route, model.buddy.x, model.buddy.y, model.buddy.z, x, z)
             self.add_glint_strokes(x, z, 14.0, 10, 0.36)
             self.add_emote("enemy", event.target_id or "", x, z, "!", 10, 0.8)
         elif cue_id == "DWF_ABNORMAL_WINDUP":
@@ -1222,6 +1222,87 @@ class EffectSystem:
                 layer,
                 source,
             )
+        )
+
+    def add_combat_zap_route(
+        self,
+        route: str,
+        start_x: float,
+        start_y: float,
+        start_z: float,
+        target_x: float,
+        target_z: float,
+    ) -> None:
+        dx = target_x - start_x
+        dz = target_z - start_z
+        length = math.hypot(dx, dz)
+        if length <= 1e-6:
+            self.add_stroke(start_x, start_y + 6.0, start_z, target_x, 10.0, target_z, 7, 0.28)
+            return
+        ux = dx / length
+        uz = dz / length
+        side_x = -uz
+        side_z = ux
+        if route == "fork":
+            mid_x = start_x + dx * 0.48
+            mid_z = start_z + dz * 0.48
+            spread = min(16.0, max(7.0, length * 0.18))
+            for index, offset in enumerate((-spread, spread)):
+                color = 7 if index == 0 else 10
+                self.add_stroke(
+                    start_x,
+                    start_y + 6.0,
+                    start_z,
+                    mid_x + side_x * offset,
+                    13.0,
+                    mid_z + side_z * offset,
+                    color,
+                    0.24,
+                )
+                self.add_stroke(
+                    mid_x + side_x * offset,
+                    13.0,
+                    mid_z + side_z * offset,
+                    target_x,
+                    9.0,
+                    target_z,
+                    color,
+                    0.28,
+                )
+            self.add_stroke(start_x, start_y + 3.0, start_z, target_x, 5.0, target_z, 10, 0.16)
+            return
+        if route == "crawl":
+            ground_start_x = start_x + ux * min(10.0, length * 0.25)
+            ground_start_z = start_z + uz * min(10.0, length * 0.25)
+            ground_end_x = target_x - ux * min(9.0, length * 0.22)
+            ground_end_z = target_z - uz * min(9.0, length * 0.22)
+            self.add_stroke(
+                start_x, start_y + 5.0, start_z, ground_start_x, 1.0, ground_start_z, 7, 0.2
+            )
+            self.add_stroke(
+                ground_start_x, 1.0, ground_start_z, ground_end_x, 1.0, ground_end_z, 10, 0.34
+            )
+            self.add_stroke(ground_end_x, 1.0, ground_end_z, target_x, 10.0, target_z, 7, 0.22)
+            self.add_ring(ground_end_x, ground_end_z, 3.0, 11.0, 10, 0.24, thickness=2)
+            for offset in (-4.0, 4.0):
+                self.add_stroke(
+                    ground_start_x + side_x * offset,
+                    1.0,
+                    ground_start_z + side_z * offset,
+                    ground_start_x + side_x * offset + ux * min(10.0, length * 0.2),
+                    1.0,
+                    ground_start_z + side_z * offset + uz * min(10.0, length * 0.2),
+                    7,
+                    0.16,
+                )
+            return
+        self.add_stroke(start_x, start_y + 6.0, start_z, target_x, 10.0, target_z, 7, 0.28)
+        self.add_stroke(start_x, start_y + 3.0, start_z, target_x, 2.0, target_z, 10, 0.22)
+        branch_len = min(14.0, max(6.0, length * 0.18))
+        branch_x = target_x - ux * branch_len
+        branch_z = target_z - uz * branch_len
+        self.add_stroke(
+            branch_x, 8.0, branch_z, branch_x + side_x * 6.0, 7.0, branch_z + side_z * 6.0, 7, 0.16
         )
 
     def add_direction_strokes(
