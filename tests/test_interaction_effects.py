@@ -975,12 +975,12 @@ def test_env005_shallow_water_emits_entry_ripple_before_spacing() -> None:
     model.player.z = 120.0
     effects.sync_shallow_water_player_position(model)
 
-    model.player.x = 104.0
+    model.player.x = 110.0
     effects.update(0.1, model)
 
     assert len(effects.rings) == 1
     assert len(effects.strokes) == 1
-    assert effects.rings[0].x == pytest.approx(104.0)
+    assert effects.rings[0].x == pytest.approx(110.0)
     assert effects.rings[0].z == pytest.approx(120.0)
 
 
@@ -999,7 +999,7 @@ def test_env005_shallow_water_entry_ripple_can_be_disabled() -> None:
     model.player.z = 120.0
     effects.sync_shallow_water_player_position(model)
 
-    model.player.x = 104.0
+    model.player.x = 110.0
     effects.update(0.1, model)
 
     assert effects.rings == []
@@ -1059,6 +1059,56 @@ def test_env005_shallow_water_respects_spacing_and_area() -> None:
     effects.sync_shallow_water_player_position(model)
     model.player.x = 232.0
     effects.update(0.1, model)
+    assert len(effects.rings) == 1
+
+
+def test_env005_shallow_water_reaction_uses_ellipse_not_rect_corners() -> None:
+    model, _camera = make_model()
+    model.config["shallow_water"] = {
+        "enabled": True,
+        "areas": [{"id": "test", "rect_xz": [100.0, 100.0, 140.0, 140.0]}],
+        "min_move_world": 1.0,
+        "ripple_spacing_world": 2.0,
+        "ripple_lifetime_sec": 0.4,
+        "reaction_ellipse_enabled": True,
+        "reaction_ellipse_inset_world": 0.0,
+    }
+    effects = EffectSystem(model.config)
+
+    assert effects.shallow_water_point_inside(120.0, 120.0, effects.shallow_water_areas_for(model))
+    assert not effects.shallow_water_point_inside(
+        102.0, 102.0, effects.shallow_water_areas_for(model)
+    )
+
+    model.player.x = 101.0
+    model.player.z = 102.0
+    effects.sync_shallow_water_player_position(model)
+    model.player.x = 108.0
+    model.player.z = 102.0
+    effects.update(0.1, model)
+    assert effects.rings == []
+
+
+def test_env005_shallow_water_reaction_detects_ellipse_crossing() -> None:
+    model, _camera = make_model()
+    model.config["shallow_water"] = {
+        "enabled": True,
+        "areas": [{"id": "test", "rect_xz": [100.0, 100.0, 140.0, 140.0]}],
+        "min_move_world": 1.0,
+        "ripple_spacing_world": 99.0,
+        "ripple_lifetime_sec": 0.4,
+        "entry_ripple_enabled": True,
+        "reaction_ellipse_enabled": True,
+        "reaction_ellipse_inset_world": 0.0,
+    }
+    effects = EffectSystem(model.config)
+    model.player.x = 96.0
+    model.player.z = 120.0
+    effects.sync_shallow_water_player_position(model)
+
+    model.player.x = 104.0
+    effects.update(0.1, model)
+
     assert len(effects.rings) == 1
 
 

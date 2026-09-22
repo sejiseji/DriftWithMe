@@ -294,6 +294,12 @@ class EffectSystem:
         self.shallow_water_entry_ripple_enabled = bool(
             shallow_water.get("entry_ripple_enabled", True)
         )
+        self.shallow_water_reaction_ellipse_enabled = bool(
+            shallow_water.get("reaction_ellipse_enabled", True)
+        )
+        self.shallow_water_reaction_ellipse_inset_world = max(
+            0.0, float(shallow_water.get("reaction_ellipse_inset_world", 6.0))
+        )
         self.particles: list[WorldParticle] = []
         self.rings: list[WorldRing] = []
         self.strokes: list[WorldStroke] = []
@@ -752,7 +758,7 @@ class EffectSystem:
             rect = self.shallow_water_area_rect(area)
             if rect is None:
                 continue
-            if self.segment_intersects_rect(previous, current, rect):
+            if self.shallow_water_segment_intersects_area(previous, current, rect):
                 return True
         return False
 
@@ -761,10 +767,84 @@ class EffectSystem:
             rect = self.shallow_water_area_rect(area)
             if rect is None:
                 continue
-            min_x, min_z, max_x, max_z = rect
-            if min_x <= x <= max_x and min_z <= z <= max_z:
+            if self.shallow_water_point_inside_area(x, z, rect):
                 return True
         return False
+
+    def shallow_water_point_inside_area(
+        self, x: float, z: float, rect: tuple[float, float, float, float]
+    ) -> bool:
+        if not self.shallow_water_reaction_ellipse_enabled:
+            min_x, min_z, max_x, max_z = rect
+            return min_x <= x <= max_x and min_z <= z <= max_z
+        return self.point_inside_shallow_water_ellipse(
+            x,
+            z,
+            rect,
+            self.shallow_water_reaction_ellipse_inset_world,
+        )
+
+    def shallow_water_segment_intersects_area(
+        self,
+        previous: tuple[float, float],
+        current: tuple[float, float],
+        rect: tuple[float, float, float, float],
+    ) -> bool:
+        if not self.shallow_water_reaction_ellipse_enabled:
+            return self.segment_intersects_rect(previous, current, rect)
+        return self.segment_intersects_shallow_water_ellipse(
+            previous,
+            current,
+            rect,
+            self.shallow_water_reaction_ellipse_inset_world,
+        )
+
+    def point_inside_shallow_water_ellipse(
+        self,
+        x: float,
+        z: float,
+        rect: tuple[float, float, float, float],
+        inset: float,
+    ) -> bool:
+        min_x, min_z, max_x, max_z = rect
+        center_x = (min_x + max_x) * 0.5
+        center_z = (min_z + max_z) * 0.5
+        radius_x = max(1.0, (max_x - min_x) * 0.5 - inset)
+        radius_z = max(1.0, (max_z - min_z) * 0.5 - inset)
+        nx = (x - center_x) / radius_x
+        nz = (z - center_z) / radius_z
+        return nx * nx + nz * nz <= 1.0
+
+    def segment_intersects_shallow_water_ellipse(
+        self,
+        start: tuple[float, float],
+        end: tuple[float, float],
+        rect: tuple[float, float, float, float],
+        inset: float,
+    ) -> bool:
+        min_x, min_z, max_x, max_z = rect
+        center_x = (min_x + max_x) * 0.5
+        center_z = (min_z + max_z) * 0.5
+        radius_x = max(1.0, (max_x - min_x) * 0.5 - inset)
+        radius_z = max(1.0, (max_z - min_z) * 0.5 - inset)
+        sx = (start[0] - center_x) / radius_x
+        sz = (start[1] - center_z) / radius_z
+        dx = (end[0] - start[0]) / radius_x
+        dz = (end[1] - start[1]) / radius_z
+        a = dx * dx + dz * dz
+        b = 2.0 * (sx * dx + sz * dz)
+        c = sx * sx + sz * sz - 1.0
+        if c <= 0.0:
+            return True
+        if a <= 1e-9:
+            return False
+        discriminant = b * b - 4.0 * a * c
+        if discriminant < 0.0:
+            return False
+        root = math.sqrt(discriminant)
+        t1 = (-b - root) / (2.0 * a)
+        t2 = (-b + root) / (2.0 * a)
+        return 0.0 <= t1 <= 1.0 or 0.0 <= t2 <= 1.0
 
     def shallow_water_area_rect(self, area) -> tuple[float, float, float, float] | None:
         if hasattr(area, "min_x") and hasattr(area, "min_z"):
