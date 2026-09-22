@@ -291,6 +291,9 @@ class EffectSystem:
         self.shallow_water_max_ripples_per_update = max(
             0, int(shallow_water.get("max_ripples_per_update", 2))
         )
+        self.shallow_water_entry_ripple_enabled = bool(
+            shallow_water.get("entry_ripple_enabled", True)
+        )
         self.particles: list[WorldParticle] = []
         self.rings: list[WorldRing] = []
         self.strokes: list[WorldStroke] = []
@@ -661,13 +664,29 @@ class EffectSystem:
         moved = math.hypot(dx, dz)
         if moved < self.shallow_water_min_move_world:
             return
-        if not self.shallow_water_segment_hits(previous, current, areas):
+        previous_inside = self.shallow_water_point_inside(*previous, areas)
+        current_inside = self.shallow_water_point_inside(*current, areas)
+        if not (
+            previous_inside
+            or current_inside
+            or self.shallow_water_segment_hits(previous, current, areas)
+        ):
             self._shallow_water_distance_since_ripple = 0.0
             return
 
+        emitted = 0
+        if (
+            self.shallow_water_entry_ripple_enabled
+            and not previous_inside
+            and current_inside
+            and emitted < self.shallow_water_max_ripples_per_update
+        ):
+            self.add_shallow_water_ripple(current[0], current[1], dx, dz)
+            emitted += 1
+            self._shallow_water_distance_since_ripple = 0.0
+
         self._shallow_water_distance_since_ripple += moved
         spacing = max(self.shallow_water_ripple_spacing_world, self.shallow_water_min_move_world)
-        emitted = 0
         while (
             self._shallow_water_distance_since_ripple >= spacing
             and emitted < self.shallow_water_max_ripples_per_update

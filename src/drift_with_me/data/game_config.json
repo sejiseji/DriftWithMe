@@ -866,6 +866,7 @@
     "wake_color": 7,
     "wake_length_world": 10.0,
     "max_ripples_per_update": 2,
+    "entry_ripple_enabled": true,
     "symbol_layer_enabled": true,
     "symbol_combat_hidden": true,
     "symbol_grid_world": 30.0,

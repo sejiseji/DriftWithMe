@@ -959,6 +959,52 @@ def test_env005_shallow_water_emits_ripple_and_wake_inside_area() -> None:
     assert wake.start_x < wake.end_x
 
 
+def test_env005_shallow_water_emits_entry_ripple_before_spacing() -> None:
+    model, _camera = make_model()
+    model.config["shallow_water"] = {
+        "enabled": True,
+        "areas": [{"id": "test", "rect_xz": [100.0, 100.0, 140.0, 140.0]}],
+        "min_move_world": 1.0,
+        "ripple_spacing_world": 99.0,
+        "ripple_lifetime_sec": 0.4,
+        "wake_length_world": 6.0,
+        "entry_ripple_enabled": True,
+    }
+    effects = EffectSystem(model.config)
+    model.player.x = 96.0
+    model.player.z = 120.0
+    effects.sync_shallow_water_player_position(model)
+
+    model.player.x = 104.0
+    effects.update(0.1, model)
+
+    assert len(effects.rings) == 1
+    assert len(effects.strokes) == 1
+    assert effects.rings[0].x == pytest.approx(104.0)
+    assert effects.rings[0].z == pytest.approx(120.0)
+
+
+def test_env005_shallow_water_entry_ripple_can_be_disabled() -> None:
+    model, _camera = make_model()
+    model.config["shallow_water"] = {
+        "enabled": True,
+        "areas": [{"id": "test", "rect_xz": [100.0, 100.0, 140.0, 140.0]}],
+        "min_move_world": 1.0,
+        "ripple_spacing_world": 99.0,
+        "ripple_lifetime_sec": 0.4,
+        "entry_ripple_enabled": False,
+    }
+    effects = EffectSystem(model.config)
+    model.player.x = 96.0
+    model.player.z = 120.0
+    effects.sync_shallow_water_player_position(model)
+
+    model.player.x = 104.0
+    effects.update(0.1, model)
+
+    assert effects.rings == []
+
+
 def test_env005_shallow_water_background_fx_hidden_during_combat() -> None:
     model, camera = make_model()
     model.config["shallow_water"] = {
