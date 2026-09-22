@@ -832,6 +832,46 @@ def test_bat002_press_inside_hit_radius_hits_marker_once() -> None:
     assert not [event for event in second_events if event.kind == "combat_marker_judged"]
 
 
+def test_combat_guard_tap_spends_water_once_per_press() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    water_before = model.water
+    first_marker = session.marker_positions[0]
+
+    advance = max(0.0, first_marker * model.combat_parry_sweep_sec())
+    model.step(InputIntent(), camera, advance)
+    model.step(InputIntent(barrier=True), camera, 0.0)
+    water_after_press = model.water
+    model.step(InputIntent(barrier=True), camera, 0.0)
+
+    assert water_after_press == pytest.approx(water_before - model.combat_defense_water_cost())
+    assert model.water == pytest.approx(water_after_press)
+    assert session.marker_judgements[0] == "HIT"
+
+
+def test_combat_guard_tap_requires_water() -> None:
+    model, camera = make_model()
+    start_fast_combat(model, camera)
+    step_to_combat_phase(model, camera, "PARRY_TIMING")
+    session = model.combat_session
+    assert session is not None
+    model.water = model.combat_defense_water_cost() * 0.5
+    first_marker = session.marker_positions[0]
+
+    advance = max(0.0, first_marker * model.combat_parry_sweep_sec())
+    model.step(InputIntent(), camera, advance)
+    events = model.step(InputIntent(barrier=True), camera, 0.0)
+
+    assert model.water == pytest.approx(0.0)
+    assert session.marker_judgements[0] is None
+    assert [event.payload["reason"] for event in events if event.kind == "action_denied"] == [
+        "insufficient_water"
+    ]
+
+
 def test_bat002_one_hit_or_less_resolves_as_failure() -> None:
     model, camera = make_model()
     start_fast_combat(model, camera)

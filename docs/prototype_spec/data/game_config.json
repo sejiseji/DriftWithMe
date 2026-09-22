@@ -769,6 +769,7 @@
       "normal_success_min_hits": 2,
       "perfect_hits": 3,
       "failed_rounds_to_knockback": 3,
+      "water_cost": 1.0,
       "failure_hitstop_sec": 0.09,
       "failure_recovery_sec": 0.45
     },

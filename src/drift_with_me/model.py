@@ -1777,7 +1777,7 @@ class GameModel:
         session.elapsed_sec += elapsed
         session.phase_elapsed_sec += elapsed
         session.input_debounce_remaining = max(0.0, session.input_debounce_remaining - elapsed)
-        defense_pressed = (
+        defense_pressed_requested = (
             intent.barrier
             and not session.defense_was_down
             and session.input_debounce_remaining <= 0.0
@@ -1805,6 +1805,7 @@ class GameModel:
                 self.advance_combat_phase(session, "COMBAT_READY", events)
             return
         if session.phase == "PARRY_TIMING":
+            defense_pressed = self.consume_combat_defense_water(defense_pressed_requested, events)
             self.update_combat_parry_timing(session, defense_pressed, elapsed, events)
             return
         if session.phase == "PARRY_RESOLVE":
@@ -2322,6 +2323,22 @@ class GameModel:
 
     def combat_victory_cue_sec(self) -> float:
         return max(0.0, float(self.combat_victory_config().get("cue_sec", 0.72)))
+
+    def combat_defense_water_cost(self) -> float:
+        return max(0.0, float(self.combat_defense_config().get("water_cost", 0.0)))
+
+    def consume_combat_defense_water(self, defense_pressed: bool, events: list[GameEvent]) -> bool:
+        if not defense_pressed:
+            return False
+        cost = self.combat_defense_water_cost()
+        if cost <= 0.0:
+            return True
+        if self.water + 1e-9 >= cost:
+            self.water = clamp_resource(self.water - cost, self.water_max)
+            return True
+        self.water = 0.0
+        self.emit_denied(events, "insufficient_water", scope="combat_guard")
+        return False
 
     def combat_bubble_water_cost(self) -> float:
         return max(0.0, float(self.config["resources"]["bubble_water_cost"]))
