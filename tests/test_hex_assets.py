@@ -1301,13 +1301,18 @@ assert model.config["shallow_water"]["shoreline_tiles"]["left"] == "shore_left_6
 assert model.config["shallow_water"]["shoreline_tiles"]["right"] == "shore_bottom_64"
 assert model.config["forest_light"]["enabled"] is True
 assert model.config["forest_light"]["combat_hidden"] is True
-assert model.config["forest_light"]["cell_world"] == 72.0
+assert model.config["forest_light"]["cell_world"] == 68.0
+assert model.config["forest_light"]["max_visible_spots"] == 76
+assert model.config["forest_light"]["areas"][0]["id"] == "whole_map_soft_light"
+assert model.config["forest_light"]["areas"][0]["bounds_ref"] == "visual_ground"
 assert model.config["ambient_motes"]["enabled"] is True
 assert model.config["ambient_motes"]["combat_hidden"] is True
 assert model.config["ambient_motes"]["cell_world"] == 58.0
-assert model.config["ambient_motes"]["max_visible_motes"] == 92
+assert model.config["ambient_motes"]["max_visible_motes"] == 128
 assert model.config["ambient_motes"]["twinkle_enabled"] is True
 assert model.config["ambient_motes"]["twinkle_period_sec"] == 1.8
+assert model.config["ambient_motes"]["areas"][0]["id"] == "whole_map_green_motes"
+assert model.config["ambient_motes"]["areas"][0]["bounds_ref"] == "visual_ground"
 model.config["forest_light"]["areas"] = [
     {{
         "id": "test_visible_forest_light",
