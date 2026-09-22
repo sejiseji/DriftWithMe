@@ -2265,6 +2265,22 @@ class Renderer:
             visible_rect = self.visible_ground_draw_rect(rect, camera, 24.0)
             if visible_rect is None:
                 continue
+            area_symbol_density = max(
+                0.0,
+                min(float(getattr(area, "symbol_density", 1.0)), 1.0),
+            )
+            area_edge_density = max(0.0, min(float(getattr(area, "edge_symbol_density", 1.0)), 1.0))
+            area_symbol_max = getattr(area, "symbol_max", None)
+            area_edge_symbol_max = getattr(area, "edge_symbol_max", None)
+            area_phase = int(getattr(area, "symbol_phase", 0))
+            interior_limit = (
+                max_per_area if area_symbol_max is None else max(0, int(area_symbol_max))
+            )
+            edge_limit = (
+                edge_max_per_area
+                if area_edge_symbol_max is None
+                else max(0, int(area_edge_symbol_max))
+            )
             total += self._draw_shallow_water_interior_symbols(
                 camera,
                 rect,
@@ -2273,7 +2289,9 @@ class Renderer:
                 color,
                 secondary_color,
                 presentation_time,
-                max_per_area,
+                interior_limit,
+                area_symbol_density,
+                area_phase,
             )
             total += self._draw_shallow_water_edge_symbols(
                 camera,
@@ -2284,7 +2302,9 @@ class Renderer:
                 edge_color,
                 edge_secondary_color,
                 presentation_time,
-                edge_max_per_area,
+                edge_limit,
+                area_edge_density,
+                area_phase,
             )
         return total
 
@@ -2298,7 +2318,11 @@ class Renderer:
         secondary_color: int,
         presentation_time: float,
         max_count: int,
+        density: float,
+        phase: int,
     ) -> int:
+        if density <= 0.0:
+            return 0
         start_x = math.floor(rect.min_x / grid) - 1
         end_x = math.ceil(rect.max_x / grid) + 1
         start_z = math.floor(rect.min_z / grid) - 1
@@ -2306,8 +2330,10 @@ class Renderer:
         count = 0
         for zi in range(start_z, end_z + 1):
             for xi in range(start_x, end_x + 1):
-                seed = self._water_symbol_seed(xi, zi)
+                seed = self._water_symbol_seed(xi, zi, phase)
                 if seed % 5 == 0:
+                    continue
+                if ((seed >> 24) & 255) / 255.0 > density:
                     continue
                 jitter_x = ((seed >> 4) & 15) / 15.0 - 0.5
                 jitter_z = ((seed >> 9) & 15) / 15.0 - 0.5
@@ -2351,6 +2377,8 @@ class Renderer:
         secondary_color: int,
         presentation_time: float,
         max_count: int,
+        density: float,
+        phase: int,
     ) -> int:
         count = 0
 
@@ -2371,7 +2399,7 @@ class Renderer:
             return True
 
         limit = max_count
-        if limit <= 0:
+        if limit <= 0 or density <= 0.0:
             return 0
         center_x = (area_rect.min_x + area_rect.max_x) * 0.5
         center_z = (area_rect.min_z + area_rect.max_z) * 0.5
@@ -2381,8 +2409,10 @@ class Renderer:
         circumference = math.tau * math.sqrt((radius_x * radius_x + radius_z * radius_z) * 0.5)
         samples = max(limit * 2, int(circumference / max(8.0, edge_grid * 0.55)))
         for index in range(samples):
-            seed = self._water_symbol_seed(index, int(area_rect.min_x + area_rect.min_z))
+            seed = self._water_symbol_seed(index, int(area_rect.min_x + area_rect.min_z), phase)
             if seed % 3 == 0:
+                continue
+            if ((seed >> 21) & 255) / 255.0 > density:
                 continue
             angle = math.tau * ((index + 0.5) / samples)
             angle += (((seed >> 5) & 7) - 3.5) * 0.018
@@ -2408,8 +2438,8 @@ class Renderer:
         nz = (z - center_z) / radius_z
         return nx * nx + nz * nz <= 1.0
 
-    def _water_symbol_seed(self, x_index: int, z_index: int) -> int:
-        value = (x_index * 73856093) ^ (z_index * 19349663) ^ 0x9E3779B9
+    def _water_symbol_seed(self, x_index: int, z_index: int, phase: int = 0) -> int:
+        value = (x_index * 73856093) ^ (z_index * 19349663) ^ (phase * 83492791) ^ 0x9E3779B9
         value ^= value >> 13
         value *= 1274126177
         return value & 0xFFFFFFFF

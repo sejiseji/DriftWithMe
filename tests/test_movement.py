@@ -228,13 +228,20 @@ def test_world_loads_shallow_water_areas_separately_from_config() -> None:
     assert area.id == "env005_spawn_shallow_test"
     assert area.contains_point(160.0, 160.0)
     assert not area.contains_point(64.0, 160.0)
+    assert area.symbol_density == 1.0
+    assert area.edge_symbol_density == 0.9
+    assert area.symbol_max == 54
+    assert area.edge_symbol_max == 18
     stopped_area = world.shallow_water_areas[1]
     assert stopped_area.id == "env005_stopped_tap_shallow"
     assert stopped_area.contains_point(400.0, 256.0)
+    assert stopped_area.symbol_density == 0.72
+    assert stopped_area.edge_symbol_max == 10
     east_area = world.shallow_water_areas[2]
     assert east_area.id == "env005_east_shallow"
     assert east_area.contains_point(816.0, 256.0)
     assert east_area.contains_point(848.0, 256.0)
+    assert east_area.symbol_phase == 47
 
 
 def test_player_collision_uses_walkable_bounds_not_visual_ground() -> None:

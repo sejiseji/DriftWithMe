@@ -109,6 +109,11 @@ class GroundSurface:
 class ShallowWaterArea:
     id: str
     rect: WorldRect
+    symbol_density: float = 1.0
+    edge_symbol_density: float = 1.0
+    symbol_max: int | None = None
+    edge_symbol_max: int | None = None
+    symbol_phase: int = 0
 
     @property
     def min_x(self) -> float:
@@ -368,6 +373,22 @@ class WorldData:
         if max_x <= min_x or max_z <= min_z:
             return fallback
         return WorldRect(min_x, min_z, max_x, max_z)
+
+    def _load_float(self, value: Any, fallback: float) -> float:
+        try:
+            loaded = float(value)
+        except (TypeError, ValueError):
+            return fallback
+        return loaded if math.isfinite(loaded) else fallback
+
+    def _load_optional_int(self, value: Any) -> int | None:
+        if value is None:
+            return None
+        try:
+            loaded = int(value)
+        except (TypeError, ValueError):
+            return None
+        return loaded if loaded >= 0 else None
 
     def _load_object(self, item: dict[str, Any]) -> StaticObject:
         position = item["position"]
@@ -649,6 +670,15 @@ class WorldData:
                 ShallowWaterArea(
                     id=str(item.get("id", f"shallow_water_{index}")),
                     rect=rect,
+                    symbol_density=clamp(
+                        self._load_float(item.get("symbol_density"), 1.0), 0.0, 1.0
+                    ),
+                    edge_symbol_density=clamp(
+                        self._load_float(item.get("edge_symbol_density"), 1.0), 0.0, 1.0
+                    ),
+                    symbol_max=self._load_optional_int(item.get("symbol_max")),
+                    edge_symbol_max=self._load_optional_int(item.get("edge_symbol_max")),
+                    symbol_phase=int(self._load_float(item.get("symbol_phase"), index * 17)),
                 )
             )
         return tuple(areas)
