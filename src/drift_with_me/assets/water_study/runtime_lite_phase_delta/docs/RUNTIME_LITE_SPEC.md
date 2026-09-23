@@ -1,17 +1,19 @@
-# WTR001 Wave2 Runtime Lite Spec v0.1
+# WTR001 Wave2.1 Runtime Lite Spec v0.1
 
 ## Goal
-Reduce the storage and distribution cost of the Wave2 four-layer animated phase set while preserving the exact palette-index results.
+Reduce the storage and distribution cost of the four-layer animated phase set while
+preserving the exact palette-index results. Wave2.1 keeps the Wave2 runtime cadence
+but changes phase content from large layer motion to local water-surface variation.
 
 ## Input
 - base asset pack: `WTR001_Water_Layer_Sprite_Sources_v0.4.zip`
-- phase source pack: `WTR001_Phase_Delta_Wave2_v0.1.zip`
+- local variation source pack: `WTR001_Wave2_1_Local_Variation_Phase_Pack_v0.1.zip`
 
 ## Encoded layers
-- `water_mid_plane_c`
-- `water_surface_plane_c`
-- `water_surface_caustics_plane_c`
-- `water_upper_lightnet_plane_c`
+- `water_mid_plane_c`: local tone-boundary breathing
+- `water_surface_plane_c`: local surface edge variation
+- `water_surface_caustics_plane_c`: local line-width and junction variation
+- `water_upper_lightnet_plane_c`: local micro shimmer variation
 
 ## Encoding
 - chunk-local sparse forward patch (`DHEX1`)
@@ -32,7 +34,7 @@ Reduce the storage and distribution cost of the Wave2 four-layer animated phase 
 - lower memory, potentially higher live CPU cost
 - use only after measurement
 
-## Runtime schedules from Wave2
+## Runtime schedules retained from Wave2
 - mid: every 13 frames, start p00
 - surface: every 9 frames, start p02
 - surface_caustics: every 7 frames, start p05
@@ -40,9 +42,10 @@ Reduce the storage and distribution cost of the Wave2 four-layer animated phase 
 
 ## Stats summary
 - full chunk hex bytes: 16,842,752
-- total patch bytes: 1,497,899
-- reduction ratio: 91.11%
+- total patch bytes: 396,226
+- reduction ratio: 97.64%
 
 ## Notes
-This pack is lossless relative to the Wave2 phase sources.
-It does not recolor, requantize, or procedurally approximate any phase.
+This pack is lossless relative to the generated Wave2.1 local-variation phase
+fields. It does not recolor or requantize; all DHEX patches preserve the source
+palette indices.

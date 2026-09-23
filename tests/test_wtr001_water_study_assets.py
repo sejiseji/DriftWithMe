@@ -133,9 +133,19 @@ def test_wtr001_runtime_lite_phase_delta_manifest_and_patches_match_contract() -
     root = resources.files("drift_with_me").joinpath("assets/water_study/runtime_lite_phase_delta")
     manifest = json.loads(root.joinpath("runtime_lite_manifest.json").read_text(encoding="utf-8"))
 
+    expected_motion_models = {
+        "water_mid_plane_c": "local_tone_boundary_breathing",
+        "water_surface_plane_c": "local_surface_edge_variation",
+        "water_surface_caustics_plane_c": "local_line_width_and_junction_variation",
+        "water_upper_lightnet_plane_c": "local_micro_shimmer_variation",
+    }
+
     assert tuple(layer["id"] for layer in manifest["layers"]) == WATER_STUDY_PHASE_LAYER_IDS
     assert manifest["encoding"].startswith("DHEX1")
     assert manifest["version"] == "0.1.0"
+    assert manifest["phase_asset_source"] == "WTR001_Wave2_1_Local_Variation_Phase_Pack_v0.1"
+    assert manifest["wave"] == "Wave2.1"
+    assert manifest["theme"] == "local_variation_phase"
     assert manifest["phase_count"] == 8
     assert manifest["chunk_size"] == [256, 256]
     assert manifest["logical_plane_size"] == [1024, 512]
@@ -153,6 +163,7 @@ def test_wtr001_runtime_lite_phase_delta_manifest_and_patches_match_contract() -
         "water_upper_lightnet_plane_c": 1,
     }
     for layer in manifest["layers"]:
+        assert layer["motion_model"] == expected_motion_models[layer["id"]]
         assert len(layer["transitions"]) == 8
         for transition in layer["transitions"]:
             assert len(transition["chunks"]) == 8

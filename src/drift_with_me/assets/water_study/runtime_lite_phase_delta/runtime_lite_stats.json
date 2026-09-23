@@ -1,40 +1,66 @@
 {
   "version": "0.1.0",
-  "full_chunk_hex_bytes": 16842752,
-  "total_patch_bytes": 1497899,
+  "wave": "Wave2.1",
+  "theme": "local_variation_phase",
+  "phase_asset_source": "WTR001_Wave2_1_Local_Variation_Phase_Pack_v0.1",
+  "full_chunk_hex_bytes": 16777216,
   "layers": {
     "water_mid_plane_c": {
-      "full_chunk_hex_bytes": 4210688,
-      "total_patch_bytes": 111176,
-      "byte_reduction_ratio": 0.973597,
-      "total_changed_pixels_across_loop": 20900,
-      "total_run_count_across_loop": 15046,
-      "avg_changed_ratio_per_transition": 0.004983
+      "motion_model": "local_tone_boundary_breathing",
+      "total_patch_bytes": 18050,
+      "total_changed_pixels": 2600,
+      "total_run_count": 2575,
+      "avg_changed_ratio_per_transition": 0.00062,
+      "max_changed_ratio": 0.000954,
+      "palette_counts_p00": {
+        "5": 30797,
+        "8": 315030,
+        "C": 178461
+      }
     },
     "water_surface_plane_c": {
-      "full_chunk_hex_bytes": 4210688,
-      "total_patch_bytes": 407669,
-      "byte_reduction_ratio": 0.903182,
-      "total_changed_pixels_across_loop": 101207,
-      "total_run_count_across_loop": 51077,
-      "avg_changed_ratio_per_transition": 0.02413
+      "motion_model": "local_surface_edge_variation",
+      "total_patch_bytes": 191267,
+      "total_changed_pixels": 27779,
+      "total_run_count": 27248,
+      "avg_changed_ratio_per_transition": 0.006623,
+      "max_changed_ratio": 0.010193,
+      "palette_counts_p00": {
+        "5": 27739,
+        "6": 74178,
+        "8": 301099,
+        "C": 121272
+      }
     },
     "water_surface_caustics_plane_c": {
-      "full_chunk_hex_bytes": 4210688,
-      "total_patch_bytes": 824362,
-      "byte_reduction_ratio": 0.804222,
-      "total_changed_pixels_across_loop": 176110,
-      "total_run_count_across_loop": 108042,
-      "avg_changed_ratio_per_transition": 0.041988
+      "motion_model": "local_line_width_and_junction_variation",
+      "total_patch_bytes": 131939,
+      "total_changed_pixels": 19391,
+      "total_run_count": 18758,
+      "avg_changed_ratio_per_transition": 0.004623,
+      "max_changed_ratio": 0.007051,
+      "palette_counts_p00": {
+        "6": 89887,
+        "7": 32302,
+        "8": 402099
+      }
     },
     "water_upper_lightnet_plane_c": {
-      "full_chunk_hex_bytes": 4210688,
-      "total_patch_bytes": 154692,
-      "byte_reduction_ratio": 0.963262,
-      "total_changed_pixels_across_loop": 32082,
-      "total_run_count_across_loop": 20435,
-      "avg_changed_ratio_per_transition": 0.007649
+      "motion_model": "local_micro_shimmer_variation",
+      "total_patch_bytes": 54970,
+      "total_changed_pixels": 8254,
+      "total_run_count": 7786,
+      "avg_changed_ratio_per_transition": 0.001968,
+      "max_changed_ratio": 0.002949,
+      "palette_counts_p00": {
+        "6": 15986,
+        "7": 3377,
+        "8": 504925
+      }
     }
   },
-  "overall_byte_reduction_ratio": 0.911066
+  "total_patch_bytes": 396226,
+  "total_changed_pixels": 58024,
+  "total_run_count": 56367,
+  "overall_byte_reduction_ratio": 0.976383
 }
