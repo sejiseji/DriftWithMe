@@ -1,7 +1,9 @@
 {
   "version": "0.1.0",
   "base_asset_pack": "WTR001_Water_Layer_Sprite_Sources_v0.4.zip",
-  "phase_asset_source": "WTR001_Phase_Delta_Wave2_v0.1.zip",
+  "phase_asset_source": "WTR001_Wave2_5_Motion_Field_Decoupling_v0.1",
+  "wave": "Wave2.5",
+  "theme": "motion_field_decoupling",
   "encoding": "DHEX1 chunk-local sparse forward patch",
   "logical_plane_size": [
     1024,
@@ -19,6 +21,7 @@
   "layers": [
     {
       "id": "water_mid_plane_c",
+      "motion_model": "low_frequency_sin_drift",
       "transitions": [
         {
           "from": "p00",
@@ -27,64 +30,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_mid_plane_c/p00_to_p01_c00.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 1963,
+              "run_count": 1055,
+              "sha256": "adcd63f2ed4c870ae0fc7be4a3a880593aa298ca8766cc3bd5e700be46e69824"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_mid_plane_c/p00_to_p01_c10.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 1893,
+              "run_count": 1404,
+              "sha256": "7b94485ab80ad0a51f981d17a49f4e741c56d16eda2cce54e96ec8d16e085e3e"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_mid_plane_c/p00_to_p01_c20.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 2260,
+              "run_count": 1044,
+              "sha256": "9cdedd7c2aba5b9b1fa6a1bda31f27086e0dead33a350fe0e599cb02c1edefe3"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_mid_plane_c/p00_to_p01_c30.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 3118,
+              "run_count": 1213,
+              "sha256": "0cd883395453549278f30162fac10641f5b6bec46db300ab71402148c3a15e11"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_mid_plane_c/p00_to_p01_c01.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 1567,
+              "run_count": 1070,
+              "sha256": "61951df0c4766e61e71c537b85de6500a1d3a2edab30c7f99e4303fadd409aa1"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_mid_plane_c/p00_to_p01_c11.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 1900,
+              "run_count": 1205,
+              "sha256": "3a16f4830950cfe1872d17c9ad20cff0a0dd011b065f6fefa183fab25188c1f3"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_mid_plane_c/p00_to_p01_c21.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 3099,
+              "run_count": 1290,
+              "sha256": "be28f30f4a0bda5b4be69c6c18eba065ed459920a2a2e7e6f16b594fae31d999"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_mid_plane_c/p00_to_p01_c31.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 2057,
+              "run_count": 888,
+              "sha256": "da777c8a9403e92c3ca5b07b02c8e17ea53ce400227ceecb08a5ca448ee68f4c"
             }
           ],
-          "changed_pixels": 0,
-          "run_count": 0,
-          "patch_bytes": 0,
-          "changed_ratio": 0.0
+          "changed_pixels": 17857,
+          "run_count": 9169,
+          "patch_bytes": 72871,
+          "changed_ratio": 0.03406
         },
         {
           "from": "p01",
@@ -93,64 +96,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_mid_plane_c/p01_to_p02_c00.dhex",
-              "changed_pixels": 1286,
-              "run_count": 847,
-              "sha256": "9588d39a598b54b3bb6f6e44a218bf325c2d08ac8b568013a87a0eac92b97c78"
+              "changed_pixels": 390,
+              "run_count": 358,
+              "sha256": "59867e7af52a093095a5bf293d65ce990831283ebd4391c787be9338018a5c00"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_mid_plane_c/p01_to_p02_c10.dhex",
-              "changed_pixels": 520,
-              "run_count": 367,
-              "sha256": "b2e75e02abccfddce97244f3bc818864bdb3c253f833ca5e286c069c13ad849f"
+              "changed_pixels": 178,
+              "run_count": 162,
+              "sha256": "1b60835640f9a3760e032bd8d89be81e95d753a6728a8f3505b8053b3614bd15"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_mid_plane_c/p01_to_p02_c20.dhex",
-              "changed_pixels": 800,
-              "run_count": 727,
-              "sha256": "7a56aad36b2b6cf328ba23a26f692fc2b342566f283efd896f67d469adce69b8"
+              "changed_pixels": 1080,
+              "run_count": 904,
+              "sha256": "63a6cd9af429c186bc7b77d66d50ce07e0d6d5b560fcd179d283a415f0beca5b"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_mid_plane_c/p01_to_p02_c30.dhex",
-              "changed_pixels": 385,
-              "run_count": 358,
-              "sha256": "c30ab9dc1a397a32721b9f09ec791e0694d534c3fdbcfdd0797e1c6e3b4ec4ea"
+              "changed_pixels": 874,
+              "run_count": 819,
+              "sha256": "d95df313ad2f867500818ce5a43ca02283363c512d6a95497d253169a94560ec"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_mid_plane_c/p01_to_p02_c01.dhex",
-              "changed_pixels": 915,
-              "run_count": 456,
-              "sha256": "e3ae2456c29de20d71067edc30cd3c743a7e29992a73d901fd444c9ae28ca848"
+              "changed_pixels": 201,
+              "run_count": 190,
+              "sha256": "b89c80664a93257f05f3d15da3a87f3bb816ee4449ea950f6290329a86e3d1d4"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_mid_plane_c/p01_to_p02_c11.dhex",
-              "changed_pixels": 336,
-              "run_count": 234,
-              "sha256": "2c01a9822e31a792718467b4e11e6a648572c7ad7dab4613ef82c0b61531ebf9"
+              "changed_pixels": 411,
+              "run_count": 384,
+              "sha256": "85b6631d5a2ab8d02cb2e174a08ea90231362cbda0894c4ec3e7d525e87886f6"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_mid_plane_c/p01_to_p02_c21.dhex",
-              "changed_pixels": 308,
-              "run_count": 277,
-              "sha256": "20bf4210ac3e1634858597b79ea7b5d01c3babbde6dfef1094886bb33877058d"
+              "changed_pixels": 1457,
+              "run_count": 1244,
+              "sha256": "04518cb48cee7ab3ebbe9d8204b37577c58ee0b3ea1d80751324e0912ef6f56a"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_mid_plane_c/p01_to_p02_c31.dhex",
-              "changed_pixels": 191,
-              "run_count": 173,
-              "sha256": "18de95f55710319cb5ba9376c7b26ece205afb0b4bac6ca95ac5f1fd4af19044"
+              "changed_pixels": 448,
+              "run_count": 418,
+              "sha256": "731754a5596602dcca13ca012062efb00c4ed020496c001b338b01a2df080f6d"
             }
           ],
-          "changed_pixels": 4741,
-          "run_count": 3439,
-          "patch_bytes": 25375,
-          "changed_ratio": 0.009043
+          "changed_pixels": 5039,
+          "run_count": 4479,
+          "patch_bytes": 31913,
+          "changed_ratio": 0.009611
         },
         {
           "from": "p02",
@@ -159,64 +162,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_mid_plane_c/p02_to_p03_c00.dhex",
-              "changed_pixels": 567,
-              "run_count": 280,
-              "sha256": "27bb1010c00987325fd9bb21ee02acba14eac428cdd3ed667856ee1f61e1b61b"
+              "changed_pixels": 2694,
+              "run_count": 1046,
+              "sha256": "46ddc8dd2efdf48555b016794d31eed5d01eb83a5de109870ac309af70a5e743"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_mid_plane_c/p02_to_p03_c10.dhex",
-              "changed_pixels": 297,
-              "run_count": 167,
-              "sha256": "795eb8e189b1339c05b90633f6392086f20e9187b010251fbeaa4bdf0f197457"
+              "changed_pixels": 2987,
+              "run_count": 1360,
+              "sha256": "db5760a94b22675a5bc2df2cc99776060eeee61ae7f0838fe7588de090dc1fdc"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_mid_plane_c/p02_to_p03_c20.dhex",
-              "changed_pixels": 269,
-              "run_count": 229,
-              "sha256": "4e9008c43b0ce73b28fecc906e1cca38d1254a1984640db8dfb80e094c11d3d7"
+              "changed_pixels": 1950,
+              "run_count": 815,
+              "sha256": "00a52317a846b13669eea1595591492cecd200f62647882e10f4e706e960e041"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_mid_plane_c/p02_to_p03_c30.dhex",
-              "changed_pixels": 134,
-              "run_count": 114,
-              "sha256": "119dc1e0b6b88966bee7bf9b9d6ebca7c4f7c7d9b636e457d0db665ff189979a"
+              "changed_pixels": 2592,
+              "run_count": 1140,
+              "sha256": "fe9996b242b582e4164eb3d12cd346090a781242a7c130cf597c2fa06d8c562e"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_mid_plane_c/p02_to_p03_c01.dhex",
-              "changed_pixels": 668,
-              "run_count": 376,
-              "sha256": "452cbd37c6704f8aa4c052689cd2945f7a161cdfd471e9d3ea5bda56414e88fa"
+              "changed_pixels": 2122,
+              "run_count": 1077,
+              "sha256": "1fd1516177b43d6d199413284b0e8e4b4969963eb7f8d2d73d93b569abff8fe0"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_mid_plane_c/p02_to_p03_c11.dhex",
-              "changed_pixels": 300,
-              "run_count": 198,
-              "sha256": "bfc0f9cca2c1a10d2e3d9978ddc79c4e13496b93c4ac3beece103ecc4ec3d25a"
+              "changed_pixels": 1417,
+              "run_count": 1158,
+              "sha256": "c8df7f99770d5d39d93a5dbca3c0e6229b52566d4e93713432823a3f0d38d9db"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_mid_plane_c/p02_to_p03_c21.dhex",
-              "changed_pixels": 290,
-              "run_count": 259,
-              "sha256": "54c522ea23e26f1831215c73d8b5163954c331da9c154b74e420c1443449065a"
+              "changed_pixels": 1148,
+              "run_count": 1007,
+              "sha256": "d9adb64e059b9a368aab489497101118ffc2894e01f6629a46997438f837a2b8"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_mid_plane_c/p02_to_p03_c31.dhex",
-              "changed_pixels": 131,
-              "run_count": 113,
-              "sha256": "42953263b119aeedec5b243a11266001c4be3157a5fc4cf1b517c66a9675bb3c"
+              "changed_pixels": 1412,
+              "run_count": 874,
+              "sha256": "ff67cdb311af23451397f0fc6c0b40f54616a7075c77ac6ed4040d2d407db464"
             }
           ],
-          "changed_pixels": 2656,
-          "run_count": 1736,
-          "patch_bytes": 13072,
-          "changed_ratio": 0.005066
+          "changed_pixels": 16322,
+          "run_count": 8477,
+          "patch_bytes": 67184,
+          "changed_ratio": 0.031132
         },
         {
           "from": "p03",
@@ -225,64 +228,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_mid_plane_c/p03_to_p04_c00.dhex",
-              "changed_pixels": 803,
-              "run_count": 640,
-              "sha256": "7fcb0ee5b3a7736befdd941e1f9a74a955f613c8f48755082b3492141a1191e0"
+              "changed_pixels": 2904,
+              "run_count": 1065,
+              "sha256": "581ba2b29d4d8c7467e329c41d75168cefa2b9d8aea8939a8455c921ff8e528d"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_mid_plane_c/p03_to_p04_c10.dhex",
-              "changed_pixels": 307,
-              "run_count": 298,
-              "sha256": "5442c550e582a3b730824148b119c6b88ca53e93df33cdc3b3d0597992ce2b61"
+              "changed_pixels": 3380,
+              "run_count": 1393,
+              "sha256": "7f5b7c9543a4722ce19b79624aa887fd6f78320dc57e48ce3ceebd6084623b81"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_mid_plane_c/p03_to_p04_c20.dhex",
-              "changed_pixels": 555,
-              "run_count": 522,
-              "sha256": "8b3ae185150da97886413efd2fe446721f3f510d502b04e6bef693288073ddc3"
+              "changed_pixels": 2314,
+              "run_count": 1032,
+              "sha256": "db6fe957b3173fd659419b8bb4d38223c84a9e69a6b50cd9d1963f3ef38d8a8b"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_mid_plane_c/p03_to_p04_c30.dhex",
-              "changed_pixels": 251,
-              "run_count": 244,
-              "sha256": "9e580fb8753baf1adbbc89e946c9db57f355fc112425bd5d0e04895c85fc4d2e"
+              "changed_pixels": 3442,
+              "run_count": 1201,
+              "sha256": "23ebc028adec1b622a46aae914bf2738fa71d8ba56a6c45ca73b19354c544fae"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_mid_plane_c/p03_to_p04_c01.dhex",
-              "changed_pixels": 247,
-              "run_count": 85,
-              "sha256": "c495bfef35d48cab29937b0951c39e51db546dc0444f13bcfe88d512ba9b6083"
+              "changed_pixels": 2597,
+              "run_count": 1091,
+              "sha256": "d2b180f7d134b99a1a98b4f2c9201de53a91d44ff7c5e83b431ef284699dbd0d"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_mid_plane_c/p03_to_p04_c11.dhex",
-              "changed_pixels": 54,
-              "run_count": 54,
-              "sha256": "6d97b292b6b22c912566da097d036edeae77f13427765ce4e4bd944539609461"
+              "changed_pixels": 2653,
+              "run_count": 1208,
+              "sha256": "fb904a3d8be60e51f37f5bd8d5a9a3d576afb0de871307c7f4fdcabd121408ed"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_mid_plane_c/p03_to_p04_c21.dhex",
-              "changed_pixels": 18,
-              "run_count": 18,
-              "sha256": "257a393e16f3085e2574304ff269c0eecd475587f29259e476969fd0eec27d27"
+              "changed_pixels": 2807,
+              "run_count": 1282,
+              "sha256": "26b2962ab29d9b903e41fecb755362870d656513f61cb43fe5c1ae2e88116202"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_mid_plane_c/p03_to_p04_c31.dhex",
-              "changed_pixels": 60,
-              "run_count": 60,
-              "sha256": "00bcee526d57c19094a55e0429069c89a9946ad387490d89ad845222bd48b256"
+              "changed_pixels": 2441,
+              "run_count": 880,
+              "sha256": "e16923b650da9365bb0d2f5beb7278bdadd2fad23434929878b1aaf4ed864990"
             }
           ],
-          "changed_pixels": 2295,
-          "run_count": 1921,
-          "patch_bytes": 13821,
-          "changed_ratio": 0.004377
+          "changed_pixels": 22538,
+          "run_count": 9152,
+          "patch_bytes": 77450,
+          "changed_ratio": 0.042988
         },
         {
           "from": "p04",
@@ -291,64 +294,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_mid_plane_c/p04_to_p05_c00.dhex",
-              "changed_pixels": 24,
-              "run_count": 24,
-              "sha256": "102b999c6f6efd596637d996bcf92806897356c1eafcf2d9523843df5b716933"
+              "changed_pixels": 3453,
+              "run_count": 1083,
+              "sha256": "fd3da8825a307dbe4ebfc3a5697e8904b550004779e3d001ffbed58b96009c1b"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_mid_plane_c/p04_to_p05_c10.dhex",
-              "changed_pixels": 204,
-              "run_count": 169,
-              "sha256": "d9fd06f182db4e6beb0415907301d690bf75deaab30c072d3b3a839a4a82d4d4"
+              "changed_pixels": 3541,
+              "run_count": 1350,
+              "sha256": "24f336add7478294a7864e7072558fef5cfabcff8ac6385ceac05aa8753d6f16"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_mid_plane_c/p04_to_p05_c20.dhex",
-              "changed_pixels": 314,
-              "run_count": 154,
-              "sha256": "1e2039a1428b665bc6ac9104b2df3caa80c41e9589e811cbec48cec621aad596"
+              "changed_pixels": 2799,
+              "run_count": 1011,
+              "sha256": "740c71d5aa3f716cd91b3ef921b831527f6dbdbaa03ec57995317b7ea08da7a3"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_mid_plane_c/p04_to_p05_c30.dhex",
-              "changed_pixels": 182,
-              "run_count": 169,
-              "sha256": "2a70229e9801e94d106e04ce52103eab72dc11d8b4907253995b81fbbaf90586"
+              "changed_pixels": 3714,
+              "run_count": 1169,
+              "sha256": "e0509ccdc8106fb4be2a1b18dc36e628b85445198d72121c0d83ed805e47946b"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_mid_plane_c/p04_to_p05_c01.dhex",
-              "changed_pixels": 848,
-              "run_count": 791,
-              "sha256": "9888228bcafd325e244902378993f637263526982dc59f622d9c3e536bbdce1e"
+              "changed_pixels": 3106,
+              "run_count": 1105,
+              "sha256": "e6360cb2ce4477b4e21ee28f1435435868167227b7af92b79afeb62cbbc66989"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_mid_plane_c/p04_to_p05_c11.dhex",
-              "changed_pixels": 392,
-              "run_count": 340,
-              "sha256": "73c43a683f27b66bc500b0dc9101c7eab4997d393493d64454ea684978ebea86"
+              "changed_pixels": 2458,
+              "run_count": 1176,
+              "sha256": "b0db46e6f498067c7368a56450105224e8a5208fed94959b89b62c951c27be08"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_mid_plane_c/p04_to_p05_c21.dhex",
-              "changed_pixels": 1026,
-              "run_count": 740,
-              "sha256": "5d26783c2f406fdd84f3abd6828befd432e00d01b79dd2026b05d0610eff4d64"
+              "changed_pixels": 3300,
+              "run_count": 1280,
+              "sha256": "601218ccbe0a09679a84615f12d865a0d0fbfb91e461d692fe1bfd4d46e04088"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_mid_plane_c/p04_to_p05_c31.dhex",
-              "changed_pixels": 303,
-              "run_count": 261,
-              "sha256": "f92a565eafa4d57447b2a9e77d86cc6115089031c70190e9d80e5b7431ac3b2a"
+              "changed_pixels": 2372,
+              "run_count": 855,
+              "sha256": "ece3f77ddb3ca54ee4d67c35907af16b9d180dcd2b2aab86935e32e7d5f47765"
             }
           ],
-          "changed_pixels": 3293,
-          "run_count": 2648,
-          "patch_bytes": 19181,
-          "changed_ratio": 0.006281
+          "changed_pixels": 24743,
+          "run_count": 9029,
+          "patch_bytes": 78917,
+          "changed_ratio": 0.047194
         },
         {
           "from": "p05",
@@ -357,64 +360,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_mid_plane_c/p05_to_p06_c00.dhex",
-              "changed_pixels": 201,
-              "run_count": 190,
-              "sha256": "58d79a98a0a4d4eaf4282ecf1641c712105b58e7ad5eea16decafa1f89f42596"
+              "changed_pixels": 671,
+              "run_count": 469,
+              "sha256": "30e0024962722217b241e66969f9d65a4b2528b3ec1283ef6892b362019dd597"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_mid_plane_c/p05_to_p06_c10.dhex",
-              "changed_pixels": 175,
-              "run_count": 114,
-              "sha256": "17434f0cb02164738d593452a8808d55acb4c0eab52f7bda4b93d06aba068a28"
+              "changed_pixels": 743,
+              "run_count": 389,
+              "sha256": "60219e457ad5f27900b893c234bb04a298e5f207f3b174e8d5cf270130fe2c0b"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_mid_plane_c/p05_to_p06_c20.dhex",
-              "changed_pixels": 350,
-              "run_count": 166,
-              "sha256": "f16ac812d12b5f871e2474f3347b5f12fa902e7033ce23a5f0533561c341eafb"
+              "changed_pixels": 909,
+              "run_count": 501,
+              "sha256": "8f375589b9dbc775d45ee12bf2f0f9250ffb69afc7662a87381a9a184613b618"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_mid_plane_c/p05_to_p06_c30.dhex",
-              "changed_pixels": 382,
-              "run_count": 222,
-              "sha256": "ba889943cb09a7b366422f3596d5957cc0a95d147ae8a7fcdc5be0e26f5005b6"
+              "changed_pixels": 1609,
+              "run_count": 1133,
+              "sha256": "a637d750ac5adef38bc88129dcb659916d72341754c8eb2dbf1fc9cec157cd78"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_mid_plane_c/p05_to_p06_c01.dhex",
-              "changed_pixels": 142,
-              "run_count": 139,
-              "sha256": "00c8a5136a3b79959d8fbf4a20f3a3a6c4f7e5a41d57e8187d7d39e92b0e63b0"
+              "changed_pixels": 1013,
+              "run_count": 402,
+              "sha256": "3b7bdc476ac70ec6ae7f71982fe7e2e4f63bf6b5d8f2158c778f22ad80561224"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_mid_plane_c/p05_to_p06_c11.dhex",
-              "changed_pixels": 285,
-              "run_count": 190,
-              "sha256": "49d4f96e14dafda05742bd3bb516afd34b0f2c7a53d9a0d1fd37ded9de35a5bc"
+              "changed_pixels": 1255,
+              "run_count": 486,
+              "sha256": "0da49957f1969c1cb91b97c32ac934559c468eda3269b34987ae520304e0eb22"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_mid_plane_c/p05_to_p06_c21.dhex",
-              "changed_pixels": 652,
-              "run_count": 300,
-              "sha256": "6e150c9304bb15b7c377aaeb26e2a18ddd1c927b0ddcd7579e4e40e4a7a73a15"
+              "changed_pixels": 1780,
+              "run_count": 889,
+              "sha256": "4a6daff6c5d7f94614ca137edae803a06e2aa3d170012f4a50f8fd3ee1648c8b"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_mid_plane_c/p05_to_p06_c31.dhex",
-              "changed_pixels": 273,
-              "run_count": 151,
-              "sha256": "ab37d1dceaf52cee7e089fc2b74ad124c7ab96406b2f58dc54229b60740fa081"
+              "changed_pixels": 1415,
+              "run_count": 758,
+              "sha256": "7f8d27afcbb2e820290229fc9a195c8e49c90441ac6a7c198dcd0a21bad01fe5"
             }
           ],
-          "changed_pixels": 2460,
-          "run_count": 1472,
-          "patch_bytes": 11292,
-          "changed_ratio": 0.004692
+          "changed_pixels": 9395,
+          "run_count": 5027,
+          "patch_bytes": 39557,
+          "changed_ratio": 0.01792
         },
         {
           "from": "p06",
@@ -423,64 +426,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_mid_plane_c/p06_to_p07_c00.dhex",
-              "changed_pixels": 225,
-              "run_count": 214,
-              "sha256": "9431cf1d44d86bfef074840ef58c505fcc817d8c4abd8dba30821639b3b8e0ad"
+              "changed_pixels": 2882,
+              "run_count": 1058,
+              "sha256": "49ecc4ed615c931fecf952bd3910236565cf39bf501d5f70e458ac75cebede72"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_mid_plane_c/p06_to_p07_c10.dhex",
-              "changed_pixels": 377,
-              "run_count": 281,
-              "sha256": "a43b4ee4cf4b235999f26e33e1c885acd08a6cf39f5b1e39bb64311dfca537a1"
+              "changed_pixels": 3891,
+              "run_count": 1399,
+              "sha256": "c203214b5cb35665b5c4b3fcc245da04fe27fe898104d8ea5d8a51c199438d92"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_mid_plane_c/p06_to_p07_c20.dhex",
-              "changed_pixels": 664,
-              "run_count": 318,
-              "sha256": "b68b29ccaeca60e17e9fdda7dd6c3d97d308f41f8d42176c2dadf1af7155a0e6"
+              "changed_pixels": 2444,
+              "run_count": 938,
+              "sha256": "e134488d03582aa859532c64f4f12d99b8e83baa65dd85e0dabf4068dc7d2bac"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_mid_plane_c/p06_to_p07_c30.dhex",
-              "changed_pixels": 538,
-              "run_count": 365,
-              "sha256": "4ee484ed7b7681bc9161b1a8ea632a02bd93af7b189ad63849b08ab00281cf12"
+              "changed_pixels": 2469,
+              "run_count": 1008,
+              "sha256": "88ab1ea8818e8b47cc9c91eb5512cbb50a7d9ac2ab929ef8fb8e763b46b27c61"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_mid_plane_c/p06_to_p07_c01.dhex",
-              "changed_pixels": 982,
-              "run_count": 922,
-              "sha256": "23eec92bd043af74c1d5e643b10d04dfb8f3be3cb06ff72ece3be4bc50d4baca"
+              "changed_pixels": 2299,
+              "run_count": 1078,
+              "sha256": "d1c39a1bbefe7bac17360cc84e37b82f76c10fb9cbf9533730e521a9eb009f82"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_mid_plane_c/p06_to_p07_c11.dhex",
-              "changed_pixels": 651,
-              "run_count": 507,
-              "sha256": "19d8e3f4b3d1f3b4e01298a487d17588d59bd834d060a60df91de7c581f74c74"
+              "changed_pixels": 2353,
+              "run_count": 1196,
+              "sha256": "ad7958651d3cf5ac449f24e5eacf8f15df63366a29b1e49ec50e7353d2d24fe2"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_mid_plane_c/p06_to_p07_c21.dhex",
-              "changed_pixels": 1568,
-              "run_count": 913,
-              "sha256": "0cec0e83e4979b3e579e29d7eeeafb3498f8d18dc5b145142fec58b0901fc357"
+              "changed_pixels": 1696,
+              "run_count": 986,
+              "sha256": "55b8e0409f7d508d081d0610facbbc8839caf97f4b47febda45c741958ba6c17"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_mid_plane_c/p06_to_p07_c31.dhex",
-              "changed_pixels": 450,
-              "run_count": 310,
-              "sha256": "406b7511b146807d7c1b7b595664b8ff8344fbc0dee9188ae7a17af46b0c9157"
+              "changed_pixels": 1043,
+              "run_count": 741,
+              "sha256": "9c6dfbb989d04242a2ebd61c5029383fc78be3abf09a6e53484fc690b1381c69"
             }
           ],
-          "changed_pixels": 5455,
-          "run_count": 3830,
-          "patch_bytes": 28435,
-          "changed_ratio": 0.010405
+          "changed_pixels": 19077,
+          "run_count": 8404,
+          "patch_bytes": 69501,
+          "changed_ratio": 0.036386
         },
         {
           "from": "p07",
@@ -489,69 +492,70 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_mid_plane_c/p07_to_p00_c00.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 6139,
+              "run_count": 1041,
+              "sha256": "229336c2c449839f1416cd97d9a66285cb3dab3400a5a01f5acddceaa9c41847"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_mid_plane_c/p07_to_p00_c10.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 7537,
+              "run_count": 1439,
+              "sha256": "e639c7dfe5e99b025bad2c56633616f3efef042b77d98308a75e9e0222ad17cf"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_mid_plane_c/p07_to_p00_c20.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 6040,
+              "run_count": 1043,
+              "sha256": "c1acd5b9605a327a76f5545e7258ab220ad1c008c6562f7d0182ed80b820d772"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_mid_plane_c/p07_to_p00_c30.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 7018,
+              "run_count": 1187,
+              "sha256": "42a80f8243ad842813473df041a37bd490be66ffbd231a00df8021424da3b0c8"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_mid_plane_c/p07_to_p00_c01.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 4741,
+              "run_count": 1071,
+              "sha256": "8b7df9bed0209dabf679931ec777f7828aabc7ef3724bddf786165ec2ab80b63"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_mid_plane_c/p07_to_p00_c11.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 3787,
+              "run_count": 1079,
+              "sha256": "9b8b23cab0e0e08915dc3fbaf6edfba940775e2ace3268e3141e8d9633227d4e"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_mid_plane_c/p07_to_p00_c21.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 4269,
+              "run_count": 1157,
+              "sha256": "77daa50349fd75de9ee2058b000af34247d48f5e31bb142589611ae57dbd8bd9"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_mid_plane_c/p07_to_p00_c31.dhex",
-              "changed_pixels": 0,
-              "run_count": 0,
-              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              "changed_pixels": 3768,
+              "run_count": 848,
+              "sha256": "02179311e24c3184a4276b66334fa31b0324bdbc139db6fbf0cec0eb03967d47"
             }
           ],
-          "changed_pixels": 0,
-          "run_count": 0,
-          "patch_bytes": 0,
-          "changed_ratio": 0.0
+          "changed_pixels": 43299,
+          "run_count": 8865,
+          "patch_bytes": 96489,
+          "changed_ratio": 0.082586
         }
       ]
     },
     {
       "id": "water_surface_plane_c",
+      "motion_model": "elliptic_orbit_plus_weak_sin",
       "transitions": [
         {
           "from": "p00",
@@ -560,64 +564,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_plane_c/p00_to_p01_c00.dhex",
-              "changed_pixels": 643,
-              "run_count": 575,
-              "sha256": "24281c6c6a724a88fd436e61c38e7562aec4168436dc26fd40ede500787399db"
+              "changed_pixels": 5356,
+              "run_count": 1774,
+              "sha256": "f7c2eddb97b90f4c9f45f6c228f005fcd2915781b4b58f4e8908185cbf4f7138"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_plane_c/p00_to_p01_c10.dhex",
-              "changed_pixels": 688,
-              "run_count": 612,
-              "sha256": "6460f25af06aea9a92349e3683a6f718818713d21ad0de7878abe6f2891ddc5d"
+              "changed_pixels": 4663,
+              "run_count": 2002,
+              "sha256": "e7cecbe12f6456b7fa362b21d5cdcc439e6857aeff8e6afd6074aed6e507c651"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_plane_c/p00_to_p01_c20.dhex",
-              "changed_pixels": 826,
-              "run_count": 735,
-              "sha256": "ec42708e81065da7be7beb3a0c8a515d40707f2bdf60cfead1ae44af8ec24bce"
+              "changed_pixels": 5258,
+              "run_count": 2118,
+              "sha256": "ece8880652a33a8d8f285b981af824daedd372d61777bede58560e7203a7aa62"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_plane_c/p00_to_p01_c30.dhex",
-              "changed_pixels": 896,
-              "run_count": 822,
-              "sha256": "a5f7c5d558a05339106005d255ccec3bed2ce8e71c83c849bff1e038e22435a8"
+              "changed_pixels": 5889,
+              "run_count": 2040,
+              "sha256": "f439ec5fed388409d36b58229e88e6c43b242ba66d56ed4f0bb4b38e1fbffef0"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_plane_c/p00_to_p01_c01.dhex",
-              "changed_pixels": 848,
-              "run_count": 754,
-              "sha256": "f9c26fda380fd6a7b11cf7a573f08c9846a299ed9aa70fbfe5df6b0f0916c390"
+              "changed_pixels": 5358,
+              "run_count": 1859,
+              "sha256": "960154815df66c1d502ce958fcda7e22ecb384ae4ce4e0e4ba0f2426de1637ba"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_plane_c/p00_to_p01_c11.dhex",
-              "changed_pixels": 673,
-              "run_count": 611,
-              "sha256": "74b76720e3dfda2cd3f8130199b6f80b6271e87369de5797fa724e3423e4eb6c"
+              "changed_pixels": 4468,
+              "run_count": 2078,
+              "sha256": "2e043867f6ea07ce443955389e16fbb4436bebe6f5b6c4633d535c1023dd29e7"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_plane_c/p00_to_p01_c21.dhex",
-              "changed_pixels": 711,
-              "run_count": 633,
-              "sha256": "eb270b2010c2f4612870fb3fcb98e7d55935573b4cdf1ea591b730ae1f22fd85"
+              "changed_pixels": 5409,
+              "run_count": 1830,
+              "sha256": "5ff617b70301710d70369ed1d4c831d5e5bc86a0f2ab501415467e09d1391046"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_plane_c/p00_to_p01_c31.dhex",
-              "changed_pixels": 876,
-              "run_count": 768,
-              "sha256": "4a4dd14a7af636e3bca22be689740293087a973dc9bcddf3fb846093ffe42b6b"
+              "changed_pixels": 4585,
+              "run_count": 1910,
+              "sha256": "0a79996aa4d5c62fab5cd8d1dc5a44586df8e8cfe83ce11147bce731ddf5c297"
             }
           ],
-          "changed_pixels": 6161,
-          "run_count": 5510,
-          "patch_bytes": 39221,
-          "changed_ratio": 0.011751
+          "changed_pixels": 40986,
+          "run_count": 15611,
+          "patch_bytes": 134652,
+          "changed_ratio": 0.078175
         },
         {
           "from": "p01",
@@ -626,64 +630,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_plane_c/p01_to_p02_c00.dhex",
-              "changed_pixels": 1820,
-              "run_count": 699,
-              "sha256": "1bcf37f6ea1cee9685bd06058dfac4c7df34da76fa2a5303fd3e80f810981f26"
+              "changed_pixels": 10291,
+              "run_count": 1654,
+              "sha256": "60d0cf602fa8493db2a0088a4cda278d40f30e5c16ddf90e70de91934ac02029"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_plane_c/p01_to_p02_c10.dhex",
-              "changed_pixels": 2704,
-              "run_count": 959,
-              "sha256": "0df4c2e9c2920819d228c3d3a456b5c8126d06c9d18213a5ed889bcb0e73ee8a"
+              "changed_pixels": 11001,
+              "run_count": 1846,
+              "sha256": "5ceda03fc360a01a65f78e1b1ba60df2b85b5019c85552d51d3cb1e3936e0279"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_plane_c/p01_to_p02_c20.dhex",
-              "changed_pixels": 2237,
-              "run_count": 878,
-              "sha256": "f37c0347303896f4e50b526a258c2304f4a4b888c52e236b9ad3602de99f3142"
+              "changed_pixels": 12033,
+              "run_count": 1969,
+              "sha256": "080b2be970ad52a315e79ddad8667d7e0282c8ad0dcf155c9bc86ff68949fcbd"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_plane_c/p01_to_p02_c30.dhex",
-              "changed_pixels": 3054,
-              "run_count": 1045,
-              "sha256": "d0d23f0a7861e30cfe9c449c396b5e4e1b61eea94ac75eed17f7348c8a1bcc0d"
+              "changed_pixels": 12649,
+              "run_count": 1896,
+              "sha256": "f33d6dd30bf7625da47a03548fe0a351d71baa7554016f6e290f7fde7104888b"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_plane_c/p01_to_p02_c01.dhex",
-              "changed_pixels": 2377,
-              "run_count": 869,
-              "sha256": "9f6debee7526ebe713e59c94ab6ab614a108d98b9ed266d5556cd539f0d08e8b"
+              "changed_pixels": 12648,
+              "run_count": 1757,
+              "sha256": "1cfc9eeafce9ca1c2d3e507eb2944533f7564bbc275a42e22cda8536ab20cda2"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_plane_c/p01_to_p02_c11.dhex",
-              "changed_pixels": 1873,
-              "run_count": 869,
-              "sha256": "6d071a479cab6c5e900f9920a9d0e951e5d419c53ea23b36899dc514b396bd20"
+              "changed_pixels": 12487,
+              "run_count": 1860,
+              "sha256": "1e475d7eab7e7d9b973c75f767cfe14396d01d5c02e7038c26eae2afdc26930b"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_plane_c/p01_to_p02_c21.dhex",
-              "changed_pixels": 2777,
-              "run_count": 992,
-              "sha256": "7eb3c749ed1f5d2e7db8751c876350fc86c2f6458eb0b3d759c5f4965578106b"
+              "changed_pixels": 11271,
+              "run_count": 1725,
+              "sha256": "8bf9b53166d11b8c08f0ce276f4ac50247026255e3cb3bb2e7142eadffe71575"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_plane_c/p01_to_p02_c31.dhex",
-              "changed_pixels": 1710,
-              "run_count": 717,
-              "sha256": "e55ad51547cbb5dd4405152c8ad1afd7baebe66b1def1ce639bd84be70c6fc81"
+              "changed_pixels": 10592,
+              "run_count": 1754,
+              "sha256": "7fbc35261eb56155845d7d2f5252e5590bcc221b97aecb26845aeec31c3500fe"
             }
           ],
-          "changed_pixels": 18552,
-          "run_count": 7028,
-          "patch_bytes": 60720,
-          "changed_ratio": 0.035385
+          "changed_pixels": 92972,
+          "run_count": 14461,
+          "patch_bytes": 179738,
+          "changed_ratio": 0.17733
         },
         {
           "from": "p02",
@@ -692,64 +696,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_plane_c/p02_to_p03_c00.dhex",
-              "changed_pixels": 1004,
-              "run_count": 484,
-              "sha256": "f13839429bceb91f89a79055fbea1faf24d30499afd634336d7e1d6dd92842c5"
+              "changed_pixels": 10817,
+              "run_count": 1672,
+              "sha256": "c04aa281cb324e3c5b64d22e9bc7f53ba4e707da852db6888de9fa735fa3c3c4"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_plane_c/p02_to_p03_c10.dhex",
-              "changed_pixels": 1403,
-              "run_count": 784,
-              "sha256": "d15e6585f25b533c4b477032c622d7e849d84c29d6ad74baf357e1c8c4081a1b"
+              "changed_pixels": 11909,
+              "run_count": 1886,
+              "sha256": "3235a2e3f39dcbb1ff2be0f144210bd334239bfa4f2bb203d6b716190256be6e"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_plane_c/p02_to_p03_c20.dhex",
-              "changed_pixels": 1481,
-              "run_count": 781,
-              "sha256": "903bc855e2561b50ac718ed363715d8d565b8e559dbde7a513cd7967390c63ad"
+              "changed_pixels": 12819,
+              "run_count": 1953,
+              "sha256": "6cb0a2bcb28092cd93d58c004e0f35a8267b6a19934a89f2be287c5ce2a0c8f0"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_plane_c/p02_to_p03_c30.dhex",
-              "changed_pixels": 1394,
-              "run_count": 608,
-              "sha256": "10df7c806fdb7a3f1ee465f3a2b4b5a229b9383bc4885558bceb48ab73a7a16b"
+              "changed_pixels": 12867,
+              "run_count": 1859,
+              "sha256": "cc8bdc8195c9cbb1b90610d6152b11541018c00b484799723e0d6e930c802ca7"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_plane_c/p02_to_p03_c01.dhex",
-              "changed_pixels": 979,
-              "run_count": 540,
-              "sha256": "c48ff28b6c81da612773b518fbe594b4d925e7c4f35dd080ea0990fc4c19b25d"
+              "changed_pixels": 12489,
+              "run_count": 1789,
+              "sha256": "4f3bba5e78a77484c16be57628fb87469f0185fb5f4afac0147a8d8a459093cc"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_plane_c/p02_to_p03_c11.dhex",
-              "changed_pixels": 1180,
-              "run_count": 672,
-              "sha256": "23718b77c68e374375d24dab424db7fd43c57fa3d655658f210b97e4441eb6a8"
+              "changed_pixels": 13558,
+              "run_count": 1852,
+              "sha256": "a6f8b5564180eca9daa0665ed03cb06125de0654884ad9214053fbd924b621b0"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_plane_c/p02_to_p03_c21.dhex",
-              "changed_pixels": 1229,
-              "run_count": 638,
-              "sha256": "da051ba9e2624fb2d95c6ee8e109834f2b95f0a485b2403c09e811ae570df1f7"
+              "changed_pixels": 12378,
+              "run_count": 1702,
+              "sha256": "3731a4702a53d2edb2d608bc09733c3630ae0a01e906a81c7d98478df666244c"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_plane_c/p02_to_p03_c31.dhex",
-              "changed_pixels": 1133,
-              "run_count": 495,
-              "sha256": "083b524670c1ee9c9d12060f520c630898f7503ea7ed463a9640be701a6b28b1"
+              "changed_pixels": 12681,
+              "run_count": 1734,
+              "sha256": "62d914ebda0c7a406bb2a248b8ca1706de8623ac41f7fd30ce660a9846db9a92"
             }
           ],
-          "changed_pixels": 9803,
-          "run_count": 5002,
-          "patch_bytes": 39815,
-          "changed_ratio": 0.018698
+          "changed_pixels": 99518,
+          "run_count": 14447,
+          "patch_bytes": 186200,
+          "changed_ratio": 0.189816
         },
         {
           "from": "p03",
@@ -758,64 +762,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_plane_c/p03_to_p04_c00.dhex",
-              "changed_pixels": 1491,
-              "run_count": 811,
-              "sha256": "e62efe1ffdd530d324196fa5cefa24fad0c01d699fc66b3351604b0953010107"
+              "changed_pixels": 7570,
+              "run_count": 1687,
+              "sha256": "7dd99da301ba9331394f71cea3de7ab869a9dd74decc5082f4220edc53e5d1f6"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_plane_c/p03_to_p04_c10.dhex",
-              "changed_pixels": 2242,
-              "run_count": 958,
-              "sha256": "be9531c7fc7e14c9855e70c935ca04b6128d3010b5457b9ab10e74e68c1a9795"
+              "changed_pixels": 7788,
+              "run_count": 1872,
+              "sha256": "743e062ba7171528d9d44c29fc84491350916fcc95c4e75ca9111d01343d4e2e"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_plane_c/p03_to_p04_c20.dhex",
-              "changed_pixels": 1762,
-              "run_count": 984,
-              "sha256": "ccc8148b8c4abffd0d5b9da442d9ed398e35c5e84e0bb9e05a55b512fb5d24d5"
+              "changed_pixels": 7452,
+              "run_count": 1959,
+              "sha256": "0bac7cf8005c365ec567f136fc04abcbcd8d697d1984ae47627e1d6e32f48e09"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_plane_c/p03_to_p04_c30.dhex",
-              "changed_pixels": 2511,
-              "run_count": 1181,
-              "sha256": "1f29b30db7c7cec776be83c98c1479004bdc29a968a47857aa4b5b164f395dbf"
+              "changed_pixels": 7910,
+              "run_count": 1852,
+              "sha256": "50623b9337e59673c1d3048d757c680f2690f2640405de44e84acbf68d51ff40"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_plane_c/p03_to_p04_c01.dhex",
-              "changed_pixels": 2291,
-              "run_count": 1103,
-              "sha256": "3bb61feb6ae8ac1312fab6c7b54af873b4333e2f72f591a9f4e49f5efbcbc68f"
+              "changed_pixels": 7562,
+              "run_count": 1722,
+              "sha256": "d349a59d5f2ac65d584dcd18032e9b2ce95c746828572dc137fc742474c9d9f0"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_plane_c/p03_to_p04_c11.dhex",
-              "changed_pixels": 1402,
-              "run_count": 835,
-              "sha256": "78b927607f2b5babb6a3fc575c1a973727ca8154c09fe5d5a573adf8f35ea55f"
+              "changed_pixels": 9240,
+              "run_count": 1891,
+              "sha256": "d2e9ec422ee3fca450661b34b806ea1a82bce6e564481ccbac42bc7897f6fb55"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_plane_c/p03_to_p04_c21.dhex",
-              "changed_pixels": 2107,
-              "run_count": 838,
-              "sha256": "58304e95c428ac42f9e23d2f155bf0bec124d85507e6fc287caa7d050ed1100b"
+              "changed_pixels": 8352,
+              "run_count": 1645,
+              "sha256": "3fc330e7f6419c1c1034b8dc1dade250fe5271330170737aae9d16bd307e9d5d"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_plane_c/p03_to_p04_c31.dhex",
-              "changed_pixels": 1506,
-              "run_count": 1042,
-              "sha256": "3daf2ffaf33fdc7b1194183f548bf4acd011b4062256288fa6a7ff735acf9c69"
+              "changed_pixels": 8266,
+              "run_count": 1687,
+              "sha256": "2904a5b6d7ab508e8eaba14954d0a5d1b6faf197fb822ebc6499d226478b10e9"
             }
           ],
-          "changed_pixels": 15312,
-          "run_count": 7752,
-          "patch_bytes": 61824,
-          "changed_ratio": 0.029205
+          "changed_pixels": 64140,
+          "run_count": 14315,
+          "patch_bytes": 150030,
+          "changed_ratio": 0.122337
         },
         {
           "from": "p04",
@@ -824,64 +828,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_plane_c/p04_to_p05_c00.dhex",
-              "changed_pixels": 2070,
-              "run_count": 833,
-              "sha256": "81dd9d35b9ee333ebcc9eeb1c893b87263e601317b9c1c22e590891bd9654037"
+              "changed_pixels": 5824,
+              "run_count": 1778,
+              "sha256": "a7ade160a7af19401592845b95da8b9653556971492ce968ca28d3d840f93331"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_plane_c/p04_to_p05_c10.dhex",
-              "changed_pixels": 1563,
-              "run_count": 995,
-              "sha256": "54af4c577218a7b63513038fa070cc67f004a972942323a7a48ad1fd659fe49d"
+              "changed_pixels": 4839,
+              "run_count": 2004,
+              "sha256": "a0a1010ed3aa56ab03eeaba9d89ea141274df08dfb0cc94c9d9a44531892ca81"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_plane_c/p04_to_p05_c20.dhex",
-              "changed_pixels": 2625,
-              "run_count": 1244,
-              "sha256": "80209338da7800f2174f7ecf7fc72b61d9d4226257975752bb56b8e93669a115"
+              "changed_pixels": 5865,
+              "run_count": 2141,
+              "sha256": "28be396ce6d33adf9b83416ad3b70847ee81a77fbdfe8b4203afd51bbb9066ef"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_plane_c/p04_to_p05_c30.dhex",
-              "changed_pixels": 1217,
-              "run_count": 737,
-              "sha256": "5eadb86b489248aa952fb8223219a74c680b6308f3746379c97dabb370583328"
+              "changed_pixels": 5722,
+              "run_count": 2027,
+              "sha256": "b25d88b2eaad7411b0ce300b488187965e4ca440632a6061a1378e31633a03e6"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_plane_c/p04_to_p05_c01.dhex",
-              "changed_pixels": 1510,
-              "run_count": 806,
-              "sha256": "4adb575fc1a81d5526ecaa4730990aa36a8f464bf5ee02aa6dd2bb221f004b77"
+              "changed_pixels": 5383,
+              "run_count": 1840,
+              "sha256": "3498a3553b81dbd513772370fee50c46f83ca952b6166f96130d25104f20a503"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_plane_c/p04_to_p05_c11.dhex",
-              "changed_pixels": 2557,
-              "run_count": 1116,
-              "sha256": "5875eae5a696ba8cb8923ba0729fd9bbda35dc9b7158865e8946a333caeb6d98"
+              "changed_pixels": 4497,
+              "run_count": 2063,
+              "sha256": "70d884eb2568cd319287ba45b0c9ccdafdfc4dd1ded4cea5b6f9fb4a39821c18"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_plane_c/p04_to_p05_c21.dhex",
-              "changed_pixels": 1587,
-              "run_count": 865,
-              "sha256": "f592fb80025c2eb4d4008fc8e65195d03935ae2cfe766fbf09d10f2525176adc"
+              "changed_pixels": 5568,
+              "run_count": 1775,
+              "sha256": "40eba4a642a3e254db85bb669a0a2c7c22e65235832f2ac3997c5c6222d98d37"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_plane_c/p04_to_p05_c31.dhex",
-              "changed_pixels": 2282,
-              "run_count": 968,
-              "sha256": "69b00ac931212cf9435603fd2a9852c7be7b27481349a12e6ef3073fb402d2bb"
+              "changed_pixels": 4048,
+              "run_count": 1857,
+              "sha256": "2106b1c151084800291f9847d3cd1c9b0528f5bbb52eea719378eabc704912b7"
             }
           ],
-          "changed_pixels": 15411,
-          "run_count": 7564,
-          "patch_bytes": 60795,
-          "changed_ratio": 0.029394
+          "changed_pixels": 41746,
+          "run_count": 15485,
+          "patch_bytes": 134656,
+          "changed_ratio": 0.079624
         },
         {
           "from": "p05",
@@ -890,64 +894,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_plane_c/p05_to_p06_c00.dhex",
-              "changed_pixels": 1274,
-              "run_count": 670,
-              "sha256": "fb3e4795d1b756bd908626f522cb541b51df69220f251ea13c9bc95b9f913d63"
+              "changed_pixels": 8168,
+              "run_count": 1667,
+              "sha256": "82698b5cff7c17338b2fd179cbb71d6214987cb30eaa718abdf9428c885e849f"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_plane_c/p05_to_p06_c10.dhex",
-              "changed_pixels": 1191,
-              "run_count": 590,
-              "sha256": "8053cb244f9f4b6cb1a97acdd6f8fd97b99314357f9cb1162e6b8588e065493b"
+              "changed_pixels": 8862,
+              "run_count": 1884,
+              "sha256": "8a7b196eb5884b62a74890461553d2f7ea35d87b5c365ff3ccef192bae74efdf"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_plane_c/p05_to_p06_c20.dhex",
-              "changed_pixels": 1371,
-              "run_count": 744,
-              "sha256": "f8343a9429d58789cc528191aa75100c04f95465f6836f4087385cf61884db63"
+              "changed_pixels": 10106,
+              "run_count": 2023,
+              "sha256": "e7f54f2a9ccfe90a603aca64636fc876a0452c75c90499789d7f05a3456883d6"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_plane_c/p05_to_p06_c30.dhex",
-              "changed_pixels": 1492,
-              "run_count": 739,
-              "sha256": "90fd103cb2138042c303bb8302da9854d82a51153d431e4f355ab3e4003e4ff6"
+              "changed_pixels": 9484,
+              "run_count": 1926,
+              "sha256": "b609a92b306c3844153275d44721a5c35d3251b2fe6520c37488425fedbbe021"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_plane_c/p05_to_p06_c01.dhex",
-              "changed_pixels": 1280,
-              "run_count": 772,
-              "sha256": "ea8228e178ecf8c11d71bbba626e67643fef0c4ae946f3d4dbe212930cc8cc6b"
+              "changed_pixels": 9165,
+              "run_count": 1758,
+              "sha256": "1ce8f6f6be98290b3adf5c214f758a028e187a4523a5fc6225c547b263813fc7"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_plane_c/p05_to_p06_c11.dhex",
-              "changed_pixels": 1280,
-              "run_count": 656,
-              "sha256": "20a354e7baf7049bf9283c1a0691efa5489fc61a82329e9629020af9a4d1c660"
+              "changed_pixels": 10189,
+              "run_count": 1890,
+              "sha256": "1d32c51a285f58adb51ef4cdfee6811ee550c9b87ec7ff168dfd21e986033b8d"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_plane_c/p05_to_p06_c21.dhex",
-              "changed_pixels": 1213,
-              "run_count": 632,
-              "sha256": "fc7a484141d4cc3da0d9f23d78b5f57cc10a06dfc4fca135b833727cd7badb96"
+              "changed_pixels": 8956,
+              "run_count": 1709,
+              "sha256": "48877f8e0d9094b5c8d24a92478490906879b3c1c01c3744cb78c7e68674ee51"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_plane_c/p05_to_p06_c31.dhex",
-              "changed_pixels": 1492,
-              "run_count": 746,
-              "sha256": "54ac176ad5a9d099163871d69b12d0f9df4023e9a04c6ee56b524eec45683ddb"
+              "changed_pixels": 8244,
+              "run_count": 1740,
+              "sha256": "eda903f4b078a0f4aa1721a44c7cc87e0bd57492dcfa30e462c6c6cac2cccb52"
             }
           ],
-          "changed_pixels": 10593,
-          "run_count": 5549,
-          "patch_bytes": 43887,
-          "changed_ratio": 0.020205
+          "changed_pixels": 73174,
+          "run_count": 14597,
+          "patch_bytes": 160756,
+          "changed_ratio": 0.139568
         },
         {
           "from": "p06",
@@ -956,64 +960,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_plane_c/p06_to_p07_c00.dhex",
-              "changed_pixels": 2794,
-              "run_count": 1011,
-              "sha256": "e5dcda62b90893f5981f07654c7f2e7f8a9f194b5eb6ba0eeebef0c871627dca"
+              "changed_pixels": 10409,
+              "run_count": 1651,
+              "sha256": "1760983f0bb4bea8b3865845a9b5ccd94eb7452bdeedf4baaaec35eb5fb47034"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_plane_c/p06_to_p07_c10.dhex",
-              "changed_pixels": 1783,
-              "run_count": 722,
-              "sha256": "b768a66678be564b6866a41a2a9a509b075abc9778bbf4fefc72b1979a020ba5"
+              "changed_pixels": 12017,
+              "run_count": 1850,
+              "sha256": "5fc9bbdc7294bfa457dcdf75f169059b51a498b92bcdb21e591fbcf8bb64598d"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_plane_c/p06_to_p07_c20.dhex",
-              "changed_pixels": 2949,
-              "run_count": 1134,
-              "sha256": "dead2468fdf19600f4856e15d85840700d2a05d15ba4d1e147d2e12944f39010"
+              "changed_pixels": 12703,
+              "run_count": 1956,
+              "sha256": "467d1c671e9976aae9da55533934d5b81830ae09ba069c9367a4acdaae0bade3"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_plane_c/p06_to_p07_c30.dhex",
-              "changed_pixels": 1986,
-              "run_count": 789,
-              "sha256": "0d194a5cc93126fb25e42bdbd4731755f46457fb7d8b338a6c2230c4b007ab61"
+              "changed_pixels": 13071,
+              "run_count": 1893,
+              "sha256": "dbccbe636567fff494f569734b5e1098d18b0d5b650ca3ac317d67c83b80adfd"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_plane_c/p06_to_p07_c01.dhex",
-              "changed_pixels": 2019,
-              "run_count": 844,
-              "sha256": "ccca37caf101a3c32c2483ff463fa8dd88c184a2c41a4570b7c8aea5d2019383"
+              "changed_pixels": 12783,
+              "run_count": 1753,
+              "sha256": "fc690ad8f910772d69b33e4ef7afb52a0c6e0370a9c28b30b9ba3c0f9710ee30"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_plane_c/p06_to_p07_c11.dhex",
-              "changed_pixels": 3014,
-              "run_count": 1118,
-              "sha256": "893ef4738538a9409c34c055814ce52e035c3c45f30bb11efcd42ef234903407"
+              "changed_pixels": 14100,
+              "run_count": 1864,
+              "sha256": "f8726a8f8c6c0f10a59500a6070583eb018f32e31d11453596aee6c79e951d3c"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_plane_c/p06_to_p07_c21.dhex",
-              "changed_pixels": 1982,
-              "run_count": 759,
-              "sha256": "d3079339be7901316c2216b511b54f5c613029c2e3b8d06a54885a9b984f89c3"
+              "changed_pixels": 12105,
+              "run_count": 1702,
+              "sha256": "d515c595f7a4854ba829b5aa9fdab6d5beded6b64c03aa8f15f331c6bd04550f"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_plane_c/p06_to_p07_c31.dhex",
-              "changed_pixels": 2921,
-              "run_count": 983,
-              "sha256": "9b273a7c9cfc5493e618369b72798a806832f9061512061e6943956e4e78c45b"
+              "changed_pixels": 12683,
+              "run_count": 1770,
+              "sha256": "22d7bddb65f4eefc12b08f26ca715da76f3e11e526dfcbc516326e85c4cb97e4"
             }
           ],
-          "changed_pixels": 19448,
-          "run_count": 7360,
-          "patch_bytes": 63608,
-          "changed_ratio": 0.037094
+          "changed_pixels": 99871,
+          "run_count": 14439,
+          "patch_bytes": 186505,
+          "changed_ratio": 0.190489
         },
         {
           "from": "p07",
@@ -1022,69 +1026,70 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_plane_c/p07_to_p00_c00.dhex",
-              "changed_pixels": 622,
-              "run_count": 552,
-              "sha256": "0e44a8ad16318957b6077da62f511aa9f853aa87329295f42b710d38f065648e"
+              "changed_pixels": 7136,
+              "run_count": 1628,
+              "sha256": "1d80e05b078b0bbdc81b5b0fc6be2b357e10fce0cd0126ee14706fd3eebdfe5d"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_plane_c/p07_to_p00_c10.dhex",
-              "changed_pixels": 855,
-              "run_count": 761,
-              "sha256": "46e0c701bfbc92107bfe128ef952566c660097c4a61505ac849268b80fe519b5"
+              "changed_pixels": 7446,
+              "run_count": 1820,
+              "sha256": "fb8efbe09a372bcb04eddbe1bcfee1066e69e9e38f66374c0dbdb844cf93ccbe"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_plane_c/p07_to_p00_c20.dhex",
-              "changed_pixels": 790,
-              "run_count": 693,
-              "sha256": "cffbc92ab3a16d70c84feb71e3a6ef70941aa78af29f13cd3596963f517ff551"
+              "changed_pixels": 7630,
+              "run_count": 1938,
+              "sha256": "602f5375a370fb05299cd36b92ae548d94c0f7a12891807743b42298faf87b19"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_plane_c/p07_to_p00_c30.dhex",
-              "changed_pixels": 684,
-              "run_count": 632,
-              "sha256": "3f5f38a3909160c008d2489092a2b9ce33c8d366a4d18fc642e95253050dfbec"
+              "changed_pixels": 8127,
+              "run_count": 1895,
+              "sha256": "59aab3926f0089887a95f4284d98f838135ed49026c5b07bf8bee49569b2737a"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_plane_c/p07_to_p00_c01.dhex",
-              "changed_pixels": 681,
-              "run_count": 622,
-              "sha256": "ad127e562e957959ad38788025eef682cdc1feff1d715f6f983c077890a2abf0"
+              "changed_pixels": 8352,
+              "run_count": 1727,
+              "sha256": "0e1c46e993c93789a2f726d48432fd0a8653655e8fadc5a08dbe64dba61b3019"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_plane_c/p07_to_p00_c11.dhex",
-              "changed_pixels": 839,
-              "run_count": 764,
-              "sha256": "ec9305c9c20d4d09edaf0dcce2a2d740364f3769edaa1a2b05ebec0bd8560d36"
+              "changed_pixels": 10007,
+              "run_count": 1898,
+              "sha256": "2b5eeb5690cba13c339db3f43a648db365705079a64c5da69f563a1f475fe332"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_plane_c/p07_to_p00_c21.dhex",
-              "changed_pixels": 768,
-              "run_count": 693,
-              "sha256": "846aab52ba48cbb7a2b3390cf7c2b25825b24e7212d7ecad7195a1465e770efa"
+              "changed_pixels": 9574,
+              "run_count": 1731,
+              "sha256": "ff9bfa96543d6632bf5c06a3a397d205596a0e0b247aff6ad0f924dd8c8a601a"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_plane_c/p07_to_p00_c31.dhex",
-              "changed_pixels": 688,
-              "run_count": 595,
-              "sha256": "99e83bbb0c8fa775da224f7e554de0d7f1bd5a5e0032139c7ab2b8fb930ff3b2"
+              "changed_pixels": 10016,
+              "run_count": 1780,
+              "sha256": "a8daa979eee77f3f922f21c1005a07eb395ae712baa3aeeb6a7fdb0e96e451f7"
             }
           ],
-          "changed_pixels": 5927,
-          "run_count": 5312,
-          "patch_bytes": 37799,
-          "changed_ratio": 0.011305
+          "changed_pixels": 68288,
+          "run_count": 14417,
+          "patch_bytes": 154790,
+          "changed_ratio": 0.130249
         }
       ]
     },
     {
       "id": "water_surface_caustics_plane_c",
+      "motion_model": "small_circular_motion_plus_oblique_helper",
       "transitions": [
         {
           "from": "p00",
@@ -1093,64 +1098,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_caustics_plane_c/p00_to_p01_c00.dhex",
-              "changed_pixels": 3503,
-              "run_count": 2203,
-              "sha256": "50e9dce067a589c4e720e39166818fb994d68f5a1e3855e21130516954fe86c0"
+              "changed_pixels": 6717,
+              "run_count": 2822,
+              "sha256": "c3eae467af0c28161bf89478cbe8415091d905e5aa7d3b1250e98cbb15e73d5f"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_caustics_plane_c/p00_to_p01_c10.dhex",
-              "changed_pixels": 3631,
-              "run_count": 2185,
-              "sha256": "503420603582cd2d1a30b285a307bcfe4e69b7a1d004ea11dcc9d44c3527ce20"
+              "changed_pixels": 7131,
+              "run_count": 2988,
+              "sha256": "caba1e406629cd09c6398b734a01f1b6f1a765137cb2ead3c64927be78dacb4d"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_caustics_plane_c/p00_to_p01_c20.dhex",
-              "changed_pixels": 3653,
-              "run_count": 2207,
-              "sha256": "0dd158c365d7dc3647f6ae14bf555fc0071425921b95d717eaa2d3c8063d7417"
+              "changed_pixels": 7540,
+              "run_count": 3056,
+              "sha256": "a171e0bc27b475a1e8176934763c9b5c1c7af549cfa38408f8e9c5469d0688a9"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_caustics_plane_c/p00_to_p01_c30.dhex",
-              "changed_pixels": 3998,
-              "run_count": 2386,
-              "sha256": "65db1be398977f65b7cb8b387d251108c71bcce158c9448bcf20c719ddd75037"
+              "changed_pixels": 7186,
+              "run_count": 3114,
+              "sha256": "62513865bf343a82dff8ee7bef89bcf140f4bb4f511deb45c064e98bcd7945d9"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_caustics_plane_c/p00_to_p01_c01.dhex",
-              "changed_pixels": 4121,
-              "run_count": 2505,
-              "sha256": "db64852d15b96508268344a68c30c09efad80ed8beb594bbb41c14b93a2b5cbf"
+              "changed_pixels": 8127,
+              "run_count": 3232,
+              "sha256": "c90126ee30cfdaf77539cbdb3fae66c86a332ff875332c8c129b28ef0e5bfba2"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_caustics_plane_c/p00_to_p01_c11.dhex",
-              "changed_pixels": 3485,
-              "run_count": 2204,
-              "sha256": "ba3b329e93d2d508367593476f2483518bbc1010f9b74758eb1587d20ec68fe3"
+              "changed_pixels": 7855,
+              "run_count": 3213,
+              "sha256": "46ab8b394e3c841ed4645913a79d21e7d673ea9d8f7368c1b9938879fba5f0c4"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_caustics_plane_c/p00_to_p01_c21.dhex",
-              "changed_pixels": 3759,
-              "run_count": 2181,
-              "sha256": "a9bb928f91655a011a7e6a4226a7789662047af1f44588ce6299f983b536807d"
+              "changed_pixels": 6756,
+              "run_count": 3098,
+              "sha256": "f5c0d469e2033fbb8165df2a269ba6b831955c09d286fac365cbaad1cdd4f5b9"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_caustics_plane_c/p00_to_p01_c31.dhex",
-              "changed_pixels": 3714,
-              "run_count": 2247,
-              "sha256": "72d3e6759dcd1f38e3ffcebfb144d24e94256294c21f572f321a99edec934c20"
+              "changed_pixels": 7904,
+              "run_count": 3151,
+              "sha256": "078375f67e728c84b929d4d993cd6103ca3ada362d100655b8e27198a5ba2915"
             }
           ],
-          "changed_pixels": 29864,
-          "run_count": 18118,
-          "patch_bytes": 138572,
-          "changed_ratio": 0.056961
+          "changed_pixels": 59216,
+          "run_count": 24674,
+          "patch_bytes": 207260,
+          "changed_ratio": 0.112946
         },
         {
           "from": "p01",
@@ -1159,64 +1164,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_caustics_plane_c/p01_to_p02_c00.dhex",
-              "changed_pixels": 1438,
-              "run_count": 734,
-              "sha256": "22928a8cb483a05b20ae40f91abb526b7f71b3d559f233bf9e00c4f988d10b2e"
+              "changed_pixels": 10470,
+              "run_count": 2629,
+              "sha256": "2dcbac59cf8d3c5a663268ec7a2ae26bdc9d381cf9501d87117491a2d4cc8207"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_caustics_plane_c/p01_to_p02_c10.dhex",
-              "changed_pixels": 1255,
-              "run_count": 749,
-              "sha256": "1f95e5ab2c07cc8c4712fb1333437a9877271079d0cbb04bb3a15a3878fb2f44"
+              "changed_pixels": 10923,
+              "run_count": 2776,
+              "sha256": "6c9fc88993c74fc32435447160cd81a46fa19ce794435dacf666f2e58d9ebdc1"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_caustics_plane_c/p01_to_p02_c20.dhex",
-              "changed_pixels": 1569,
-              "run_count": 946,
-              "sha256": "aae809893c912d7f1238d1e4368fc26cc8c11fbbb07a072ce17c14baa9a13f91"
+              "changed_pixels": 11419,
+              "run_count": 2877,
+              "sha256": "1b19bb0730528b5aadee76bdc9a8a46d959b540b98d7b6886fa7863277593808"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_caustics_plane_c/p01_to_p02_c30.dhex",
-              "changed_pixels": 1614,
-              "run_count": 1056,
-              "sha256": "7f5da32e207cfb7fde6758d063e067bb0d01c9dfd74fc509bde871e7e36fe91a"
+              "changed_pixels": 11279,
+              "run_count": 2877,
+              "sha256": "bb6e25f0bb76b48cef7c26b0057dfe213eb23a68e31e5be6d8d8e79fda26c85a"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_caustics_plane_c/p01_to_p02_c01.dhex",
-              "changed_pixels": 1936,
-              "run_count": 1228,
-              "sha256": "e8605e586ca2c6147efb88cf5af4efe3cf6a36c60a719211886610284a3b4dae"
+              "changed_pixels": 12332,
+              "run_count": 3008,
+              "sha256": "2a678c6a675397d506be8013ef97f47d7a7fe397efa1fa38d96c5ef0e98804a6"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_caustics_plane_c/p01_to_p02_c11.dhex",
-              "changed_pixels": 1151,
-              "run_count": 738,
-              "sha256": "9d3f3758485c627f543fc68ef1bc28f68b5c3ffa5a113f69cc7ea9cc92def5cb"
+              "changed_pixels": 12187,
+              "run_count": 2917,
+              "sha256": "fcb31e8019c6634df9443082e8dda3ce1eb2e1b8a8ac5d373b5dd47ddf50f85e"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_caustics_plane_c/p01_to_p02_c21.dhex",
-              "changed_pixels": 1716,
-              "run_count": 979,
-              "sha256": "68f06b3699e03b82af3e5d4ad399f8c6a2af45cdcd8cc53056c74cf2c95117d2"
+              "changed_pixels": 11634,
+              "run_count": 2895,
+              "sha256": "3c904a908c5bc992490d8d7b71a839adf0090044160da8bf6af3a70995fd6e42"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_caustics_plane_c/p01_to_p02_c31.dhex",
-              "changed_pixels": 1278,
-              "run_count": 872,
-              "sha256": "2dc15bfee1261352dc9da913c25fc689da2c3f2c4b40140d84beefdfb7a124d0"
+              "changed_pixels": 11920,
+              "run_count": 2897,
+              "sha256": "0bf6405b024e1b628428a3bdcc14064ef2460fec191d0c545071a4bb6f075130"
             }
           ],
-          "changed_pixels": 11957,
-          "run_count": 7302,
-          "patch_bytes": 55769,
-          "changed_ratio": 0.022806
+          "changed_pixels": 92164,
+          "run_count": 22876,
+          "patch_bytes": 229420,
+          "changed_ratio": 0.175789
         },
         {
           "from": "p02",
@@ -1225,64 +1230,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_caustics_plane_c/p02_to_p03_c00.dhex",
-              "changed_pixels": 2192,
-              "run_count": 1318,
-              "sha256": "361905639dd428ae4a82fceac3944d0bd372bf9c786fb9a8fbaa625b7743d68d"
+              "changed_pixels": 10089,
+              "run_count": 2595,
+              "sha256": "bca382f63ded70ed907bf7d816d86faf072733774aa93c39dc4a311c8eb9ddcc"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_caustics_plane_c/p02_to_p03_c10.dhex",
-              "changed_pixels": 2022,
-              "run_count": 1385,
-              "sha256": "99cf656ea033b2d334ebb3a3daa1c3d1d5edd05de27370adeca4e42b32077266"
+              "changed_pixels": 11116,
+              "run_count": 2728,
+              "sha256": "6e3f13a9cd7b8887de2c07cb804ce24f968965c372e91854282d90224e6696fb"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_caustics_plane_c/p02_to_p03_c20.dhex",
-              "changed_pixels": 2677,
-              "run_count": 1705,
-              "sha256": "415bc52b1ce60333011012f5e52272d3fac4599c888edcddeae5cfce3a63dd8c"
+              "changed_pixels": 10574,
+              "run_count": 2776,
+              "sha256": "f8213d9b50f033d124c0ac7c89ad920375730013c099fb8f84a2d4ee83e272a9"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_caustics_plane_c/p02_to_p03_c30.dhex",
-              "changed_pixels": 1694,
-              "run_count": 1113,
-              "sha256": "14a0e2fb492ba28c36e38f2cec24d31f014c87fc93c4785ab0411dec607736e9"
+              "changed_pixels": 11195,
+              "run_count": 2820,
+              "sha256": "6571598a6a70d8de149bb1a33c9c331194d9f07829ba8095c99dd20930a23838"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_caustics_plane_c/p02_to_p03_c01.dhex",
-              "changed_pixels": 2612,
-              "run_count": 1665,
-              "sha256": "ed37c38ff2ca8a9bf731df47c13a8a3ca945c7b5c9217a6b6770850030ac233e"
+              "changed_pixels": 11594,
+              "run_count": 2918,
+              "sha256": "aa732c49098c840e686d0e7c4bb9ba3277c12267470cbc37e5a6c33185e24956"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_caustics_plane_c/p02_to_p03_c11.dhex",
-              "changed_pixels": 2594,
-              "run_count": 1665,
-              "sha256": "fe4415690ac9a3c624c2eb53057ee428435c231b950cc5cb12d5104d070fcd87"
+              "changed_pixels": 11150,
+              "run_count": 2904,
+              "sha256": "a82ad649f9dc8f4afbd7e0291ad7cb5ca12d37b24bb191622c7f3866a7993c26"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_caustics_plane_c/p02_to_p03_c21.dhex",
-              "changed_pixels": 2103,
-              "run_count": 1433,
-              "sha256": "0fe09e20d8278ed1a60fd89d4a72d45e81842a7d564d6a5a02ef8570e3a914eb"
+              "changed_pixels": 11404,
+              "run_count": 2821,
+              "sha256": "3b5e035b2e1b6e6350c63a073b9493d97120a36308c6ad22ef0772a605c8f1b5"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_caustics_plane_c/p02_to_p03_c31.dhex",
-              "changed_pixels": 2438,
-              "run_count": 1385,
-              "sha256": "c138162f17eacc3ff77758ca3531ec7f49b64b6cc63fc88216a19ba2dd8f52a1"
+              "changed_pixels": 10794,
+              "run_count": 2794,
+              "sha256": "508b4b8eea3b9ef3ed9a6aef511546df484dcc65a4d65961d061ea8ceed590a1"
             }
           ],
-          "changed_pixels": 18332,
-          "run_count": 11669,
-          "patch_bytes": 88346,
-          "changed_ratio": 0.034966
+          "changed_pixels": 87916,
+          "run_count": 22356,
+          "patch_bytes": 222052,
+          "changed_ratio": 0.167686
         },
         {
           "from": "p03",
@@ -1291,64 +1296,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_caustics_plane_c/p03_to_p04_c00.dhex",
-              "changed_pixels": 3346,
-              "run_count": 1964,
-              "sha256": "8b0ecdd09ec6c5c02e333c585961dd0bab6068023acff86bac32f19a4eeb611c"
+              "changed_pixels": 12199,
+              "run_count": 2510,
+              "sha256": "aa387f0f9accef0c1a0fae4d0769c07da34958ef9a03047ea3021585741f8260"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_caustics_plane_c/p03_to_p04_c10.dhex",
-              "changed_pixels": 3267,
-              "run_count": 2009,
-              "sha256": "d9d2bfa190415f7468c05ca3c2dafc7623a52270bdd310c7dc072b341b1b4557"
+              "changed_pixels": 14042,
+              "run_count": 2606,
+              "sha256": "d2c80a75c145be45acac0acc19e262bb1a525e3ed3fd99f661587f00a4277528"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_caustics_plane_c/p03_to_p04_c20.dhex",
-              "changed_pixels": 3765,
-              "run_count": 2161,
-              "sha256": "07e6a2470fd5f8fc8b2e980d2968bbcf00fc41f7d9ab6c0a872e6808687e5c85"
+              "changed_pixels": 14127,
+              "run_count": 2561,
+              "sha256": "80844c2d035bcda4b17ddab43832e9cbdca67850a0e95edadedd0413945bd990"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_caustics_plane_c/p03_to_p04_c30.dhex",
-              "changed_pixels": 3428,
-              "run_count": 1996,
-              "sha256": "d91d2b31964831c3500ecf05cbde42e980430d519051026a38fcfa5a33c50a90"
+              "changed_pixels": 14151,
+              "run_count": 2610,
+              "sha256": "4cc08e2696ecd4cd97587d7768db751a728133109a7075b8ef40cc05ef9a2f21"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_caustics_plane_c/p03_to_p04_c01.dhex",
-              "changed_pixels": 3347,
-              "run_count": 2041,
-              "sha256": "1f1d5d5ef789d7010c4657e60e9b3d3ca4c0fd244844142bf554514470f1e4eb"
+              "changed_pixels": 14683,
+              "run_count": 2699,
+              "sha256": "9530dd67d539d89105610891e923af867e826c72b89675ae3f19d494426b6c13"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_caustics_plane_c/p03_to_p04_c11.dhex",
-              "changed_pixels": 4011,
-              "run_count": 2505,
-              "sha256": "8da7040d286d305bd1a546d2b9af118ad5ac412f75f4bf7a5515df82d3c83cb3"
+              "changed_pixels": 13982,
+              "run_count": 2772,
+              "sha256": "434dca6d533622e2e0e06d94bfca54c7edda811a10da76ac76ec2bb466d79ee9"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_caustics_plane_c/p03_to_p04_c21.dhex",
-              "changed_pixels": 3525,
-              "run_count": 2227,
-              "sha256": "af25376238478b98137dacc3bf8dfa697dfe37e83b17be2792fedeca36f33580"
+              "changed_pixels": 13618,
+              "run_count": 2627,
+              "sha256": "99e8587af85bf42827ce4c268a4a5b6dd2af16e4c5adacb6f9322e252a25fa5c"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_caustics_plane_c/p03_to_p04_c31.dhex",
-              "changed_pixels": 3545,
-              "run_count": 2203,
-              "sha256": "e0ceb20cc0ab13b94c441e9087fe9a2396ab4b2f0c0fbb9a154d38053f838795"
+              "changed_pixels": 13969,
+              "run_count": 2612,
+              "sha256": "e5b31f50c99b179efcbb6a5dd3d0b8ebef5aa98ed2f120d90c5bee17f1cc2072"
             }
           ],
-          "changed_pixels": 28234,
-          "run_count": 17106,
-          "patch_bytes": 130870,
-          "changed_ratio": 0.053852
+          "changed_pixels": 110771,
+          "run_count": 20997,
+          "patch_bytes": 236753,
+          "changed_ratio": 0.211279
         },
         {
           "from": "p04",
@@ -1357,64 +1362,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_caustics_plane_c/p04_to_p05_c00.dhex",
-              "changed_pixels": 3458,
-              "run_count": 2041,
-              "sha256": "5aa029b97358ea464fa9b78e8f14502f9de4affc039b0deb88f6423ffc5332a9"
+              "changed_pixels": 9154,
+              "run_count": 2731,
+              "sha256": "70e327d18107f3011dde508bcab181fed56efb676b52e12929f776428a59d22f"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_caustics_plane_c/p04_to_p05_c10.dhex",
-              "changed_pixels": 3522,
-              "run_count": 2037,
-              "sha256": "867ca3db2a15c17758891c72f8184b0b7872c214c045fe744471106c0d3bd694"
+              "changed_pixels": 9656,
+              "run_count": 2792,
+              "sha256": "df0b6e1177c43ead272dee3f2dbce2819bc81a3c4982d25f3813cbefd304fba7"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_caustics_plane_c/p04_to_p05_c20.dhex",
-              "changed_pixels": 3271,
-              "run_count": 1898,
-              "sha256": "f063817373e53ee3e075c2c8ae412d79ea158502e6c700879bc9eac94cfbe199"
+              "changed_pixels": 10787,
+              "run_count": 2890,
+              "sha256": "61acbefc7dd8db4b5c20f389bf4933e3ea670c4f9a662e5921ac6e509eb3cf4b"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_caustics_plane_c/p04_to_p05_c30.dhex",
-              "changed_pixels": 3915,
-              "run_count": 2462,
-              "sha256": "77b3728e99e274adafbf6a4ebf9d262c9ead2745d8979bafa7e511a4e7489349"
+              "changed_pixels": 10790,
+              "run_count": 2981,
+              "sha256": "6fa6d2b0cd3d544ad4b0e58ca9284f90ba5dbc0a209ba9ad6a89f5fb79078389"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_caustics_plane_c/p04_to_p05_c01.dhex",
-              "changed_pixels": 3913,
-              "run_count": 2338,
-              "sha256": "5433fe907aeb40bcd60c697911c5b3addc8d0260ceec317b7447195b384c78f0"
+              "changed_pixels": 10995,
+              "run_count": 2958,
+              "sha256": "f2e240e00d4cd94f851b9bc9dc61dc29ed1b3dc7d624d1b7decc0d95288aa55c"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_caustics_plane_c/p04_to_p05_c11.dhex",
-              "changed_pixels": 3413,
-              "run_count": 2086,
-              "sha256": "009055670910be37f8fc66a9b855cc41f801a1ff5f0bc5e62a672bdb50050de3"
+              "changed_pixels": 10913,
+              "run_count": 3009,
+              "sha256": "c10cd38588defbd39f61d221947205db0b66f75608e7aefad5be6dba853e0fed"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_caustics_plane_c/p04_to_p05_c21.dhex",
-              "changed_pixels": 3567,
-              "run_count": 2023,
-              "sha256": "65f683543d34d737b7c13b52a2b3420db02af8b5c4ec199ec18e12967b75fc40"
+              "changed_pixels": 9939,
+              "run_count": 2911,
+              "sha256": "1a8728067964bb5e17f3a018f99172f7ab2db5e3f8052f302c60af42592ee4d7"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_caustics_plane_c/p04_to_p05_c31.dhex",
-              "changed_pixels": 3514,
-              "run_count": 2101,
-              "sha256": "f66278a0e827408cb8400a066ace44a0d6f9deb9c9d3b052fa781a52e51dae34"
+              "changed_pixels": 10402,
+              "run_count": 2935,
+              "sha256": "83ad2042961638bc02b3bcba2387efe0e160648c8ad65a00c592790a20e5a92e"
             }
           ],
-          "changed_pixels": 28573,
-          "run_count": 16986,
-          "patch_bytes": 130489,
-          "changed_ratio": 0.054499
+          "changed_pixels": 82636,
+          "run_count": 23207,
+          "patch_bytes": 221878,
+          "changed_ratio": 0.157616
         },
         {
           "from": "p05",
@@ -1423,64 +1428,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_caustics_plane_c/p05_to_p06_c00.dhex",
-              "changed_pixels": 1900,
-              "run_count": 1390,
-              "sha256": "6071b7b8c85ce1dc9c908b8fbdffc7bde406f6a386ec4f5f6fa364223ffc5e66"
+              "changed_pixels": 11055,
+              "run_count": 2557,
+              "sha256": "e64304c1e00049c753611ff1c60c11da93da4c5d995b2dae0f027725fb444fba"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_caustics_plane_c/p05_to_p06_c10.dhex",
-              "changed_pixels": 2208,
-              "run_count": 1332,
-              "sha256": "f5b6f13884fb8b3596e2903b95ac89a2bfe33d84dd217854018d833fca23afc4"
+              "changed_pixels": 11667,
+              "run_count": 2692,
+              "sha256": "3ca74939b965070d47e209e5df0f22921f8e8ecc5786fc4f79267518b6624156"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_caustics_plane_c/p05_to_p06_c20.dhex",
-              "changed_pixels": 2066,
-              "run_count": 1381,
-              "sha256": "fcf9b4ed6e6260d8dc9588959cc96c577cd3e006bffc9060ae0f1ce9a878d94e"
+              "changed_pixels": 11327,
+              "run_count": 2761,
+              "sha256": "9913c17cf363f0519a0c668fd1ea5d53d8730fed827319a670fe5f124eec3125"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_caustics_plane_c/p05_to_p06_c30.dhex",
-              "changed_pixels": 2782,
-              "run_count": 1601,
-              "sha256": "bb52685bd5116502e17555c1762106fa54ed8a6659cb39c32c7928f6096894d5"
+              "changed_pixels": 12137,
+              "run_count": 2754,
+              "sha256": "27885e347fb5d40728bb5c5f1fe506a9e5d06a0d3085edcc41196d2e6be75ce9"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_caustics_plane_c/p05_to_p06_c01.dhex",
-              "changed_pixels": 2563,
-              "run_count": 1660,
-              "sha256": "ee6b5c84c51306126c55da1a194c4288a47db5bcd99b38f31113e045320ed4e4"
+              "changed_pixels": 12391,
+              "run_count": 2875,
+              "sha256": "964b45941e2445ac2a8c467213bb9a1372f78cd6b395588757a70f7ac5c206b0"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_caustics_plane_c/p05_to_p06_c11.dhex",
-              "changed_pixels": 1657,
-              "run_count": 1164,
-              "sha256": "e8ab58bb285fbacf66d58f7761fa02054c6b2a54c06486630b25145b8d08a191"
+              "changed_pixels": 11833,
+              "run_count": 2883,
+              "sha256": "2640df845ebfac640f1050bc361ce5f2e1d1f6dc7685822bec4eee2cd8acd8b2"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_caustics_plane_c/p05_to_p06_c21.dhex",
-              "changed_pixels": 2190,
-              "run_count": 1379,
-              "sha256": "e9c67efe287f8f683c8f019ba499771f6b7c1ed39d8f1aeec0a7c6a14205a4cf"
+              "changed_pixels": 11994,
+              "run_count": 2684,
+              "sha256": "80be1e668d655cc9e9f6552720a44b5a0535c6994d9db3f050088be580f581ec"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_caustics_plane_c/p05_to_p06_c31.dhex",
-              "changed_pixels": 2153,
-              "run_count": 1507,
-              "sha256": "5956c343ccc88dad92ac0b2683b7cf95a3c864eb5c13c6d2280dbd37b222228f"
+              "changed_pixels": 11555,
+              "run_count": 2803,
+              "sha256": "936bbaa152d98f8f2928de4219f7ca03a0c93336b49228ee8f82176566ab408b"
             }
           ],
-          "changed_pixels": 17519,
-          "run_count": 11414,
-          "patch_bytes": 86003,
-          "changed_ratio": 0.033415
+          "changed_pixels": 93959,
+          "run_count": 22009,
+          "patch_bytes": 226013,
+          "changed_ratio": 0.179213
         },
         {
           "from": "p06",
@@ -1489,64 +1494,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_caustics_plane_c/p06_to_p07_c00.dhex",
-              "changed_pixels": 1287,
-              "run_count": 878,
-              "sha256": "4321ae88827e04b5cf6701908c4cb177d6de7126713b0d2edd3455d5830a9e73"
+              "changed_pixels": 13172,
+              "run_count": 2516,
+              "sha256": "ce79b034d162ec5380d93a299f1addf780d3500a70d0cdf7b5f07bb8a6c692e9"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_caustics_plane_c/p06_to_p07_c10.dhex",
-              "changed_pixels": 1317,
-              "run_count": 895,
-              "sha256": "19c570bff8a84f12a7aeb8dd376d87eeba7f38c1d0dec27c489f76f05af13a0c"
+              "changed_pixels": 14148,
+              "run_count": 2592,
+              "sha256": "902a4bea678678f89cebae4ddf936502c29ea95ec419dbe18f940976b0d418f6"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_caustics_plane_c/p06_to_p07_c20.dhex",
-              "changed_pixels": 1563,
-              "run_count": 1022,
-              "sha256": "784c6c7657e1ef3f158a463309cb6c8c2f94398e152bcc075bb987ffb99975f0"
+              "changed_pixels": 14624,
+              "run_count": 2665,
+              "sha256": "2d77c76b49f9355835e127dcce5085613e1cb7a6bfd1a2bc4698431aa6f229d3"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_caustics_plane_c/p06_to_p07_c30.dhex",
-              "changed_pixels": 1203,
-              "run_count": 661,
-              "sha256": "293f971525ac5549bef27a0aeda586b4280ec6683b29d9ebdff0b1c6e24ab630"
+              "changed_pixels": 14144,
+              "run_count": 2673,
+              "sha256": "1f903b9e57e49495b4e1eae34cbb1b70e40d5fa3649589db72ea7dbfd0027360"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_caustics_plane_c/p06_to_p07_c01.dhex",
-              "changed_pixels": 1454,
-              "run_count": 925,
-              "sha256": "318ce19af174829f62c71a02cdfbe51913a10f405aa19463ad4d90808d47d1a4"
+              "changed_pixels": 15699,
+              "run_count": 2755,
+              "sha256": "9a607a1a571b73efaed9923feef589c3edd6aa07e39f5f535b4cac1344fc5f94"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_caustics_plane_c/p06_to_p07_c11.dhex",
-              "changed_pixels": 1624,
-              "run_count": 1133,
-              "sha256": "c0f3d9d5b8ece44188e8039d6ae4e57389fbaa5c30d4c349123c38772cfb282d"
+              "changed_pixels": 14727,
+              "run_count": 2806,
+              "sha256": "c63ece4bcd8ea1503f81934d84fcb13e585a6ee58acf9668bdcaf87987602fe9"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_caustics_plane_c/p06_to_p07_c21.dhex",
-              "changed_pixels": 1236,
-              "run_count": 838,
-              "sha256": "d96adbc7213f7c098e49392b04fa2d1cc8fdb2efd8077929e26e6d7b88ac8fcf"
+              "changed_pixels": 14485,
+              "run_count": 2671,
+              "sha256": "ae345ea89132e9f90da9f9982cbc024ba1b72145767f492b98cd107239278256"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_caustics_plane_c/p06_to_p07_c31.dhex",
-              "changed_pixels": 1124,
-              "run_count": 744,
-              "sha256": "b77f5cd934f8e2886ccb85d0ba0b162984f859ed585d0cd1b675da7f3482250c"
+              "changed_pixels": 14442,
+              "run_count": 2693,
+              "sha256": "1aa151264836b80985c3e6fdd09bfedc2f3c5bdcf9d21608fd898557ae819772"
             }
           ],
-          "changed_pixels": 10808,
-          "run_count": 7096,
-          "patch_bytes": 53384,
-          "changed_ratio": 0.020615
+          "changed_pixels": 115441,
+          "run_count": 21371,
+          "patch_bytes": 243667,
+          "changed_ratio": 0.220186
         },
         {
           "from": "p07",
@@ -1555,69 +1560,70 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_surface_caustics_plane_c/p07_to_p00_c00.dhex",
-              "changed_pixels": 3680,
-              "run_count": 2131,
-              "sha256": "5fb633ead48ba3056f9bf27152f7f30315be998fda743cddbbf3bfcc516aced3"
+              "changed_pixels": 8595,
+              "run_count": 2628,
+              "sha256": "4b556a42e73837c688d01f13acbcf523753cdbbc50ed4da01b2f8e25bff33853"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_surface_caustics_plane_c/p07_to_p00_c10.dhex",
-              "changed_pixels": 3481,
-              "run_count": 2184,
-              "sha256": "d392f37aa509c0985119fccf07c691c93ae3dafb66ae411cda9c3796fab8f7ca"
+              "changed_pixels": 7815,
+              "run_count": 2678,
+              "sha256": "015c9e39d4d19ef1615b0d4777e1829beac248e99b802c36992b7eb16eb29855"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_surface_caustics_plane_c/p07_to_p00_c20.dhex",
-              "changed_pixels": 3891,
-              "run_count": 2298,
-              "sha256": "b1d61bac492ef4c59ce11cd5871bd3992346426376e8dcdf886ebfed24ab8738"
+              "changed_pixels": 8863,
+              "run_count": 2783,
+              "sha256": "9f6b9f092cd48091501dda774ee399c83da25abd8532dcb89a26f846a04416aa"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_surface_caustics_plane_c/p07_to_p00_c30.dhex",
-              "changed_pixels": 3696,
-              "run_count": 2218,
-              "sha256": "ed1562b8626cc409dc93a748f530e4d6f4ec54f791cd69e124f91e11e089ae41"
+              "changed_pixels": 9070,
+              "run_count": 2761,
+              "sha256": "1c848154847f20e74d722321043f2e150e8c63dfc5e8adecb2092667c70f6690"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_surface_caustics_plane_c/p07_to_p00_c01.dhex",
-              "changed_pixels": 3949,
-              "run_count": 2453,
-              "sha256": "cabb927fc363c6408d8c96ff32a943f9e42a83684970effc9a13690ae863c70b"
+              "changed_pixels": 8390,
+              "run_count": 2917,
+              "sha256": "9df4c592f227943ec421fbdda354d8ba3b4ad70ee6ee56b254e18f58c6e1a904"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_surface_caustics_plane_c/p07_to_p00_c11.dhex",
-              "changed_pixels": 4213,
-              "run_count": 2447,
-              "sha256": "42beacb289cf49a4364f54a9851628170f6f43b19f887f3100aad3b34ba003a4"
+              "changed_pixels": 9000,
+              "run_count": 2839,
+              "sha256": "6313256bd1d17ce389fe8a491e13659d2d6159cd357dee7196e23d9b9e4a16b5"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_surface_caustics_plane_c/p07_to_p00_c21.dhex",
-              "changed_pixels": 3748,
-              "run_count": 2291,
-              "sha256": "ef847e67c3be1397976b2e090fa7ceb86c3aa0917c05e39968698843b2e65062"
+              "changed_pixels": 7845,
+              "run_count": 2673,
+              "sha256": "8f35eb9177dd8217c7aa75e2e09f1a6b21b83200f16209b55277de9ada446b21"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_surface_caustics_plane_c/p07_to_p00_c31.dhex",
-              "changed_pixels": 4165,
-              "run_count": 2329,
-              "sha256": "3a52c5a7544ecddb4a9ad3b9cef8cb1db1a2f1742317dc15c1c2ec7a1b6231be"
+              "changed_pixels": 9117,
+              "run_count": 2841,
+              "sha256": "8679e36c79c69e833beced0d60caec8e4b1e38e898a1ed4d18ffcaa4c15df381"
             }
           ],
-          "changed_pixels": 30823,
-          "run_count": 18351,
-          "patch_bytes": 140929,
-          "changed_ratio": 0.05879
+          "changed_pixels": 68695,
+          "run_count": 22120,
+          "patch_bytes": 201415,
+          "changed_ratio": 0.131025
         }
       ]
     },
     {
       "id": "water_upper_lightnet_plane_c",
+      "motion_model": "small_reverse_circular_lissajous",
       "transitions": [
         {
           "from": "p00",
@@ -1626,64 +1632,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p00_to_p01_c00.dhex",
-              "changed_pixels": 611,
-              "run_count": 446,
-              "sha256": "4d965d45e8ba428ff0961e82d2116c4c6be396018cadbbb17b37791119374b65"
+              "changed_pixels": 1517,
+              "run_count": 773,
+              "sha256": "da50c94dd88b951a137d26bbdf3ca12e8b1d957e50ab57923324c18627b24042"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p00_to_p01_c10.dhex",
-              "changed_pixels": 355,
-              "run_count": 339,
-              "sha256": "1745d66a6e154b8e86749f19b4298c71bb17bf0ec924389656fa37eee5898e0c"
+              "changed_pixels": 1141,
+              "run_count": 668,
+              "sha256": "70ada1226856f155eb165503b07123a18b45bf9be970c7355417ab733e094c9b"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p00_to_p01_c20.dhex",
-              "changed_pixels": 648,
-              "run_count": 396,
-              "sha256": "58d941736660e66968054dabc218d30cb903ea09d903c2a44af4fb32c86fa3e8"
+              "changed_pixels": 1527,
+              "run_count": 773,
+              "sha256": "3f553fce7193ef52848aa93d6483d117f5943ec010f1bf9dc284ac9cd9640ac2"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p00_to_p01_c30.dhex",
-              "changed_pixels": 348,
-              "run_count": 318,
-              "sha256": "e7051de470bdbc4de2238ebb815710896c921c51072656a6945f70fb152a213e"
+              "changed_pixels": 1047,
+              "run_count": 615,
+              "sha256": "c201d4014bda44db9be326cb37dec3a3be59d335d85cda7cf3586b3ff830a4e8"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p00_to_p01_c01.dhex",
-              "changed_pixels": 341,
-              "run_count": 306,
-              "sha256": "a29540987c343dd6eaf5e285a02984fe3842bc81b5071cf783331d8f4531ecf4"
+              "changed_pixels": 1157,
+              "run_count": 586,
+              "sha256": "51d13e19a4403f0e1831d4224a00ffdb496e8e0148d46f888380fd7e10bc1b4a"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p00_to_p01_c11.dhex",
-              "changed_pixels": 485,
-              "run_count": 355,
-              "sha256": "f09d1efc4f1d59903d55b2e582275f012690e8330e01174bad87e1003def12ce"
+              "changed_pixels": 1044,
+              "run_count": 708,
+              "sha256": "87da072e02cb72c590f3a57e1a147bff691a14796086829f1b53f888fce20b83"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p00_to_p01_c21.dhex",
-              "changed_pixels": 344,
-              "run_count": 290,
-              "sha256": "faccdcc1844ecc77cc57477b9322e081afac7736b076927763c970c307e7154b"
+              "changed_pixels": 1613,
+              "run_count": 808,
+              "sha256": "57a85cdd6bbfe9603c8398da746e42a992846bd76130003e80f2c3554f7be436"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p00_to_p01_c31.dhex",
-              "changed_pixels": 530,
-              "run_count": 381,
-              "sha256": "c31ddc5e041f9c9b0b2d8b69939e8b93d2a9e8bebe9dc3737e36e2136057c34f"
+              "changed_pixels": 1340,
+              "run_count": 773,
+              "sha256": "7467dbefb22bc8a8a3e1a553cd474938a6f3402dd4b73b3951add6a93d666802"
             }
           ],
-          "changed_pixels": 3662,
-          "run_count": 2831,
-          "patch_bytes": 20648,
-          "changed_ratio": 0.006985
+          "changed_pixels": 10386,
+          "run_count": 5704,
+          "patch_bytes": 44610,
+          "changed_ratio": 0.01981
         },
         {
           "from": "p01",
@@ -1692,64 +1698,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p01_to_p02_c00.dhex",
-              "changed_pixels": 602,
-              "run_count": 302,
-              "sha256": "60d375791c6cc9f5c64d7117d908660c94a84180d51643bd46f535b940c5e816"
+              "changed_pixels": 1059,
+              "run_count": 572,
+              "sha256": "a67c9d11c4397c8cddb0ec7c951aacf4a92e7ac612b80b929a04b1c32c8c800d"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p01_to_p02_c10.dhex",
-              "changed_pixels": 454,
-              "run_count": 252,
-              "sha256": "a6ca93db1972996a3ab1306eae361965baea61e8954acfdf13e0ce8b25e97cfa"
+              "changed_pixels": 648,
+              "run_count": 297,
+              "sha256": "55abcbb676f29a733239c07792e9a4f4ddeabd102b5bcbcc9e2ff6d335728b95"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p01_to_p02_c20.dhex",
-              "changed_pixels": 557,
-              "run_count": 283,
-              "sha256": "b1c7857c09dfcdd905e21d7bd31616512afc13fc9e0d286aac07fa319e6c726f"
+              "changed_pixels": 972,
+              "run_count": 541,
+              "sha256": "d614876dd4fb54127460c979cd111872496f902f06b8f3b8c81697ff75d43268"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p01_to_p02_c30.dhex",
-              "changed_pixels": 357,
-              "run_count": 201,
-              "sha256": "b3acf081bbb249c0c5ff74d8091928e86336d6308fe7b990a31f90ba4af86a47"
+              "changed_pixels": 632,
+              "run_count": 266,
+              "sha256": "2d312d86ddf07610bee658a9e626d7e13b98beafea0386aebca8ab272ccaef1e"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p01_to_p02_c01.dhex",
-              "changed_pixels": 503,
-              "run_count": 285,
-              "sha256": "c0bb718eb5b059ac1a74652cdcd098b07015c8f9a4ce224672683309630d880a"
+              "changed_pixels": 635,
+              "run_count": 282,
+              "sha256": "d4c2eaa5299ac14c05b9a512e8506fd5a5de64dac8aa35bd93d57b6f518da594"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p01_to_p02_c11.dhex",
-              "changed_pixels": 631,
-              "run_count": 328,
-              "sha256": "7368e84648bc1f2bc96886bf5b348ccd6c9e2eaec013904e4c887e0d9cc696ed"
+              "changed_pixels": 802,
+              "run_count": 407,
+              "sha256": "444c674093c7170aa258813c90215164cd020d7422683ec06ca8cfe61a5b6aa5"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p01_to_p02_c21.dhex",
-              "changed_pixels": 514,
-              "run_count": 352,
-              "sha256": "f9c8e85a11bfaad9aa250ec2b2f6f237a13f9ac36a9d59f9eb7382b8c0358373"
+              "changed_pixels": 589,
+              "run_count": 272,
+              "sha256": "9aab95c1cc644e32fe380a12e067e28999eaf742226f1aeaea00bdd46368f21c"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p01_to_p02_c31.dhex",
-              "changed_pixels": 621,
-              "run_count": 320,
-              "sha256": "42dc3d7e2b52a4901c20e9390f4b02572e88a182fada74e48be5bec169cd4df1"
+              "changed_pixels": 840,
+              "run_count": 408,
+              "sha256": "661fb5a7a3d05128a448a57ff050e181f328d0485311b75c7d601e91abd5f4f7"
             }
           ],
-          "changed_pixels": 4239,
-          "run_count": 2323,
-          "patch_bytes": 18177,
-          "changed_ratio": 0.008085
+          "changed_pixels": 6177,
+          "run_count": 3045,
+          "patch_bytes": 24447,
+          "changed_ratio": 0.011782
         },
         {
           "from": "p02",
@@ -1758,64 +1764,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p02_to_p03_c00.dhex",
-              "changed_pixels": 414,
-              "run_count": 251,
-              "sha256": "7c2a2da7ad4bb6ab637c2c4bf01e703fc94e083ca6264c39b45b0b8b17e0dd7d"
+              "changed_pixels": 2307,
+              "run_count": 719,
+              "sha256": "007c661a3b95e2e5cead2e4608d57b6fc1bfa9f23ac8257905d98b86c3cd4af2"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p02_to_p03_c10.dhex",
-              "changed_pixels": 366,
-              "run_count": 238,
-              "sha256": "5d8ea8cf4b335ae6a4cf688d05aab0ed26d4d082f9d6970845fceebddd0b343f"
+              "changed_pixels": 2144,
+              "run_count": 631,
+              "sha256": "eb87776a4744330a0e7f1cdd78af64aad7a708291b3e20967833847cf91c156c"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p02_to_p03_c20.dhex",
-              "changed_pixels": 270,
-              "run_count": 197,
-              "sha256": "99122fdaf6cbfca803951d8a59ad050cb31c90a7a2522a2de271a6e12cb80f4c"
+              "changed_pixels": 2459,
+              "run_count": 734,
+              "sha256": "283114fa5104e2c1e6104f7330a78d8190bc62d654e3f584d6f36101d0116ab5"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p02_to_p03_c30.dhex",
-              "changed_pixels": 162,
-              "run_count": 117,
-              "sha256": "397596ef658c9a2bc5f7e1ac433cdc6ad983964f345755ed97cbd2244c50d8a2"
+              "changed_pixels": 2051,
+              "run_count": 566,
+              "sha256": "ae7c4112f341c89f09dd767f89c45ad613f9a78a609b1fb51f6b7f00e4e3a04a"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p02_to_p03_c01.dhex",
-              "changed_pixels": 349,
-              "run_count": 224,
-              "sha256": "fa2e814b88ebfac24a2217c901faf0abc0914b1908da810cc674c7b8f1e207b0"
+              "changed_pixels": 1679,
+              "run_count": 559,
+              "sha256": "89309f4da344df92bd1ea839e2b2152a87a9bd4433f85c5dd6b50ede4951e746"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p02_to_p03_c11.dhex",
-              "changed_pixels": 552,
-              "run_count": 397,
-              "sha256": "2f469a3ee44c8c60e664f6ef61d7f15c1d0e3cbf82548fd1d46ccce2c5bb5e37"
+              "changed_pixels": 1999,
+              "run_count": 648,
+              "sha256": "f66d10e414e50d755f1a5c5adff4716af7166619f6a9da604ff57b200b29536f"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p02_to_p03_c21.dhex",
-              "changed_pixels": 305,
-              "run_count": 203,
-              "sha256": "096e1b46ae3892d644740d8c69632c9227efdf049e120380385cc50ece2476b5"
+              "changed_pixels": 2627,
+              "run_count": 752,
+              "sha256": "ff260edf3e652d9062fe6b3ec14cf864b919059848587d1e005c6ce661f94b63"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p02_to_p03_c31.dhex",
-              "changed_pixels": 348,
-              "run_count": 203,
-              "sha256": "45f9176f4d659a2bb628a47250660b98d26506f851574be217ba45378aba2064"
+              "changed_pixels": 2487,
+              "run_count": 717,
+              "sha256": "6c7ffae8b3a8b8ce7d6106883da6d7edf6bbea64206bc87147af074f659ac78d"
             }
           ],
-          "changed_pixels": 2766,
-          "run_count": 1830,
-          "patch_bytes": 13746,
-          "changed_ratio": 0.005276
+          "changed_pixels": 17753,
+          "run_count": 5326,
+          "patch_bytes": 49709,
+          "changed_ratio": 0.033861
         },
         {
           "from": "p03",
@@ -1824,64 +1830,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p03_to_p04_c00.dhex",
-              "changed_pixels": 815,
-              "run_count": 429,
-              "sha256": "e2a2b36e224118c291d786a6da9c817373155e2fb36db2bedb4e25db506e2652"
+              "changed_pixels": 1804,
+              "run_count": 732,
+              "sha256": "752c859dfd4fa09bcf45cc0f6fdcfb3136d5089dd492aa2903c8286575f287ea"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p03_to_p04_c10.dhex",
-              "changed_pixels": 554,
-              "run_count": 439,
-              "sha256": "42cdb3e52585187ebfa32ed9ce8703f816bb8f6a81caf3de2e260c584f5a309c"
+              "changed_pixels": 1577,
+              "run_count": 604,
+              "sha256": "d2b37a64d5c58c33ab29f0119e46130762f974f6c74df76f983763911cc66fa9"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p03_to_p04_c20.dhex",
-              "changed_pixels": 1020,
-              "run_count": 506,
-              "sha256": "76f135084b14c8840d07b8b466e94a7581d7fc0af9e7c399be45276b72c22552"
+              "changed_pixels": 1962,
+              "run_count": 732,
+              "sha256": "50a402f83f8eb8819c84a3a66868f91fa1342fa631608d86003371065b55ee22"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p03_to_p04_c30.dhex",
-              "changed_pixels": 554,
-              "run_count": 418,
-              "sha256": "b4b231c12856150d7994ec1a64a2d7c07be92b6db311d13261a8733e6fc7064a"
+              "changed_pixels": 1576,
+              "run_count": 527,
+              "sha256": "7052f3dbec0947a2b4d4e44f754da584271d26bbcf36bd1a248a313727ae096d"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p03_to_p04_c01.dhex",
-              "changed_pixels": 420,
-              "run_count": 292,
-              "sha256": "905df0e48bbb42bb6c9bf77f54b09ec96f0bd67e825deecac92b24b6c4dcfc05"
+              "changed_pixels": 1351,
+              "run_count": 555,
+              "sha256": "5593a4efd442b85b01fb659d051f8e6c6b35aaa542cf61d08e6e1503ce9d8049"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p03_to_p04_c11.dhex",
-              "changed_pixels": 759,
-              "run_count": 430,
-              "sha256": "614fa0b748672d66cea6e16de10be08c8c674d419a2d70eaa152696c31d6b49b"
+              "changed_pixels": 1423,
+              "run_count": 590,
+              "sha256": "511c75c327c58177dae1d4ec3d03a120bfe81629d398f6289da39a3ab06603ce"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p03_to_p04_c21.dhex",
-              "changed_pixels": 482,
-              "run_count": 349,
-              "sha256": "ee7c04168641c2708d1c64fd59bd784fe2349b2756c8d1aaf72775b33c177f0b"
+              "changed_pixels": 1909,
+              "run_count": 774,
+              "sha256": "a67105fdc4d32ba59df40136362e610bb7573f08ac08d00a05e375b361485af8"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p03_to_p04_c31.dhex",
-              "changed_pixels": 801,
-              "run_count": 381,
-              "sha256": "0ecbb260d095a2923a21f2e09462f007641aacd13a987dca047c0eb14bc08fed"
+              "changed_pixels": 1760,
+              "run_count": 664,
+              "sha256": "f7eaadecc30d9f38db28d807c2c9e4bd20ad6a220b62b9553316e09315dd4224"
             }
           ],
-          "changed_pixels": 5405,
-          "run_count": 3244,
-          "patch_bytes": 24869,
-          "changed_ratio": 0.010309
+          "changed_pixels": 13362,
+          "run_count": 5178,
+          "patch_bytes": 44430,
+          "changed_ratio": 0.025486
         },
         {
           "from": "p04",
@@ -1890,64 +1896,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p04_to_p05_c00.dhex",
-              "changed_pixels": 659,
-              "run_count": 460,
-              "sha256": "9305ca1dc7a12d92e75862eb660347df344f24e6695038bc0d6be9561be97388"
+              "changed_pixels": 1457,
+              "run_count": 808,
+              "sha256": "a67c22e7f4945590a9b1198a61fdcc8b7ee8715aff581536c7f00a7e2102bd5c"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p04_to_p05_c10.dhex",
-              "changed_pixels": 748,
-              "run_count": 375,
-              "sha256": "0eafe20729c9a27ce587db380d38e091f9ab195e15b1d79d3073000b69c84d51"
+              "changed_pixels": 952,
+              "run_count": 528,
+              "sha256": "a024e8a14f88d660c24d0444b413bd2a6096c37fdb2e4129998b6b71d97e1e31"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p04_to_p05_c20.dhex",
-              "changed_pixels": 260,
-              "run_count": 227,
-              "sha256": "5f8634a2845d1aa0ff725c240e3161c9f342a232666f74ccdb6e6b3b05a60c26"
+              "changed_pixels": 1521,
+              "run_count": 791,
+              "sha256": "870f298526944224c9b64ff0aa4ed2bd4997133d7f41a0b50f04e4d055d009fa"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p04_to_p05_c30.dhex",
-              "changed_pixels": 700,
-              "run_count": 354,
-              "sha256": "89359ec8b3b93b1e87f7aacd513cac9cb97bcb5b7af7989c9ea878cea105c4ed"
+              "changed_pixels": 1047,
+              "run_count": 531,
+              "sha256": "56b35f170e4c3f1514d9729190d0b6e307ff889be746f73b48b4556e277fec7a"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p04_to_p05_c01.dhex",
-              "changed_pixels": 767,
-              "run_count": 445,
-              "sha256": "cfc5ac32a535d9e69d0ae74f087374e8fb06e508c09b5fa42e56d22978eddd7b"
+              "changed_pixels": 1082,
+              "run_count": 566,
+              "sha256": "d2a4b65c54d2044bba870618a20cf5c7d7b8ff819159f16ad34a97280089ad19"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p04_to_p05_c11.dhex",
-              "changed_pixels": 654,
-              "run_count": 472,
-              "sha256": "a1c64d4f7615d9f9e961d595537b106ac5c06e3af1b384bb12fae0d9503ea5c3"
+              "changed_pixels": 1150,
+              "run_count": 644,
+              "sha256": "63f5a5f8f40f8f3f2515e1112f539209baf497a7f6e1136fc791a361efaa40af"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p04_to_p05_c21.dhex",
-              "changed_pixels": 870,
-              "run_count": 485,
-              "sha256": "e1e65c6b9d66a9b2da74f07ca8297c6c25c92101e77b3cb9086e149a309b73d0"
+              "changed_pixels": 1473,
+              "run_count": 749,
+              "sha256": "c69b61841c1b2dd0ed11cc7f697135cd471549ec3e4978f5dda149d7ba937be4"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p04_to_p05_c31.dhex",
-              "changed_pixels": 605,
-              "run_count": 406,
-              "sha256": "825a3bb46605cffc654d894fa306a9aa59259fd904871a3a18b1b3fa112692f2"
+              "changed_pixels": 1241,
+              "run_count": 647,
+              "sha256": "168cbe7c00877027ac706111e33b5e5b112cda47a649515b3ae1af3d5a7b796f"
             }
           ],
-          "changed_pixels": 5263,
-          "run_count": 3224,
-          "patch_bytes": 24607,
-          "changed_ratio": 0.010038
+          "changed_pixels": 9923,
+          "run_count": 5264,
+          "patch_bytes": 41507,
+          "changed_ratio": 0.018927
         },
         {
           "from": "p05",
@@ -1956,64 +1962,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p05_to_p06_c00.dhex",
-              "changed_pixels": 469,
-              "run_count": 267,
-              "sha256": "43486e479eee34ea7eef18ad0a6bc0f23fbc80ada4d340c4f9b354ba030cf0a4"
+              "changed_pixels": 1001,
+              "run_count": 567,
+              "sha256": "5bd3578ab73971afb9cf9b98c37db4c0fc79366035af38c1ef077bbca6d8681a"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p05_to_p06_c10.dhex",
-              "changed_pixels": 222,
-              "run_count": 164,
-              "sha256": "d594645d9e8e6041d89d95f59bc26479ae5e587b67c355129cded9d02c7cadb1"
+              "changed_pixels": 724,
+              "run_count": 332,
+              "sha256": "d29dd4d430e70bbfccd73cfbbd24b83b9dddb82eb5a35260aa562d0c6ba87d87"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p05_to_p06_c20.dhex",
-              "changed_pixels": 511,
-              "run_count": 332,
-              "sha256": "69f7808fd33f9efdd2cb97b687a007f8833dd6034c3f35754cc3ebffb429b16b"
+              "changed_pixels": 1120,
+              "run_count": 576,
+              "sha256": "dc24e6a3e577b6f61f517b9a451a3af9a35cd7f96ac89589e50c557ab04822b4"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p05_to_p06_c30.dhex",
-              "changed_pixels": 309,
-              "run_count": 202,
-              "sha256": "6266d9f5b8216998d9615a1fc50b1fadb90381b0bc6131555bc2afb5d7dc767e"
+              "changed_pixels": 620,
+              "run_count": 306,
+              "sha256": "9fdea9a355d2cd5214ac18de69bf13f7cf0659d16e732469087e29c28a889f63"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p05_to_p06_c01.dhex",
-              "changed_pixels": 286,
-              "run_count": 238,
-              "sha256": "2085eac864d1d94275b0d2f6f365d2100e3d5bd69a51f5c4d58794eaac3c2717"
+              "changed_pixels": 687,
+              "run_count": 379,
+              "sha256": "cbf7e6570afb11d01fc6b55c8336044371375c7e4e3f33fd93426b12db50e36f"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p05_to_p06_c11.dhex",
-              "changed_pixels": 338,
-              "run_count": 185,
-              "sha256": "9c46761c9a3b3ff5dd37efa1f3e72baec62f3ad0498d68970c0987509ce4c491"
+              "changed_pixels": 745,
+              "run_count": 550,
+              "sha256": "fc286fbcb6613deb20e6a75825556e98afc346e2841d927e2a4595b667525be3"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p05_to_p06_c21.dhex",
-              "changed_pixels": 335,
-              "run_count": 268,
-              "sha256": "76dc6ac131104797709cc7772f546f774a70b30cb030c0ec54fc5eff7126b550"
+              "changed_pixels": 1077,
+              "run_count": 554,
+              "sha256": "d3b90af4d3126be87031c4c8943e61aeefd31cfec055975ffdd8eb9655dee00b"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p05_to_p06_c31.dhex",
-              "changed_pixels": 487,
-              "run_count": 314,
-              "sha256": "3847b9f9cee86f3175990467a910a8c4ddd80bb0d39a119cd1a50d79bc2c82a0"
+              "changed_pixels": 973,
+              "run_count": 545,
+              "sha256": "30180f53a7e88dda257d228173a47cb341b37e03dbcc41155c5c5f059c8e205a"
             }
           ],
-          "changed_pixels": 2957,
-          "run_count": 1970,
-          "patch_bytes": 14777,
-          "changed_ratio": 0.00564
+          "changed_pixels": 6947,
+          "run_count": 3809,
+          "patch_bytes": 29801,
+          "changed_ratio": 0.01325
         },
         {
           "from": "p06",
@@ -2022,64 +2028,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p06_to_p07_c00.dhex",
-              "changed_pixels": 625,
-              "run_count": 309,
-              "sha256": "6d443bd7bf627e341c21ba9755f2dfad4e63df2a96d92b72f1de961fb1d7a21a"
+              "changed_pixels": 2346,
+              "run_count": 751,
+              "sha256": "e907a799c5c9cd68278cfbee81a81a43c724c98dcb7136450401b81160895168"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p06_to_p07_c10.dhex",
-              "changed_pixels": 656,
-              "run_count": 320,
-              "sha256": "c018e0517c3d0b763f5fa5a5a2cbc0f69e0bed86cc30a7ce6d87ebaaff425450"
+              "changed_pixels": 1933,
+              "run_count": 627,
+              "sha256": "5e02efe831bc56e56e38e930e550698c5c1725e9b31717a254bc539be4d6662a"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p06_to_p07_c20.dhex",
-              "changed_pixels": 493,
-              "run_count": 281,
-              "sha256": "3abf54da12d69a3ae1854fbaf50d27f5731a1d55838543127e834a0f55366ffb"
+              "changed_pixels": 2468,
+              "run_count": 747,
+              "sha256": "7b928e9855862bcf4f1b16dcf143af3cc291982eedf09b8cf948ed4b43b2662b"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p06_to_p07_c30.dhex",
-              "changed_pixels": 449,
-              "run_count": 199,
-              "sha256": "7a9fcd29708934e2f442aa9fdf282e9b508734be2dbcd37f379057c20ed36bec"
+              "changed_pixels": 2099,
+              "run_count": 569,
+              "sha256": "a9753fc632457f1db07d5865a86daa9b30b85be1324c486805f67961eee54f1a"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p06_to_p07_c01.dhex",
-              "changed_pixels": 489,
-              "run_count": 246,
-              "sha256": "d6d8aade003a4de1c80334e144a59712782bce75c55a4938a86a2cb4f29c42e4"
+              "changed_pixels": 1640,
+              "run_count": 570,
+              "sha256": "646c3ad62a7097b53e74b2c027b4b1b18587bb4114afc65e40a3b4630ed340b4"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p06_to_p07_c11.dhex",
-              "changed_pixels": 585,
-              "run_count": 288,
-              "sha256": "da221c01b1201c49f241ad15e57a1362ff6e39f0a1561bda77acd5ec69248d72"
+              "changed_pixels": 2064,
+              "run_count": 658,
+              "sha256": "8c19415b98eeb3402b9933d44fadabf33225f8b5a0883da67a91c5c920336c09"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p06_to_p07_c21.dhex",
-              "changed_pixels": 584,
-              "run_count": 325,
-              "sha256": "a21886c7f02a1c4134f415b0734cdd17110e13a2266ceafe60e5337cbfe06ffb"
+              "changed_pixels": 2605,
+              "run_count": 734,
+              "sha256": "9008a284c4e35e82b0274b72e74b88b3892c483961187e08f0de939b8499c3d5"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p06_to_p07_c31.dhex",
-              "changed_pixels": 589,
-              "run_count": 300,
-              "sha256": "0c47054cdd9ff51152d6d742798cffe64cb7b6fee7c589f201f3f472ce59f64a"
+              "changed_pixels": 2320,
+              "run_count": 713,
+              "sha256": "51060288a089d485348e68f99d76b2a2b2121a33a3cd797ec1a89ffcaa5179e9"
             }
           ],
-          "changed_pixels": 4470,
-          "run_count": 2268,
-          "patch_bytes": 18078,
-          "changed_ratio": 0.008526
+          "changed_pixels": 17475,
+          "run_count": 5369,
+          "patch_bytes": 49689,
+          "changed_ratio": 0.033331
         },
         {
           "from": "p07",
@@ -2088,64 +2094,64 @@
             {
               "chunk": "c00",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p07_to_p00_c00.dhex",
-              "changed_pixels": 367,
-              "run_count": 318,
-              "sha256": "4dfa8bf9bc717e1c32a9890b9df51fcf7d0f6d365e1cac1a28f62edf40f1e291"
+              "changed_pixels": 1921,
+              "run_count": 797,
+              "sha256": "57610defddf70cd4e707f09dc48067ee322052356adcf7072a1e5a3bb578df37"
             },
             {
               "chunk": "c10",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p07_to_p00_c10.dhex",
-              "changed_pixels": 434,
-              "run_count": 345,
-              "sha256": "54dbc73aa8ce6aecc05219145d22a2e2d6c845f95b73da2d82755dec216c2819"
+              "changed_pixels": 1717,
+              "run_count": 658,
+              "sha256": "82dfce6d0791ebf148dfc980e0245df1791dd4d303ea85da36f05890ed9bfcfa"
             },
             {
               "chunk": "c20",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p07_to_p00_c20.dhex",
-              "changed_pixels": 323,
-              "run_count": 313,
-              "sha256": "268739216c3d7fc30cc1f630f47ecee7d99dcb9c2e21cfa36556036f996a0280"
+              "changed_pixels": 1857,
+              "run_count": 767,
+              "sha256": "9247daa6033e84576c19ac5198027c11f830e0fc54ddc79cd79101acc241aa4f"
             },
             {
               "chunk": "c30",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p07_to_p00_c30.dhex",
-              "changed_pixels": 413,
-              "run_count": 320,
-              "sha256": "89933c1ba6fde82512f71a65a2fa3abaf7ed3208fc0d50883dfcd4242c3fab51"
+              "changed_pixels": 1617,
+              "run_count": 577,
+              "sha256": "1f364a4769bcd858dde63f139ebf981f7cfc5a4a10ec985ccc26bb0723e219e8"
             },
             {
               "chunk": "c01",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p07_to_p00_c01.dhex",
-              "changed_pixels": 489,
-              "run_count": 383,
-              "sha256": "73d8ae5d40ed57e2d643b83c152179061eb745b7eeb57bc5bbb6af014c3bcfbf"
+              "changed_pixels": 1389,
+              "run_count": 564,
+              "sha256": "0da5240483388865e57fb5f9e7569952c3b348c86445055f9cb500ea904d80ea"
             },
             {
               "chunk": "c11",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p07_to_p00_c11.dhex",
-              "changed_pixels": 417,
-              "run_count": 389,
-              "sha256": "784e155319a5804ee6c24a587d83b173a0168f9aa34644d575bdf30290e3c9a4"
+              "changed_pixels": 1753,
+              "run_count": 681,
+              "sha256": "e116f7e9b3ad5c3db682c24bacc2bf61bd0b16d81ecda84f8e380327bd43b242"
             },
             {
               "chunk": "c21",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p07_to_p00_c21.dhex",
-              "changed_pixels": 427,
-              "run_count": 275,
-              "sha256": "2067e94c3066aaaf28970cc17c6e7a2465e31a1d831f764aea10d99b34cee653"
+              "changed_pixels": 1678,
+              "run_count": 795,
+              "sha256": "ae198e66e272a79cf1e3bf3c558e61709d269b26bb330af8d1af75f9a9b889bc"
             },
             {
               "chunk": "c31",
               "file": "delta_chunks/water_upper_lightnet_plane_c/p07_to_p00_c31.dhex",
-              "changed_pixels": 450,
-              "run_count": 402,
-              "sha256": "550da1a5fec2b3932457ed0f2353765bf649f15be83cebc1ed976dea063d2278"
+              "changed_pixels": 1913,
+              "run_count": 706,
+              "sha256": "f0899acc95c1ed9500de78a2d7dfebbbe59786052659df42342035bb9bfed085"
             }
           ],
-          "changed_pixels": 3320,
-          "run_count": 2745,
-          "patch_bytes": 19790,
-          "changed_ratio": 0.006332
+          "changed_pixels": 13845,
+          "run_count": 5545,
+          "patch_bytes": 47115,
+          "changed_ratio": 0.026407
         }
       ]
     }
