@@ -30,9 +30,9 @@ from drift_with_me.water_study_assets import (
     WATER_STUDY_LAYER_IDS,
     WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_STEP_FRAMES,
+    WaterStudyAssetCache,
     WaterStudyPlane,
-    load_water_study_phase_planes,
-    load_water_study_planes,
+    preload_water_study_cache,
 )
 from drift_with_me.world import load_world_data
 
@@ -172,6 +172,8 @@ class DriftWithMeApp:
         self.water_study_last_draw_ms = 0.0
         self.water_study_last_layer_count = 0
         self.water_study_last_wrap_calls = 0
+        self.water_study_open_latency_ms = 0.0
+        self.water_study_asset_cache: WaterStudyAssetCache | None = None
         self.water_study_planes: dict[str, WaterStudyPlane] = {}
         self.water_study_phase_planes: dict[str, tuple[WaterStudyPlane, ...]] = {}
 
@@ -184,6 +186,9 @@ class DriftWithMeApp:
             display_scale=self.runtime.desktop_scale,
             headless=headless,
         )
+        self.water_study_asset_cache = preload_water_study_cache(pyxel)
+        self.water_study_planes = self.water_study_asset_cache.static_layers
+        self.water_study_phase_planes = self.water_study_asset_cache.phase_layers
         pyxel.mouse(True)
         self.ui_text = load_ui_text_renderer(pyxel, self.runtime)
         self.sprite_assets = load_runtime_sprite_library(pyxel, self.runtime.raw)
@@ -374,18 +379,25 @@ class DriftWithMeApp:
     def enter_water_study(self) -> bool:
         if not self.can_open_water_study():
             return False
+        started_at = time.perf_counter()
         self.ensure_water_study_planes()
         self.clear_world_input_latches()
         self.water_study_menu_open = False
         self.water_study_clock = 0.0
         self.screen = AppScreen.WATER_STUDY
+        self.water_study_open_latency_ms = (time.perf_counter() - started_at) * 1000.0
         return True
 
     def ensure_water_study_planes(self) -> None:
-        if self.water_study_planes:
+        cache = getattr(self, "water_study_asset_cache", None)
+        if cache is not None and cache.ready:
+            self.water_study_planes = cache.static_layers
+            self.water_study_phase_planes = cache.phase_layers
             return
-        self.water_study_planes = load_water_study_planes(self.pyxel)
-        self.water_study_phase_planes = load_water_study_phase_planes(self.pyxel)
+        cache = preload_water_study_cache(self.pyxel)
+        self.water_study_asset_cache = cache
+        self.water_study_planes = cache.static_layers
+        self.water_study_phase_planes = cache.phase_layers
 
     def exit_water_study(self) -> bool:
         if self.screen != AppScreen.WATER_STUDY:
@@ -1500,6 +1512,9 @@ class DriftWithMeApp:
         return calls
 
     def water_study_plane_for_frame(self, layer_id: str, t: float) -> WaterStudyPlane | None:
+        cache = getattr(self, "water_study_asset_cache", None)
+        if cache is not None and cache.ready:
+            return cache.plane_for_frame(layer_id, t, self.runtime.target_fps)
         phases = self.water_study_phase_planes.get(layer_id)
         if not phases:
             return self.water_study_planes.get(layer_id)
@@ -1530,6 +1545,7 @@ class DriftWithMeApp:
             f"DRAW: {self.water_study_last_draw_ms:.2f} ms",
             f"WRAP BLT: {self.water_study_last_wrap_calls}",
             f"LAYERS: {self.water_study_last_layer_count}/{len(profile.layer_ids)}",
+            f"OPEN: {self.water_study_open_latency_ms:.2f} ms",
             f"PLANE: {WATER_STUDY_LOGICAL_SIZE[0]}x{WATER_STUDY_LOGICAL_SIZE[1]}",
             f"CHUNK: {WATER_STUDY_CHUNK_SIZE}x{WATER_STUDY_CHUNK_SIZE}",
             "1/2/3/4 PROFILE",

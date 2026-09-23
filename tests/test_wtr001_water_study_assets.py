@@ -10,10 +10,13 @@ from drift_with_me.water_study_assets import (
     WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_LAYER_IDS,
     WATER_STUDY_PHASE_STEP_FRAMES,
+    WATER_STUDY_STATIC_LAYER_IDS,
     apply_dhex_patch_to_rows,
+    clear_water_study_cache_for_tests,
     load_water_study_phase_planes,
     load_water_study_planes,
     parse_dhex_patch,
+    preload_water_study_cache,
 )
 
 
@@ -203,3 +206,43 @@ def test_wtr001_runtime_lite_phase_delta_loopback_reconstructs_p00() -> None:
                 )
             if transition["to"] == "p00":
                 assert current_rows == base_rows
+
+
+def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
+    clear_water_study_cache_for_tests()
+
+    cache = preload_water_study_cache(FakePyxel, force=True)
+
+    assert cache.ready
+    assert tuple(cache.static_layers) == WATER_STUDY_STATIC_LAYER_IDS
+    assert tuple(cache.phase_layers) == WATER_STUDY_PHASE_LAYER_IDS
+    assert len(cache.phase_layers) == 4
+    for layer_id, phases in cache.phase_layers.items():
+        assert len(phases) == 8
+        assert phases[0].layer_id == f"{layer_id}_p00"
+    assert (
+        cache.plane_for_frame("water_deep_plane_c", 99.0, 60)
+        is cache.static_layers["water_deep_plane_c"]
+    )
+    assert (
+        cache.plane_for_frame("water_surface_plane_c", 0.0, 60)
+        is cache.phase_layers["water_surface_plane_c"][2]
+    )
+    assert cache.preload_total_sec >= 0.0
+    assert cache.static_preload_sec >= 0.0
+    assert cache.phase_preload_sec >= 0.0
+    for layer_id in WATER_STUDY_STATIC_LAYER_IDS + WATER_STUDY_PHASE_LAYER_IDS:
+        assert layer_id in cache.layer_preload_sec
+        assert cache.layer_preload_sec[layer_id] >= 0.0
+    expected_pixels = len(WATER_STUDY_STATIC_LAYER_IDS) + len(WATER_STUDY_PHASE_LAYER_IDS) * 8
+    expected_pixels *= 1024 * 512
+    assert cache.resident_pixel_count == expected_pixels
+
+
+def test_wtr001_boot_preload_cache_is_reused() -> None:
+    clear_water_study_cache_for_tests()
+
+    first = preload_water_study_cache(FakePyxel, force=True)
+    second = preload_water_study_cache(FakePyxel)
+
+    assert second is first

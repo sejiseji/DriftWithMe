@@ -66,8 +66,10 @@ def make_water_app() -> DriftWithMeApp:
     app.water_study_last_draw_ms = 0.0
     app.water_study_last_layer_count = 0
     app.water_study_last_wrap_calls = 0
-    app.water_study_planes = {"water_deep_plane_c": object()}
-    app.water_study_phase_planes = {}
+    app.water_study_open_latency_ms = 0.0
+    app.water_study_asset_cache = make_fake_water_cache()
+    app.water_study_planes = app.water_study_asset_cache.static_layers
+    app.water_study_phase_planes = app.water_study_asset_cache.phase_layers
     app.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
     app.pending_action_pressed = True
     app.pending_interact_pressed = True
@@ -76,6 +78,21 @@ def make_water_app() -> DriftWithMeApp:
     app.last_denied_reason = ""
     app.accumulator = 0.2
     return app
+
+
+def make_fake_water_cache() -> SimpleNamespace:
+    return SimpleNamespace(
+        ready=True,
+        static_layers={"water_deep_plane_c": object(), "water_highlights_plane_c": object()},
+        phase_layers={
+            "water_surface_plane_c": tuple(f"surface-{index}" for index in range(8)),
+        },
+        plane_for_frame=lambda layer_id, elapsed, fps: (
+            f"surface-{(2 + int(max(0.0, elapsed) * fps) // 9) % 8}"
+            if layer_id == "water_surface_plane_c"
+            else None
+        ),
+    )
 
 
 def test_wtr001_m_opens_and_closes_water_study_from_exploration() -> None:
@@ -89,6 +106,42 @@ def test_wtr001_m_opens_and_closes_water_study_from_exploration() -> None:
 
     assert app.handle_water_study_shortcut()
     assert app.screen == AppScreen.PLAY
+
+
+def test_wtr001_enter_uses_preloaded_cache_without_rebuild(monkeypatch) -> None:
+    app = make_water_app()
+    cache = make_fake_water_cache()
+    app.water_study_asset_cache = cache
+    app.water_study_planes = {}
+    app.water_study_phase_planes = {}
+
+    import drift_with_me.app as app_module
+
+    def fail_preload(_pyxel):
+        raise AssertionError("Water Study open must not rebuild resident cache")
+
+    monkeypatch.setattr(app_module, "preload_water_study_cache", fail_preload)
+
+    assert app.enter_water_study()
+    assert app.water_study_planes is cache.static_layers
+    assert app.water_study_phase_planes is cache.phase_layers
+    assert app.water_study_clock == 0.0
+    assert app.water_study_open_latency_ms >= 0.0
+
+
+def test_wtr001_close_keeps_resident_cache_for_reopen() -> None:
+    app = make_water_app()
+    cache = make_fake_water_cache()
+    app.water_study_asset_cache = cache
+    app.water_study_planes = {}
+    app.water_study_phase_planes = {}
+
+    assert app.enter_water_study()
+    assert app.exit_water_study()
+    assert app.water_study_asset_cache is cache
+    assert app.enter_water_study()
+    assert app.water_study_asset_cache is cache
+    assert app.water_study_planes is cache.static_layers
 
 
 def test_wtr001_m_does_not_open_during_combat() -> None:
@@ -226,6 +279,7 @@ def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
 
 def test_wtr001_phase_plane_selection_uses_layer_step_frames() -> None:
     app = make_water_app()
+    app.water_study_asset_cache = None
     app.water_study_planes = {"water_surface_caustics_plane_c": "base"}
     app.water_study_phase_planes = {
         "water_surface_caustics_plane_c": tuple(f"phase-{index}" for index in range(8))
@@ -240,6 +294,7 @@ def test_wtr001_phase_plane_selection_uses_layer_step_frames() -> None:
 
 def test_wtr001_wave2_phase_plane_selection_uses_independent_initial_offsets() -> None:
     app = make_water_app()
+    app.water_study_asset_cache = None
     app.water_study_phase_planes = {
         "water_mid_plane_c": tuple(f"mid-{index}" for index in range(8)),
         "water_surface_plane_c": tuple(f"surface-{index}" for index in range(8)),
@@ -253,3 +308,13 @@ def test_wtr001_wave2_phase_plane_selection_uses_independent_initial_offsets() -
     assert app.water_study_plane_for_frame("water_surface_plane_c", 9 / 60) == "surface-3"
     assert app.water_study_plane_for_frame("water_upper_lightnet_plane_c", 0.0) == "light-1"
     assert app.water_study_plane_for_frame("water_upper_lightnet_plane_c", 5 / 60) == "light-2"
+
+
+def test_wtr001_phase_selection_uses_resident_cache_when_ready() -> None:
+    app = make_water_app()
+    cache = make_fake_water_cache()
+    app.water_study_asset_cache = cache
+    app.water_study_phase_planes = {}
+
+    assert app.water_study_plane_for_frame("water_surface_plane_c", 0.0) == "surface-2"
+    assert app.water_study_plane_for_frame("water_surface_plane_c", 9 / 60) == "surface-3"

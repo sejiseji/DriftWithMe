@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from importlib import resources
 from typing import Any
@@ -37,6 +39,13 @@ WATER_STUDY_PHASE_INITIAL_INDICES: dict[str, int] = {
     "water_upper_lightnet_plane_c": 1,
 }
 
+WATER_STUDY_STATIC_LAYER_IDS: tuple[str, ...] = (
+    "water_deep_plane_c",
+    "water_highlights_plane_c",
+)
+
+_WATER_STUDY_CACHE_BY_PYXEL_ID: dict[int, WaterStudyAssetCache] = {}
+
 
 @dataclass(frozen=True)
 class WaterStudyChunk:
@@ -56,6 +65,30 @@ class WaterStudyPlane:
     chunk_height: int
     colkey: int | None
     chunks: tuple[WaterStudyChunk, ...]
+
+
+@dataclass(frozen=True)
+class WaterStudyAssetCache:
+    static_layers: dict[str, WaterStudyPlane]
+    phase_layers: dict[str, tuple[WaterStudyPlane, ...]]
+    ready: bool
+    preload_total_sec: float
+    static_preload_sec: float
+    phase_preload_sec: float
+    layer_preload_sec: dict[str, float]
+    resident_pixel_count: int
+
+    def plane_for_frame(
+        self, layer_id: str, elapsed_sec: float, fps: int
+    ) -> WaterStudyPlane | None:
+        phases = self.phase_layers.get(layer_id)
+        if not phases:
+            return self.static_layers.get(layer_id)
+        step_frames = WATER_STUDY_PHASE_STEP_FRAMES[layer_id]
+        initial_phase = WATER_STUDY_PHASE_INITIAL_INDICES[layer_id]
+        elapsed_frames = int(max(0.0, elapsed_sec) * float(fps))
+        phase_index = (initial_phase + elapsed_frames // step_frames) % len(phases)
+        return phases[phase_index]
 
 
 def _image_from_rows(pyxel_module: Any, rows: tuple[str, ...], width: int, height: int) -> Any:
@@ -140,7 +173,13 @@ def apply_dhex_patch_to_rows(
     return tuple("".join(flat[y * width : (y + 1) * width]) for y in range(height))
 
 
-def load_water_study_planes(pyxel_module: Any) -> dict[str, WaterStudyPlane]:
+def load_water_study_planes(
+    pyxel_module: Any,
+    *,
+    layer_ids: tuple[str, ...] = WATER_STUDY_LAYER_IDS,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> dict[str, WaterStudyPlane]:
     root = resources.files("drift_with_me").joinpath("assets/water_study")
     manifest = json.loads(
         root.joinpath("water_study_source_manifest.json").read_text(encoding="utf-8")
@@ -150,8 +189,9 @@ def load_water_study_planes(pyxel_module: Any) -> dict[str, WaterStudyPlane]:
 
     for layer in manifest["layers"]:
         layer_id = str(layer["id"])
-        if layer_id not in WATER_STUDY_LAYER_IDS:
+        if layer_id not in layer_ids:
             continue
+        layer_started_at = timer()
         logical_width, logical_height = (int(value) for value in layer["logical_size"])
         chunk_rows: dict[str, tuple[str, ...]] = {}
         for chunk in layer["chunks"]:
@@ -179,14 +219,21 @@ def load_water_study_planes(pyxel_module: Any) -> dict[str, WaterStudyPlane]:
             colkey=layer.get("colkey"),
             chunk_rows=chunk_rows,
         )
+        if layer_timing_callback is not None:
+            layer_timing_callback(layer_id, timer() - layer_started_at)
 
-    missing = [layer_id for layer_id in WATER_STUDY_LAYER_IDS if layer_id not in planes]
+    missing = [layer_id for layer_id in layer_ids if layer_id not in planes]
     if missing:
         raise ValueError(f"missing water study layers: {', '.join(missing)}")
     return planes
 
 
-def load_water_study_phase_planes(pyxel_module: Any) -> dict[str, tuple[WaterStudyPlane, ...]]:
+def load_water_study_phase_planes(
+    pyxel_module: Any,
+    *,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> dict[str, tuple[WaterStudyPlane, ...]]:
     asset_root = resources.files("drift_with_me").joinpath("assets/water_study")
     root = asset_root.joinpath("runtime_lite_phase_delta")
     manifest = json.loads(root.joinpath("runtime_lite_manifest.json").read_text(encoding="utf-8"))
@@ -203,6 +250,7 @@ def load_water_study_phase_planes(pyxel_module: Any) -> dict[str, tuple[WaterStu
         layer_id = str(layer["id"])
         if layer_id not in WATER_STUDY_PHASE_LAYER_IDS:
             continue
+        layer_started_at = timer()
         base_rows: dict[str, tuple[str, ...]] = {}
         for chunk_x in range(int(manifest["chunk_grid"][0])):
             for chunk_y in range(int(manifest["chunk_grid"][1])):
@@ -273,8 +321,75 @@ def load_water_study_phase_planes(pyxel_module: Any) -> dict[str, tuple[WaterStu
                 f"{layer_id}: expected {expected_phase_count} phases, got {len(phases)}"
             )
         phase_sets[layer_id] = tuple(phases)
+        if layer_timing_callback is not None:
+            layer_timing_callback(layer_id, timer() - layer_started_at)
 
     missing = [layer_id for layer_id in WATER_STUDY_PHASE_LAYER_IDS if layer_id not in phase_sets]
     if missing:
         raise ValueError(f"missing water study phase layers: {', '.join(missing)}")
     return phase_sets
+
+
+def _resident_pixel_count(cache: WaterStudyAssetCache) -> int:
+    total = 0
+    for plane in cache.static_layers.values():
+        total += sum(chunk.width * chunk.height for chunk in plane.chunks)
+    for phases in cache.phase_layers.values():
+        for plane in phases:
+            total += sum(chunk.width * chunk.height for chunk in plane.chunks)
+    return total
+
+
+def preload_water_study_cache(
+    pyxel_module: Any,
+    *,
+    force: bool = False,
+    timer: Callable[[], float] = time.perf_counter,
+) -> WaterStudyAssetCache:
+    cache_key = id(pyxel_module)
+    if not force and cache_key in _WATER_STUDY_CACHE_BY_PYXEL_ID:
+        return _WATER_STUDY_CACHE_BY_PYXEL_ID[cache_key]
+
+    layer_timings: dict[str, float] = {}
+    preload_started_at = timer()
+    static_started_at = timer()
+    static_layers = load_water_study_planes(
+        pyxel_module,
+        layer_ids=WATER_STUDY_STATIC_LAYER_IDS,
+        layer_timing_callback=layer_timings.__setitem__,
+        timer=timer,
+    )
+    static_preload_sec = timer() - static_started_at
+    phase_started_at = timer()
+    phase_layers = load_water_study_phase_planes(
+        pyxel_module,
+        layer_timing_callback=layer_timings.__setitem__,
+        timer=timer,
+    )
+    phase_preload_sec = timer() - phase_started_at
+    cache = WaterStudyAssetCache(
+        static_layers=static_layers,
+        phase_layers=phase_layers,
+        ready=True,
+        preload_total_sec=timer() - preload_started_at,
+        static_preload_sec=static_preload_sec,
+        phase_preload_sec=phase_preload_sec,
+        layer_preload_sec=layer_timings,
+        resident_pixel_count=0,
+    )
+    cache = WaterStudyAssetCache(
+        static_layers=cache.static_layers,
+        phase_layers=cache.phase_layers,
+        ready=cache.ready,
+        preload_total_sec=cache.preload_total_sec,
+        static_preload_sec=cache.static_preload_sec,
+        phase_preload_sec=cache.phase_preload_sec,
+        layer_preload_sec=cache.layer_preload_sec,
+        resident_pixel_count=_resident_pixel_count(cache),
+    )
+    _WATER_STUDY_CACHE_BY_PYXEL_ID[cache_key] = cache
+    return cache
+
+
+def clear_water_study_cache_for_tests() -> None:
+    _WATER_STUDY_CACHE_BY_PYXEL_ID.clear()
