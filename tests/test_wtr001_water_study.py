@@ -66,7 +66,7 @@ def make_water_app() -> DriftWithMeApp:
     app.water_study_last_draw_ms = 0.0
     app.water_study_last_layer_count = 0
     app.water_study_last_wrap_calls = 0
-    app.water_study_planes = {"water_deep_plane_a": object()}
+    app.water_study_planes = {"water_deep_plane_b": object()}
     app.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
     app.pending_action_pressed = True
     app.pending_interact_pressed = True
@@ -205,19 +205,19 @@ def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
     observe = app.water_study_profile()
 
     assert baseline.name == "BASE_ONLY"
-    assert baseline.layer_ids == ("water_deep_plane_a",)
+    assert baseline.layer_ids == ("water_deep_plane_b",)
     assert three_layer.layer_ids == (
-        "water_deep_plane_a",
-        "water_surface_plane_a",
-        "water_surface_caustics_plane_a",
+        "water_deep_plane_b",
+        "water_surface_plane_b",
+        "water_surface_caustics_plane_b",
     )
     assert full.layer_ids == (
-        "water_deep_plane_a",
-        "water_mid_plane_a",
-        "water_surface_plane_a",
-        "water_surface_caustics_plane_a",
-        "water_upper_lightnet_plane_a",
-        "water_highlights_plane_a",
+        "water_deep_plane_b",
+        "water_mid_plane_b",
+        "water_surface_plane_b",
+        "water_surface_caustics_plane_b",
+        "water_upper_lightnet_plane_b",
+        "water_highlights_plane_b",
     )
     assert observe.layer_ids == full.layer_ids
     assert len(baseline.layer_ids) < len(three_layer.layer_ids) < len(full.layer_ids)

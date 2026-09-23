@@ -32,6 +32,6 @@ def test_wtr001_bundled_water_layer_assets_match_contract() -> None:
         assert [chunk.origin_y for chunk in plane.chunks[4:]] == [256, 256, 256, 256]
         assert all(chunk.image.pset_count == 256 * 256 for chunk in plane.chunks)
 
-    assert planes["water_deep_plane_a"].colkey is None
+    assert planes["water_deep_plane_b"].colkey is None
     for layer_id in WATER_STUDY_LAYER_IDS[1:]:
         assert planes[layer_id].colkey == 8

@@ -65,14 +65,14 @@ class WaterStudyProfile:
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
     WaterStudyProfile(
         "BASE_ONLY",
-        layer_ids=("water_deep_plane_a",),
+        layer_ids=("water_deep_plane_b",),
     ),
     WaterStudyProfile(
         "THREE_LAYER",
         layer_ids=(
-            "water_deep_plane_a",
-            "water_surface_plane_a",
-            "water_surface_caustics_plane_a",
+            "water_deep_plane_b",
+            "water_surface_plane_b",
+            "water_surface_caustics_plane_b",
         ),
     ),
     WaterStudyProfile(
@@ -88,12 +88,12 @@ WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
 WATER_STUDY_LOGICAL_SIZE = (1024, 512)
 WATER_STUDY_CHUNK_SIZE = 256
 WATER_STUDY_LAYER_MOTION: dict[str, tuple[float, float, float, float, float, float]] = {
-    "water_deep_plane_a": (0.018, 0.01, 0.18, 0.35, 0.25, 0.1),
-    "water_mid_plane_a": (0.04, 0.028, 0.55, 0.55, 0.42, 1.0),
-    "water_surface_plane_a": (0.065, 0.04, 0.85, 0.8, 0.6, 1.8),
-    "water_surface_caustics_plane_a": (0.1, 0.072, 1.1, 1.2, 1.0, 2.6),
-    "water_upper_lightnet_plane_a": (0.048, 0.09, 0.95, 0.65, 1.15, 3.4),
-    "water_highlights_plane_a": (0.082, 0.055, 0.7, 1.05, 0.72, 4.1),
+    "water_deep_plane_b": (0.018, 0.01, 0.18, 0.35, 0.25, 0.1),
+    "water_mid_plane_b": (0.04, 0.028, 0.55, 0.55, 0.42, 1.0),
+    "water_surface_plane_b": (0.045, 0.028, 0.45, 0.45, 0.35, 1.8),
+    "water_surface_caustics_plane_b": (0.1, 0.072, 1.1, 1.2, 1.0, 2.6),
+    "water_upper_lightnet_plane_b": (0.048, 0.09, 0.95, 0.65, 1.15, 3.4),
+    "water_highlights_plane_b": (0.082, 0.055, 0.7, 1.05, 0.72, 4.1),
 }
 
 

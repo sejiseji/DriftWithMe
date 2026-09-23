@@ -1,12 +1,13 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
+  "source_revision": "B / visual-scale correction",
   "logical_plane_size": [
     1024,
     512
   ],
-  "master_generated_size": [
-    1254,
-    1254
+  "source_master_size": [
+    1774,
+    887
   ],
   "physical_chunk_size": [
     256,
@@ -36,16 +37,26 @@
     "F": "#edc7b0"
   },
   "palette_policy": {
+    "fixed_pyxel_palette": true,
     "strict_blue_only": true,
     "forbidden_water_indices": [
       "3",
       "B"
     ],
-    "note": "Water layers intentionally avoid both Pyxel 3 (teal/cyan) and B (greenish aqua)."
+    "overlay_transparency_index": "8",
+    "note": "Canonical HEX must not be requantized."
+  },
+  "replacement_map": {
+    "water_deep_plane_a": "water_deep_plane_b",
+    "water_mid_plane_a": "water_mid_plane_b",
+    "water_surface_plane_a": "water_surface_plane_b",
+    "water_surface_caustics_plane_a": "water_surface_caustics_plane_b",
+    "water_upper_lightnet_plane_a": "water_upper_lightnet_plane_b",
+    "water_highlights_plane_a": "water_highlights_plane_b"
   },
   "layers": [
     {
-      "id": "water_deep_plane_a",
+      "id": "water_deep_plane_b",
       "role": "deep",
       "logical_size": [
         1024,
@@ -59,16 +70,17 @@
         "C"
       ],
       "alpha_threshold": 0,
+      "small_component_cleanup_px": 0,
       "used_palette_indices": [
         "1",
         "5"
       ],
-      "transparent_ratio": 0,
-      "sha256_palette_indices": "c752ef23ce676bfa8d0b1ce3c4cde376ee5bdbdd57decd312335f72b9ac7da44",
-      "hex_file": "hex_rows/water_deep_plane_a.hex.txt",
+      "transparent_ratio": 0.0,
+      "sha256_palette_indices": "26f5faea1e47b443f157a5fc02530ea4d8148bb05d274490fc1397e6ae368011",
+      "hex_file": "hex_rows/water_deep_plane_b.hex.txt",
       "chunks": [
         {
-          "id": "water_deep_plane_a_c00",
+          "id": "water_deep_plane_b_c00",
           "logical_origin": [
             0,
             0
@@ -79,7 +91,7 @@
           ]
         },
         {
-          "id": "water_deep_plane_a_c10",
+          "id": "water_deep_plane_b_c10",
           "logical_origin": [
             256,
             0
@@ -90,7 +102,7 @@
           ]
         },
         {
-          "id": "water_deep_plane_a_c20",
+          "id": "water_deep_plane_b_c20",
           "logical_origin": [
             512,
             0
@@ -101,7 +113,7 @@
           ]
         },
         {
-          "id": "water_deep_plane_a_c30",
+          "id": "water_deep_plane_b_c30",
           "logical_origin": [
             768,
             0
@@ -112,7 +124,7 @@
           ]
         },
         {
-          "id": "water_deep_plane_a_c01",
+          "id": "water_deep_plane_b_c01",
           "logical_origin": [
             0,
             256
@@ -123,7 +135,7 @@
           ]
         },
         {
-          "id": "water_deep_plane_a_c11",
+          "id": "water_deep_plane_b_c11",
           "logical_origin": [
             256,
             256
@@ -134,7 +146,7 @@
           ]
         },
         {
-          "id": "water_deep_plane_a_c21",
+          "id": "water_deep_plane_b_c21",
           "logical_origin": [
             512,
             256
@@ -145,7 +157,7 @@
           ]
         },
         {
-          "id": "water_deep_plane_a_c31",
+          "id": "water_deep_plane_b_c31",
           "logical_origin": [
             768,
             256
@@ -158,7 +170,7 @@
       ]
     },
     {
-      "id": "water_mid_plane_a",
+      "id": "water_mid_plane_b",
       "role": "mid",
       "logical_size": [
         1024,
@@ -171,18 +183,19 @@
         "C",
         "6"
       ],
-      "alpha_threshold": 176,
+      "alpha_threshold": 118,
+      "small_component_cleanup_px": 10,
       "used_palette_indices": [
         "5",
         "8",
         "C"
       ],
-      "transparent_ratio": 0.4745159149169922,
-      "sha256_palette_indices": "f24c02ba5971b56dcd6a88f54bac6f68297452fabe56f5a413a08b46619c6614",
-      "hex_file": "hex_rows/water_mid_plane_a.hex.txt",
+      "transparent_ratio": 0.6008720397949219,
+      "sha256_palette_indices": "de9fcb405dcb318c5ac7dd8a416ec29423d55dfb0841f8a2c59e4b251594308c",
+      "hex_file": "hex_rows/water_mid_plane_b.hex.txt",
       "chunks": [
         {
-          "id": "water_mid_plane_a_c00",
+          "id": "water_mid_plane_b_c00",
           "logical_origin": [
             0,
             0
@@ -193,7 +206,7 @@
           ]
         },
         {
-          "id": "water_mid_plane_a_c10",
+          "id": "water_mid_plane_b_c10",
           "logical_origin": [
             256,
             0
@@ -204,7 +217,7 @@
           ]
         },
         {
-          "id": "water_mid_plane_a_c20",
+          "id": "water_mid_plane_b_c20",
           "logical_origin": [
             512,
             0
@@ -215,7 +228,7 @@
           ]
         },
         {
-          "id": "water_mid_plane_a_c30",
+          "id": "water_mid_plane_b_c30",
           "logical_origin": [
             768,
             0
@@ -226,7 +239,7 @@
           ]
         },
         {
-          "id": "water_mid_plane_a_c01",
+          "id": "water_mid_plane_b_c01",
           "logical_origin": [
             0,
             256
@@ -237,7 +250,7 @@
           ]
         },
         {
-          "id": "water_mid_plane_a_c11",
+          "id": "water_mid_plane_b_c11",
           "logical_origin": [
             256,
             256
@@ -248,7 +261,7 @@
           ]
         },
         {
-          "id": "water_mid_plane_a_c21",
+          "id": "water_mid_plane_b_c21",
           "logical_origin": [
             512,
             256
@@ -259,7 +272,7 @@
           ]
         },
         {
-          "id": "water_mid_plane_a_c31",
+          "id": "water_mid_plane_b_c31",
           "logical_origin": [
             768,
             256
@@ -272,7 +285,7 @@
       ]
     },
     {
-      "id": "water_surface_plane_a",
+      "id": "water_surface_plane_b",
       "role": "surface",
       "logical_size": [
         1024,
@@ -284,18 +297,18 @@
         "C",
         "6"
       ],
-      "alpha_threshold": 168,
+      "alpha_threshold": 235,
+      "small_component_cleanup_px": 8,
       "used_palette_indices": [
-        "6",
         "8",
         "C"
       ],
-      "transparent_ratio": 0.9316864013671875,
-      "sha256_palette_indices": "5bf1ed389f42522663af554c08664e37877c8a18b2b71b73609399a5c3dfe434",
-      "hex_file": "hex_rows/water_surface_plane_a.hex.txt",
+      "transparent_ratio": 0.43100547790527344,
+      "sha256_palette_indices": "a0fc720766029e2519396cb41b05f52deeba5ad315f04aad13916ebcab31cb6e",
+      "hex_file": "hex_rows/water_surface_plane_b.hex.txt",
       "chunks": [
         {
-          "id": "water_surface_plane_a_c00",
+          "id": "water_surface_plane_b_c00",
           "logical_origin": [
             0,
             0
@@ -306,7 +319,7 @@
           ]
         },
         {
-          "id": "water_surface_plane_a_c10",
+          "id": "water_surface_plane_b_c10",
           "logical_origin": [
             256,
             0
@@ -317,7 +330,7 @@
           ]
         },
         {
-          "id": "water_surface_plane_a_c20",
+          "id": "water_surface_plane_b_c20",
           "logical_origin": [
             512,
             0
@@ -328,7 +341,7 @@
           ]
         },
         {
-          "id": "water_surface_plane_a_c30",
+          "id": "water_surface_plane_b_c30",
           "logical_origin": [
             768,
             0
@@ -339,7 +352,7 @@
           ]
         },
         {
-          "id": "water_surface_plane_a_c01",
+          "id": "water_surface_plane_b_c01",
           "logical_origin": [
             0,
             256
@@ -350,7 +363,7 @@
           ]
         },
         {
-          "id": "water_surface_plane_a_c11",
+          "id": "water_surface_plane_b_c11",
           "logical_origin": [
             256,
             256
@@ -361,7 +374,7 @@
           ]
         },
         {
-          "id": "water_surface_plane_a_c21",
+          "id": "water_surface_plane_b_c21",
           "logical_origin": [
             512,
             256
@@ -372,7 +385,7 @@
           ]
         },
         {
-          "id": "water_surface_plane_a_c31",
+          "id": "water_surface_plane_b_c31",
           "logical_origin": [
             768,
             256
@@ -385,7 +398,7 @@
       ]
     },
     {
-      "id": "water_surface_caustics_plane_a",
+      "id": "water_surface_caustics_plane_b",
       "role": "surface_caustics",
       "logical_size": [
         1024,
@@ -398,19 +411,19 @@
         "6",
         "7"
       ],
-      "alpha_threshold": 72,
+      "alpha_threshold": 99,
+      "small_component_cleanup_px": 3,
       "used_palette_indices": [
         "6",
         "7",
-        "8",
-        "C"
+        "8"
       ],
-      "transparent_ratio": 0.9308052062988281,
-      "sha256_palette_indices": "9b21dbd971d86f8209d0342325d916e903a7aada54cdd008066adb40f5b98a10",
-      "hex_file": "hex_rows/water_surface_caustics_plane_a.hex.txt",
+      "transparent_ratio": 0.7790870666503906,
+      "sha256_palette_indices": "6d2b1900657e6881cae60994ecf10599cce6ffdccbf9c7c9f5be655313f4d70d",
+      "hex_file": "hex_rows/water_surface_caustics_plane_b.hex.txt",
       "chunks": [
         {
-          "id": "water_surface_caustics_plane_a_c00",
+          "id": "water_surface_caustics_plane_b_c00",
           "logical_origin": [
             0,
             0
@@ -421,7 +434,7 @@
           ]
         },
         {
-          "id": "water_surface_caustics_plane_a_c10",
+          "id": "water_surface_caustics_plane_b_c10",
           "logical_origin": [
             256,
             0
@@ -432,7 +445,7 @@
           ]
         },
         {
-          "id": "water_surface_caustics_plane_a_c20",
+          "id": "water_surface_caustics_plane_b_c20",
           "logical_origin": [
             512,
             0
@@ -443,7 +456,7 @@
           ]
         },
         {
-          "id": "water_surface_caustics_plane_a_c30",
+          "id": "water_surface_caustics_plane_b_c30",
           "logical_origin": [
             768,
             0
@@ -454,7 +467,7 @@
           ]
         },
         {
-          "id": "water_surface_caustics_plane_a_c01",
+          "id": "water_surface_caustics_plane_b_c01",
           "logical_origin": [
             0,
             256
@@ -465,7 +478,7 @@
           ]
         },
         {
-          "id": "water_surface_caustics_plane_a_c11",
+          "id": "water_surface_caustics_plane_b_c11",
           "logical_origin": [
             256,
             256
@@ -476,7 +489,7 @@
           ]
         },
         {
-          "id": "water_surface_caustics_plane_a_c21",
+          "id": "water_surface_caustics_plane_b_c21",
           "logical_origin": [
             512,
             256
@@ -487,7 +500,7 @@
           ]
         },
         {
-          "id": "water_surface_caustics_plane_a_c31",
+          "id": "water_surface_caustics_plane_b_c31",
           "logical_origin": [
             768,
             256
@@ -500,7 +513,7 @@
       ]
     },
     {
-      "id": "water_upper_lightnet_plane_a",
+      "id": "water_upper_lightnet_plane_b",
       "role": "upper_lightnet",
       "logical_size": [
         1024,
@@ -509,23 +522,22 @@
       "opaque": false,
       "colkey": 8,
       "allowed_palette_indices": [
-        "C",
         "6",
         "7"
       ],
-      "alpha_threshold": 72,
+      "alpha_threshold": 43,
+      "small_component_cleanup_px": 2,
       "used_palette_indices": [
         "6",
         "7",
-        "8",
-        "C"
+        "8"
       ],
-      "transparent_ratio": 0.8995475769042969,
-      "sha256_palette_indices": "734cbc7b20825aa7d50216b0beb6b806dc2c5fd21bbdd07c00758635f5577c8b",
-      "hex_file": "hex_rows/water_upper_lightnet_plane_a.hex.txt",
+      "transparent_ratio": 0.9282569885253906,
+      "sha256_palette_indices": "21dff52025ecd71a3980d2360412ed953628399ecfe5fb6e7748ba9a3fc3b309",
+      "hex_file": "hex_rows/water_upper_lightnet_plane_b.hex.txt",
       "chunks": [
         {
-          "id": "water_upper_lightnet_plane_a_c00",
+          "id": "water_upper_lightnet_plane_b_c00",
           "logical_origin": [
             0,
             0
@@ -536,7 +548,7 @@
           ]
         },
         {
-          "id": "water_upper_lightnet_plane_a_c10",
+          "id": "water_upper_lightnet_plane_b_c10",
           "logical_origin": [
             256,
             0
@@ -547,7 +559,7 @@
           ]
         },
         {
-          "id": "water_upper_lightnet_plane_a_c20",
+          "id": "water_upper_lightnet_plane_b_c20",
           "logical_origin": [
             512,
             0
@@ -558,7 +570,7 @@
           ]
         },
         {
-          "id": "water_upper_lightnet_plane_a_c30",
+          "id": "water_upper_lightnet_plane_b_c30",
           "logical_origin": [
             768,
             0
@@ -569,7 +581,7 @@
           ]
         },
         {
-          "id": "water_upper_lightnet_plane_a_c01",
+          "id": "water_upper_lightnet_plane_b_c01",
           "logical_origin": [
             0,
             256
@@ -580,7 +592,7 @@
           ]
         },
         {
-          "id": "water_upper_lightnet_plane_a_c11",
+          "id": "water_upper_lightnet_plane_b_c11",
           "logical_origin": [
             256,
             256
@@ -591,7 +603,7 @@
           ]
         },
         {
-          "id": "water_upper_lightnet_plane_a_c21",
+          "id": "water_upper_lightnet_plane_b_c21",
           "logical_origin": [
             512,
             256
@@ -602,7 +614,7 @@
           ]
         },
         {
-          "id": "water_upper_lightnet_plane_a_c31",
+          "id": "water_upper_lightnet_plane_b_c31",
           "logical_origin": [
             768,
             256
@@ -615,7 +627,7 @@
       ]
     },
     {
-      "id": "water_highlights_plane_a",
+      "id": "water_highlights_plane_b",
       "role": "highlights",
       "logical_size": [
         1024,
@@ -627,18 +639,19 @@
         "6",
         "7"
       ],
-      "alpha_threshold": 36,
+      "alpha_threshold": 121,
+      "small_component_cleanup_px": 1,
       "used_palette_indices": [
         "6",
         "7",
         "8"
       ],
-      "transparent_ratio": 0.9708309173583984,
-      "sha256_palette_indices": "5159b02050cc66b26a954d76d96be5cf79ec40962a7760b6e19431b3ff13226f",
-      "hex_file": "hex_rows/water_highlights_plane_a.hex.txt",
+      "transparent_ratio": 0.9707584381103516,
+      "sha256_palette_indices": "cd2f4bdf9ed74e902bf2d351ce4af235a1693e446ada55eaabf7003ddb0af492",
+      "hex_file": "hex_rows/water_highlights_plane_b.hex.txt",
       "chunks": [
         {
-          "id": "water_highlights_plane_a_c00",
+          "id": "water_highlights_plane_b_c00",
           "logical_origin": [
             0,
             0
@@ -649,7 +662,7 @@
           ]
         },
         {
-          "id": "water_highlights_plane_a_c10",
+          "id": "water_highlights_plane_b_c10",
           "logical_origin": [
             256,
             0
@@ -660,7 +673,7 @@
           ]
         },
         {
-          "id": "water_highlights_plane_a_c20",
+          "id": "water_highlights_plane_b_c20",
           "logical_origin": [
             512,
             0
@@ -671,7 +684,7 @@
           ]
         },
         {
-          "id": "water_highlights_plane_a_c30",
+          "id": "water_highlights_plane_b_c30",
           "logical_origin": [
             768,
             0
@@ -682,7 +695,7 @@
           ]
         },
         {
-          "id": "water_highlights_plane_a_c01",
+          "id": "water_highlights_plane_b_c01",
           "logical_origin": [
             0,
             256
@@ -693,7 +706,7 @@
           ]
         },
         {
-          "id": "water_highlights_plane_a_c11",
+          "id": "water_highlights_plane_b_c11",
           "logical_origin": [
             256,
             256
@@ -704,7 +717,7 @@
           ]
         },
         {
-          "id": "water_highlights_plane_a_c21",
+          "id": "water_highlights_plane_b_c21",
           "logical_origin": [
             512,
             256
@@ -715,7 +728,7 @@
           ]
         },
         {
-          "id": "water_highlights_plane_a_c31",
+          "id": "water_highlights_plane_b_c31",
           "logical_origin": [
             768,
             256
