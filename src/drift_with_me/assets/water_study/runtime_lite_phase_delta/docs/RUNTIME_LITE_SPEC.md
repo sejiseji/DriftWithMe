@@ -1,73 +1,48 @@
-# WTR001 Runtime-Lite Phase Delta Spec v0.1
+# WTR001 Wave2 Runtime Lite Spec v0.1
 
-## Purpose
-Reduce repository / web-bundle source size for Wave1 phase animation while preserving the exact generated phase data.
+## Goal
+Reduce the storage and distribution cost of the Wave2 four-layer animated phase set while preserving the exact palette-index results.
 
-This pack does **not** change the visual result.
-It changes only how p01..p07 / loop transitions can be stored and reconstructed.
+## Input
+- base asset pack: `WTR001_Water_Layer_Sprite_Sources_v0.4.zip`
+- phase source pack: `WTR001_Phase_Delta_Wave2_v0.1.zip`
+
+## Encoded layers
+- `water_mid_plane_c`
+- `water_surface_plane_c`
+- `water_surface_caustics_plane_c`
+- `water_upper_lightnet_plane_c`
 
 ## Encoding
-`DHEX1` sparse chunk-local forward patches.
+- chunk-local sparse forward patch (`DHEX1`)
+- per chunk size: `256x256`
+- transition files: `p00_to_p01`, `p01_to_p02`, ..., `p07_to_p00`
+- patch lines: `OOOO:HEXDATA`
 
-Each patch line is:
+## Recommended integration strategy
+### 1. CACHE_ALL_PHASES
+- load canonical p00 from integrated source assets
+- apply DHEX1 transitions offline during Water Study init
+- build p01..p07 in memory
+- runtime playback simply selects phase images
 
-```text
-OOOO:HEXDATA
-```
+### 2. STREAM_ONE_PHASE
+- keep only one mutable phase image per animated layer
+- apply DHEX1 transition at each step
+- lower memory, potentially higher live CPU cost
+- use only after measurement
 
-- `OOOO`: 4-digit hex flat offset inside one `256x256` chunk
-- `HEXDATA`: replacement palette-index sequence
-- run length is `len(HEXDATA)`
+## Runtime schedules from Wave2
+- mid: every 13 frames, start p00
+- surface: every 9 frames, start p02
+- surface_caustics: every 7 frames, start p05
+- upper_lightnet: every 5 frames, start p01
 
-No interpolation and no recoloring occur.
+## Stats summary
+- full chunk hex bytes: 16,842,752
+- total patch bytes: 1,497,899
+- reduction ratio: 91.11%
 
-## Storage result
-- full Wave1 logical phase HEX: 8,396,800 bytes
-- full Wave1 chunk phase HEX: 8,421,376 bytes
-- DHEX1 transition patches: 979,054 bytes
-- source-size saving vs full chunk HEX: **88.37%**
-
-## Runtime profiles
-
-### Profile A — CACHE_ALL_PHASES
-Reconstruct p01..p07 from p00 when Water Study is opened, then keep all phase images cached.
-
-Advantages:
-- simplest draw loop
-- no transition-time patch cost
-- safest visual timing
-
-Approx raw palette-index storage for both 8-phase layers:
-- 8 MiB total if all 16 logical phase planes are separately cached
-- about 7 MiB additional if p00 aliases the already loaded base planes
-
-Use as the **desktop/reference implementation** first.
-
-### Profile B — STREAM_ONE_PHASE
-Keep only one mutable image per animated layer and apply DHEX1 transition patches when advancing phase.
-
-Advantages:
-- roughly 1 MiB raw palette-index working set for two 1024x512 active planes
-- minimal phase-image memory
-
-Risk:
-- patch application may create frame-time spikes on browser/iPhone
-
-Do not choose this as default until measured on device.
-
-### Profile C — HYBRID
-Cache caustics, stream lightnet, or vice versa based on measured cost.
-
-## Recommended implementation sequence
-1. Integrate v0.4 static source first.
-2. Add DHEX1 loader + verification tests.
-3. Implement `CACHE_ALL_PHASES` as the reference mode.
-4. Measure Pages / iPhone.
-5. Only then test `STREAM_ONE_PHASE` or HYBRID.
-
-## Important
-- p00 is the canonical v0.4 base source.
-- patches are forward transitions p00->p01 ... p07->p00.
-- physical chunks remain packing units only.
-- no procedural deformation at runtime.
-- no phase source regeneration in the game.
+## Notes
+This pack is lossless relative to the Wave2 phase sources.
+It does not recolor, requantize, or procedurally approximate any phase.

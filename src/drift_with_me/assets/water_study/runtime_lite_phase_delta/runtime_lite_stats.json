@@ -1,299 +1,40 @@
 {
-  "full_phase_logical_hex_bytes": 16793600,
-  "full_phase_chunk_hex_bytes": 16842752,
-  "delta_patch_bytes": 2170843,
+  "version": "0.1.0",
+  "full_chunk_hex_bytes": 16842752,
+  "total_patch_bytes": 1497899,
   "layers": {
     "water_mid_plane_c": {
-      "changed_pixels": 89332,
-      "run_count": 46708,
-      "patch_bytes": 369580,
-      "transitions": [
-        {
-          "from": "p00",
-          "to": "p01",
-          "changed_pixels": 11903,
-          "run_count": 6183,
-          "patch_bytes": 49001,
-          "changed_ratio": 0.022703
-        },
-        {
-          "from": "p01",
-          "to": "p02",
-          "changed_pixels": 10679,
-          "run_count": 5773,
-          "patch_bytes": 45317,
-          "changed_ratio": 0.020369
-        },
-        {
-          "from": "p02",
-          "to": "p03",
-          "changed_pixels": 10949,
-          "run_count": 5575,
-          "patch_bytes": 44399,
-          "changed_ratio": 0.020884
-        },
-        {
-          "from": "p03",
-          "to": "p04",
-          "changed_pixels": 10882,
-          "run_count": 5738,
-          "patch_bytes": 45310,
-          "changed_ratio": 0.020756
-        },
-        {
-          "from": "p04",
-          "to": "p05",
-          "changed_pixels": 11154,
-          "run_count": 5726,
-          "patch_bytes": 45510,
-          "changed_ratio": 0.021275
-        },
-        {
-          "from": "p05",
-          "to": "p06",
-          "changed_pixels": 10559,
-          "run_count": 5610,
-          "patch_bytes": 44219,
-          "changed_ratio": 0.02014
-        },
-        {
-          "from": "p06",
-          "to": "p07",
-          "changed_pixels": 10872,
-          "run_count": 5707,
-          "patch_bytes": 45114,
-          "changed_ratio": 0.020737
-        },
-        {
-          "from": "p07",
-          "to": "p00",
-          "changed_pixels": 12334,
-          "run_count": 6396,
-          "patch_bytes": 50710,
-          "changed_ratio": 0.023525
-        }
-      ]
+      "full_chunk_hex_bytes": 4210688,
+      "total_patch_bytes": 111176,
+      "byte_reduction_ratio": 0.973597,
+      "total_changed_pixels_across_loop": 20900,
+      "total_run_count_across_loop": 15046,
+      "avg_changed_ratio_per_transition": 0.004983
     },
     "water_surface_plane_c": {
-      "changed_pixels": 233645,
-      "run_count": 98094,
-      "patch_bytes": 822209,
-      "transitions": [
-        {
-          "from": "p00",
-          "to": "p01",
-          "changed_pixels": 35326,
-          "run_count": 13299,
-          "patch_bytes": 115120,
-          "changed_ratio": 0.067379
-        },
-        {
-          "from": "p01",
-          "to": "p02",
-          "changed_pixels": 27785,
-          "run_count": 11997,
-          "patch_bytes": 99767,
-          "changed_ratio": 0.052996
-        },
-        {
-          "from": "p02",
-          "to": "p03",
-          "changed_pixels": 26517,
-          "run_count": 11901,
-          "patch_bytes": 97923,
-          "changed_ratio": 0.050577
-        },
-        {
-          "from": "p03",
-          "to": "p04",
-          "changed_pixels": 26552,
-          "run_count": 11818,
-          "patch_bytes": 97460,
-          "changed_ratio": 0.050644
-        },
-        {
-          "from": "p04",
-          "to": "p05",
-          "changed_pixels": 28060,
-          "run_count": 12131,
-          "patch_bytes": 100846,
-          "changed_ratio": 0.05352
-        },
-        {
-          "from": "p05",
-          "to": "p06",
-          "changed_pixels": 27387,
-          "run_count": 12061,
-          "patch_bytes": 99753,
-          "changed_ratio": 0.052237
-        },
-        {
-          "from": "p06",
-          "to": "p07",
-          "changed_pixels": 26274,
-          "run_count": 11768,
-          "patch_bytes": 96882,
-          "changed_ratio": 0.050114
-        },
-        {
-          "from": "p07",
-          "to": "p00",
-          "changed_pixels": 35744,
-          "run_count": 13119,
-          "patch_bytes": 114458,
-          "changed_ratio": 0.068176
-        }
-      ]
+      "full_chunk_hex_bytes": 4210688,
+      "total_patch_bytes": 407669,
+      "byte_reduction_ratio": 0.903182,
+      "total_changed_pixels_across_loop": 101207,
+      "total_run_count_across_loop": 51077,
+      "avg_changed_ratio_per_transition": 0.02413
     },
     "water_surface_caustics_plane_c": {
-      "changed_pixels": 176110,
-      "run_count": 108042,
-      "patch_bytes": 824362,
-      "transitions": [
-        {
-          "from": "p00",
-          "to": "p01",
-          "changed_pixels": 29864,
-          "run_count": 18118,
-          "patch_bytes": 138572,
-          "changed_ratio": 0.056961
-        },
-        {
-          "from": "p01",
-          "to": "p02",
-          "changed_pixels": 11957,
-          "run_count": 7302,
-          "patch_bytes": 55769,
-          "changed_ratio": 0.022806
-        },
-        {
-          "from": "p02",
-          "to": "p03",
-          "changed_pixels": 18332,
-          "run_count": 11669,
-          "patch_bytes": 88346,
-          "changed_ratio": 0.034966
-        },
-        {
-          "from": "p03",
-          "to": "p04",
-          "changed_pixels": 28234,
-          "run_count": 17106,
-          "patch_bytes": 130870,
-          "changed_ratio": 0.053852
-        },
-        {
-          "from": "p04",
-          "to": "p05",
-          "changed_pixels": 28573,
-          "run_count": 16986,
-          "patch_bytes": 130489,
-          "changed_ratio": 0.054499
-        },
-        {
-          "from": "p05",
-          "to": "p06",
-          "changed_pixels": 17519,
-          "run_count": 11414,
-          "patch_bytes": 86003,
-          "changed_ratio": 0.033415
-        },
-        {
-          "from": "p06",
-          "to": "p07",
-          "changed_pixels": 10808,
-          "run_count": 7096,
-          "patch_bytes": 53384,
-          "changed_ratio": 0.020615
-        },
-        {
-          "from": "p07",
-          "to": "p00",
-          "changed_pixels": 30823,
-          "run_count": 18351,
-          "patch_bytes": 140929,
-          "changed_ratio": 0.05879
-        }
-      ]
+      "full_chunk_hex_bytes": 4210688,
+      "total_patch_bytes": 824362,
+      "byte_reduction_ratio": 0.804222,
+      "total_changed_pixels_across_loop": 176110,
+      "total_run_count_across_loop": 108042,
+      "avg_changed_ratio_per_transition": 0.041988
     },
     "water_upper_lightnet_plane_c": {
-      "changed_pixels": 32082,
-      "run_count": 20435,
-      "patch_bytes": 154692,
-      "transitions": [
-        {
-          "from": "p00",
-          "to": "p01",
-          "changed_pixels": 3662,
-          "run_count": 2831,
-          "patch_bytes": 20648,
-          "changed_ratio": 0.006985
-        },
-        {
-          "from": "p01",
-          "to": "p02",
-          "changed_pixels": 4239,
-          "run_count": 2323,
-          "patch_bytes": 18177,
-          "changed_ratio": 0.008085
-        },
-        {
-          "from": "p02",
-          "to": "p03",
-          "changed_pixels": 2766,
-          "run_count": 1830,
-          "patch_bytes": 13746,
-          "changed_ratio": 0.005276
-        },
-        {
-          "from": "p03",
-          "to": "p04",
-          "changed_pixels": 5405,
-          "run_count": 3244,
-          "patch_bytes": 24869,
-          "changed_ratio": 0.010309
-        },
-        {
-          "from": "p04",
-          "to": "p05",
-          "changed_pixels": 5263,
-          "run_count": 3224,
-          "patch_bytes": 24607,
-          "changed_ratio": 0.010038
-        },
-        {
-          "from": "p05",
-          "to": "p06",
-          "changed_pixels": 2957,
-          "run_count": 1970,
-          "patch_bytes": 14777,
-          "changed_ratio": 0.00564
-        },
-        {
-          "from": "p06",
-          "to": "p07",
-          "changed_pixels": 4470,
-          "run_count": 2268,
-          "patch_bytes": 18078,
-          "changed_ratio": 0.008526
-        },
-        {
-          "from": "p07",
-          "to": "p00",
-          "changed_pixels": 3320,
-          "run_count": 2745,
-          "patch_bytes": 19790,
-          "changed_ratio": 0.006332
-        }
-      ]
+      "full_chunk_hex_bytes": 4210688,
+      "total_patch_bytes": 154692,
+      "byte_reduction_ratio": 0.963262,
+      "total_changed_pixels_across_loop": 32082,
+      "total_run_count_across_loop": 20435,
+      "avg_changed_ratio_per_transition": 0.007649
     }
   },
-  "delta_vs_full_chunk_ratio": 0.12888885379301435,
-  "delta_vs_full_logical_ratio": 0.12926608946265244,
-  "savings_vs_full_chunk_pct": 87.11,
-  "savings_vs_full_logical_pct": 87.07,
-  "raw_memory_estimates_bytes": {
-    "cache_all_32_phase_planes_palette_indices": 16777216,
-    "extra_7_phases_per_layer_if_p00_aliases_base": 14680064
-  }
+  "overall_byte_reduction_ratio": 0.911066
 }

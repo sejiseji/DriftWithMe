@@ -1,0 +1,23 @@
+WTR001 Wave2 runtime-lite pack is ready.
+
+Use canonical integrated `*_plane_c` assets as p00 bases, then use the DHEX1 transition pack to reconstruct the other phases for the 4 animated layers.
+
+Animated layers:
+- water_mid_plane_c
+- water_surface_plane_c
+- water_surface_caustics_plane_c
+- water_upper_lightnet_plane_c
+
+Recommended order:
+1. integrate Wave2 phase-capable runtime
+2. start with CACHE_ALL_PHASES reconstruction on Water Study open
+3. measure desktop/web/iPhone behavior
+4. only consider STREAM_ONE_PHASE if memory pressure justifies it
+
+Required validation:
+- targeted runtime-lite tests
+- full pytest
+- scripts/check_all.py
+- headless smoke
+- Water Study visual check
+- performance notes ON/OFF

@@ -132,15 +132,22 @@ def test_wtr001_runtime_lite_phase_delta_manifest_and_patches_match_contract() -
 
     assert tuple(layer["id"] for layer in manifest["layers"]) == WATER_STUDY_PHASE_LAYER_IDS
     assert manifest["encoding"].startswith("DHEX1")
-    assert manifest["version"] == "0.2.0"
+    assert manifest["version"] == "0.1.0"
     assert manifest["phase_count"] == 8
     assert manifest["chunk_size"] == [256, 256]
     assert manifest["logical_plane_size"] == [1024, 512]
-    assert manifest["runtime_phase_schedule"] == {
-        "water_mid_plane_c": {"step_frames": 13, "initial_phase": "p00"},
-        "water_surface_plane_c": {"step_frames": 9, "initial_phase": "p02"},
-        "water_surface_caustics_plane_c": {"step_frames": 7, "initial_phase": "p05"},
-        "water_upper_lightnet_plane_c": {"step_frames": 5, "initial_phase": "p01"},
+    assert "runtime_phase_schedule" not in manifest
+    assert WATER_STUDY_PHASE_STEP_FRAMES == {
+        "water_mid_plane_c": 13,
+        "water_surface_plane_c": 9,
+        "water_surface_caustics_plane_c": 7,
+        "water_upper_lightnet_plane_c": 5,
+    }
+    assert WATER_STUDY_PHASE_INITIAL_INDICES == {
+        "water_mid_plane_c": 0,
+        "water_surface_plane_c": 2,
+        "water_surface_caustics_plane_c": 5,
+        "water_upper_lightnet_plane_c": 1,
     }
     for layer in manifest["layers"]:
         assert len(layer["transitions"]) == 8
