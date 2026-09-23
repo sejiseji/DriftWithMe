@@ -1,19 +1,17 @@
-# WTR001 Wave2.5 Runtime Lite Spec v0.1
+# WTR001 Wave2 Runtime Lite Spec v0.1
 
 ## Goal
-Reduce the storage and distribution cost of the four-layer animated phase set while
-preserving the exact palette-index results. Wave2.5 keeps the Wave2 runtime cadence
-but changes the phase content so each animated layer uses a distinct motion field.
+Reduce the storage and distribution cost of the Wave2 four-layer animated phase set while preserving the exact palette-index results.
 
 ## Input
 - base asset pack: `WTR001_Water_Layer_Sprite_Sources_v0.4.zip`
-- motion-field source pack: `WTR001_Wave2_5_Motion_Field_Decoupling_v0.1.zip`
+- phase source pack: `WTR001_Phase_Delta_Wave2_v0.1.zip`
 
 ## Encoded layers
-- `water_mid_plane_c`: low-frequency 2D sine drift
-- `water_surface_plane_c`: elliptic orbit with weak sine drift
-- `water_surface_caustics_plane_c`: small circular motion plus oblique helper drift
-- `water_upper_lightnet_plane_c`: small reverse circular/Lissajous drift
+- `water_mid_plane_c`
+- `water_surface_plane_c`
+- `water_surface_caustics_plane_c`
+- `water_upper_lightnet_plane_c`
 
 ## Encoding
 - chunk-local sparse forward patch (`DHEX1`)
@@ -34,7 +32,7 @@ but changes the phase content so each animated layer uses a distinct motion fiel
 - lower memory, potentially higher live CPU cost
 - use only after measurement
 
-## Runtime schedules retained from Wave2
+## Runtime schedules from Wave2
 - mid: every 13 frames, start p00
 - surface: every 9 frames, start p02
 - surface_caustics: every 7 frames, start p05
@@ -42,9 +40,9 @@ but changes the phase content so each animated layer uses a distinct motion fiel
 
 ## Stats summary
 - full chunk hex bytes: 16,842,752
-- total patch bytes: 3,940,975
-- reduction ratio: 76.51%
+- total patch bytes: 1,497,899
+- reduction ratio: 91.11%
 
 ## Notes
-This pack is lossless relative to the generated Wave2.5 phase fields. It does not
-recolor or requantize; all DHEX patches preserve the source palette indices.
+This pack is lossless relative to the Wave2 phase sources.
+It does not recolor, requantize, or procedurally approximate any phase.
