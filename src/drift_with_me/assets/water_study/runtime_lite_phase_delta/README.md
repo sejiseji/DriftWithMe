@@ -2,8 +2,9 @@
 
 This pack converts the 4 animated WTR001 layers into sparse forward DHEX1 chunk patches.
 Wave2.1 keeps the Wave2 cadence and initial phase offsets, but replaces the phase
-content with local variation fields. The goal is subtle line-width, junction,
-tone-boundary, and shimmer changes rather than large layer motion.
+content with local variation fields. This build uses the iPhone visibility tuning:
+line-width, junction, tone-boundary, and shimmer changes are stronger than the
+first Wave2.1 pass, but still avoid large layer translation or deformation.
 
 Animated layers:
 - water_mid_plane_c: local tone-boundary breathing

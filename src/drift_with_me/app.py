@@ -91,12 +91,12 @@ WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
 WATER_STUDY_LOGICAL_SIZE = (1024, 512)
 WATER_STUDY_CHUNK_SIZE = 256
 WATER_STUDY_LAYER_MOTION: dict[str, tuple[float, float, float, float, float, float]] = {
-    "water_deep_plane_c": (0.018, 0.01, 0.18, 0.35, 0.25, 0.1),
-    "water_mid_plane_c": (0.04, 0.028, 0.55, 0.55, 0.42, 1.0),
-    "water_surface_plane_c": (0.045, 0.028, 0.45, 0.45, 0.35, 1.8),
-    "water_surface_caustics_plane_c": (0.1, 0.072, 1.1, 1.2, 1.0, 2.6),
-    "water_upper_lightnet_plane_c": (0.048, 0.09, 0.95, 0.65, 1.15, 3.4),
-    "water_highlights_plane_c": (0.082, 0.055, 0.7, 1.05, 0.72, 4.1),
+    "water_deep_plane_c": (0.28, 0.16, 0.35, 0.55, 0.38, 0.1),
+    "water_mid_plane_c": (0.72, 0.48, 1.4, 1.35, 1.05, 1.0),
+    "water_surface_plane_c": (0.94, 0.58, 1.2, 1.1, 0.9, 1.8),
+    "water_surface_caustics_plane_c": (1.65, 1.12, 2.4, 2.25, 1.9, 2.6),
+    "water_upper_lightnet_plane_c": (1.08, 1.85, 2.05, 1.55, 2.35, 3.4),
+    "water_highlights_plane_c": (1.35, 0.92, 1.55, 2.0, 1.35, 4.1),
 }
 
 

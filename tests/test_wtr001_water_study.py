@@ -246,6 +246,35 @@ def test_wtr001_b_motion_weights_are_normalized() -> None:
         assert abs(sum(weights) - 1.0) < 0.000001
 
 
+def test_wtr001_water_layer_offsets_are_visible_on_mobile_scale() -> None:
+    app = make_water_app()
+
+    before = app.water_study_layer_offset(
+        0.0,
+        speed_x=1.65,
+        speed_y=1.12,
+        sine_amp=2.4,
+        orbit_x=2.25,
+        orbit_y=1.9,
+        phase=2.6,
+    )
+    after = app.water_study_layer_offset(
+        4.0,
+        speed_x=1.65,
+        speed_y=1.12,
+        sine_amp=2.4,
+        orbit_x=2.25,
+        orbit_y=1.9,
+        phase=2.6,
+    )
+
+    delta = max(
+        abs(after_value - before_value)
+        for before_value, after_value in zip(before, after, strict=True)
+    )
+    assert delta >= 3.0
+
+
 def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
     app = make_water_app()
 

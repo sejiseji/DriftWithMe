@@ -145,7 +145,7 @@ def test_wtr001_runtime_lite_phase_delta_manifest_and_patches_match_contract() -
     assert manifest["version"] == "0.1.0"
     assert manifest["phase_asset_source"] == "WTR001_Wave2_1_Local_Variation_Phase_Pack_v0.1"
     assert manifest["wave"] == "Wave2.1"
-    assert manifest["theme"] == "local_variation_phase"
+    assert manifest["theme"] == "local_variation_phase_visible_tuning"
     assert manifest["phase_count"] == 8
     assert manifest["chunk_size"] == [256, 256]
     assert manifest["logical_plane_size"] == [1024, 512]
