@@ -1,0 +1,30 @@
+WTR001 phase-delta runtime-lite integration資料です。
+
+前提:
+- v0.4 `*_plane_c` を先に統合すること
+- Wave1の視覚正本は `WTR001_Phase_Delta_Wave1_v0.1.zip`
+- このpackはそのphaseデータをDHEX1 sparse patchとして軽量化したもの
+
+最初の実装方針:
+1. DHEX1 decoderを追加
+2. Water Study open時に p00 から p01..p07 を順次再構成
+3. `CACHE_ALL_PHASES` でまず動作確認
+4. runtimeでは既存XY parallax + integer phase cycling
+5. source再生成・再減色は禁止
+
+軽量化実績:
+- full chunk phase HEX: 8,421,376 bytes
+- DHEX1 patches: 979,054 bytes
+- reduction: 88.37%
+
+STREAM_ONE_PHASEはiPhone/Pages計測後の最適化候補です。
+先に採用しないでください。
+
+必須検証:
+- patch reconstruction exact match
+- targeted tests
+- full pytest
+- check_all.py
+- headless smoke
+- Water Study phase OFF/ON performance comparison
+- iPhone visual/performance check when available

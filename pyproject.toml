@@ -35,11 +35,11 @@ drift_with_me = [
     "assets/water_study/*.json",
     "assets/water_study/*.md",
     "assets/water_study/chunks_256/hex_rows/*.hex.txt",
-    "assets/water_study/phase_delta_wave1/*.json",
-    "assets/water_study/phase_delta_wave1/*.md",
-    "assets/water_study/phase_delta_wave1/docs/*.txt",
-    "assets/water_study/phase_delta_wave1/docs/*.md",
-    "assets/water_study/phase_delta_wave1/chunks_256/hex_rows/*.hex.txt",
+    "assets/water_study/runtime_lite_phase_delta/*.json",
+    "assets/water_study/runtime_lite_phase_delta/*.md",
+    "assets/water_study/runtime_lite_phase_delta/docs/*.txt",
+    "assets/water_study/runtime_lite_phase_delta/docs/*.md",
+    "assets/water_study/runtime_lite_phase_delta/delta_chunks/*/*.dhex",
 ]
 
 [tool.pytest.ini_options]

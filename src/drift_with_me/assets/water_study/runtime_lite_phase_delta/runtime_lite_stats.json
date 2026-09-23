@@ -1,0 +1,158 @@
+{
+  "full_phase_logical_hex_bytes": 8396800,
+  "full_phase_chunk_hex_bytes": 8421376,
+  "delta_patch_bytes": 979054,
+  "layers": {
+    "water_surface_caustics_plane_c": {
+      "changed_pixels": 176110,
+      "run_count": 108042,
+      "patch_bytes": 824362,
+      "transitions": [
+        {
+          "from": "p00",
+          "to": "p01",
+          "changed_pixels": 29864,
+          "run_count": 18118,
+          "patch_bytes": 138572,
+          "changed_ratio": 0.056961
+        },
+        {
+          "from": "p01",
+          "to": "p02",
+          "changed_pixels": 11957,
+          "run_count": 7302,
+          "patch_bytes": 55769,
+          "changed_ratio": 0.022806
+        },
+        {
+          "from": "p02",
+          "to": "p03",
+          "changed_pixels": 18332,
+          "run_count": 11669,
+          "patch_bytes": 88346,
+          "changed_ratio": 0.034966
+        },
+        {
+          "from": "p03",
+          "to": "p04",
+          "changed_pixels": 28234,
+          "run_count": 17106,
+          "patch_bytes": 130870,
+          "changed_ratio": 0.053852
+        },
+        {
+          "from": "p04",
+          "to": "p05",
+          "changed_pixels": 28573,
+          "run_count": 16986,
+          "patch_bytes": 130489,
+          "changed_ratio": 0.054499
+        },
+        {
+          "from": "p05",
+          "to": "p06",
+          "changed_pixels": 17519,
+          "run_count": 11414,
+          "patch_bytes": 86003,
+          "changed_ratio": 0.033415
+        },
+        {
+          "from": "p06",
+          "to": "p07",
+          "changed_pixels": 10808,
+          "run_count": 7096,
+          "patch_bytes": 53384,
+          "changed_ratio": 0.020615
+        },
+        {
+          "from": "p07",
+          "to": "p00",
+          "changed_pixels": 30823,
+          "run_count": 18351,
+          "patch_bytes": 140929,
+          "changed_ratio": 0.05879
+        }
+      ]
+    },
+    "water_upper_lightnet_plane_c": {
+      "changed_pixels": 32082,
+      "run_count": 20435,
+      "patch_bytes": 154692,
+      "transitions": [
+        {
+          "from": "p00",
+          "to": "p01",
+          "changed_pixels": 3662,
+          "run_count": 2831,
+          "patch_bytes": 20648,
+          "changed_ratio": 0.006985
+        },
+        {
+          "from": "p01",
+          "to": "p02",
+          "changed_pixels": 4239,
+          "run_count": 2323,
+          "patch_bytes": 18177,
+          "changed_ratio": 0.008085
+        },
+        {
+          "from": "p02",
+          "to": "p03",
+          "changed_pixels": 2766,
+          "run_count": 1830,
+          "patch_bytes": 13746,
+          "changed_ratio": 0.005276
+        },
+        {
+          "from": "p03",
+          "to": "p04",
+          "changed_pixels": 5405,
+          "run_count": 3244,
+          "patch_bytes": 24869,
+          "changed_ratio": 0.010309
+        },
+        {
+          "from": "p04",
+          "to": "p05",
+          "changed_pixels": 5263,
+          "run_count": 3224,
+          "patch_bytes": 24607,
+          "changed_ratio": 0.010038
+        },
+        {
+          "from": "p05",
+          "to": "p06",
+          "changed_pixels": 2957,
+          "run_count": 1970,
+          "patch_bytes": 14777,
+          "changed_ratio": 0.00564
+        },
+        {
+          "from": "p06",
+          "to": "p07",
+          "changed_pixels": 4470,
+          "run_count": 2268,
+          "patch_bytes": 18078,
+          "changed_ratio": 0.008526
+        },
+        {
+          "from": "p07",
+          "to": "p00",
+          "changed_pixels": 3320,
+          "run_count": 2745,
+          "patch_bytes": 19790,
+          "changed_ratio": 0.006332
+        }
+      ]
+    }
+  },
+  "delta_vs_full_chunk_ratio": 0.11625819818518969,
+  "delta_vs_full_logical_ratio": 0.11659846608231707,
+  "savings_vs_full_chunk_pct": 88.37,
+  "savings_vs_full_logical_pct": 88.34,
+  "raw_memory_estimates_bytes": {
+    "cache_all_16_phase_planes_palette_indices": 8388608,
+    "extra_7_phases_per_layer_if_p00_aliases_base": 7340032,
+    "single_mutable_plane_per_animated_layer": 1048576
+  }
+}
