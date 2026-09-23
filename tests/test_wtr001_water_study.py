@@ -231,8 +231,25 @@ def test_wtr001_phase_plane_selection_uses_layer_step_frames() -> None:
         "water_surface_caustics_plane_c": tuple(f"phase-{index}" for index in range(8))
     }
 
-    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 0.0) == "phase-0"
-    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 7 / 60) == "phase-0"
-    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 8 / 60) == "phase-1"
-    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 64 / 60) == "phase-0"
+    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 0.0) == "phase-5"
+    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 6 / 60) == "phase-5"
+    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 7 / 60) == "phase-6"
+    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 56 / 60) == "phase-5"
     assert app.water_study_plane_for_frame("water_mid_plane_c", 8 / 60) is None
+
+
+def test_wtr001_wave2_phase_plane_selection_uses_independent_initial_offsets() -> None:
+    app = make_water_app()
+    app.water_study_phase_planes = {
+        "water_mid_plane_c": tuple(f"mid-{index}" for index in range(8)),
+        "water_surface_plane_c": tuple(f"surface-{index}" for index in range(8)),
+        "water_upper_lightnet_plane_c": tuple(f"light-{index}" for index in range(8)),
+    }
+
+    assert app.water_study_plane_for_frame("water_mid_plane_c", 0.0) == "mid-0"
+    assert app.water_study_plane_for_frame("water_mid_plane_c", 12 / 60) == "mid-0"
+    assert app.water_study_plane_for_frame("water_mid_plane_c", 13 / 60) == "mid-1"
+    assert app.water_study_plane_for_frame("water_surface_plane_c", 0.0) == "surface-2"
+    assert app.water_study_plane_for_frame("water_surface_plane_c", 9 / 60) == "surface-3"
+    assert app.water_study_plane_for_frame("water_upper_lightnet_plane_c", 0.0) == "light-1"
+    assert app.water_study_plane_for_frame("water_upper_lightnet_plane_c", 5 / 60) == "light-2"

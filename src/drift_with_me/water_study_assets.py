@@ -17,13 +17,24 @@ WATER_STUDY_LAYER_IDS: tuple[str, ...] = (
 )
 
 WATER_STUDY_PHASE_LAYER_IDS: tuple[str, ...] = (
+    "water_mid_plane_c",
+    "water_surface_plane_c",
     "water_surface_caustics_plane_c",
     "water_upper_lightnet_plane_c",
 )
 
 WATER_STUDY_PHASE_STEP_FRAMES: dict[str, int] = {
-    "water_surface_caustics_plane_c": 8,
-    "water_upper_lightnet_plane_c": 10,
+    "water_mid_plane_c": 13,
+    "water_surface_plane_c": 9,
+    "water_surface_caustics_plane_c": 7,
+    "water_upper_lightnet_plane_c": 5,
+}
+
+WATER_STUDY_PHASE_INITIAL_INDICES: dict[str, int] = {
+    "water_mid_plane_c": 0,
+    "water_surface_plane_c": 2,
+    "water_surface_caustics_plane_c": 5,
+    "water_upper_lightnet_plane_c": 1,
 }
 
 

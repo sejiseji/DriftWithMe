@@ -28,6 +28,7 @@ from drift_with_me.render import Renderer
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.water_study_assets import (
     WATER_STUDY_LAYER_IDS,
+    WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_STEP_FRAMES,
     WaterStudyPlane,
     load_water_study_phase_planes,
@@ -1503,8 +1504,9 @@ class DriftWithMeApp:
         if not phases:
             return self.water_study_planes.get(layer_id)
         step_frames = WATER_STUDY_PHASE_STEP_FRAMES[layer_id]
+        initial_phase = WATER_STUDY_PHASE_INITIAL_INDICES[layer_id]
         elapsed_frames = int(max(0.0, t) * float(self.runtime.target_fps))
-        phase_index = (elapsed_frames // step_frames) % len(phases)
+        phase_index = (initial_phase + elapsed_frames // step_frames) % len(phases)
         return phases[phase_index]
 
     def draw_water_study_simple_bubbles(self, t: float, bubble_count: int) -> None:
