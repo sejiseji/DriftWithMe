@@ -66,7 +66,7 @@ def make_water_app() -> DriftWithMeApp:
     app.water_study_last_draw_ms = 0.0
     app.water_study_last_layer_count = 0
     app.water_study_last_wrap_calls = 0
-    app.water_study_planes = {}
+    app.water_study_planes = {"water_deep_plane_a": object()}
     app.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
     app.pending_action_pressed = True
     app.pending_interact_pressed = True
@@ -180,7 +180,7 @@ def test_wtr001_b_profile_shortcuts_switch_profiles() -> None:
     app.update_water_study_screen(0.25)
 
     assert app.water_study_profile_index == 3
-    assert app.water_study_profile().name == "STRESS"
+    assert app.water_study_profile().name == "FULL_SIX_OBSERVE"
 
 
 def test_wtr001_b_motion_weights_are_normalized() -> None:
@@ -198,17 +198,26 @@ def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
     app.water_study_profile_index = 0
     baseline = app.water_study_profile()
     app.water_study_profile_index = 1
-    core = app.water_study_profile()
+    three_layer = app.water_study_profile()
     app.water_study_profile_index = 2
     full = app.water_study_profile()
     app.water_study_profile_index = 3
-    stress = app.water_study_profile()
+    observe = app.water_study_profile()
 
-    assert not baseline.include_body
-    assert not baseline.include_surface
-    assert core.include_surface
-    assert core.include_caustics
-    assert not core.include_body
-    assert full.include_body
-    assert stress.include_body
-    assert baseline.bubble_count < core.bubble_count < full.bubble_count < stress.bubble_count
+    assert baseline.name == "BASE_ONLY"
+    assert baseline.layer_ids == ("water_deep_plane_a",)
+    assert three_layer.layer_ids == (
+        "water_deep_plane_a",
+        "water_surface_plane_a",
+        "water_surface_caustics_plane_a",
+    )
+    assert full.layer_ids == (
+        "water_deep_plane_a",
+        "water_mid_plane_a",
+        "water_surface_plane_a",
+        "water_surface_caustics_plane_a",
+        "water_upper_lightnet_plane_a",
+        "water_highlights_plane_a",
+    )
+    assert observe.layer_ids == full.layer_ids
+    assert len(baseline.layer_ids) < len(three_layer.layer_ids) < len(full.layer_ids)

@@ -32,6 +32,9 @@ drift_with_me = [
     "assets/*.pyxres",
     "assets/fonts/*.ttf",
     "assets/i18n/*.json",
+    "assets/water_study/*.json",
+    "assets/water_study/*.md",
+    "assets/water_study/chunks_256/hex_rows/*.hex.txt",
 ]
 
 [tool.pytest.ini_options]

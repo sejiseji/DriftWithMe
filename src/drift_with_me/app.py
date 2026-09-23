@@ -26,6 +26,11 @@ from drift_with_me.model import GameModel, InputIntent, merge_intents
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
+from drift_with_me.water_study_assets import (
+    WATER_STUDY_LAYER_IDS,
+    WaterStudyPlane,
+    load_water_study_planes,
+)
 from drift_with_me.world import load_world_data
 
 
@@ -54,44 +59,42 @@ class CombatCameraRestore:
 @dataclass(frozen=True)
 class WaterStudyProfile:
     name: str
-    include_body: bool
-    include_surface: bool
-    include_caustics: bool
-    bubble_count: int
+    layer_ids: tuple[str, ...]
 
 
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
     WaterStudyProfile(
-        "BASELINE",
-        include_body=False,
-        include_surface=False,
-        include_caustics=False,
-        bubble_count=0,
+        "BASE_ONLY",
+        layer_ids=("water_deep_plane_a",),
     ),
     WaterStudyProfile(
-        "CORE",
-        include_body=False,
-        include_surface=True,
-        include_caustics=True,
-        bubble_count=8,
+        "THREE_LAYER",
+        layer_ids=(
+            "water_deep_plane_a",
+            "water_surface_plane_a",
+            "water_surface_caustics_plane_a",
+        ),
     ),
     WaterStudyProfile(
-        "FULL",
-        include_body=True,
-        include_surface=True,
-        include_caustics=True,
-        bubble_count=12,
+        "FULL_SIX",
+        layer_ids=WATER_STUDY_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "STRESS",
-        include_body=True,
-        include_surface=True,
-        include_caustics=True,
-        bubble_count=24,
+        "FULL_SIX_OBSERVE",
+        layer_ids=WATER_STUDY_LAYER_IDS,
     ),
 )
 
-WATER_STUDY_PLANE_SIZE = 256
+WATER_STUDY_LOGICAL_SIZE = (1024, 512)
+WATER_STUDY_CHUNK_SIZE = 256
+WATER_STUDY_LAYER_MOTION: dict[str, tuple[float, float, float, float, float, float]] = {
+    "water_deep_plane_a": (0.018, 0.01, 0.18, 0.35, 0.25, 0.1),
+    "water_mid_plane_a": (0.04, 0.028, 0.55, 0.55, 0.42, 1.0),
+    "water_surface_plane_a": (0.065, 0.04, 0.85, 0.8, 0.6, 1.8),
+    "water_surface_caustics_plane_a": (0.1, 0.072, 1.1, 1.2, 1.0, 2.6),
+    "water_upper_lightnet_plane_a": (0.048, 0.09, 0.95, 0.65, 1.15, 3.4),
+    "water_highlights_plane_a": (0.082, 0.055, 0.7, 1.05, 0.72, 4.1),
+}
 
 
 class DriftWithMeApp:
@@ -166,7 +169,7 @@ class DriftWithMeApp:
         self.water_study_last_draw_ms = 0.0
         self.water_study_last_layer_count = 0
         self.water_study_last_wrap_calls = 0
-        self.water_study_planes = {}
+        self.water_study_planes: dict[str, WaterStudyPlane] = {}
 
         pyxel.init(
             self.runtime.screen_width,
@@ -178,7 +181,6 @@ class DriftWithMeApp:
             headless=headless,
         )
         pyxel.mouse(True)
-        self.water_study_planes = self.build_water_study_planes()
         self.ui_text = load_ui_text_renderer(pyxel, self.runtime)
         self.sprite_assets = load_runtime_sprite_library(pyxel, self.runtime.raw)
         for error in self.sprite_assets.errors:
@@ -368,11 +370,17 @@ class DriftWithMeApp:
     def enter_water_study(self) -> bool:
         if not self.can_open_water_study():
             return False
+        self.ensure_water_study_planes()
         self.clear_world_input_latches()
         self.water_study_menu_open = False
         self.water_study_clock = 0.0
         self.screen = AppScreen.WATER_STUDY
         return True
+
+    def ensure_water_study_planes(self) -> None:
+        if self.water_study_planes:
+            return
+        self.water_study_planes = load_water_study_planes(self.pyxel)
 
     def exit_water_study(self) -> bool:
         if self.screen != AppScreen.WATER_STUDY:
@@ -452,78 +460,6 @@ class DriftWithMeApp:
         y += amp * 0.65 * math.sin(elapsed_sec * 0.38 + phase * 0.7)
         y += orbit_y * orbit_scale * math.sin(elapsed_sec * 0.46 + phase * 1.3)
         return x, y
-
-    def water_study_noise(self, x: int, y: int, seed: int = 0) -> int:
-        value = (x * 374761393 + y * 668265263 + seed * 362437) & 0xFFFFFFFF
-        value = (value ^ (value >> 13)) * 1274126177
-        return (value ^ (value >> 16)) & 255
-
-    def build_water_study_planes(self) -> dict[str, object]:
-        size = WATER_STUDY_PLANE_SIZE
-        pyxel = self.pyxel
-        planes: dict[str, object] = {}
-
-        base = pyxel.Image(size, size)
-        for y in range(size):
-            for x in range(size):
-                slow = (
-                    math.sin((x + 17) * 0.041)
-                    + math.sin((y - 23) * 0.037)
-                    + math.sin((x + y) * 0.021)
-                )
-                noise = self.water_study_noise(x // 3, y // 3, 11)
-                color = 1
-                if slow > 0.85:
-                    color = 5
-                elif slow < -1.05:
-                    color = 0
-                elif noise > 218:
-                    color = 3
-                base.pset(x, y, color)
-        planes["BASE"] = base
-
-        body = pyxel.Image(size, size)
-        body.cls(8)
-        for y in range(0, size, 3):
-            for x in range(0, size, 3):
-                noise = self.water_study_noise(x, y, 23)
-                field = math.sin((x * 0.033) + (y * 0.047)) + math.sin((x - y) * 0.019)
-                if noise > 194 and field > -0.35:
-                    body.pset(x, y, 3 if noise < 232 else 5)
-                elif noise > 246:
-                    body.pset(x + 1 if x + 1 < size else x, y, 12)
-        planes["BODY"] = body
-
-        surface = pyxel.Image(size, size)
-        surface.cls(8)
-        for y in range(0, size, 4):
-            for x in range(0, size, 4):
-                noise = self.water_study_noise(x, y, 37)
-                if noise < 220:
-                    continue
-                length = 2 + noise % 5
-                color = 12 if noise < 246 else 6
-                for step in range(length):
-                    px = (x + step) % size
-                    py = (y + (step // 3)) % size
-                    surface.pset(px, py, color)
-        planes["SURFACE"] = surface
-
-        caustics = pyxel.Image(size, size)
-        caustics.cls(8)
-        for y in range(8, size, 16):
-            for x in range(8, size, 16):
-                noise = self.water_study_noise(x, y, 59)
-                if noise < 112:
-                    continue
-                radius = 3 + noise % 5
-                color = 6 if noise < 218 else 7
-                caustics.line(x - radius, y, x, y - radius // 2, color)
-                caustics.line(x, y - radius // 2, x + radius, y, 12 if color == 6 else 6)
-                if noise % 3 == 0:
-                    caustics.line(x - radius // 2, y + 2, x + radius // 2, y + 3, 6)
-        planes["CAUSTICS"] = caustics
-        return planes
 
     def reset_scene_for_debug(self) -> None:
         self.model.reset_scene()
@@ -1485,20 +1421,15 @@ class DriftWithMeApp:
         started_at = time.perf_counter()
         t = self.water_study_clock
         profile = self.water_study_profile()
-        layer_count = 1
+        layer_count = 0
         wrap_calls = 0
-        wrap_calls += self.draw_water_study_plane("BASE", t, 0.0, 0.0, colkey=None)
-        if profile.include_body:
-            wrap_calls += self.draw_water_study_plane("BODY", t, 0.12, 0.08, colkey=8)
-            layer_count += 1
-        if profile.include_surface:
-            wrap_calls += self.draw_water_study_plane("SURFACE", t, 0.2, 0.13, colkey=8)
-            layer_count += 1
-        if profile.include_caustics:
-            wrap_calls += self.draw_water_study_plane("CAUSTICS", t, 0.16, 0.18, colkey=8)
-            layer_count += 1
-        if profile.bubble_count > 0:
-            self.draw_water_study_simple_bubbles(t, profile.bubble_count)
+        for layer_id in profile.layer_ids:
+            calls = self.draw_water_study_plane(layer_id, t)
+            if calls > 0:
+                layer_count += 1
+                wrap_calls += calls
+        if profile.name == "FULL_SIX_OBSERVE":
+            self.draw_water_study_simple_bubbles(t, 10)
             layer_count += 1
         self.water_study_last_draw_ms = (time.perf_counter() - started_at) * 1000.0
         self.water_study_last_layer_count = layer_count
@@ -1520,34 +1451,47 @@ class DriftWithMeApp:
             self.water_study_close_rect(), "CLOSE", 5, text_color=7, style_name="label"
         )
 
-    def draw_water_study_plane(
-        self, plane_name: str, t: float, speed_x: float, speed_y: float, *, colkey: int | None
-    ) -> int:
+    def draw_water_study_plane(self, layer_id: str, t: float) -> int:
         pyxel = self.pyxel
-        image = self.water_study_planes.get(plane_name)
-        if image is None:
+        plane = self.water_study_planes.get(layer_id)
+        if plane is None:
             return 0
-        phase = {"BASE": 0.1, "BODY": 1.6, "SURFACE": 2.4, "CAUSTICS": 3.1}[plane_name]
+        speed_x, speed_y, sine_amp, orbit_x, orbit_y, phase = WATER_STUDY_LAYER_MOTION[layer_id]
         offset_x, offset_y = self.water_study_layer_offset(
             t,
             speed_x=speed_x,
             speed_y=speed_y,
-            sine_amp=1.0 if plane_name != "BASE" else 0.25,
-            orbit_x=1.2 if plane_name == "CAUSTICS" else 0.8,
-            orbit_y=1.1 if plane_name == "CAUSTICS" else 0.65,
+            sine_amp=sine_amp,
+            orbit_x=orbit_x,
+            orbit_y=orbit_y,
             phase=phase,
         )
-        size = WATER_STUDY_PLANE_SIZE
-        start_x = -int(offset_x) % size - size
-        start_y = -int(offset_y) % size - size
+        start_x = -int(offset_x) % plane.logical_width - plane.logical_width
+        start_y = -int(offset_y) % plane.logical_height - plane.logical_height
         calls = 0
-        for y in range(start_y, self.runtime.screen_height + size, size):
-            for x in range(start_x, self.runtime.screen_width + size, size):
-                if colkey is None:
-                    pyxel.blt(x, y, image, 0, 0, size, size)
-                else:
-                    pyxel.blt(x, y, image, 0, 0, size, size, colkey=colkey)
-                calls += 1
+        for plane_y in range(
+            start_y, self.runtime.screen_height + plane.logical_height, plane.logical_height
+        ):
+            for plane_x in range(
+                start_x, self.runtime.screen_width + plane.logical_width, plane.logical_width
+            ):
+                for chunk in plane.chunks:
+                    x = plane_x + chunk.origin_x
+                    y = plane_y + chunk.origin_y
+                    if (
+                        x >= self.runtime.screen_width
+                        or y >= self.runtime.screen_height
+                        or x + chunk.width <= 0
+                        or y + chunk.height <= 0
+                    ):
+                        continue
+                    if plane.colkey is None:
+                        pyxel.blt(x, y, chunk.image, 0, 0, chunk.width, chunk.height)
+                    else:
+                        pyxel.blt(
+                            x, y, chunk.image, 0, 0, chunk.width, chunk.height, colkey=plane.colkey
+                        )
+                    calls += 1
         return calls
 
     def draw_water_study_simple_bubbles(self, t: float, bubble_count: int) -> None:
@@ -1570,8 +1514,9 @@ class DriftWithMeApp:
             f"WTR PROFILE: {profile.name}",
             f"DRAW: {self.water_study_last_draw_ms:.2f} ms",
             f"WRAP BLT: {self.water_study_last_wrap_calls}",
-            f"BUBBLES: {profile.bubble_count}",
-            f"PLANE: {WATER_STUDY_PLANE_SIZE}x{WATER_STUDY_PLANE_SIZE}",
+            f"LAYERS: {self.water_study_last_layer_count}/{len(profile.layer_ids)}",
+            f"PLANE: {WATER_STUDY_LOGICAL_SIZE[0]}x{WATER_STUDY_LOGICAL_SIZE[1]}",
+            f"CHUNK: {WATER_STUDY_CHUNK_SIZE}x{WATER_STUDY_CHUNK_SIZE}",
             "1/2/3/4 PROFILE",
         )
         x = 8
