@@ -54,21 +54,44 @@ class CombatCameraRestore:
 @dataclass(frozen=True)
 class WaterStudyProfile:
     name: str
-    include_mid: bool
+    include_body: bool
+    include_surface: bool
+    include_caustics: bool
     bubble_count: int
-    caustic_step: int
-    surface_step: int
 
 
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
     WaterStudyProfile(
-        "BASELINE", include_mid=False, bubble_count=0, caustic_step=32, surface_step=28
+        "BASELINE",
+        include_body=False,
+        include_surface=False,
+        include_caustics=False,
+        bubble_count=0,
     ),
-    WaterStudyProfile("FULL", include_mid=True, bubble_count=12, caustic_step=24, surface_step=20),
     WaterStudyProfile(
-        "STRESS", include_mid=True, bubble_count=24, caustic_step=16, surface_step=14
+        "CORE",
+        include_body=False,
+        include_surface=True,
+        include_caustics=True,
+        bubble_count=8,
+    ),
+    WaterStudyProfile(
+        "FULL",
+        include_body=True,
+        include_surface=True,
+        include_caustics=True,
+        bubble_count=12,
+    ),
+    WaterStudyProfile(
+        "STRESS",
+        include_body=True,
+        include_surface=True,
+        include_caustics=True,
+        bubble_count=24,
     ),
 )
+
+WATER_STUDY_PLANE_SIZE = 256
 
 
 class DriftWithMeApp:
@@ -142,6 +165,8 @@ class DriftWithMeApp:
         self.water_study_profile_index = 1
         self.water_study_last_draw_ms = 0.0
         self.water_study_last_layer_count = 0
+        self.water_study_last_wrap_calls = 0
+        self.water_study_planes = {}
 
         pyxel.init(
             self.runtime.screen_width,
@@ -153,6 +178,7 @@ class DriftWithMeApp:
             headless=headless,
         )
         pyxel.mouse(True)
+        self.water_study_planes = self.build_water_study_planes()
         self.ui_text = load_ui_text_renderer(pyxel, self.runtime)
         self.sprite_assets = load_runtime_sprite_library(pyxel, self.runtime.raw)
         for error in self.sprite_assets.errors:
@@ -379,7 +405,7 @@ class DriftWithMeApp:
 
     def handle_water_study_profile_shortcuts(self) -> None:
         pyxel = self.pyxel
-        for index, key_name in enumerate(("KEY_1", "KEY_2", "KEY_3")):
+        for index, key_name in enumerate(("KEY_1", "KEY_2", "KEY_3", "KEY_4")):
             key = getattr(pyxel, key_name, None)
             if key is not None and pyxel.btnp(key):
                 self.water_study_profile_index = index
@@ -426,6 +452,78 @@ class DriftWithMeApp:
         y += amp * 0.65 * math.sin(elapsed_sec * 0.38 + phase * 0.7)
         y += orbit_y * orbit_scale * math.sin(elapsed_sec * 0.46 + phase * 1.3)
         return x, y
+
+    def water_study_noise(self, x: int, y: int, seed: int = 0) -> int:
+        value = (x * 374761393 + y * 668265263 + seed * 362437) & 0xFFFFFFFF
+        value = (value ^ (value >> 13)) * 1274126177
+        return (value ^ (value >> 16)) & 255
+
+    def build_water_study_planes(self) -> dict[str, object]:
+        size = WATER_STUDY_PLANE_SIZE
+        pyxel = self.pyxel
+        planes: dict[str, object] = {}
+
+        base = pyxel.Image(size, size)
+        for y in range(size):
+            for x in range(size):
+                slow = (
+                    math.sin((x + 17) * 0.041)
+                    + math.sin((y - 23) * 0.037)
+                    + math.sin((x + y) * 0.021)
+                )
+                noise = self.water_study_noise(x // 3, y // 3, 11)
+                color = 1
+                if slow > 0.85:
+                    color = 5
+                elif slow < -1.05:
+                    color = 0
+                elif noise > 218:
+                    color = 3
+                base.pset(x, y, color)
+        planes["BASE"] = base
+
+        body = pyxel.Image(size, size)
+        body.cls(8)
+        for y in range(0, size, 3):
+            for x in range(0, size, 3):
+                noise = self.water_study_noise(x, y, 23)
+                field = math.sin((x * 0.033) + (y * 0.047)) + math.sin((x - y) * 0.019)
+                if noise > 194 and field > -0.35:
+                    body.pset(x, y, 3 if noise < 232 else 5)
+                elif noise > 246:
+                    body.pset(x + 1 if x + 1 < size else x, y, 12)
+        planes["BODY"] = body
+
+        surface = pyxel.Image(size, size)
+        surface.cls(8)
+        for y in range(0, size, 4):
+            for x in range(0, size, 4):
+                noise = self.water_study_noise(x, y, 37)
+                if noise < 220:
+                    continue
+                length = 2 + noise % 5
+                color = 12 if noise < 246 else 6
+                for step in range(length):
+                    px = (x + step) % size
+                    py = (y + (step // 3)) % size
+                    surface.pset(px, py, color)
+        planes["SURFACE"] = surface
+
+        caustics = pyxel.Image(size, size)
+        caustics.cls(8)
+        for y in range(8, size, 16):
+            for x in range(8, size, 16):
+                noise = self.water_study_noise(x, y, 59)
+                if noise < 112:
+                    continue
+                radius = 3 + noise % 5
+                color = 6 if noise < 218 else 7
+                caustics.line(x - radius, y, x, y - radius // 2, color)
+                caustics.line(x, y - radius // 2, x + radius, y, 12 if color == 6 else 6)
+                if noise % 3 == 0:
+                    caustics.line(x - radius // 2, y + 2, x + radius // 2, y + 3, 6)
+        planes["CAUSTICS"] = caustics
+        return planes
 
     def reset_scene_for_debug(self) -> None:
         self.model.reset_scene()
@@ -1388,18 +1486,23 @@ class DriftWithMeApp:
         t = self.water_study_clock
         profile = self.water_study_profile()
         layer_count = 1
-        self.draw_water_study_deep(t)
-        if profile.include_mid:
-            self.draw_water_study_mid(t)
+        wrap_calls = 0
+        wrap_calls += self.draw_water_study_plane("BASE", t, 0.0, 0.0, colkey=None)
+        if profile.include_body:
+            wrap_calls += self.draw_water_study_plane("BODY", t, 0.12, 0.08, colkey=8)
             layer_count += 1
-        self.draw_water_study_surface(t, profile)
-        self.draw_water_study_caustics(t, profile)
-        layer_count += 2
+        if profile.include_surface:
+            wrap_calls += self.draw_water_study_plane("SURFACE", t, 0.2, 0.13, colkey=8)
+            layer_count += 1
+        if profile.include_caustics:
+            wrap_calls += self.draw_water_study_plane("CAUSTICS", t, 0.16, 0.18, colkey=8)
+            layer_count += 1
         if profile.bubble_count > 0:
             self.draw_water_study_simple_bubbles(t, profile.bubble_count)
             layer_count += 1
         self.water_study_last_draw_ms = (time.perf_counter() - started_at) * 1000.0
         self.water_study_last_layer_count = layer_count
+        self.water_study_last_wrap_calls = wrap_calls
 
         title = "WATER STUDY"
         width, height = pixel_text_size(title, 1)
@@ -1417,97 +1520,35 @@ class DriftWithMeApp:
             self.water_study_close_rect(), "CLOSE", 5, text_color=7, style_name="label"
         )
 
-    def draw_water_study_deep(self, t: float) -> None:
+    def draw_water_study_plane(
+        self, plane_name: str, t: float, speed_x: float, speed_y: float, *, colkey: int | None
+    ) -> int:
         pyxel = self.pyxel
-        width = self.runtime.screen_width
-        height = self.runtime.screen_height
+        image = self.water_study_planes.get(plane_name)
+        if image is None:
+            return 0
+        phase = {"BASE": 0.1, "BODY": 1.6, "SURFACE": 2.4, "CAUSTICS": 3.1}[plane_name]
         offset_x, offset_y = self.water_study_layer_offset(
             t,
-            speed_x=0.02,
-            speed_y=0.01,
-            sine_amp=0.25,
-            orbit_x=0.25,
-            orbit_y=0.2,
-            phase=0.1,
+            speed_x=speed_x,
+            speed_y=speed_y,
+            sine_amp=1.0 if plane_name != "BASE" else 0.25,
+            orbit_x=1.2 if plane_name == "CAUSTICS" else 0.8,
+            orbit_y=1.1 if plane_name == "CAUSTICS" else 0.65,
+            phase=phase,
         )
-        pyxel.cls(1)
-        phase_y = int(offset_y) % 16
-        for index, y in enumerate(range(-16 + phase_y, height + 16, 16)):
-            color = (1, 5, 1)[index % 3]
-            pyxel.rect(0, y, width, 8 if index % 2 == 0 else 10, color)
-        for index in range(18):
-            y = int((index * 19 + offset_y * 0.5) % max(1, height))
-            x = int((index * 47 + offset_x) % max(1, width))
-            pyxel.line(max(0, x - 18), y, min(width - 1, x + 28), y, 5 if index % 2 else 1)
-
-    def draw_water_study_mid(self, t: float) -> None:
-        pyxel = self.pyxel
-        width = self.runtime.screen_width
-        height = self.runtime.screen_height
-        offset_x, offset_y = self.water_study_layer_offset(
-            t,
-            speed_x=0.12,
-            speed_y=0.07,
-            sine_amp=1.0,
-            orbit_x=0.75,
-            orbit_y=0.55,
-            phase=1.6,
-        )
-        for row in range(-32, height + 32, 20):
-            y = int(row + offset_y + 2.0 * math.sin(t * 0.7 + row * 0.09))
-            for col in range(-48, width + 48, 64):
-                x = int(col + offset_x + (row % 37))
-                color = 3 if (row + col) % 3 else 5
-                pyxel.line(x, y, x + 18, y + 1, color)
-                if (row + col) % 4 == 0:
-                    pyxel.pset(x + 24, y + 2, 12)
-
-    def draw_water_study_surface(self, t: float, profile: WaterStudyProfile) -> None:
-        pyxel = self.pyxel
-        width = self.runtime.screen_width
-        height = self.runtime.screen_height
-        offset_x, offset_y = self.water_study_layer_offset(
-            t,
-            speed_x=0.18,
-            speed_y=0.11,
-            sine_amp=1.55,
-            orbit_x=0.95,
-            orbit_y=0.8,
-            phase=2.4,
-        )
-        for row in range(-24, height + 28, profile.surface_step):
-            wave = int(3.0 * math.sin(t * 0.5 + row * 0.08))
-            y = row + int(offset_y) + wave
-            for col in range(-36, width + 36, 46):
-                drift = int(offset_x + (row * 0.35)) % 46
-                x = col + drift
-                color = 12 if (row + col) % 4 else 6
-                pyxel.line(x, y, x + 9, y, color)
-                if (row + col) % 5 == 0:
-                    pyxel.line(x + 14, y + 2, x + 22, y + 2, 3)
-
-    def draw_water_study_caustics(self, t: float, profile: WaterStudyProfile) -> None:
-        pyxel = self.pyxel
-        width = self.runtime.screen_width
-        height = self.runtime.screen_height
-        offset_x, offset_y = self.water_study_layer_offset(
-            t,
-            speed_x=0.14,
-            speed_y=0.16,
-            sine_amp=1.2,
-            orbit_x=1.4,
-            orbit_y=1.2,
-            phase=3.1,
-        )
-        for row in range(-24, height + 24, profile.caustic_step):
-            for col in range(-24, width + 24, profile.caustic_step):
-                seed = (row * 31 + col * 17) & 255
-                x = int(col + offset_x + math.sin(t * 0.9 + seed) * 3.0)
-                y = int(row + offset_y + math.cos(t * 0.65 + seed * 0.5) * 2.0)
-                color = 6 if seed % 5 else 7
-                pyxel.line(x - 2, y, x + 3, y, color)
-                if seed % 3 == 0:
-                    pyxel.line(x, y - 2, x, y + 2, 12)
+        size = WATER_STUDY_PLANE_SIZE
+        start_x = -int(offset_x) % size - size
+        start_y = -int(offset_y) % size - size
+        calls = 0
+        for y in range(start_y, self.runtime.screen_height + size, size):
+            for x in range(start_x, self.runtime.screen_width + size, size):
+                if colkey is None:
+                    pyxel.blt(x, y, image, 0, 0, size, size)
+                else:
+                    pyxel.blt(x, y, image, 0, 0, size, size, colkey=colkey)
+                calls += 1
+        return calls
 
     def draw_water_study_simple_bubbles(self, t: float, bubble_count: int) -> None:
         pyxel = self.pyxel
@@ -1528,14 +1569,15 @@ class DriftWithMeApp:
         lines = (
             f"WTR PROFILE: {profile.name}",
             f"DRAW: {self.water_study_last_draw_ms:.2f} ms",
-            f"LAYERS: {self.water_study_last_layer_count}",
+            f"WRAP BLT: {self.water_study_last_wrap_calls}",
             f"BUBBLES: {profile.bubble_count}",
-            "1/2/3 PROFILE",
+            f"PLANE: {WATER_STUDY_PLANE_SIZE}x{WATER_STUDY_PLANE_SIZE}",
+            "1/2/3/4 PROFILE",
         )
         x = 8
-        y = self.runtime.screen_height - 47
-        pyxel.rect(x - 3, y - 3, 118, 45, 0)
-        pyxel.rectb(x - 3, y - 3, 118, 45, 13)
+        y = self.runtime.screen_height - 55
+        pyxel.rect(x - 3, y - 3, 126, 53, 0)
+        pyxel.rectb(x - 3, y - 3, 126, 53, 13)
         for index, line in enumerate(lines):
             pyxel.text(x, y + index * 8, line, 7)
 

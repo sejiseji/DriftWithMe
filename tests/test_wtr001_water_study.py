@@ -17,6 +17,7 @@ class FakePyxel:
     KEY_1 = 49
     KEY_2 = 50
     KEY_3 = 51
+    KEY_4 = 52
     KEY_M = 77
 
     def __init__(self, pressed: set[int] | None = None) -> None:
@@ -64,6 +65,8 @@ def make_water_app() -> DriftWithMeApp:
     app.water_study_profile_index = 1
     app.water_study_last_draw_ms = 0.0
     app.water_study_last_layer_count = 0
+    app.water_study_last_wrap_calls = 0
+    app.water_study_planes = {}
     app.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
     app.pending_action_pressed = True
     app.pending_interact_pressed = True
@@ -172,11 +175,11 @@ def test_wtr001_active_rects_are_screen_specific() -> None:
 def test_wtr001_b_profile_shortcuts_switch_profiles() -> None:
     app = make_water_app()
     app.screen = AppScreen.WATER_STUDY
-    app.pyxel = FakePyxel({FakePyxel.KEY_3})
+    app.pyxel = FakePyxel({FakePyxel.KEY_4})
 
     app.update_water_study_screen(0.25)
 
-    assert app.water_study_profile_index == 2
+    assert app.water_study_profile_index == 3
     assert app.water_study_profile().name == "STRESS"
 
 
@@ -195,12 +198,17 @@ def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
     app.water_study_profile_index = 0
     baseline = app.water_study_profile()
     app.water_study_profile_index = 1
-    full = app.water_study_profile()
+    core = app.water_study_profile()
     app.water_study_profile_index = 2
+    full = app.water_study_profile()
+    app.water_study_profile_index = 3
     stress = app.water_study_profile()
 
-    assert not baseline.include_mid
-    assert full.include_mid
-    assert stress.include_mid
-    assert baseline.bubble_count < full.bubble_count < stress.bubble_count
-    assert baseline.caustic_step > full.caustic_step > stress.caustic_step
+    assert not baseline.include_body
+    assert not baseline.include_surface
+    assert core.include_surface
+    assert core.include_caustics
+    assert not core.include_body
+    assert full.include_body
+    assert stress.include_body
+    assert baseline.bubble_count < core.bubble_count < full.bubble_count < stress.bubble_count
