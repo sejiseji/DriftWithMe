@@ -51,6 +51,26 @@ class CombatCameraRestore:
     duration_sec: float
 
 
+@dataclass(frozen=True)
+class WaterStudyProfile:
+    name: str
+    include_mid: bool
+    bubble_count: int
+    caustic_step: int
+    surface_step: int
+
+
+WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
+    WaterStudyProfile(
+        "BASELINE", include_mid=False, bubble_count=0, caustic_step=32, surface_step=28
+    ),
+    WaterStudyProfile("FULL", include_mid=True, bubble_count=12, caustic_step=24, surface_step=20),
+    WaterStudyProfile(
+        "STRESS", include_mid=True, bubble_count=24, caustic_step=16, surface_step=14
+    ),
+)
+
+
 class DriftWithMeApp:
     def __init__(
         self,
@@ -119,6 +139,9 @@ class DriftWithMeApp:
         self.combat_camera_snapshot_zoom: float | None = None
         self.water_study_clock = 0.0
         self.water_study_menu_open = False
+        self.water_study_profile_index = 1
+        self.water_study_last_draw_ms = 0.0
+        self.water_study_last_layer_count = 0
 
         pyxel.init(
             self.runtime.screen_width,
@@ -350,8 +373,59 @@ class DriftWithMeApp:
     def update_water_study_screen(self, elapsed: float) -> None:
         self.water_study_clock += max(0.0, elapsed)
         self.clear_world_input_latches()
+        self.handle_water_study_profile_shortcuts()
         if self.mouse_pressed_in(self.water_study_close_rect()):
             self.exit_water_study()
+
+    def handle_water_study_profile_shortcuts(self) -> None:
+        pyxel = self.pyxel
+        for index, key_name in enumerate(("KEY_1", "KEY_2", "KEY_3")):
+            key = getattr(pyxel, key_name, None)
+            if key is not None and pyxel.btnp(key):
+                self.water_study_profile_index = index
+                return
+
+    def water_study_profile(self) -> WaterStudyProfile:
+        index = int(getattr(self, "water_study_profile_index", 1))
+        return WATER_STUDY_PROFILES[index % len(WATER_STUDY_PROFILES)]
+
+    def water_study_motion_weights(self, elapsed_sec: float) -> tuple[float, float, float]:
+        phase_length = 8.0
+        blend_length = 2.0
+        phase = max(0.0, elapsed_sec) % (phase_length * 3.0)
+        mode = int(phase // phase_length)
+        local = phase - mode * phase_length
+        weights = [0.0, 0.0, 0.0]
+        if local < phase_length - blend_length:
+            weights[mode] = 1.0
+            return weights[0], weights[1], weights[2]
+        blend_t = (local - (phase_length - blend_length)) / blend_length
+        smooth = blend_t * blend_t * (3.0 - 2.0 * blend_t)
+        weights[mode] = 1.0 - smooth
+        weights[(mode + 1) % 3] = smooth
+        return weights[0], weights[1], weights[2]
+
+    def water_study_layer_offset(
+        self,
+        elapsed_sec: float,
+        *,
+        speed_x: float,
+        speed_y: float,
+        sine_amp: float,
+        orbit_x: float,
+        orbit_y: float,
+        phase: float,
+    ) -> tuple[float, float]:
+        calm, wide, circular = self.water_study_motion_weights(elapsed_sec)
+        amp = sine_amp * (0.35 * calm + 1.0 * wide + 0.7 * circular)
+        orbit_scale = 0.2 * calm + 0.45 * wide + 1.0 * circular
+        x = elapsed_sec * speed_x
+        x += amp * math.sin(elapsed_sec * 0.55 + phase)
+        x += orbit_x * orbit_scale * math.cos(elapsed_sec * 0.42 + phase * 1.7)
+        y = elapsed_sec * speed_y
+        y += amp * 0.65 * math.sin(elapsed_sec * 0.38 + phase * 0.7)
+        y += orbit_y * orbit_scale * math.sin(elapsed_sec * 0.46 + phase * 1.3)
+        return x, y
 
     def reset_scene_for_debug(self) -> None:
         self.model.reset_scene()
@@ -1310,29 +1384,160 @@ class DriftWithMeApp:
 
     def draw_water_study(self) -> None:
         pyxel = self.pyxel
-        pyxel.cls(1)
+        started_at = time.perf_counter()
         t = self.water_study_clock
-        for y in range(0, self.runtime.screen_height, 8):
-            color = 1 if (y // 8) % 2 == 0 else 5
-            pyxel.rect(0, y, self.runtime.screen_width, 8, color)
-        for index in range(18):
-            x = int((index * 37 + t * (7 + index % 3)) % (self.runtime.screen_width + 16)) - 8
-            y = int(24 + ((index * 29) % max(1, self.runtime.screen_height - 48)))
-            radius = 1 + index % 3
-            pyxel.circb(x, y, radius, 12 if index % 2 else 6)
+        profile = self.water_study_profile()
+        layer_count = 1
+        self.draw_water_study_deep(t)
+        if profile.include_mid:
+            self.draw_water_study_mid(t)
+            layer_count += 1
+        self.draw_water_study_surface(t, profile)
+        self.draw_water_study_caustics(t, profile)
+        layer_count += 2
+        if profile.bubble_count > 0:
+            self.draw_water_study_simple_bubbles(t, profile.bubble_count)
+            layer_count += 1
+        self.water_study_last_draw_ms = (time.perf_counter() - started_at) * 1000.0
+        self.water_study_last_layer_count = layer_count
+
         title = "WATER STUDY"
-        width, height = pixel_text_size(title, 2)
+        width, height = pixel_text_size(title, 1)
         draw_pixel_text(
             pyxel,
             int(self.runtime.screen_width / 2 - width / 2),
             int(self.runtime.screen_height / 2 - height / 2),
             title,
             7,
-            scale=2,
+            scale=1,
         )
+        if self.debug_enabled:
+            self.draw_water_study_debug_overlay(profile)
         self.draw_button(
             self.water_study_close_rect(), "CLOSE", 5, text_color=7, style_name="label"
         )
+
+    def draw_water_study_deep(self, t: float) -> None:
+        pyxel = self.pyxel
+        width = self.runtime.screen_width
+        height = self.runtime.screen_height
+        offset_x, offset_y = self.water_study_layer_offset(
+            t,
+            speed_x=0.02,
+            speed_y=0.01,
+            sine_amp=0.25,
+            orbit_x=0.25,
+            orbit_y=0.2,
+            phase=0.1,
+        )
+        pyxel.cls(1)
+        phase_y = int(offset_y) % 16
+        for index, y in enumerate(range(-16 + phase_y, height + 16, 16)):
+            color = (1, 5, 1)[index % 3]
+            pyxel.rect(0, y, width, 8 if index % 2 == 0 else 10, color)
+        for index in range(18):
+            y = int((index * 19 + offset_y * 0.5) % max(1, height))
+            x = int((index * 47 + offset_x) % max(1, width))
+            pyxel.line(max(0, x - 18), y, min(width - 1, x + 28), y, 5 if index % 2 else 1)
+
+    def draw_water_study_mid(self, t: float) -> None:
+        pyxel = self.pyxel
+        width = self.runtime.screen_width
+        height = self.runtime.screen_height
+        offset_x, offset_y = self.water_study_layer_offset(
+            t,
+            speed_x=0.12,
+            speed_y=0.07,
+            sine_amp=1.0,
+            orbit_x=0.75,
+            orbit_y=0.55,
+            phase=1.6,
+        )
+        for row in range(-32, height + 32, 20):
+            y = int(row + offset_y + 2.0 * math.sin(t * 0.7 + row * 0.09))
+            for col in range(-48, width + 48, 64):
+                x = int(col + offset_x + (row % 37))
+                color = 3 if (row + col) % 3 else 5
+                pyxel.line(x, y, x + 18, y + 1, color)
+                if (row + col) % 4 == 0:
+                    pyxel.pset(x + 24, y + 2, 12)
+
+    def draw_water_study_surface(self, t: float, profile: WaterStudyProfile) -> None:
+        pyxel = self.pyxel
+        width = self.runtime.screen_width
+        height = self.runtime.screen_height
+        offset_x, offset_y = self.water_study_layer_offset(
+            t,
+            speed_x=0.18,
+            speed_y=0.11,
+            sine_amp=1.55,
+            orbit_x=0.95,
+            orbit_y=0.8,
+            phase=2.4,
+        )
+        for row in range(-24, height + 28, profile.surface_step):
+            wave = int(3.0 * math.sin(t * 0.5 + row * 0.08))
+            y = row + int(offset_y) + wave
+            for col in range(-36, width + 36, 46):
+                drift = int(offset_x + (row * 0.35)) % 46
+                x = col + drift
+                color = 12 if (row + col) % 4 else 6
+                pyxel.line(x, y, x + 9, y, color)
+                if (row + col) % 5 == 0:
+                    pyxel.line(x + 14, y + 2, x + 22, y + 2, 3)
+
+    def draw_water_study_caustics(self, t: float, profile: WaterStudyProfile) -> None:
+        pyxel = self.pyxel
+        width = self.runtime.screen_width
+        height = self.runtime.screen_height
+        offset_x, offset_y = self.water_study_layer_offset(
+            t,
+            speed_x=0.14,
+            speed_y=0.16,
+            sine_amp=1.2,
+            orbit_x=1.4,
+            orbit_y=1.2,
+            phase=3.1,
+        )
+        for row in range(-24, height + 24, profile.caustic_step):
+            for col in range(-24, width + 24, profile.caustic_step):
+                seed = (row * 31 + col * 17) & 255
+                x = int(col + offset_x + math.sin(t * 0.9 + seed) * 3.0)
+                y = int(row + offset_y + math.cos(t * 0.65 + seed * 0.5) * 2.0)
+                color = 6 if seed % 5 else 7
+                pyxel.line(x - 2, y, x + 3, y, color)
+                if seed % 3 == 0:
+                    pyxel.line(x, y - 2, x, y + 2, 12)
+
+    def draw_water_study_simple_bubbles(self, t: float, bubble_count: int) -> None:
+        pyxel = self.pyxel
+        width = self.runtime.screen_width
+        height = self.runtime.screen_height
+        for index in range(bubble_count):
+            lifetime = 5.0 + (index % 5) * 0.75
+            u = ((t + index * 0.47) % lifetime) / lifetime
+            base_x = (index * 41 + (index % 4) * 19) % max(1, width)
+            x = int(base_x + math.sin(t * 0.9 + index) * (1.0 + u * 4.0))
+            y = int(height + 8 - u * (height + 24))
+            radius = 1 + int(u * 2.0)
+            color = 5 if u < 0.35 else (12 if u < 0.78 else 6)
+            pyxel.circb(x, y, radius, color)
+
+    def draw_water_study_debug_overlay(self, profile: WaterStudyProfile) -> None:
+        pyxel = self.pyxel
+        lines = (
+            f"WTR PROFILE: {profile.name}",
+            f"DRAW: {self.water_study_last_draw_ms:.2f} ms",
+            f"LAYERS: {self.water_study_last_layer_count}",
+            f"BUBBLES: {profile.bubble_count}",
+            "1/2/3 PROFILE",
+        )
+        x = 8
+        y = self.runtime.screen_height - 47
+        pyxel.rect(x - 3, y - 3, 118, 45, 0)
+        pyxel.rectb(x - 3, y - 3, 118, 45, 13)
+        for index, line in enumerate(lines):
+            pyxel.text(x, y + index * 8, line, 7)
 
     def draw_play(self) -> None:
         assert self.renderer is not None

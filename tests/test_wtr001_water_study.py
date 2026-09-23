@@ -14,6 +14,9 @@ from drift_with_me.world import load_world_data
 
 
 class FakePyxel:
+    KEY_1 = 49
+    KEY_2 = 50
+    KEY_3 = 51
     KEY_M = 77
 
     def __init__(self, pressed: set[int] | None = None) -> None:
@@ -58,6 +61,9 @@ def make_water_app() -> DriftWithMeApp:
     app.screen = AppScreen.PLAY
     app.water_study_clock = 0.0
     app.water_study_menu_open = False
+    app.water_study_profile_index = 1
+    app.water_study_last_draw_ms = 0.0
+    app.water_study_last_layer_count = 0
     app.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
     app.pending_action_pressed = True
     app.pending_interact_pressed = True
@@ -161,3 +167,40 @@ def test_wtr001_active_rects_are_screen_specific() -> None:
 
     app.screen = AppScreen.WATER_STUDY
     assert app.active_ui_rects() == (app.water_study_close_rect(),)
+
+
+def test_wtr001_b_profile_shortcuts_switch_profiles() -> None:
+    app = make_water_app()
+    app.screen = AppScreen.WATER_STUDY
+    app.pyxel = FakePyxel({FakePyxel.KEY_3})
+
+    app.update_water_study_screen(0.25)
+
+    assert app.water_study_profile_index == 2
+    assert app.water_study_profile().name == "STRESS"
+
+
+def test_wtr001_b_motion_weights_are_normalized() -> None:
+    app = make_water_app()
+
+    for t in (0.0, 6.5, 7.5, 8.25, 15.5, 23.5):
+        weights = app.water_study_motion_weights(t)
+        assert all(0.0 <= weight <= 1.0 for weight in weights)
+        assert abs(sum(weights) - 1.0) < 0.000001
+
+
+def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
+    app = make_water_app()
+
+    app.water_study_profile_index = 0
+    baseline = app.water_study_profile()
+    app.water_study_profile_index = 1
+    full = app.water_study_profile()
+    app.water_study_profile_index = 2
+    stress = app.water_study_profile()
+
+    assert not baseline.include_mid
+    assert full.include_mid
+    assert stress.include_mid
+    assert baseline.bubble_count < full.bubble_count < stress.bubble_count
+    assert baseline.caustic_step > full.caustic_step > stress.caustic_step
