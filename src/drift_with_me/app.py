@@ -28,7 +28,9 @@ from drift_with_me.render import Renderer
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.water_study_assets import (
     WATER_STUDY_LAYER_IDS,
+    WATER_STUDY_PHASE_STEP_FRAMES,
     WaterStudyPlane,
+    load_water_study_phase_planes,
     load_water_study_planes,
 )
 from drift_with_me.world import load_world_data
@@ -170,6 +172,7 @@ class DriftWithMeApp:
         self.water_study_last_layer_count = 0
         self.water_study_last_wrap_calls = 0
         self.water_study_planes: dict[str, WaterStudyPlane] = {}
+        self.water_study_phase_planes: dict[str, tuple[WaterStudyPlane, ...]] = {}
 
         pyxel.init(
             self.runtime.screen_width,
@@ -381,6 +384,7 @@ class DriftWithMeApp:
         if self.water_study_planes:
             return
         self.water_study_planes = load_water_study_planes(self.pyxel)
+        self.water_study_phase_planes = load_water_study_phase_planes(self.pyxel)
 
     def exit_water_study(self) -> bool:
         if self.screen != AppScreen.WATER_STUDY:
@@ -1453,7 +1457,7 @@ class DriftWithMeApp:
 
     def draw_water_study_plane(self, layer_id: str, t: float) -> int:
         pyxel = self.pyxel
-        plane = self.water_study_planes.get(layer_id)
+        plane = self.water_study_plane_for_frame(layer_id, t)
         if plane is None:
             return 0
         speed_x, speed_y, sine_amp, orbit_x, orbit_y, phase = WATER_STUDY_LAYER_MOTION[layer_id]
@@ -1493,6 +1497,15 @@ class DriftWithMeApp:
                         )
                     calls += 1
         return calls
+
+    def water_study_plane_for_frame(self, layer_id: str, t: float) -> WaterStudyPlane | None:
+        phases = self.water_study_phase_planes.get(layer_id)
+        if not phases:
+            return self.water_study_planes.get(layer_id)
+        step_frames = WATER_STUDY_PHASE_STEP_FRAMES[layer_id]
+        elapsed_frames = int(max(0.0, t) * float(self.runtime.target_fps))
+        phase_index = (elapsed_frames // step_frames) % len(phases)
+        return phases[phase_index]
 
     def draw_water_study_simple_bubbles(self, t: float, bubble_count: int) -> None:
         pyxel = self.pyxel

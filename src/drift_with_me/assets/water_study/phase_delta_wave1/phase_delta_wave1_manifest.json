@@ -1,0 +1,1605 @@
+{
+  "version": "0.1.0",
+  "base_asset_pack": "WTR001_Water_Layer_Sprite_Sources_v0.4.zip",
+  "base_revision": "plane_c",
+  "logical_plane_size": [
+    1024,
+    512
+  ],
+  "physical_chunk_size": [
+    256,
+    256
+  ],
+  "physical_chunk_grid": [
+    4,
+    2
+  ],
+  "phase_count": 8,
+  "colkey": 8,
+  "palette_policy": {
+    "fixed_pyxel_palette": true,
+    "forbidden_water_indices": [
+      "3",
+      "B"
+    ],
+    "no_requantization": true
+  },
+  "generation": {
+    "method": "toroidal inverse-map periodic micro-deformation",
+    "sampling": "nearest-neighbor palette-index sampling",
+    "p00_is_base": true,
+    "runtime_blend_required": false
+  },
+  "layers": [
+    {
+      "id": "water_surface_caustics_plane_c",
+      "phase_count": 8,
+      "recommended_phase_step_frames": 8,
+      "phases": [
+        {
+          "phase": "p00",
+          "id": "water_surface_caustics_plane_c_p00",
+          "sha256_palette_indices": "8cca07450aeb0ba70f24b52841e71edd0969e8f63be871d7bb1a89137932e166",
+          "hex_file": "hex_rows/water_surface_caustics_plane_c_p00.hex.txt",
+          "chunks": [
+            {
+              "id": "water_surface_caustics_plane_c_p00_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p00_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p00_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p00_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p00_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p00_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p00_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p00_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p01",
+          "id": "water_surface_caustics_plane_c_p01",
+          "sha256_palette_indices": "b4a4dbd20101371e8f14b92479fa34fa6fb1d7ebef0cf9819c50227fdc3aee7e",
+          "hex_file": "hex_rows/water_surface_caustics_plane_c_p01.hex.txt",
+          "chunks": [
+            {
+              "id": "water_surface_caustics_plane_c_p01_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p01_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p01_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p01_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p01_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p01_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p01_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p01_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p02",
+          "id": "water_surface_caustics_plane_c_p02",
+          "sha256_palette_indices": "52d5f7d15f5ec70294642475f57f77ea8fb0d11465620eaa5f56c48700850161",
+          "hex_file": "hex_rows/water_surface_caustics_plane_c_p02.hex.txt",
+          "chunks": [
+            {
+              "id": "water_surface_caustics_plane_c_p02_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p02_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p02_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p02_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p02_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p02_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p02_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p02_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p03",
+          "id": "water_surface_caustics_plane_c_p03",
+          "sha256_palette_indices": "73dd242898e3e63ccfb88593911684f99fd452cf736b542e47c2bdbea27d992d",
+          "hex_file": "hex_rows/water_surface_caustics_plane_c_p03.hex.txt",
+          "chunks": [
+            {
+              "id": "water_surface_caustics_plane_c_p03_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p03_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p03_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p03_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p03_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p03_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p03_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p03_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p04",
+          "id": "water_surface_caustics_plane_c_p04",
+          "sha256_palette_indices": "61b32ec847a38711e97be5aa94ac149a0ef85dc4fe4c42ec54abee7c5d67426c",
+          "hex_file": "hex_rows/water_surface_caustics_plane_c_p04.hex.txt",
+          "chunks": [
+            {
+              "id": "water_surface_caustics_plane_c_p04_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p04_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p04_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p04_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p04_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p04_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p04_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p04_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p05",
+          "id": "water_surface_caustics_plane_c_p05",
+          "sha256_palette_indices": "a43f19adb83ae28cad5f1dc4ed99d2c9617d2952fae96d7db5800d06e94214eb",
+          "hex_file": "hex_rows/water_surface_caustics_plane_c_p05.hex.txt",
+          "chunks": [
+            {
+              "id": "water_surface_caustics_plane_c_p05_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p05_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p05_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p05_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p05_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p05_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p05_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p05_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p06",
+          "id": "water_surface_caustics_plane_c_p06",
+          "sha256_palette_indices": "b84893fa9ef99563214b49d8075968c7aa000ccdc1ecb824decbb300e96ae278",
+          "hex_file": "hex_rows/water_surface_caustics_plane_c_p06.hex.txt",
+          "chunks": [
+            {
+              "id": "water_surface_caustics_plane_c_p06_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p06_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p06_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p06_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p06_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p06_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p06_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p06_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p07",
+          "id": "water_surface_caustics_plane_c_p07",
+          "sha256_palette_indices": "2a9d09c8505ec0223a6b1eb81871cd14c25e06bee62c5c9456f6c9d6930d5eee",
+          "hex_file": "hex_rows/water_surface_caustics_plane_c_p07.hex.txt",
+          "chunks": [
+            {
+              "id": "water_surface_caustics_plane_c_p07_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p07_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p07_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p07_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p07_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p07_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p07_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_surface_caustics_plane_c_p07_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        }
+      ],
+      "adjacent_diff_ratio": [
+        0.056961,
+        0.022806,
+        0.034966,
+        0.053852,
+        0.054499,
+        0.033415,
+        0.020615,
+        0.05879
+      ]
+    },
+    {
+      "id": "water_upper_lightnet_plane_c",
+      "phase_count": 8,
+      "recommended_phase_step_frames": 10,
+      "phases": [
+        {
+          "phase": "p00",
+          "id": "water_upper_lightnet_plane_c_p00",
+          "sha256_palette_indices": "b384bd4971c62ee957376b99201dd6a25b36029d5dc39c10a48c7b7ff7fd5b1a",
+          "hex_file": "hex_rows/water_upper_lightnet_plane_c_p00.hex.txt",
+          "chunks": [
+            {
+              "id": "water_upper_lightnet_plane_c_p00_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p00_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p00_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p00_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p00_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p00_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p00_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p00_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p01",
+          "id": "water_upper_lightnet_plane_c_p01",
+          "sha256_palette_indices": "b56129715af305fdd35ca1156b12cd4f52848234120a837a5005c619e7f1d1f1",
+          "hex_file": "hex_rows/water_upper_lightnet_plane_c_p01.hex.txt",
+          "chunks": [
+            {
+              "id": "water_upper_lightnet_plane_c_p01_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p01_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p01_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p01_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p01_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p01_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p01_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p01_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p02",
+          "id": "water_upper_lightnet_plane_c_p02",
+          "sha256_palette_indices": "1a25fd9c592ddc0aec92dc9866df215ce5b129e915a9f2f3ce59328e42a33918",
+          "hex_file": "hex_rows/water_upper_lightnet_plane_c_p02.hex.txt",
+          "chunks": [
+            {
+              "id": "water_upper_lightnet_plane_c_p02_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p02_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p02_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p02_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p02_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p02_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p02_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p02_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p03",
+          "id": "water_upper_lightnet_plane_c_p03",
+          "sha256_palette_indices": "238c594459b3ece01014cde2be4653da217c0b9eecb13dcf23514c308a5fdc90",
+          "hex_file": "hex_rows/water_upper_lightnet_plane_c_p03.hex.txt",
+          "chunks": [
+            {
+              "id": "water_upper_lightnet_plane_c_p03_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p03_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p03_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p03_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p03_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p03_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p03_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p03_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p04",
+          "id": "water_upper_lightnet_plane_c_p04",
+          "sha256_palette_indices": "097ec6038a54dfab3a2135d66f8fd8e9114d3cc83391d03ec9e010635a8982e2",
+          "hex_file": "hex_rows/water_upper_lightnet_plane_c_p04.hex.txt",
+          "chunks": [
+            {
+              "id": "water_upper_lightnet_plane_c_p04_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p04_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p04_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p04_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p04_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p04_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p04_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p04_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p05",
+          "id": "water_upper_lightnet_plane_c_p05",
+          "sha256_palette_indices": "6de381b0cb85dfb393907d7d81fdb385e81123a88975ae0beddab447f3e189f2",
+          "hex_file": "hex_rows/water_upper_lightnet_plane_c_p05.hex.txt",
+          "chunks": [
+            {
+              "id": "water_upper_lightnet_plane_c_p05_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p05_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p05_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p05_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p05_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p05_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p05_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p05_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p06",
+          "id": "water_upper_lightnet_plane_c_p06",
+          "sha256_palette_indices": "41a0e109baa3b46f88ae0dadf2607681d02a580279348ec9320dfc0f5edc89c9",
+          "hex_file": "hex_rows/water_upper_lightnet_plane_c_p06.hex.txt",
+          "chunks": [
+            {
+              "id": "water_upper_lightnet_plane_c_p06_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p06_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p06_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p06_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p06_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p06_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p06_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p06_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        {
+          "phase": "p07",
+          "id": "water_upper_lightnet_plane_c_p07",
+          "sha256_palette_indices": "8a0dfd34c07488da637d545cfa02e96c2205c208d212529911f87a9f33c17d1a",
+          "hex_file": "hex_rows/water_upper_lightnet_plane_c_p07.hex.txt",
+          "chunks": [
+            {
+              "id": "water_upper_lightnet_plane_c_p07_c00",
+              "logical_origin": [
+                0,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p07_c10",
+              "logical_origin": [
+                256,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p07_c20",
+              "logical_origin": [
+                512,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p07_c30",
+              "logical_origin": [
+                768,
+                0
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p07_c01",
+              "logical_origin": [
+                0,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p07_c11",
+              "logical_origin": [
+                256,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p07_c21",
+              "logical_origin": [
+                512,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            },
+            {
+              "id": "water_upper_lightnet_plane_c_p07_c31",
+              "logical_origin": [
+                768,
+                256
+              ],
+              "size": [
+                256,
+                256
+              ]
+            }
+          ]
+        }
+      ],
+      "adjacent_diff_ratio": [
+        0.006985,
+        0.008085,
+        0.005276,
+        0.010309,
+        0.010038,
+        0.00564,
+        0.008526,
+        0.006332
+      ]
+    }
+  ]
+}

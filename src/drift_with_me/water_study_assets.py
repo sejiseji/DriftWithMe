@@ -16,6 +16,16 @@ WATER_STUDY_LAYER_IDS: tuple[str, ...] = (
     "water_highlights_plane_c",
 )
 
+WATER_STUDY_PHASE_LAYER_IDS: tuple[str, ...] = (
+    "water_surface_caustics_plane_c",
+    "water_upper_lightnet_plane_c",
+)
+
+WATER_STUDY_PHASE_STEP_FRAMES: dict[str, int] = {
+    "water_surface_caustics_plane_c": 8,
+    "water_upper_lightnet_plane_c": 10,
+}
+
 
 @dataclass(frozen=True)
 class WaterStudyChunk:
@@ -87,3 +97,67 @@ def load_water_study_planes(pyxel_module: Any) -> dict[str, WaterStudyPlane]:
     if missing:
         raise ValueError(f"missing water study layers: {', '.join(missing)}")
     return planes
+
+
+def load_water_study_phase_planes(pyxel_module: Any) -> dict[str, tuple[WaterStudyPlane, ...]]:
+    root = resources.files("drift_with_me").joinpath("assets/water_study/phase_delta_wave1")
+    manifest = json.loads(
+        root.joinpath("phase_delta_wave1_manifest.json").read_text(encoding="utf-8")
+    )
+    chunk_width, chunk_height = (int(value) for value in manifest["physical_chunk_size"])
+    logical_width, logical_height = (int(value) for value in manifest["logical_plane_size"])
+    colkey = int(manifest["colkey"])
+    phase_sets: dict[str, tuple[WaterStudyPlane, ...]] = {}
+
+    for layer in manifest["layers"]:
+        layer_id = str(layer["id"])
+        if layer_id not in WATER_STUDY_PHASE_LAYER_IDS:
+            continue
+        phases: list[WaterStudyPlane] = []
+        for phase in layer["phases"]:
+            phase_id = str(phase["id"])
+            chunks: list[WaterStudyChunk] = []
+            for chunk in phase["chunks"]:
+                chunk_id = str(chunk["id"])
+                origin_x, origin_y = (int(value) for value in chunk["logical_origin"])
+                width, height = (int(value) for value in chunk["size"])
+                if width != chunk_width or height != chunk_height:
+                    raise ValueError(
+                        f"{chunk_id}: expected {chunk_width}x{chunk_height}, got {width}x{height}"
+                    )
+                rows = parse_hex_rows(
+                    root.joinpath("chunks_256/hex_rows", f"{chunk_id}.hex.txt").read_text(
+                        encoding="utf-8"
+                    ),
+                    width,
+                    height,
+                    chunk_id,
+                )
+                image = pyxel_module.Image(width, height)
+                for y, row in enumerate(rows):
+                    for x, color in enumerate(row):
+                        image.pset(x, y, int(color, 16))
+                chunks.append(WaterStudyChunk(image, origin_x, origin_y, width, height))
+            chunks.sort(key=lambda loaded: (loaded.origin_y, loaded.origin_x))
+            phases.append(
+                WaterStudyPlane(
+                    layer_id=phase_id,
+                    logical_width=logical_width,
+                    logical_height=logical_height,
+                    chunk_width=chunk_width,
+                    chunk_height=chunk_height,
+                    colkey=colkey,
+                    chunks=tuple(chunks),
+                )
+            )
+        expected_phase_count = int(layer["phase_count"])
+        if len(phases) != expected_phase_count:
+            raise ValueError(
+                f"{layer_id}: expected {expected_phase_count} phases, got {len(phases)}"
+            )
+        phase_sets[layer_id] = tuple(phases)
+
+    missing = [layer_id for layer_id in WATER_STUDY_PHASE_LAYER_IDS if layer_id not in phase_sets]
+    if missing:
+        raise ValueError(f"missing water study phase layers: {', '.join(missing)}")
+    return phase_sets

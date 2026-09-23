@@ -67,6 +67,7 @@ def make_water_app() -> DriftWithMeApp:
     app.water_study_last_layer_count = 0
     app.water_study_last_wrap_calls = 0
     app.water_study_planes = {"water_deep_plane_c": object()}
+    app.water_study_phase_planes = {}
     app.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
     app.pending_action_pressed = True
     app.pending_interact_pressed = True
@@ -221,3 +222,17 @@ def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
     )
     assert observe.layer_ids == full.layer_ids
     assert len(baseline.layer_ids) < len(three_layer.layer_ids) < len(full.layer_ids)
+
+
+def test_wtr001_phase_plane_selection_uses_layer_step_frames() -> None:
+    app = make_water_app()
+    app.water_study_planes = {"water_surface_caustics_plane_c": "base"}
+    app.water_study_phase_planes = {
+        "water_surface_caustics_plane_c": tuple(f"phase-{index}" for index in range(8))
+    }
+
+    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 0.0) == "phase-0"
+    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 7 / 60) == "phase-0"
+    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 8 / 60) == "phase-1"
+    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 64 / 60) == "phase-0"
+    assert app.water_study_plane_for_frame("water_mid_plane_c", 8 / 60) is None

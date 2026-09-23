@@ -1,0 +1,26 @@
+WTR001 phase-delta Wave 1 assets are ready.
+
+Use:
+- `water_surface_caustics_plane_c_p00` ... `p07`
+- `water_upper_lightnet_plane_c_p00` ... `p07`
+
+The generated HEX files are canonical.
+Do NOT regenerate/requantize/recolor them in Codex.
+
+Integration intent:
+1. Load the 8 phases for both layers.
+2. Keep existing XY parallax.
+3. Add independent phase index cycling per layer.
+4. Start with integer phase switching only; no crossfade required.
+5. Suggested phase step:
+   - surface_caustics: 8 frames
+   - upper_lightnet: 10 frames
+6. Physical 256x256 chunks remain packing helpers only.
+
+Validation:
+- targeted phase loader tests
+- full pytest
+- check_all.py
+- headless smoke
+- Water Study visual check
+- performance comparison with phase animation OFF/ON
