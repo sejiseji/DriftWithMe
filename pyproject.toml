@@ -40,6 +40,9 @@ drift_with_me = [
     "assets/water_study/runtime_lite_phase_delta/docs/*.txt",
     "assets/water_study/runtime_lite_phase_delta/docs/*.md",
     "assets/water_study/runtime_lite_phase_delta/delta_chunks/*/*.dhex",
+    "assets/water_study/wtr002_surface_caustics/*.json",
+    "assets/water_study/wtr002_surface_caustics/*.md",
+    "assets/water_study/wtr002_surface_caustics/hex_rows/*.hex.txt",
 ]
 
 [tool.pytest.ini_options]

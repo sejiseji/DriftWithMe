@@ -44,6 +44,10 @@ WATER_STUDY_STATIC_LAYER_IDS: tuple[str, ...] = (
     "water_highlights_plane_c",
 )
 
+WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID = "water_surface_caustics_plane_c"
+WTR002_SURFACE_CAUSTICS_ASSET_ID = "water_surface_caustics_plane_d"
+WTR002_SURFACE_CAUSTICS_FRAME_COUNT = 20
+
 _WATER_STUDY_CACHE_BY_PYXEL_ID: dict[int, WaterStudyAssetCache] = {}
 
 
@@ -68,19 +72,50 @@ class WaterStudyPlane:
 
 
 @dataclass(frozen=True)
+class WaterStudyFrameSequence:
+    layer_id: str
+    planes: tuple[WaterStudyPlane, ...]
+    hold_frames: tuple[int, ...]
+
+    @property
+    def total_hold_frames(self) -> int:
+        return sum(self.hold_frames)
+
+    def plane_for_time(self, elapsed_sec: float, fps: int) -> WaterStudyPlane | None:
+        if not self.planes:
+            return None
+        total = self.total_hold_frames
+        if total <= 0:
+            return self.planes[0]
+        elapsed_frames = int(max(0.0, elapsed_sec) * float(fps))
+        position = elapsed_frames % total
+        cursor = 0
+        for index, hold_frames in enumerate(self.hold_frames):
+            cursor += hold_frames
+            if position < cursor:
+                return self.planes[index]
+        return self.planes[-1]
+
+
+@dataclass(frozen=True)
 class WaterStudyAssetCache:
     static_layers: dict[str, WaterStudyPlane]
     phase_layers: dict[str, tuple[WaterStudyPlane, ...]]
+    frame_sequences: dict[str, WaterStudyFrameSequence]
     ready: bool
     preload_total_sec: float
     static_preload_sec: float
     phase_preload_sec: float
+    sequence_preload_sec: float
     layer_preload_sec: dict[str, float]
     resident_pixel_count: int
 
     def plane_for_frame(
         self, layer_id: str, elapsed_sec: float, fps: int
     ) -> WaterStudyPlane | None:
+        sequence = self.frame_sequences.get(layer_id)
+        if sequence is not None:
+            return sequence.plane_for_time(elapsed_sec, fps)
         phases = self.phase_layers.get(layer_id)
         if not phases:
             return self.static_layers.get(layer_id)
@@ -330,12 +365,86 @@ def load_water_study_phase_planes(
     return phase_sets
 
 
+def load_wtr002_water_study_frame_sequences(
+    pyxel_module: Any,
+    *,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> dict[str, WaterStudyFrameSequence]:
+    root = resources.files("drift_with_me").joinpath("assets/water_study/wtr002_surface_caustics")
+    manifest = json.loads(root.joinpath("manifest.json").read_text(encoding="utf-8"))
+    asset_id = str(manifest["asset_id"])
+    runtime_layer_id = str(manifest["runtime_layer_id"])
+    if asset_id != WTR002_SURFACE_CAUSTICS_ASSET_ID:
+        raise ValueError(f"unexpected WTR002 surface caustics asset id: {asset_id}")
+    if runtime_layer_id != WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID:
+        raise ValueError(f"unexpected WTR002 runtime layer id: {runtime_layer_id}")
+
+    chunk_width, chunk_height = (int(value) for value in manifest["chunk_size"])
+    logical_width, logical_height = (int(value) for value in manifest["logical_size"])
+    if (chunk_width, chunk_height) != (256, 256):
+        raise ValueError(
+            f"WTR002 surface caustics expects 256x256 chunks, got {chunk_width}x{chunk_height}"
+        )
+    frame_count = int(manifest["frame_count"])
+    if frame_count != WTR002_SURFACE_CAUSTICS_FRAME_COUNT:
+        raise ValueError(
+            f"WTR002 surface caustics expected {WTR002_SURFACE_CAUSTICS_FRAME_COUNT} "
+            f"frames, got {frame_count}"
+        )
+    hold_frames = tuple(int(value) for value in manifest["hold_frames"])
+    if len(hold_frames) != frame_count or any(value <= 0 for value in hold_frames):
+        raise ValueError("WTR002 surface caustics hold_frames must match frame_count")
+
+    started_at = timer()
+    planes: list[WaterStudyPlane] = []
+    for frame in manifest["frames"]:
+        frame_id = str(frame["id"])
+        chunk_rows: dict[str, tuple[str, ...]] = {}
+        for chunk in frame["chunks"]:
+            chunk_suffix = str(chunk["chunk"])
+            chunk_rows[chunk_suffix] = parse_hex_rows(
+                root.joinpath(str(chunk["file"])).read_text(encoding="ascii"),
+                chunk_width,
+                chunk_height,
+                f"{asset_id}_{frame_id}_{chunk_suffix}",
+            )
+        planes.append(
+            _plane_from_chunk_rows(
+                pyxel_module,
+                layer_id=f"{asset_id}_{frame_id}",
+                logical_width=logical_width,
+                logical_height=logical_height,
+                chunk_width=chunk_width,
+                chunk_height=chunk_height,
+                colkey=int(manifest["colkey"]),
+                chunk_rows=chunk_rows,
+            )
+        )
+    if len(planes) != frame_count:
+        raise ValueError(
+            f"WTR002 surface caustics expected {frame_count} frame planes, got {len(planes)}"
+        )
+    if layer_timing_callback is not None:
+        layer_timing_callback(asset_id, timer() - started_at)
+    return {
+        runtime_layer_id: WaterStudyFrameSequence(
+            layer_id=runtime_layer_id,
+            planes=tuple(planes),
+            hold_frames=hold_frames,
+        )
+    }
+
+
 def _resident_pixel_count(cache: WaterStudyAssetCache) -> int:
     total = 0
     for plane in cache.static_layers.values():
         total += sum(chunk.width * chunk.height for chunk in plane.chunks)
     for phases in cache.phase_layers.values():
         for plane in phases:
+            total += sum(chunk.width * chunk.height for chunk in plane.chunks)
+    for sequence in cache.frame_sequences.values():
+        for plane in sequence.planes:
             total += sum(chunk.width * chunk.height for chunk in plane.chunks)
     return total
 
@@ -367,23 +476,34 @@ def preload_water_study_cache(
         timer=timer,
     )
     phase_preload_sec = timer() - phase_started_at
+    sequence_started_at = timer()
+    frame_sequences = load_wtr002_water_study_frame_sequences(
+        pyxel_module,
+        layer_timing_callback=layer_timings.__setitem__,
+        timer=timer,
+    )
+    sequence_preload_sec = timer() - sequence_started_at
     cache = WaterStudyAssetCache(
         static_layers=static_layers,
         phase_layers=phase_layers,
+        frame_sequences=frame_sequences,
         ready=True,
         preload_total_sec=timer() - preload_started_at,
         static_preload_sec=static_preload_sec,
         phase_preload_sec=phase_preload_sec,
+        sequence_preload_sec=sequence_preload_sec,
         layer_preload_sec=layer_timings,
         resident_pixel_count=0,
     )
     cache = WaterStudyAssetCache(
         static_layers=cache.static_layers,
         phase_layers=cache.phase_layers,
+        frame_sequences=cache.frame_sequences,
         ready=cache.ready,
         preload_total_sec=cache.preload_total_sec,
         static_preload_sec=cache.static_preload_sec,
         phase_preload_sec=cache.phase_preload_sec,
+        sequence_preload_sec=cache.sequence_preload_sec,
         layer_preload_sec=cache.layer_preload_sec,
         resident_pixel_count=_resident_pixel_count(cache),
     )
