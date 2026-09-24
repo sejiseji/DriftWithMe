@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import drift_with_me.app as app_module
 from drift_with_me.app import AppScreen, DriftWithMeApp, PointerSnapshot
 from drift_with_me.audio import AudioEngine
 from drift_with_me.camera import CameraController
@@ -423,4 +424,48 @@ def test_wtr_look03_water_study_tempers_coarse_surface_palette() -> None:
 
     assert calls == 1
     assert app.pyxel.palette_calls == [(6, 12), (12, 5), ()]
+    assert len(app.pyxel.blt_calls) == 1
+
+
+def test_approved_water_production_planes_draw_with_identity_palette_and_no_motion(
+    monkeypatch,
+) -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    app.water_study_asset_cache = None
+    app.water_study_phase_planes = {}
+    app.water_study_planes = {
+        "water_highlights_plane_d": WaterStudyPlane(
+            layer_id="water_highlights_plane_d",
+            logical_width=1024,
+            logical_height=512,
+            chunk_width=256,
+            chunk_height=256,
+            colkey=8,
+            chunks=(
+                WaterStudyChunk(
+                    image=object(),
+                    origin_x=0,
+                    origin_y=0,
+                    width=256,
+                    height=256,
+                ),
+            ),
+        )
+    }
+    monkeypatch.setitem(
+        app_module.WATER_STUDY_LAYER_PALETTE_REMAPS,
+        "water_highlights_plane_d",
+        ((6, 12), (7, 12), (12, 5)),
+    )
+
+    def fail_if_motion_is_requested(*args, **kwargs):
+        raise AssertionError("approved production plane_d must not use draw-time motion")
+
+    monkeypatch.setattr(app, "water_study_layer_offset", fail_if_motion_is_requested)
+
+    calls = app.draw_water_study_plane("water_highlights_plane_d", 12.0)
+
+    assert calls == 1
+    assert app.pyxel.palette_calls == [(), ()]
     assert len(app.pyxel.blt_calls) == 1

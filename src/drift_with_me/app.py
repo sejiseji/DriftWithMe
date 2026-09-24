@@ -1481,19 +1481,28 @@ class DriftWithMeApp:
         plane = self.water_study_plane_for_frame(layer_id, t)
         if plane is None:
             return 0
-        speed_x, speed_y, sine_amp, orbit_x, orbit_y, phase = WATER_STUDY_LAYER_MOTION[layer_id]
-        offset_x, offset_y = self.water_study_layer_offset(
-            t,
-            speed_x=speed_x,
-            speed_y=speed_y,
-            sine_amp=sine_amp,
-            orbit_x=orbit_x,
-            orbit_y=orbit_y,
-            phase=phase,
-        )
+        is_approved_production_layer = layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS
+        if is_approved_production_layer:
+            offset_x, offset_y = 0.0, 0.0
+        else:
+            speed_x, speed_y, sine_amp, orbit_x, orbit_y, phase = WATER_STUDY_LAYER_MOTION[layer_id]
+            offset_x, offset_y = self.water_study_layer_offset(
+                t,
+                speed_x=speed_x,
+                speed_y=speed_y,
+                sine_amp=sine_amp,
+                orbit_x=orbit_x,
+                orbit_y=orbit_y,
+                phase=phase,
+            )
         start_x = -int(offset_x) % plane.logical_width - plane.logical_width
         start_y = -int(offset_y) % plane.logical_height - plane.logical_height
-        palette_remaps = WATER_STUDY_LAYER_PALETTE_REMAPS.get(layer_id, ())
+        if is_approved_production_layer:
+            palette_remaps = ()
+        else:
+            palette_remaps = WATER_STUDY_LAYER_PALETTE_REMAPS.get(layer_id, ())
+        if is_approved_production_layer:
+            pyxel.pal()
         if palette_remaps:
             for source_color, target_color in palette_remaps:
                 pyxel.pal(source_color, target_color)
@@ -1531,7 +1540,7 @@ class DriftWithMeApp:
                         calls += 1
             return calls
         finally:
-            if palette_remaps:
+            if is_approved_production_layer or palette_remaps:
                 pyxel.pal()
 
     def water_study_plane_for_frame(self, layer_id: str, t: float) -> WaterStudyPlane | None:
