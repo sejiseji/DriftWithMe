@@ -50,6 +50,17 @@ WTR002_SURFACE_CAUSTICS_FRAME_COUNT = 20
 WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID = "water_highlights_plane_c"
 WTR_LOOK03_HIGHLIGHTS_ASSET_ID = "water_highlights_plane_d"
 WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT = 24
+APPROVED_WATER_PRODUCTION_PROFILE = "approved_look03"
+APPROVED_WATER_PRODUCTION_FPS = 12
+APPROVED_WATER_PRODUCTION_HOLD_FRAMES = 5
+APPROVED_WATER_PRODUCTION_LAYER_IDS: tuple[str, ...] = (
+    "water_deep_plane_d",
+    "water_mid_plane_d",
+    "water_surface_plane_d",
+    "water_surface_caustics_plane_d",
+    "water_highlights_plane_d",
+)
+APPROVED_WATER_PRODUCTION_FRAME_COUNT = 24
 
 _WATER_STUDY_CACHE_BY_PYXEL_ID: dict[int, WaterStudyAssetCache] = {}
 
@@ -184,7 +195,7 @@ def parse_dhex_patch(text: str, source_label: str) -> tuple[tuple[int, str], ...
         if ":" not in line:
             raise HexAssetError(f"{source_label}:{lineno}: missing DHEX separator")
         offset_text, data = line.split(":", 1)
-        if len(offset_text) != 4 or any(char not in HEX_DIGITS for char in offset_text):
+        if len(offset_text) not in {4, 5} or any(char not in HEX_DIGITS for char in offset_text):
             raise HexAssetError(f"{source_label}:{lineno}: invalid DHEX offset")
         start = int(offset_text, 16)
         if not data or any(char not in HEX_DIGITS for char in data):
@@ -482,25 +493,156 @@ def load_wtr_look03_water_study_frame_sequences(
     }
 
 
+def load_approved_water_production_frame_sequences(
+    pyxel_module: Any,
+    *,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> dict[str, WaterStudyFrameSequence]:
+    root = resources.files("drift_with_me").joinpath("assets/water_study/approved_production")
+    production_manifest = json.loads(
+        root.joinpath("production_manifest.json").read_text(encoding="utf-8")
+    )
+    runtime_manifest = json.loads(
+        root.joinpath("runtime_lite/runtime_lite_manifest.json").read_text(encoding="utf-8")
+    )
+    if str(runtime_manifest["encoding"]) != "DHEX1":
+        raise ValueError("approved water production runtime-lite must use DHEX1")
+    if str(runtime_manifest["profile"]) != APPROVED_WATER_PRODUCTION_PROFILE:
+        raise ValueError(
+            f"approved water production runtime-lite must use {APPROVED_WATER_PRODUCTION_PROFILE}"
+        )
+    chunk_width, chunk_height = (int(value) for value in production_manifest["chunk_size"])
+    logical_width, logical_height = (int(value) for value in production_manifest["logical_size"])
+    chunk_grid_x, chunk_grid_y = (int(value) for value in production_manifest["chunk_grid"])
+    if (chunk_width, chunk_height) != (256, 256):
+        raise ValueError(
+            f"approved water production expects 256x256 chunks, got {chunk_width}x{chunk_height}"
+        )
+    layer_colkeys: dict[str, int | None] = {}
+    for layer in production_manifest["layers"]:
+        layer_id = str(layer["id"])
+        if layer_id not in APPROVED_WATER_PRODUCTION_LAYER_IDS:
+            continue
+        colkey_value = layer.get("colkey")
+        layer_colkeys[layer_id] = None if colkey_value is None else int(colkey_value)
+    missing_manifest_layers = [
+        layer_id
+        for layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS
+        if layer_id not in layer_colkeys
+    ]
+    if missing_manifest_layers:
+        raise ValueError(
+            "missing approved water production manifest layers: "
+            + ", ".join(missing_manifest_layers)
+        )
+
+    sequences: dict[str, WaterStudyFrameSequence] = {}
+    runtime_layers = runtime_manifest["layers"]
+    for layer in runtime_layers:
+        layer_id = str(layer["id"])
+        if layer_id not in APPROVED_WATER_PRODUCTION_LAYER_IDS:
+            raise ValueError(f"unexpected approved water production runtime layer: {layer_id}")
+        layer_started_at = timer()
+        source_frame_indices = tuple(int(index) for index in layer["source_frame_indices"])
+        if len(source_frame_indices) != APPROVED_WATER_PRODUCTION_FRAME_COUNT:
+            raise ValueError(
+                f"{layer_id}: expected {APPROVED_WATER_PRODUCTION_FRAME_COUNT} "
+                f"profile frames, got {len(source_frame_indices)}"
+            )
+        base_frame_index = source_frame_indices[0]
+        base_rows: dict[str, tuple[str, ...]] = {}
+        for chunk_x in range(chunk_grid_x):
+            for chunk_y in range(chunk_grid_y):
+                chunk_suffix = f"c{chunk_x}{chunk_y}"
+                base_rows[chunk_suffix] = parse_hex_rows(
+                    root.joinpath(
+                        "chunks_256/hex",
+                        f"{layer_id}_f{base_frame_index:03d}_{chunk_suffix}.hex.txt",
+                    ).read_text(encoding="ascii"),
+                    chunk_width,
+                    chunk_height,
+                    f"{layer_id}_f{base_frame_index:03d}_{chunk_suffix}",
+                )
+        current_rows = dict(base_rows)
+        planes: list[WaterStudyPlane] = [
+            _plane_from_chunk_rows(
+                pyxel_module,
+                layer_id=f"{layer_id}_t00",
+                logical_width=logical_width,
+                logical_height=logical_height,
+                chunk_width=chunk_width,
+                chunk_height=chunk_height,
+                colkey=layer_colkeys[layer_id],
+                chunk_rows=current_rows,
+            )
+        ]
+        for transition in layer["transitions"]:
+            from_tick = int(transition["from_tick"])
+            to_tick = int(transition["to_tick"])
+            target_rows = dict(current_rows) if to_tick == 0 else current_rows
+            for chunk in transition["chunks"]:
+                chunk_suffix = str(chunk["chunk"])
+                patch_file = str(chunk["file"])
+                patch_label = f"{layer_id}:t{from_tick:02d}->t{to_tick:02d}:{chunk_suffix}"
+                runs = parse_dhex_patch(
+                    root.joinpath(patch_file).read_text(encoding="ascii"), patch_label
+                )
+                target_rows[chunk_suffix] = apply_dhex_patch_to_rows(
+                    target_rows[chunk_suffix],
+                    runs,
+                    patch_label,
+                    width=chunk_width,
+                    height=chunk_height,
+                )
+            if to_tick == 0:
+                if target_rows != base_rows:
+                    raise ValueError(f"{layer_id}: approved DHEX loopback does not reconstruct t00")
+                continue
+            planes.append(
+                _plane_from_chunk_rows(
+                    pyxel_module,
+                    layer_id=f"{layer_id}_t{to_tick:02d}",
+                    logical_width=logical_width,
+                    logical_height=logical_height,
+                    chunk_width=chunk_width,
+                    chunk_height=chunk_height,
+                    colkey=layer_colkeys[layer_id],
+                    chunk_rows=current_rows,
+                )
+            )
+        if len(planes) != len(source_frame_indices):
+            raise ValueError(
+                f"{layer_id}: expected {len(source_frame_indices)} planes, got {len(planes)}"
+            )
+        sequences[layer_id] = WaterStudyFrameSequence(
+            layer_id=layer_id,
+            planes=tuple(planes),
+            hold_frames=(APPROVED_WATER_PRODUCTION_HOLD_FRAMES,) * len(planes),
+        )
+        if layer_timing_callback is not None:
+            layer_timing_callback(layer_id, timer() - layer_started_at)
+    missing_runtime_layers = [
+        layer_id for layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS if layer_id not in sequences
+    ]
+    if missing_runtime_layers:
+        raise ValueError(
+            "missing approved water production runtime layers: " + ", ".join(missing_runtime_layers)
+        )
+    return {layer_id: sequences[layer_id] for layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS}
+
+
 def load_water_study_frame_sequences(
     pyxel_module: Any,
     *,
     layer_timing_callback: Callable[[str, float], None] | None = None,
     timer: Callable[[], float] = time.perf_counter,
 ) -> dict[str, WaterStudyFrameSequence]:
-    sequences: dict[str, WaterStudyFrameSequence] = {}
-    for loader in (
-        load_wtr002_water_study_frame_sequences,
-        load_wtr_look03_water_study_frame_sequences,
-    ):
-        sequences.update(
-            loader(
-                pyxel_module,
-                layer_timing_callback=layer_timing_callback,
-                timer=timer,
-            )
-        )
-    return dict(sorted(sequences.items()))
+    return load_approved_water_production_frame_sequences(
+        pyxel_module,
+        layer_timing_callback=layer_timing_callback,
+        timer=timer,
+    )
 
 
 def _resident_pixel_count(cache: WaterStudyAssetCache) -> int:
@@ -529,19 +671,10 @@ def preload_water_study_cache(
     layer_timings: dict[str, float] = {}
     preload_started_at = timer()
     static_started_at = timer()
-    static_layers = load_water_study_planes(
-        pyxel_module,
-        layer_ids=WATER_STUDY_STATIC_LAYER_IDS,
-        layer_timing_callback=layer_timings.__setitem__,
-        timer=timer,
-    )
+    static_layers: dict[str, WaterStudyPlane] = {}
     static_preload_sec = timer() - static_started_at
     phase_started_at = timer()
-    phase_layers = load_water_study_phase_planes(
-        pyxel_module,
-        layer_timing_callback=layer_timings.__setitem__,
-        timer=timer,
-    )
+    phase_layers: dict[str, tuple[WaterStudyPlane, ...]] = {}
     phase_preload_sec = timer() - phase_started_at
     sequence_started_at = timer()
     frame_sequences = load_water_study_frame_sequences(

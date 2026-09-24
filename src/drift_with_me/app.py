@@ -27,7 +27,7 @@ from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.water_study_assets import (
-    WATER_STUDY_LAYER_IDS,
+    APPROVED_WATER_PRODUCTION_LAYER_IDS,
     WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_STEP_FRAMES,
     WaterStudyAssetCache,
@@ -67,24 +67,20 @@ class WaterStudyProfile:
 
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
     WaterStudyProfile(
-        "BASE_ONLY",
-        layer_ids=("water_deep_plane_c",),
+        "APPROVED_LOOK03",
+        layer_ids=APPROVED_WATER_PRODUCTION_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "THREE_LAYER",
-        layer_ids=(
-            "water_deep_plane_c",
-            "water_surface_plane_c",
-            "water_surface_caustics_plane_c",
-        ),
+        "APPROVED_LOOK03",
+        layer_ids=APPROVED_WATER_PRODUCTION_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "FULL_SIX",
-        layer_ids=WATER_STUDY_LAYER_IDS,
+        "APPROVED_LOOK03",
+        layer_ids=APPROVED_WATER_PRODUCTION_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "FULL_SIX_OBSERVE",
-        layer_ids=WATER_STUDY_LAYER_IDS,
+        "APPROVED_LOOK03",
+        layer_ids=APPROVED_WATER_PRODUCTION_LAYER_IDS,
     ),
 )
 
@@ -97,6 +93,11 @@ WATER_STUDY_LAYER_MOTION: dict[str, tuple[float, float, float, float, float, flo
     "water_surface_caustics_plane_c": (0.22, 0.14, 0.4, 0.34, 0.28, 2.6),
     "water_upper_lightnet_plane_c": (1.08, 1.85, 2.05, 1.55, 2.35, 3.4),
     "water_highlights_plane_c": (0.18, 0.1, 0.28, 0.24, 0.2, 4.1),
+    "water_deep_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_mid_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_surface_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_surface_caustics_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_highlights_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 }
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
@@ -175,7 +176,7 @@ class DriftWithMeApp:
         self.combat_camera_snapshot_zoom: float | None = None
         self.water_study_clock = 0.0
         self.water_study_menu_open = False
-        self.water_study_profile_index = 1
+        self.water_study_profile_index = 0
         self.water_study_last_draw_ms = 0.0
         self.water_study_last_layer_count = 0
         self.water_study_last_wrap_calls = 0

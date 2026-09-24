@@ -10,7 +10,11 @@ from drift_with_me.effects import EffectSystem
 from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput
 from drift_with_me.math3d import Vec3
 from drift_with_me.model import GameModel
-from drift_with_me.water_study_assets import WaterStudyChunk, WaterStudyPlane
+from drift_with_me.water_study_assets import (
+    APPROVED_WATER_PRODUCTION_LAYER_IDS,
+    WaterStudyChunk,
+    WaterStudyPlane,
+)
 from drift_with_me.world import load_world_data
 
 
@@ -253,7 +257,8 @@ def test_wtr001_b_profile_shortcuts_switch_profiles() -> None:
     app.update_water_study_screen(0.25)
 
     assert app.water_study_profile_index == 3
-    assert app.water_study_profile().name == "FULL_SIX_OBSERVE"
+    assert app.water_study_profile().name == "APPROVED_LOOK03"
+    assert app.water_study_profile().layer_ids == APPROVED_WATER_PRODUCTION_LAYER_IDS
 
 
 def test_wtr001_b_motion_weights_are_normalized() -> None:
@@ -306,23 +311,12 @@ def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
     app.water_study_profile_index = 3
     observe = app.water_study_profile()
 
-    assert baseline.name == "BASE_ONLY"
-    assert baseline.layer_ids == ("water_deep_plane_c",)
-    assert three_layer.layer_ids == (
-        "water_deep_plane_c",
-        "water_surface_plane_c",
-        "water_surface_caustics_plane_c",
-    )
-    assert full.layer_ids == (
-        "water_deep_plane_c",
-        "water_mid_plane_c",
-        "water_surface_plane_c",
-        "water_surface_caustics_plane_c",
-        "water_upper_lightnet_plane_c",
-        "water_highlights_plane_c",
-    )
+    assert baseline.name == "APPROVED_LOOK03"
+    assert baseline.layer_ids == APPROVED_WATER_PRODUCTION_LAYER_IDS
+    assert three_layer.layer_ids == APPROVED_WATER_PRODUCTION_LAYER_IDS
+    assert full.layer_ids == APPROVED_WATER_PRODUCTION_LAYER_IDS
     assert observe.layer_ids == full.layer_ids
-    assert len(baseline.layer_ids) < len(three_layer.layer_ids) < len(full.layer_ids)
+    assert "water_upper_lightnet_plane_d" not in full.layer_ids
 
 
 def test_wtr001_phase_plane_selection_uses_layer_step_frames() -> None:

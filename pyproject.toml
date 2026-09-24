@@ -46,6 +46,12 @@ drift_with_me = [
     "assets/water_study/wtr_look03_highlights/*.json",
     "assets/water_study/wtr_look03_highlights/*.md",
     "assets/water_study/wtr_look03_highlights/hex_rows/*.hex.txt",
+    "assets/water_study/approved_production/*.json",
+    "assets/water_study/approved_production/*.py",
+    "assets/water_study/approved_production/docs/*.txt",
+    "assets/water_study/approved_production/chunks_256/hex/*.hex.txt",
+    "assets/water_study/approved_production/runtime_lite/*.json",
+    "assets/water_study/approved_production/runtime_lite/dhex/*/*.dhex",
 ]
 
 [tool.pytest.ini_options]

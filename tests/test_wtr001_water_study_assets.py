@@ -6,11 +6,14 @@ from importlib import resources
 
 from drift_with_me.hex_assets import parse_hex_rows
 from drift_with_me.water_study_assets import (
+    APPROVED_WATER_PRODUCTION_FRAME_COUNT,
+    APPROVED_WATER_PRODUCTION_HOLD_FRAMES,
+    APPROVED_WATER_PRODUCTION_LAYER_IDS,
+    APPROVED_WATER_PRODUCTION_PROFILE,
     WATER_STUDY_LAYER_IDS,
     WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_LAYER_IDS,
     WATER_STUDY_PHASE_STEP_FRAMES,
-    WATER_STUDY_STATIC_LAYER_IDS,
     WTR002_SURFACE_CAUSTICS_ASSET_ID,
     WTR002_SURFACE_CAUSTICS_FRAME_COUNT,
     WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID,
@@ -19,6 +22,7 @@ from drift_with_me.water_study_assets import (
     WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID,
     apply_dhex_patch_to_rows,
     clear_water_study_cache_for_tests,
+    load_approved_water_production_frame_sequences,
     load_water_study_phase_planes,
     load_water_study_planes,
     load_wtr002_water_study_frame_sequences,
@@ -331,58 +335,82 @@ def test_wtr_look03_highlight_manifest_files_are_palette_safe_and_sparse() -> No
             assert "B" not in text
 
 
+def test_approved_water_production_manifest_matches_runtime_profile() -> None:
+    root = resources.files("drift_with_me").joinpath("assets/water_study/approved_production")
+    manifest = json.loads(root.joinpath("production_manifest.json").read_text(encoding="utf-8"))
+    runtime = json.loads(
+        root.joinpath("runtime_lite/runtime_lite_manifest.json").read_text(encoding="utf-8")
+    )
+
+    assert manifest["version"] == "1.0.0"
+    assert tuple(manifest["logical_size"]) == (1024, 512)
+    assert tuple(manifest["chunk_size"]) == (256, 256)
+    assert tuple(layer["id"] for layer in manifest["layers"]) == APPROVED_WATER_PRODUCTION_LAYER_IDS
+    assert "water_upper_lightnet_plane_d" not in {str(layer["id"]) for layer in manifest["layers"]}
+    assert runtime["encoding"] == "DHEX1"
+    assert runtime["profile"] == APPROVED_WATER_PRODUCTION_PROFILE
+    assert tuple(layer["id"] for layer in runtime["layers"]) == APPROVED_WATER_PRODUCTION_LAYER_IDS
+    for layer in runtime["layers"]:
+        source_frame_indices = tuple(int(index) for index in layer["source_frame_indices"])
+        assert len(source_frame_indices) == APPROVED_WATER_PRODUCTION_FRAME_COUNT
+        assert len(layer["transitions"]) == APPROVED_WATER_PRODUCTION_FRAME_COUNT
+        for transition in layer["transitions"]:
+            assert len(transition["chunks"]) == 8
+            for chunk in transition["chunks"]:
+                patch_text = root.joinpath(str(chunk["file"])).read_text(encoding="ascii")
+                assert hashlib.sha256(patch_text.encode("ascii")).hexdigest() == chunk["sha256"]
+
+
+def test_approved_water_production_frame_sequences_reconstruct_profile() -> None:
+    sequences = load_approved_water_production_frame_sequences(FakePyxel)
+
+    assert tuple(sequences) == APPROVED_WATER_PRODUCTION_LAYER_IDS
+    for layer_id, sequence in sequences.items():
+        assert sequence.layer_id == layer_id
+        assert len(sequence.planes) == APPROVED_WATER_PRODUCTION_FRAME_COUNT
+        assert (
+            sequence.hold_frames
+            == (APPROVED_WATER_PRODUCTION_HOLD_FRAMES,) * APPROVED_WATER_PRODUCTION_FRAME_COUNT
+        )
+        assert sequence.total_hold_frames == 120
+        assert sequence.planes[0].layer_id == f"{layer_id}_t00"
+        assert sequence.planes[-1].layer_id == f"{layer_id}_t23"
+        for plane in sequence.planes:
+            assert (plane.logical_width, plane.logical_height) == (1024, 512)
+            assert (plane.chunk_width, plane.chunk_height) == (256, 256)
+            assert len(plane.chunks) == 8
+            assert all(chunk.image.pset_count == 256 * 256 for chunk in plane.chunks)
+        if layer_id == "water_deep_plane_d":
+            assert sequence.planes[0].colkey is None
+        else:
+            assert sequence.planes[0].colkey == 8
+
+
 def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
     clear_water_study_cache_for_tests()
 
     cache = preload_water_study_cache(FakePyxel, force=True)
 
     assert cache.ready
-    assert tuple(cache.static_layers) == WATER_STUDY_STATIC_LAYER_IDS
-    assert tuple(cache.phase_layers) == WATER_STUDY_PHASE_LAYER_IDS
-    assert tuple(cache.frame_sequences) == (
-        WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID,
-        WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID,
-    )
-    assert len(cache.phase_layers) == 4
-    for layer_id, phases in cache.phase_layers.items():
-        assert len(phases) == 8
-        assert phases[0].layer_id == f"{layer_id}_p00"
-    assert (
-        len(cache.frame_sequences[WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID].planes)
-        == WTR002_SURFACE_CAUSTICS_FRAME_COUNT
-    )
-    assert (
-        len(cache.frame_sequences[WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID].planes)
-        == WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT
-    )
-    assert (
-        cache.plane_for_frame("water_deep_plane_c", 99.0, 60)
-        is cache.static_layers["water_deep_plane_c"]
-    )
-    assert (
-        cache.plane_for_frame("water_surface_plane_c", 0.0, 60)
-        is cache.phase_layers["water_surface_plane_c"][2]
-    )
-    assert (
-        cache.plane_for_frame(WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID, 0.0, 60)
-        is cache.frame_sequences[WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID].planes[0]
-    )
-    assert (
-        cache.plane_for_frame(WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID, 0.0, 60)
-        is cache.frame_sequences[WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID].planes[0]
-    )
+    assert cache.static_layers == {}
+    assert cache.phase_layers == {}
+    assert tuple(cache.frame_sequences) == APPROVED_WATER_PRODUCTION_LAYER_IDS
+    for layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS:
+        assert len(cache.frame_sequences[layer_id].planes) == APPROVED_WATER_PRODUCTION_FRAME_COUNT
+        assert cache.plane_for_frame(layer_id, 0.0, 60) is cache.frame_sequences[layer_id].planes[0]
+        assert (
+            cache.plane_for_frame(layer_id, 5 / 60, 60) is cache.frame_sequences[layer_id].planes[1]
+        )
     assert cache.preload_total_sec >= 0.0
     assert cache.static_preload_sec >= 0.0
     assert cache.phase_preload_sec >= 0.0
     assert cache.sequence_preload_sec >= 0.0
-    for layer_id in WATER_STUDY_STATIC_LAYER_IDS + WATER_STUDY_PHASE_LAYER_IDS:
+    for layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS:
         assert layer_id in cache.layer_preload_sec
         assert cache.layer_preload_sec[layer_id] >= 0.0
-    assert WTR002_SURFACE_CAUSTICS_ASSET_ID in cache.layer_preload_sec
-    assert WTR_LOOK03_HIGHLIGHTS_ASSET_ID in cache.layer_preload_sec
-    expected_pixels = len(WATER_STUDY_STATIC_LAYER_IDS) + len(WATER_STUDY_PHASE_LAYER_IDS) * 8
-    expected_pixels += WTR002_SURFACE_CAUSTICS_FRAME_COUNT
-    expected_pixels += WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT
+    expected_pixels = (
+        len(APPROVED_WATER_PRODUCTION_LAYER_IDS) * APPROVED_WATER_PRODUCTION_FRAME_COUNT
+    )
     expected_pixels *= 1024 * 512
     assert cache.resident_pixel_count == expected_pixels
 

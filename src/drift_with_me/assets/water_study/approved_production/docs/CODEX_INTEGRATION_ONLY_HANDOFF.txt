@@ -1,0 +1,40 @@
+WTR approved water production sources are COMPLETE.
+
+Codex must NOT create, redraw, interpolate, requantize, or procedurally replace the artwork.
+
+Your role is integration only.
+
+Use:
+- `production_manifest.json`
+- `full_hex/*.hex.txt` and/or `chunks_256/hex/*.hex.txt`
+- optional `runtime_lite/` DHEX1 data for preload reconstruction
+
+Approved default playback profile:
+- `approved_look03`
+- 12 fps
+- 24 ticks
+- deep/mid/surface/surface_caustics use source frames 0,2,4,...46
+- highlights use frames 0..23
+- upper_lightnet is disabled by design
+
+Alternative retained source profile:
+- `full_look02_slow`
+- all 48 approved water frames are included for future use
+
+Integration requirements:
+1. Place canonical assets under the project Water Study asset path.
+2. Bind the five approved layers only.
+3. Preload/reconstruct before normal interaction; no menu-open decode.
+4. Preserve palette indices exactly.
+5. Do not add an upper_lightnet unless a separate visual study is approved.
+6. Do not include preview GIF/MP4 in production/public HTML.
+7. Add loader/binding/tests only.
+8. Report build/test/performance results.
+
+Validation:
+- run `scripts/verify_production_sources.py`
+- targeted Water Study tests
+- full pytest
+- scripts/check_all.py
+- headless smoke
+- desktop/Pages/iPhone visual check
