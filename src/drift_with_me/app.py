@@ -96,7 +96,7 @@ WATER_STUDY_LAYER_MOTION: dict[str, tuple[float, float, float, float, float, flo
     "water_surface_plane_c": (0.94, 0.58, 1.2, 1.1, 0.9, 1.8),
     "water_surface_caustics_plane_c": (0.22, 0.14, 0.4, 0.34, 0.28, 2.6),
     "water_upper_lightnet_plane_c": (1.08, 1.85, 2.05, 1.55, 2.35, 3.4),
-    "water_highlights_plane_c": (1.35, 0.92, 1.55, 2.0, 1.35, 4.1),
+    "water_highlights_plane_c": (0.18, 0.1, 0.28, 0.24, 0.2, 4.1),
 }
 
 

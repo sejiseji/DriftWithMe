@@ -47,6 +47,9 @@ WATER_STUDY_STATIC_LAYER_IDS: tuple[str, ...] = (
 WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID = "water_surface_caustics_plane_c"
 WTR002_SURFACE_CAUSTICS_ASSET_ID = "water_surface_caustics_plane_d"
 WTR002_SURFACE_CAUSTICS_FRAME_COUNT = 20
+WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID = "water_highlights_plane_c"
+WTR_LOOK03_HIGHLIGHTS_ASSET_ID = "water_highlights_plane_d"
+WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT = 24
 
 _WATER_STUDY_CACHE_BY_PYXEL_ID: dict[int, WaterStudyAssetCache] = {}
 
@@ -365,36 +368,38 @@ def load_water_study_phase_planes(
     return phase_sets
 
 
-def load_wtr002_water_study_frame_sequences(
+def _load_water_study_frame_sequence(
     pyxel_module: Any,
     *,
+    asset_dir: str,
+    expected_asset_id: str,
+    expected_runtime_layer_id: str,
+    expected_frame_count: int,
+    timing_label: str,
     layer_timing_callback: Callable[[str, float], None] | None = None,
     timer: Callable[[], float] = time.perf_counter,
-) -> dict[str, WaterStudyFrameSequence]:
-    root = resources.files("drift_with_me").joinpath("assets/water_study/wtr002_surface_caustics")
+) -> tuple[str, WaterStudyFrameSequence]:
+    root = resources.files("drift_with_me").joinpath(f"assets/water_study/{asset_dir}")
     manifest = json.loads(root.joinpath("manifest.json").read_text(encoding="utf-8"))
     asset_id = str(manifest["asset_id"])
     runtime_layer_id = str(manifest["runtime_layer_id"])
-    if asset_id != WTR002_SURFACE_CAUSTICS_ASSET_ID:
-        raise ValueError(f"unexpected WTR002 surface caustics asset id: {asset_id}")
-    if runtime_layer_id != WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID:
-        raise ValueError(f"unexpected WTR002 runtime layer id: {runtime_layer_id}")
+    if asset_id != expected_asset_id:
+        raise ValueError(f"unexpected {timing_label} asset id: {asset_id}")
+    if runtime_layer_id != expected_runtime_layer_id:
+        raise ValueError(f"unexpected {timing_label} runtime layer id: {runtime_layer_id}")
 
     chunk_width, chunk_height = (int(value) for value in manifest["chunk_size"])
     logical_width, logical_height = (int(value) for value in manifest["logical_size"])
     if (chunk_width, chunk_height) != (256, 256):
-        raise ValueError(
-            f"WTR002 surface caustics expects 256x256 chunks, got {chunk_width}x{chunk_height}"
-        )
+        raise ValueError(f"{timing_label} expects 256x256 chunks, got {chunk_width}x{chunk_height}")
     frame_count = int(manifest["frame_count"])
-    if frame_count != WTR002_SURFACE_CAUSTICS_FRAME_COUNT:
+    if frame_count != expected_frame_count:
         raise ValueError(
-            f"WTR002 surface caustics expected {WTR002_SURFACE_CAUSTICS_FRAME_COUNT} "
-            f"frames, got {frame_count}"
+            f"{timing_label} expected {expected_frame_count} frames, got {frame_count}"
         )
     hold_frames = tuple(int(value) for value in manifest["hold_frames"])
     if len(hold_frames) != frame_count or any(value <= 0 for value in hold_frames):
-        raise ValueError("WTR002 surface caustics hold_frames must match frame_count")
+        raise ValueError(f"{timing_label} hold_frames must match frame_count")
 
     started_at = timer()
     planes: list[WaterStudyPlane] = []
@@ -422,18 +427,80 @@ def load_wtr002_water_study_frame_sequences(
             )
         )
     if len(planes) != frame_count:
-        raise ValueError(
-            f"WTR002 surface caustics expected {frame_count} frame planes, got {len(planes)}"
-        )
+        raise ValueError(f"{timing_label} expected {frame_count} frame planes, got {len(planes)}")
     if layer_timing_callback is not None:
         layer_timing_callback(asset_id, timer() - started_at)
-    return {
-        runtime_layer_id: WaterStudyFrameSequence(
+    return (
+        runtime_layer_id,
+        WaterStudyFrameSequence(
             layer_id=runtime_layer_id,
             planes=tuple(planes),
             hold_frames=hold_frames,
-        )
+        ),
+    )
+
+
+def load_wtr002_water_study_frame_sequences(
+    pyxel_module: Any,
+    *,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> dict[str, WaterStudyFrameSequence]:
+    runtime_layer_id, sequence = _load_water_study_frame_sequence(
+        pyxel_module,
+        asset_dir="wtr002_surface_caustics",
+        expected_asset_id=WTR002_SURFACE_CAUSTICS_ASSET_ID,
+        expected_runtime_layer_id=WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID,
+        expected_frame_count=WTR002_SURFACE_CAUSTICS_FRAME_COUNT,
+        timing_label="WTR002 surface caustics",
+        layer_timing_callback=layer_timing_callback,
+        timer=timer,
+    )
+    return {
+        runtime_layer_id: sequence,
     }
+
+
+def load_wtr_look03_water_study_frame_sequences(
+    pyxel_module: Any,
+    *,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> dict[str, WaterStudyFrameSequence]:
+    runtime_layer_id, sequence = _load_water_study_frame_sequence(
+        pyxel_module,
+        asset_dir="wtr_look03_highlights",
+        expected_asset_id=WTR_LOOK03_HIGHLIGHTS_ASSET_ID,
+        expected_runtime_layer_id=WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID,
+        expected_frame_count=WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT,
+        timing_label="WTR_LOOK03 highlights",
+        layer_timing_callback=layer_timing_callback,
+        timer=timer,
+    )
+    return {
+        runtime_layer_id: sequence,
+    }
+
+
+def load_water_study_frame_sequences(
+    pyxel_module: Any,
+    *,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> dict[str, WaterStudyFrameSequence]:
+    sequences: dict[str, WaterStudyFrameSequence] = {}
+    for loader in (
+        load_wtr002_water_study_frame_sequences,
+        load_wtr_look03_water_study_frame_sequences,
+    ):
+        sequences.update(
+            loader(
+                pyxel_module,
+                layer_timing_callback=layer_timing_callback,
+                timer=timer,
+            )
+        )
+    return dict(sorted(sequences.items()))
 
 
 def _resident_pixel_count(cache: WaterStudyAssetCache) -> int:
@@ -477,7 +544,7 @@ def preload_water_study_cache(
     )
     phase_preload_sec = timer() - phase_started_at
     sequence_started_at = timer()
-    frame_sequences = load_wtr002_water_study_frame_sequences(
+    frame_sequences = load_water_study_frame_sequences(
         pyxel_module,
         layer_timing_callback=layer_timings.__setitem__,
         timer=timer,
