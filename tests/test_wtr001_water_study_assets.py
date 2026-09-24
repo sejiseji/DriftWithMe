@@ -246,12 +246,13 @@ def test_wtr002_surface_caustics_frame_sequence_matches_contract() -> None:
         assert all(chunk.image.pset_count == 256 * 256 for chunk in plane.chunks)
 
 
-def test_wtr002_surface_caustics_f00_is_current_canonical_frame() -> None:
+def test_wtr002_surface_caustics_f00_replaces_coarse_canonical_frame() -> None:
     root = resources.files("drift_with_me").joinpath("assets/water_study")
     sequences = load_wtr002_water_study_frame_sequences(FakePyxel)
     f00 = sequences[WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID].planes[0]
     chunks = {f"c{chunk.origin_x // 256}{chunk.origin_y // 256}": chunk for chunk in f00.chunks}
 
+    replaced_chunks = 0
     for chunk_suffix in ("c00", "c10", "c20", "c30", "c01", "c11", "c21", "c31"):
         base = root.joinpath(
             "chunks_256/hex_rows",
@@ -263,7 +264,10 @@ def test_wtr002_surface_caustics_f00_is_current_canonical_frame() -> None:
             256,
             f"{WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID}_{chunk_suffix}",
         )
-        assert chunks[chunk_suffix].image.hex_rows() == base_rows
+        if chunks[chunk_suffix].image.hex_rows() != base_rows:
+            replaced_chunks += 1
+
+    assert replaced_chunks == 8
 
 
 def test_wtr002_surface_caustics_manifest_files_are_palette_safe() -> None:
@@ -276,6 +280,9 @@ def test_wtr002_surface_caustics_manifest_files_are_palette_safe() -> None:
     assert manifest["canonical_frame"] == "f00"
     assert manifest["colkey"] == 8
     assert manifest["storage"] == "full_chunk_hex_rows"
+    visible_counts = [int(frame["visible_pixels"]) for frame in manifest["frames"]]
+    assert min(visible_counts) >= 10_000
+    assert max(visible_counts) <= 40_000
     for frame in manifest["frames"]:
         assert len(frame["chunks"]) == 8
         for chunk in frame["chunks"]:
@@ -313,8 +320,8 @@ def test_wtr_look03_highlight_manifest_files_are_palette_safe_and_sparse() -> No
     assert manifest["colkey"] == 8
     assert manifest["storage"] == "full_chunk_hex_rows"
     visible_counts = [int(frame["visible_pixels"]) for frame in manifest["frames"]]
-    assert min(visible_counts) >= 40
-    assert max(visible_counts) <= 180
+    assert min(visible_counts) >= 80
+    assert max(visible_counts) <= 240
     for frame in manifest["frames"]:
         assert len(frame["chunks"]) == 8
         for chunk in frame["chunks"]:

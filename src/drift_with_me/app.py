@@ -98,6 +98,13 @@ WATER_STUDY_LAYER_MOTION: dict[str, tuple[float, float, float, float, float, flo
     "water_upper_lightnet_plane_c": (1.08, 1.85, 2.05, 1.55, 2.35, 3.4),
     "water_highlights_plane_c": (0.18, 0.1, 0.28, 0.24, 0.2, 4.1),
 }
+WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
+    # LOOK03 highlights should sit on top of fine water motion. The source planes
+    # remain unchanged, but their broad bright cells are tempered at draw time.
+    "water_surface_plane_c": ((6, 12), (12, 5)),
+    "water_surface_caustics_plane_c": ((7, 12), (6, 12)),
+    "water_upper_lightnet_plane_c": ((7, 12),),
+}
 
 
 class DriftWithMeApp:
@@ -1485,31 +1492,46 @@ class DriftWithMeApp:
         )
         start_x = -int(offset_x) % plane.logical_width - plane.logical_width
         start_y = -int(offset_y) % plane.logical_height - plane.logical_height
-        calls = 0
-        for plane_y in range(
-            start_y, self.runtime.screen_height + plane.logical_height, plane.logical_height
-        ):
-            for plane_x in range(
-                start_x, self.runtime.screen_width + plane.logical_width, plane.logical_width
+        palette_remaps = WATER_STUDY_LAYER_PALETTE_REMAPS.get(layer_id, ())
+        if palette_remaps:
+            for source_color, target_color in palette_remaps:
+                pyxel.pal(source_color, target_color)
+        try:
+            calls = 0
+            for plane_y in range(
+                start_y, self.runtime.screen_height + plane.logical_height, plane.logical_height
             ):
-                for chunk in plane.chunks:
-                    x = plane_x + chunk.origin_x
-                    y = plane_y + chunk.origin_y
-                    if (
-                        x >= self.runtime.screen_width
-                        or y >= self.runtime.screen_height
-                        or x + chunk.width <= 0
-                        or y + chunk.height <= 0
-                    ):
-                        continue
-                    if plane.colkey is None:
-                        pyxel.blt(x, y, chunk.image, 0, 0, chunk.width, chunk.height)
-                    else:
-                        pyxel.blt(
-                            x, y, chunk.image, 0, 0, chunk.width, chunk.height, colkey=plane.colkey
-                        )
-                    calls += 1
-        return calls
+                for plane_x in range(
+                    start_x, self.runtime.screen_width + plane.logical_width, plane.logical_width
+                ):
+                    for chunk in plane.chunks:
+                        x = plane_x + chunk.origin_x
+                        y = plane_y + chunk.origin_y
+                        if (
+                            x >= self.runtime.screen_width
+                            or y >= self.runtime.screen_height
+                            or x + chunk.width <= 0
+                            or y + chunk.height <= 0
+                        ):
+                            continue
+                        if plane.colkey is None:
+                            pyxel.blt(x, y, chunk.image, 0, 0, chunk.width, chunk.height)
+                        else:
+                            pyxel.blt(
+                                x,
+                                y,
+                                chunk.image,
+                                0,
+                                0,
+                                chunk.width,
+                                chunk.height,
+                                colkey=plane.colkey,
+                            )
+                        calls += 1
+            return calls
+        finally:
+            if palette_remaps:
+                pyxel.pal()
 
     def water_study_plane_for_frame(self, layer_id: str, t: float) -> WaterStudyPlane | None:
         cache = getattr(self, "water_study_asset_cache", None)

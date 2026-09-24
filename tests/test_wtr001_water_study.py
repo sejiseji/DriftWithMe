@@ -10,6 +10,7 @@ from drift_with_me.effects import EffectSystem
 from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput
 from drift_with_me.math3d import Vec3
 from drift_with_me.model import GameModel
+from drift_with_me.water_study_assets import WaterStudyChunk, WaterStudyPlane
 from drift_with_me.world import load_world_data
 
 
@@ -28,6 +29,24 @@ class FakePyxel:
 
     def btn(self, _key: int) -> bool:
         return False
+
+
+class FakeDrawPyxel(FakePyxel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.palette_calls: list[tuple[int, int] | tuple[()]] = []
+        self.blt_calls: list[tuple] = []
+
+    def pal(self, source_color: int | None = None, target_color: int | None = None) -> None:
+        if source_color is None and target_color is None:
+            self.palette_calls.append(())
+            return
+        assert source_color is not None
+        assert target_color is not None
+        self.palette_calls.append((source_color, target_color))
+
+    def blt(self, *args, **kwargs) -> None:
+        self.blt_calls.append((args, kwargs))
 
 
 def make_water_app() -> DriftWithMeApp:
@@ -347,3 +366,67 @@ def test_wtr001_phase_selection_uses_resident_cache_when_ready() -> None:
 
     assert app.water_study_plane_for_frame("water_surface_plane_c", 0.0) == "surface-2"
     assert app.water_study_plane_for_frame("water_surface_plane_c", 9 / 60) == "surface-3"
+
+
+def test_wtr_look03_water_study_tempers_coarse_caustics_palette() -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    app.water_study_asset_cache = None
+    app.water_study_phase_planes = {}
+    app.water_study_planes = {
+        "water_surface_caustics_plane_c": WaterStudyPlane(
+            layer_id="water_surface_caustics_plane_c",
+            logical_width=1024,
+            logical_height=512,
+            chunk_width=256,
+            chunk_height=256,
+            colkey=8,
+            chunks=(
+                WaterStudyChunk(
+                    image=object(),
+                    origin_x=0,
+                    origin_y=0,
+                    width=256,
+                    height=256,
+                ),
+            ),
+        )
+    }
+
+    calls = app.draw_water_study_plane("water_surface_caustics_plane_c", 0.0)
+
+    assert calls == 1
+    assert app.pyxel.palette_calls == [(7, 12), (6, 12), ()]
+    assert len(app.pyxel.blt_calls) == 1
+
+
+def test_wtr_look03_water_study_tempers_coarse_surface_palette() -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    app.water_study_asset_cache = None
+    app.water_study_phase_planes = {}
+    app.water_study_planes = {
+        "water_surface_plane_c": WaterStudyPlane(
+            layer_id="water_surface_plane_c",
+            logical_width=1024,
+            logical_height=512,
+            chunk_width=256,
+            chunk_height=256,
+            colkey=8,
+            chunks=(
+                WaterStudyChunk(
+                    image=object(),
+                    origin_x=0,
+                    origin_y=0,
+                    width=256,
+                    height=256,
+                ),
+            ),
+        )
+    }
+
+    calls = app.draw_water_study_plane("water_surface_plane_c", 0.0)
+
+    assert calls == 1
+    assert app.pyxel.palette_calls == [(6, 12), (12, 5), ()]
+    assert len(app.pyxel.blt_calls) == 1
