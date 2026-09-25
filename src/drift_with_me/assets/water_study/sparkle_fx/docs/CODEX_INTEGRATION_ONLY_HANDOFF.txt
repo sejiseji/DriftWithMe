@@ -1,0 +1,36 @@
+WTR-SPK001 integration-only handoff
+
+IMPORTANT:
+The individual sparkle artwork is already complete in this pack.
+Do not regenerate, redraw, upscale, requantize, or replace these sprites.
+
+Use:
+- assets/hex/water_sparkle_fx_bank0_256.hex.txt
+- sparkle_asset_defs.py
+- sparkle_asset_manifest.json
+- game_config.water_sparkle_fx.json
+- docs/WTR_SPK001_SURFACE_SPARKLE_FX_SPEC_v1.0.md
+
+Responsibilities for Codex:
+1. load the completed 256x256 sparkle bank
+2. register the six 4-frame animation definitions
+3. preload at startup
+4. implement pool-based spawn/update/draw behavior
+5. implement lightweight 1–2 px micro-particles
+6. enforce canonical 1x sprite display sizes
+7. add tests and performance instrumentation
+
+Do NOT:
+- scale sparkle sprites larger than their authored canvas
+- create new sparkle art
+- modify palette indices
+- use orbit/circle motion
+- replace these assets with procedural stars
+
+Validation:
+- run scripts/verify_sparkle_assets.py
+- targeted tests
+- full pytest
+- check_all
+- smoke
+- iPhone visual/performance check

@@ -1,0 +1,522 @@
+{
+  "version": "1.0.0",
+  "source": "青白い輝きのピクセルエフェクト集.png",
+  "contract": {
+    "palette": "Pyxel fixed 0-F",
+    "allowed_visible_indices": [
+      "5",
+      "C",
+      "6",
+      "7"
+    ],
+    "colkey": 8,
+    "frame_count_per_asset": 4,
+    "packed_bank_size": [
+      256,
+      256
+    ],
+    "runtime_scaling": "1x only; select a different asset class instead of enlarging"
+  },
+  "assets": [
+    {
+      "id": "sparkle_cross_large",
+      "row": 0,
+      "frame_size": [
+        64,
+        64
+      ],
+      "bank_y": 0,
+      "usage_px": [
+        56,
+        64
+      ],
+      "max_runtime_scale": 1.0,
+      "category": "large",
+      "ticks_per_frame": 2,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "assets/png/sparkle_cross_large_f00.png",
+          "hex": "assets/hex/sparkle_cross_large_f00.hex.txt",
+          "sha256_indices": "a891ab896728705f2738b98cea87581d281e0566254c102461a65ec440841d97",
+          "nontransparent_pixels": 766
+        },
+        {
+          "frame": 1,
+          "png": "assets/png/sparkle_cross_large_f01.png",
+          "hex": "assets/hex/sparkle_cross_large_f01.hex.txt",
+          "sha256_indices": "a25222e514663f00f9436ecc1f6c442ed8d653c0cbb5cede4332260af7dd9fba",
+          "nontransparent_pixels": 861
+        },
+        {
+          "frame": 2,
+          "png": "assets/png/sparkle_cross_large_f02.png",
+          "hex": "assets/hex/sparkle_cross_large_f02.hex.txt",
+          "sha256_indices": "be4be50ba3f5e1613ae72e9178109b94241c40a6976b4dc343dafec03e2dbab4",
+          "nontransparent_pixels": 859
+        },
+        {
+          "frame": 3,
+          "png": "assets/png/sparkle_cross_large_f03.png",
+          "hex": "assets/hex/sparkle_cross_large_f03.hex.txt",
+          "sha256_indices": "3412c36a28e3296c7b06d05b2756e42f0bbe1405cf2ab53644ccb720411b2b07",
+          "nontransparent_pixels": 521
+        }
+      ],
+      "source_bboxes": [
+        [
+          47,
+          73,
+          218,
+          253
+        ],
+        [
+          35,
+          68,
+          223,
+          256
+        ],
+        [
+          40,
+          75,
+          214,
+          250
+        ],
+        [
+          62,
+          91,
+          194,
+          240
+        ]
+      ],
+      "fixed_source_scale": 0.30851063829787234
+    },
+    {
+      "id": "sparkle_cross_medium",
+      "row": 1,
+      "frame_size": [
+        48,
+        48
+      ],
+      "bank_y": 64,
+      "usage_px": [
+        40,
+        48
+      ],
+      "max_runtime_scale": 1.0,
+      "category": "medium",
+      "ticks_per_frame": 2,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "assets/png/sparkle_cross_medium_f00.png",
+          "hex": "assets/hex/sparkle_cross_medium_f00.hex.txt",
+          "sha256_indices": "e5386076018117dca23f8571c8a50cc02493de139163a4f983db8217ed736637",
+          "nontransparent_pixels": 119
+        },
+        {
+          "frame": 1,
+          "png": "assets/png/sparkle_cross_medium_f01.png",
+          "hex": "assets/hex/sparkle_cross_medium_f01.hex.txt",
+          "sha256_indices": "9cd12f84a6517f1a82cef46adf874888ce2dd98889884bb1d68cb465aa97fb6f",
+          "nontransparent_pixels": 189
+        },
+        {
+          "frame": 2,
+          "png": "assets/png/sparkle_cross_medium_f02.png",
+          "hex": "assets/hex/sparkle_cross_medium_f02.hex.txt",
+          "sha256_indices": "88939910d398ad7488c5fcbf6cfab5bed5d9504812e874544c86f3c294e7403c",
+          "nontransparent_pixels": 170
+        },
+        {
+          "frame": 3,
+          "png": "assets/png/sparkle_cross_medium_f03.png",
+          "hex": "assets/hex/sparkle_cross_medium_f03.hex.txt",
+          "sha256_indices": "9392f92b74289fc5e30abccb47886b14c11148d9af4c45024a3e437197ad397b",
+          "nontransparent_pixels": 121
+        }
+      ],
+      "source_bboxes": [
+        [
+          74,
+          113,
+          189,
+          231
+        ],
+        [
+          62,
+          0,
+          204,
+          248
+        ],
+        [
+          64,
+          110,
+          190,
+          235
+        ],
+        [
+          73,
+          120,
+          183,
+          225
+        ]
+      ],
+      "fixed_source_scale": 0.1693548387096774
+    },
+    {
+      "id": "sparkle_cross_small",
+      "row": 2,
+      "frame_size": [
+        32,
+        32
+      ],
+      "bank_y": 112,
+      "usage_px": [
+        24,
+        32
+      ],
+      "max_runtime_scale": 1.0,
+      "category": "small",
+      "ticks_per_frame": 2,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "assets/png/sparkle_cross_small_f00.png",
+          "hex": "assets/hex/sparkle_cross_small_f00.hex.txt",
+          "sha256_indices": "08ccbd8813e34fb9d8bed7977b07a78ca29f8e4b284142426531226056ddeded",
+          "nontransparent_pixels": 89
+        },
+        {
+          "frame": 1,
+          "png": "assets/png/sparkle_cross_small_f01.png",
+          "hex": "assets/hex/sparkle_cross_small_f01.hex.txt",
+          "sha256_indices": "b361fe1c7ce13ff40577d5977a5d007cc08da40ecff8e5e2e2f2f525eb811d13",
+          "nontransparent_pixels": 227
+        },
+        {
+          "frame": 2,
+          "png": "assets/png/sparkle_cross_small_f02.png",
+          "hex": "assets/hex/sparkle_cross_small_f02.hex.txt",
+          "sha256_indices": "5591a40551416bbf59bd84f56bc6badc00e7e6105cbfc452bf2b10e52d0ac469",
+          "nontransparent_pixels": 215
+        },
+        {
+          "frame": 3,
+          "png": "assets/png/sparkle_cross_small_f03.png",
+          "hex": "assets/hex/sparkle_cross_small_f03.hex.txt",
+          "sha256_indices": "6ef179ba7a93f455ce426b13b7f6775d55c5485813b6777b031097a0946bec1f",
+          "nontransparent_pixels": 85
+        }
+      ],
+      "source_bboxes": [
+        [
+          97,
+          134,
+          163,
+          199
+        ],
+        [
+          78,
+          113,
+          182,
+          219
+        ],
+        [
+          80,
+          114,
+          175,
+          215
+        ],
+        [
+          95,
+          134,
+          160,
+          199
+        ]
+      ],
+      "fixed_source_scale": 0.24528301886792453
+    },
+    {
+      "id": "sparkle_glint_horizontal_large",
+      "row": 3,
+      "frame_size": [
+        64,
+        32
+      ],
+      "bank_y": 144,
+      "usage_px": [
+        56,
+        64
+      ],
+      "max_runtime_scale": 1.0,
+      "category": "large_glint",
+      "ticks_per_frame": 2,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "assets/png/sparkle_glint_horizontal_large_f00.png",
+          "hex": "assets/hex/sparkle_glint_horizontal_large_f00.hex.txt",
+          "sha256_indices": "03c41a02d20e4a942c16fee4992246d2418b2ae991d96e8d0687184056ba02f9",
+          "nontransparent_pixels": 261
+        },
+        {
+          "frame": 1,
+          "png": "assets/png/sparkle_glint_horizontal_large_f01.png",
+          "hex": "assets/hex/sparkle_glint_horizontal_large_f01.hex.txt",
+          "sha256_indices": "c164f1f06c75e91d9ccccb845df662f1d2f85aae70c3af779d943f0663e92283",
+          "nontransparent_pixels": 379
+        },
+        {
+          "frame": 2,
+          "png": "assets/png/sparkle_glint_horizontal_large_f02.png",
+          "hex": "assets/hex/sparkle_glint_horizontal_large_f02.hex.txt",
+          "sha256_indices": "01dee72edaae2ccf04a15d727a72c3054b845a3bba6b198d6cc165cfe44615fd",
+          "nontransparent_pixels": 456
+        },
+        {
+          "frame": 3,
+          "png": "assets/png/sparkle_glint_horizontal_large_f03.png",
+          "hex": "assets/hex/sparkle_glint_horizontal_large_f03.hex.txt",
+          "sha256_indices": "c8c19fba4dea822b99cc435c594b456fbc9c28869848b7ca108f7de7d79dc10c",
+          "nontransparent_pixels": 239
+        }
+      ],
+      "source_bboxes": [
+        [
+          32,
+          101,
+          223,
+          172
+        ],
+        [
+          19,
+          80,
+          238,
+          191
+        ],
+        [
+          15,
+          81,
+          242,
+          194
+        ],
+        [
+          39,
+          106,
+          221,
+          173
+        ]
+      ],
+      "fixed_source_scale": 0.23008849557522124
+    },
+    {
+      "id": "sparkle_glint_horizontal_medium",
+      "row": 4,
+      "frame_size": [
+        48,
+        24
+      ],
+      "bank_y": 176,
+      "usage_px": [
+        40,
+        48
+      ],
+      "max_runtime_scale": 1.0,
+      "category": "medium_glint",
+      "ticks_per_frame": 2,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "assets/png/sparkle_glint_horizontal_medium_f00.png",
+          "hex": "assets/hex/sparkle_glint_horizontal_medium_f00.hex.txt",
+          "sha256_indices": "2cf51a60a4568d075838c8679e2466595e842d3d19efcc2f2138d5ee2147c95c",
+          "nontransparent_pixels": 128
+        },
+        {
+          "frame": 1,
+          "png": "assets/png/sparkle_glint_horizontal_medium_f01.png",
+          "hex": "assets/hex/sparkle_glint_horizontal_medium_f01.hex.txt",
+          "sha256_indices": "69fae4161b008e16b50079af5b0b349a614fa8fd3f7f2cb4f496b753efae6a11",
+          "nontransparent_pixels": 192
+        },
+        {
+          "frame": 2,
+          "png": "assets/png/sparkle_glint_horizontal_medium_f02.png",
+          "hex": "assets/hex/sparkle_glint_horizontal_medium_f02.hex.txt",
+          "sha256_indices": "5a395f71e17117106b3737063e2bf31e52f2eaf069845a011a51261debefb140",
+          "nontransparent_pixels": 219
+        },
+        {
+          "frame": 3,
+          "png": "assets/png/sparkle_glint_horizontal_medium_f03.png",
+          "hex": "assets/hex/sparkle_glint_horizontal_medium_f03.hex.txt",
+          "sha256_indices": "7110ad33d67bb98c58c588ea3137374a0c15b85a2d71493959406e5942470a18",
+          "nontransparent_pixels": 124
+        }
+      ],
+      "source_bboxes": [
+        [
+          64,
+          79,
+          190,
+          136
+        ],
+        [
+          45,
+          68,
+          213,
+          143
+        ],
+        [
+          50,
+          62,
+          210,
+          150
+        ],
+        [
+          69,
+          79,
+          194,
+          138
+        ]
+      ],
+      "fixed_source_scale": 0.20454545454545456
+    },
+    {
+      "id": "sparkle_cluster_micro",
+      "row": 5,
+      "frame_size": [
+        64,
+        48
+      ],
+      "bank_y": 200,
+      "usage_px": [
+        40,
+        64
+      ],
+      "max_runtime_scale": 1.0,
+      "category": "micro_cluster",
+      "ticks_per_frame": 2,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "assets/png/sparkle_cluster_micro_f00.png",
+          "hex": "assets/hex/sparkle_cluster_micro_f00.hex.txt",
+          "sha256_indices": "af54279b48d20c01af31ee21bc0cea8a80d0dcc9b0d3e6d7418d251aca861a9f",
+          "nontransparent_pixels": 179
+        },
+        {
+          "frame": 1,
+          "png": "assets/png/sparkle_cluster_micro_f01.png",
+          "hex": "assets/hex/sparkle_cluster_micro_f01.hex.txt",
+          "sha256_indices": "9f0619f5c50d042b5dc37a4106ca13edc1798c421d5969a7f389ea6be9c5c1b5",
+          "nontransparent_pixels": 344
+        },
+        {
+          "frame": 2,
+          "png": "assets/png/sparkle_cluster_micro_f02.png",
+          "hex": "assets/hex/sparkle_cluster_micro_f02.hex.txt",
+          "sha256_indices": "7cd8eaa80a0a0aab741e198c4b8080a0857889558adee568beaf0cbd34c318de",
+          "nontransparent_pixels": 434
+        },
+        {
+          "frame": 3,
+          "png": "assets/png/sparkle_cluster_micro_f03.png",
+          "hex": "assets/hex/sparkle_cluster_micro_f03.hex.txt",
+          "sha256_indices": "e3ed516ec47b4dccee6b5497e772b52268f9f94afaa3ca62d7f0f9cb3dcb5339",
+          "nontransparent_pixels": 209
+        }
+      ],
+      "source_bboxes": [
+        [
+          67,
+          27,
+          196,
+          178
+        ],
+        [
+          55,
+          11,
+          212,
+          179
+        ],
+        [
+          53,
+          8,
+          205,
+          187
+        ],
+        [
+          61,
+          27,
+          191,
+          173
+        ]
+      ],
+      "fixed_source_scale": 0.2346368715083799
+    }
+  ],
+  "bank_regions": [
+    {
+      "id": "sparkle_cross_large",
+      "x": 0,
+      "y": 0,
+      "frame_w": 64,
+      "frame_h": 64,
+      "frame_count": 4,
+      "strip_w": 256,
+      "strip_h": 64
+    },
+    {
+      "id": "sparkle_cross_medium",
+      "x": 0,
+      "y": 64,
+      "frame_w": 48,
+      "frame_h": 48,
+      "frame_count": 4,
+      "strip_w": 192,
+      "strip_h": 48
+    },
+    {
+      "id": "sparkle_cross_small",
+      "x": 0,
+      "y": 112,
+      "frame_w": 32,
+      "frame_h": 32,
+      "frame_count": 4,
+      "strip_w": 128,
+      "strip_h": 32
+    },
+    {
+      "id": "sparkle_glint_horizontal_large",
+      "x": 0,
+      "y": 144,
+      "frame_w": 64,
+      "frame_h": 32,
+      "frame_count": 4,
+      "strip_w": 256,
+      "strip_h": 32
+    },
+    {
+      "id": "sparkle_glint_horizontal_medium",
+      "x": 0,
+      "y": 176,
+      "frame_w": 48,
+      "frame_h": 24,
+      "frame_count": 4,
+      "strip_w": 192,
+      "strip_h": 24
+    },
+    {
+      "id": "sparkle_cluster_micro",
+      "x": 0,
+      "y": 200,
+      "frame_w": 64,
+      "frame_h": 48,
+      "frame_count": 4,
+      "strip_w": 256,
+      "strip_h": 48
+    }
+  ]
+}

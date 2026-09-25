@@ -76,6 +76,10 @@ APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT = 24
 APPROVED_WATER_IDENTITY_LAYER_IDS = (
     APPROVED_WATER_PRODUCTION_LAYER_IDS + APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
 )
+WATER_SPARKLE_FX_ASSET_DIR = "sparkle_fx"
+WATER_SPARKLE_FX_BANK_ID = "water_sparkle_fx_bank0_256"
+WATER_SPARKLE_FX_BANK_SIZE = (256, 256)
+WATER_SPARKLE_FX_COLKEY = 8
 
 _WATER_STUDY_CACHE_BY_PYXEL_ID: dict[int, WaterStudyAssetCache] = {}
 
@@ -127,10 +131,52 @@ class WaterStudyFrameSequence:
 
 
 @dataclass(frozen=True)
+class WaterSparkleAnimDef:
+    asset_id: str
+    bank_y: int
+    frame_width: int
+    frame_height: int
+    frame_count: int
+    ticks_per_frame: int
+    category: str
+
+    @property
+    def duration_frames(self) -> int:
+        return self.frame_count * self.ticks_per_frame
+
+    def source_rect(self, frame_index: int) -> tuple[int, int, int, int]:
+        frame = max(0, min(self.frame_count - 1, int(frame_index)))
+        return (
+            frame * self.frame_width,
+            self.bank_y,
+            self.frame_width,
+            self.frame_height,
+        )
+
+
+@dataclass(frozen=True)
+class WaterSparkleFxBank:
+    image: Any
+    bank_id: str
+    width: int
+    height: int
+    colkey: int
+    animations: tuple[WaterSparkleAnimDef, ...]
+    config: dict[str, Any]
+
+    def animation_by_id(self, asset_id: str) -> WaterSparkleAnimDef | None:
+        for animation in self.animations:
+            if animation.asset_id == asset_id:
+                return animation
+        return None
+
+
+@dataclass(frozen=True)
 class WaterStudyAssetCache:
     static_layers: dict[str, WaterStudyPlane]
     phase_layers: dict[str, tuple[WaterStudyPlane, ...]]
     frame_sequences: dict[str, WaterStudyFrameSequence]
+    sparkle_fx_bank: WaterSparkleFxBank | None
     ready: bool
     preload_total_sec: float
     static_preload_sec: float
@@ -770,6 +816,109 @@ def load_water_study_frame_sequences(
     )
 
 
+def load_water_sparkle_fx_bank(
+    pyxel_module: Any,
+    *,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> WaterSparkleFxBank:
+    root = resources.files("drift_with_me").joinpath(
+        f"assets/water_study/{WATER_SPARKLE_FX_ASSET_DIR}"
+    )
+    started_at = timer()
+    manifest = json.loads(root.joinpath("sparkle_asset_manifest.json").read_text(encoding="utf-8"))
+    config = json.loads(
+        root.joinpath("game_config.water_sparkle_fx.json").read_text(encoding="utf-8")
+    )
+    contract = manifest["contract"]
+    bank_width, bank_height = (int(value) for value in contract["packed_bank_size"])
+    if (bank_width, bank_height) != WATER_SPARKLE_FX_BANK_SIZE:
+        raise ValueError(
+            f"WTR sparkle bank must be {WATER_SPARKLE_FX_BANK_SIZE[0]}x"
+            f"{WATER_SPARKLE_FX_BANK_SIZE[1]}"
+        )
+    colkey = int(contract["colkey"])
+    if colkey != WATER_SPARKLE_FX_COLKEY:
+        raise ValueError(f"WTR sparkle colkey must be {WATER_SPARKLE_FX_COLKEY}")
+    visible_indices = {str(value).upper() for value in contract["allowed_visible_indices"]}
+    if visible_indices != {"5", "C", "6", "7"}:
+        raise ValueError("WTR sparkle visible palette contract changed")
+    if str(contract["runtime_scaling"]).lower().find("1x") < 0:
+        raise ValueError("WTR sparkle bank must remain 1x runtime scale")
+
+    rows = parse_hex_rows(
+        root.joinpath("assets/hex", f"{WATER_SPARKLE_FX_BANK_ID}.hex.txt").read_text(
+            encoding="ascii"
+        ),
+        bank_width,
+        bank_height,
+        WATER_SPARKLE_FX_BANK_ID,
+    )
+    invalid_visible = {
+        color
+        for row in rows
+        for color in row
+        if color != str(WATER_SPARKLE_FX_COLKEY) and color.upper() not in visible_indices
+    }
+    if invalid_visible:
+        raise ValueError(
+            "WTR sparkle bank contains unexpected visible colors: "
+            + ", ".join(sorted(invalid_visible))
+        )
+
+    animations: list[WaterSparkleAnimDef] = []
+    for asset in manifest["assets"]:
+        asset_id = str(asset["id"])
+        frame_width, frame_height = (int(value) for value in asset["frame_size"])
+        frame_count = len(asset["frames"])
+        if frame_count != int(contract["frame_count_per_asset"]):
+            raise ValueError(f"{asset_id}: expected four one-shot frames")
+        if float(asset["max_runtime_scale"]) != 1.0:
+            raise ValueError(f"{asset_id}: runtime scaling above 1x is not allowed")
+        bank_y = int(asset["bank_y"])
+        if bank_y < 0 or bank_y + frame_height > bank_height:
+            raise ValueError(f"{asset_id}: frame strip exceeds sparkle bank")
+        if frame_width * frame_count > bank_width:
+            raise ValueError(f"{asset_id}: frame strip exceeds sparkle bank width")
+        animations.append(
+            WaterSparkleAnimDef(
+                asset_id=asset_id,
+                bank_y=bank_y,
+                frame_width=frame_width,
+                frame_height=frame_height,
+                frame_count=frame_count,
+                ticks_per_frame=int(asset["ticks_per_frame"]),
+                category=str(asset["category"]),
+            )
+        )
+    expected_ids = (
+        "sparkle_cross_large",
+        "sparkle_cross_medium",
+        "sparkle_cross_small",
+        "sparkle_glint_horizontal_large",
+        "sparkle_glint_horizontal_medium",
+        "sparkle_cluster_micro",
+    )
+    if tuple(animation.asset_id for animation in animations) != expected_ids:
+        raise ValueError("WTR sparkle animation order changed")
+    bank_config = dict(config["water_sparkle_fx"])
+    if str(bank_config["asset_bank"]) != WATER_SPARKLE_FX_BANK_ID:
+        raise ValueError("WTR sparkle config bank id changed")
+    if int(bank_config["display_scale"]) != 1 or bool(bank_config["allow_runtime_upscale"]):
+        raise ValueError("WTR sparkle runtime must use canonical 1x sprites")
+    if layer_timing_callback is not None:
+        layer_timing_callback(WATER_SPARKLE_FX_BANK_ID, timer() - started_at)
+    return WaterSparkleFxBank(
+        image=_image_from_rows(pyxel_module, rows, bank_width, bank_height),
+        bank_id=WATER_SPARKLE_FX_BANK_ID,
+        width=bank_width,
+        height=bank_height,
+        colkey=WATER_SPARKLE_FX_COLKEY,
+        animations=tuple(animations),
+        config=bank_config,
+    )
+
+
 def _resident_pixel_count(cache: WaterStudyAssetCache) -> int:
     total = 0
     for plane in cache.static_layers.values():
@@ -780,6 +929,8 @@ def _resident_pixel_count(cache: WaterStudyAssetCache) -> int:
     for sequence in cache.frame_sequences.values():
         for plane in sequence.planes:
             total += sum(chunk.width * chunk.height for chunk in plane.chunks)
+    if cache.sparkle_fx_bank is not None:
+        total += cache.sparkle_fx_bank.width * cache.sparkle_fx_bank.height
     return total
 
 
@@ -808,10 +959,16 @@ def preload_water_study_cache(
         timer=timer,
     )
     sequence_preload_sec = timer() - sequence_started_at
+    sparkle_fx_bank = load_water_sparkle_fx_bank(
+        pyxel_module,
+        layer_timing_callback=layer_timings.__setitem__,
+        timer=timer,
+    )
     cache = WaterStudyAssetCache(
         static_layers=static_layers,
         phase_layers=phase_layers,
         frame_sequences=frame_sequences,
+        sparkle_fx_bank=sparkle_fx_bank,
         ready=True,
         preload_total_sec=timer() - preload_started_at,
         static_preload_sec=static_preload_sec,
@@ -824,6 +981,7 @@ def preload_water_study_cache(
         static_layers=cache.static_layers,
         phase_layers=cache.phase_layers,
         frame_sequences=cache.frame_sequences,
+        sparkle_fx_bank=cache.sparkle_fx_bank,
         ready=cache.ready,
         preload_total_sec=cache.preload_total_sec,
         static_preload_sec=cache.static_preload_sec,

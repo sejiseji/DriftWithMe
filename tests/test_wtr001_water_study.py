@@ -14,6 +14,8 @@ from drift_with_me.model import GameModel
 from drift_with_me.water_study_assets import (
     APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
     APPROVED_WATER_IDENTITY_LAYER_IDS,
+    WaterSparkleAnimDef,
+    WaterSparkleFxBank,
     WaterStudyChunk,
     WaterStudyPlane,
 )
@@ -42,6 +44,8 @@ class FakeDrawPyxel(FakePyxel):
         super().__init__()
         self.palette_calls: list[tuple[int, int] | tuple[()]] = []
         self.blt_calls: list[tuple] = []
+        self.pset_calls: list[tuple[int, int, int]] = []
+        self.line_calls: list[tuple[int, int, int, int, int]] = []
 
     def pal(self, source_color: int | None = None, target_color: int | None = None) -> None:
         if source_color is None and target_color is None:
@@ -53,6 +57,12 @@ class FakeDrawPyxel(FakePyxel):
 
     def blt(self, *args, **kwargs) -> None:
         self.blt_calls.append((args, kwargs))
+
+    def pset(self, x: int, y: int, color: int) -> None:
+        self.pset_calls.append((x, y, color))
+
+    def line(self, x1: int, y1: int, x2: int, y2: int, color: int) -> None:
+        self.line_calls.append((x1, y1, x2, y2, color))
 
 
 def make_water_app() -> DriftWithMeApp:
@@ -112,11 +122,47 @@ def make_fake_water_cache() -> SimpleNamespace:
         phase_layers={
             "water_surface_plane_c": tuple(f"surface-{index}" for index in range(8)),
         },
+        sparkle_fx_bank=None,
         plane_for_frame=lambda layer_id, elapsed, fps: (
             f"surface-{(2 + int(max(0.0, elapsed) * fps) // 9) % 8}"
             if layer_id == "water_surface_plane_c"
             else None
         ),
+    )
+
+
+def make_fake_sparkle_bank() -> WaterSparkleFxBank:
+    return WaterSparkleFxBank(
+        image=object(),
+        bank_id="water_sparkle_fx_bank0_256",
+        width=256,
+        height=256,
+        colkey=8,
+        animations=(
+            WaterSparkleAnimDef(
+                asset_id="sparkle_cross_large",
+                bank_y=0,
+                frame_width=64,
+                frame_height=64,
+                frame_count=4,
+                ticks_per_frame=2,
+                category="large",
+            ),
+        ),
+        config={
+            "enabled": True,
+            "display_scale": 1,
+            "allow_runtime_upscale": False,
+            "spawn": {
+                "max_large_cross": 1,
+                "max_micro_particles": 2,
+                "sparkle_interval_frames": [8, 20],
+                "micro_particle_interval_frames": [2, 6],
+                "min_spawn_distance_px": 20,
+                "large_min_spawn_distance_px": 48,
+            },
+            "motion": {"position_jitter_px": 1},
+        },
     )
 
 
@@ -474,3 +520,44 @@ def test_approved_water_production_planes_draw_with_identity_palette_and_no_moti
     assert calls == 1
     assert app.pyxel.palette_calls == [(), ()]
     assert len(app.pyxel.blt_calls) == 1
+
+
+def test_wtr_spk001_water_study_draws_individual_sparkles_at_canonical_size() -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    bank = make_fake_sparkle_bank()
+    app.water_study_asset_cache = SimpleNamespace(ready=True, sparkle_fx_bank=bank)
+    app.ensure_water_sparkle_fx_state()
+    app.water_sparkles[0].active = True
+    app.water_sparkles[0].anim_index = 0
+    app.water_sparkles[0].x = 10.0
+    app.water_sparkles[0].y = 20.0
+    app.water_sparkles[0].age_frames = 2
+    app.water_sparkles[0].seed = 4
+
+    calls = app.draw_water_study_sparkle_fx()
+
+    assert calls == 1
+    assert len(app.pyxel.blt_calls) == 1
+    args, kwargs = app.pyxel.blt_calls[0]
+    assert args[2] is bank.image
+    assert args[3:7] == (64, 0, 64, 64)
+    assert len(args) == 7
+    assert kwargs == {"colkey": 8}
+    assert 9 <= args[0] <= 11
+    assert 19 <= args[1] <= 21
+
+
+def test_wtr_spk001_water_study_update_spawns_one_shot_sparkles() -> None:
+    app = make_water_app()
+    bank = make_fake_sparkle_bank()
+    app.water_study_asset_cache = SimpleNamespace(ready=True, sparkle_fx_bank=bank)
+    app.ensure_water_sparkle_fx_state()
+    app.water_sparkle_next_spawn_frame = 1
+
+    app.update_water_sparkle_fx(1 / app.runtime.target_fps)
+
+    active = [sparkle for sparkle in app.water_sparkles if sparkle.active]
+    assert len(active) == 1
+    assert active[0].anim_index == 0
+    assert bank.animations[0].duration_frames == 8

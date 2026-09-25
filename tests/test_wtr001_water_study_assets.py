@@ -14,6 +14,8 @@ from drift_with_me.water_study_assets import (
     APPROVED_WATER_PRODUCTION_HOLD_FRAMES,
     APPROVED_WATER_PRODUCTION_LAYER_IDS,
     APPROVED_WATER_PRODUCTION_PROFILE,
+    WATER_SPARKLE_FX_BANK_ID,
+    WATER_SPARKLE_FX_COLKEY,
     WATER_STUDY_LAYER_IDS,
     WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_LAYER_IDS,
@@ -28,6 +30,7 @@ from drift_with_me.water_study_assets import (
     clear_water_study_cache_for_tests,
     load_approved_look04_plus_sparkle_frame_sequences,
     load_approved_water_production_frame_sequences,
+    load_water_sparkle_fx_bank,
     load_water_study_phase_planes,
     load_water_study_planes,
     load_wtr002_water_study_frame_sequences,
@@ -473,6 +476,59 @@ def test_look04_plus_sparkle_frame_sequences_load_six_identity_layers() -> None:
             assert sequence.planes[0].colkey == 8
 
 
+def test_wtr_spk001_runtime_package_excludes_preview_media() -> None:
+    root = resources.files("drift_with_me").joinpath("assets/water_study/sparkle_fx")
+    forbidden_parts = {"assets/png", "previews", "source_reference", "scripts"}
+    forbidden_suffixes = {".png", ".gif", ".mp4"}
+    files: list[str] = []
+    stack = [("", root)]
+    while stack:
+        prefix, current = stack.pop()
+        for child in current.iterdir():
+            child_name = f"{prefix}/{child.name}" if prefix else child.name
+            if child.is_dir():
+                stack.append((child_name, child))
+            elif child.is_file():
+                files.append(child_name)
+
+    assert "assets/hex/water_sparkle_fx_bank0_256.hex.txt" in files
+    assert not any(any(part in file for part in forbidden_parts) for file in files)
+    assert not any(file.endswith(tuple(forbidden_suffixes)) for file in files)
+
+
+def test_wtr_spk001_sparkle_fx_bank_loads_canonical_animations() -> None:
+    bank = load_water_sparkle_fx_bank(FakePyxel)
+
+    assert bank.bank_id == WATER_SPARKLE_FX_BANK_ID
+    assert (bank.width, bank.height) == (256, 256)
+    assert bank.colkey == WATER_SPARKLE_FX_COLKEY
+    assert bank.config["display_scale"] == 1
+    assert not bank.config["allow_runtime_upscale"]
+    assert tuple(animation.asset_id for animation in bank.animations) == (
+        "sparkle_cross_large",
+        "sparkle_cross_medium",
+        "sparkle_cross_small",
+        "sparkle_glint_horizontal_large",
+        "sparkle_glint_horizontal_medium",
+        "sparkle_cluster_micro",
+    )
+    assert tuple(
+        (animation.frame_width, animation.frame_height, animation.bank_y)
+        for animation in bank.animations
+    ) == (
+        (64, 64, 0),
+        (48, 48, 64),
+        (32, 32, 112),
+        (64, 32, 144),
+        (48, 24, 176),
+        (64, 48, 200),
+    )
+    for animation in bank.animations:
+        assert animation.frame_count == 4
+        assert animation.ticks_per_frame == 2
+        assert animation.source_rect(3)[2:] == (animation.frame_width, animation.frame_height)
+
+
 def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
     clear_water_study_cache_for_tests()
 
@@ -497,10 +553,14 @@ def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
     for layer_id in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS:
         assert layer_id in cache.layer_preload_sec
         assert cache.layer_preload_sec[layer_id] >= 0.0
+    assert cache.sparkle_fx_bank is not None
+    assert cache.sparkle_fx_bank.bank_id == WATER_SPARKLE_FX_BANK_ID
+    assert WATER_SPARKLE_FX_BANK_ID in cache.layer_preload_sec
     expected_pixels = (
         len(APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS) * APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
     )
     expected_pixels *= 1024 * 512
+    expected_pixels += 256 * 256
     assert cache.resident_pixel_count == expected_pixels
 
 
