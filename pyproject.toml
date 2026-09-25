@@ -52,6 +52,13 @@ drift_with_me = [
     "assets/water_study/approved_production/chunks_256/hex/*.hex.txt",
     "assets/water_study/approved_production/runtime_lite/*.json",
     "assets/water_study/approved_production/runtime_lite/dhex/*/*.dhex",
+    "assets/water_study/approved_look04_plus_sparkle/*.json",
+    "assets/water_study/approved_look04_plus_sparkle/*.md",
+    "assets/water_study/approved_look04_plus_sparkle/*.py",
+    "assets/water_study/approved_look04_plus_sparkle/data/*.json",
+    "assets/water_study/approved_look04_plus_sparkle/docs/*.txt",
+    "assets/water_study/approved_look04_plus_sparkle/docs/*.md",
+    "assets/water_study/approved_look04_plus_sparkle/chunks_256/hex/*.hex.txt",
 ]
 
 [tool.pytest.ini_options]

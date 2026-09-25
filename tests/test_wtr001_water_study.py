@@ -12,7 +12,8 @@ from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput
 from drift_with_me.math3d import Vec3
 from drift_with_me.model import GameModel
 from drift_with_me.water_study_assets import (
-    APPROVED_WATER_PRODUCTION_LAYER_IDS,
+    APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
+    APPROVED_WATER_IDENTITY_LAYER_IDS,
     WaterStudyChunk,
     WaterStudyPlane,
 )
@@ -258,8 +259,8 @@ def test_wtr001_b_profile_shortcuts_switch_profiles() -> None:
     app.update_water_study_screen(0.25)
 
     assert app.water_study_profile_index == 3
-    assert app.water_study_profile().name == "APPROVED_LOOK03"
-    assert app.water_study_profile().layer_ids == APPROVED_WATER_PRODUCTION_LAYER_IDS
+    assert app.water_study_profile().name == "APPROVED_LOOK04_SPARKLE"
+    assert app.water_study_profile().layer_ids == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
 
 
 def test_wtr001_b_motion_weights_are_normalized() -> None:
@@ -312,12 +313,13 @@ def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
     app.water_study_profile_index = 3
     observe = app.water_study_profile()
 
-    assert baseline.name == "APPROVED_LOOK03"
-    assert baseline.layer_ids == APPROVED_WATER_PRODUCTION_LAYER_IDS
-    assert three_layer.layer_ids == APPROVED_WATER_PRODUCTION_LAYER_IDS
-    assert full.layer_ids == APPROVED_WATER_PRODUCTION_LAYER_IDS
+    assert baseline.name == "APPROVED_LOOK04_SPARKLE"
+    assert baseline.layer_ids == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    assert three_layer.layer_ids == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    assert full.layer_ids == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
     assert observe.layer_ids == full.layer_ids
-    assert "water_upper_lightnet_plane_d" not in full.layer_ids
+    assert "water_upper_lightnet_plane_e" not in full.layer_ids
+    assert "water_sparkle_plane_e" in full.layer_ids
 
 
 def test_wtr001_phase_plane_selection_uses_layer_step_frames() -> None:
@@ -435,8 +437,8 @@ def test_approved_water_production_planes_draw_with_identity_palette_and_no_moti
     app.water_study_asset_cache = None
     app.water_study_phase_planes = {}
     app.water_study_planes = {
-        "water_highlights_plane_d": WaterStudyPlane(
-            layer_id="water_highlights_plane_d",
+        "water_sparkle_plane_e": WaterStudyPlane(
+            layer_id="water_sparkle_plane_e",
             logical_width=1024,
             logical_height=512,
             chunk_width=256,
@@ -455,16 +457,19 @@ def test_approved_water_production_planes_draw_with_identity_palette_and_no_moti
     }
     monkeypatch.setitem(
         app_module.WATER_STUDY_LAYER_PALETTE_REMAPS,
-        "water_highlights_plane_d",
+        "water_sparkle_plane_e",
         ((6, 12), (7, 12), (12, 5)),
     )
 
     def fail_if_motion_is_requested(*args, **kwargs):
-        raise AssertionError("approved production plane_d must not use draw-time motion")
+        raise AssertionError("approved production plane_d/e must not use draw-time motion")
 
     monkeypatch.setattr(app, "water_study_layer_offset", fail_if_motion_is_requested)
 
-    calls = app.draw_water_study_plane("water_highlights_plane_d", 12.0)
+    assert "water_sparkle_plane_e" in APPROVED_WATER_IDENTITY_LAYER_IDS
+    assert "water_highlights_plane_d" in APPROVED_WATER_IDENTITY_LAYER_IDS
+
+    calls = app.draw_water_study_plane("water_sparkle_plane_e", 12.0)
 
     assert calls == 1
     assert app.pyxel.palette_calls == [(), ()]

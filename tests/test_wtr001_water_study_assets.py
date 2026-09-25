@@ -6,6 +6,10 @@ from importlib import resources
 
 from drift_with_me.hex_assets import parse_hex_rows
 from drift_with_me.water_study_assets import (
+    APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT,
+    APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES,
+    APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
+    APPROVED_LOOK04_PLUS_SPARKLE_PROFILE,
     APPROVED_WATER_PRODUCTION_FRAME_COUNT,
     APPROVED_WATER_PRODUCTION_HOLD_FRAMES,
     APPROVED_WATER_PRODUCTION_LAYER_IDS,
@@ -22,6 +26,7 @@ from drift_with_me.water_study_assets import (
     WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID,
     apply_dhex_patch_to_rows,
     clear_water_study_cache_for_tests,
+    load_approved_look04_plus_sparkle_frame_sequences,
     load_approved_water_production_frame_sequences,
     load_water_study_phase_planes,
     load_water_study_planes,
@@ -386,6 +391,92 @@ def test_approved_water_production_frame_sequences_reconstruct_profile() -> None
             assert sequence.planes[0].colkey == 8
 
 
+def test_look04_plus_sparkle_manifest_matches_binding_profile() -> None:
+    root = resources.files("drift_with_me").joinpath(
+        "assets/water_study/approved_look04_plus_sparkle"
+    )
+    manifest = json.loads(root.joinpath("production_manifest.json").read_text(encoding="utf-8"))
+    binding = json.loads(
+        root.joinpath("data/WTR_LOOK04_PLUS_SPARKLE_BINDING_MANIFEST_v0.1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert manifest["variant"] == "e"
+    assert tuple(manifest["logical_size"]) == (1024, 512)
+    assert tuple(manifest["chunk_size"]) == (256, 256)
+    assert tuple(manifest["chunk_grid"]) == (4, 2)
+    assert manifest["frame_count"] == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
+    assert manifest["fps"] == 12
+    assert binding["profile_id"] == APPROVED_LOOK04_PLUS_SPARKLE_PROFILE
+    assert tuple(layer["layer_id"] for layer in manifest["layers"]) == (
+        APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    )
+    assert (
+        tuple(layer["id"] for layer in binding["layers"]) == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    )
+    assert "water_upper_lightnet_plane_e" not in {
+        str(layer["layer_id"]) for layer in manifest["layers"]
+    }
+    assert "water_sparkle_plane_e" in {str(layer["layer_id"]) for layer in manifest["layers"]}
+    for layer in manifest["layers"]:
+        layer_id = str(layer["layer_id"])
+        if layer_id == "water_deep_plane_e":
+            assert layer["opaque"] is True
+            assert layer["colkey"] is None
+        else:
+            assert layer["opaque"] is False
+            assert layer["colkey"] == 8
+        assert len(layer["frames"]) == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
+        for frame in layer["frames"]:
+            assert int(frame["frame"]) in range(APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT)
+            assert str(frame["full_hex"]).startswith("full_hex/")
+            for row in range(2):
+                for col in range(4):
+                    chunk_text = root.joinpath(
+                        "chunks_256/hex",
+                        f"{layer_id}_f{int(frame['frame']):03d}_c{row}{col}.hex.txt",
+                    ).read_text(encoding="ascii")
+                    rows = parse_hex_rows(chunk_text, 256, 256, f"{layer_id}:c{row}{col}")
+                    assert len(rows) == 256
+
+
+def test_look04_plus_sparkle_frame_sequences_load_six_identity_layers() -> None:
+    sequences = load_approved_look04_plus_sparkle_frame_sequences(FakePyxel)
+
+    assert tuple(sequences) == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    for layer_id, sequence in sequences.items():
+        assert sequence.layer_id == layer_id
+        assert len(sequence.planes) == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
+        assert (
+            sequence.hold_frames
+            == (APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES,)
+            * APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
+        )
+        assert sequence.total_hold_frames == 120
+        assert sequence.planes[0].layer_id == f"{layer_id}_t00"
+        assert sequence.planes[-1].layer_id == f"{layer_id}_t23"
+        for plane in sequence.planes:
+            assert (plane.logical_width, plane.logical_height) == (1024, 512)
+            assert (plane.chunk_width, plane.chunk_height) == (256, 256)
+            assert len(plane.chunks) == 8
+            assert all(chunk.image.pset_count == 256 * 256 for chunk in plane.chunks)
+            assert tuple((chunk.origin_x, chunk.origin_y) for chunk in plane.chunks) == (
+                (0, 0),
+                (256, 0),
+                (512, 0),
+                (768, 0),
+                (0, 256),
+                (256, 256),
+                (512, 256),
+                (768, 256),
+            )
+        if layer_id == "water_deep_plane_e":
+            assert sequence.planes[0].colkey is None
+        else:
+            assert sequence.planes[0].colkey == 8
+
+
 def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
     clear_water_study_cache_for_tests()
 
@@ -394,9 +485,11 @@ def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
     assert cache.ready
     assert cache.static_layers == {}
     assert cache.phase_layers == {}
-    assert tuple(cache.frame_sequences) == APPROVED_WATER_PRODUCTION_LAYER_IDS
-    for layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS:
-        assert len(cache.frame_sequences[layer_id].planes) == APPROVED_WATER_PRODUCTION_FRAME_COUNT
+    assert tuple(cache.frame_sequences) == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    for layer_id in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS:
+        assert (
+            len(cache.frame_sequences[layer_id].planes) == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
+        )
         assert cache.plane_for_frame(layer_id, 0.0, 60) is cache.frame_sequences[layer_id].planes[0]
         assert (
             cache.plane_for_frame(layer_id, 5 / 60, 60) is cache.frame_sequences[layer_id].planes[1]
@@ -405,11 +498,11 @@ def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
     assert cache.static_preload_sec >= 0.0
     assert cache.phase_preload_sec >= 0.0
     assert cache.sequence_preload_sec >= 0.0
-    for layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS:
+    for layer_id in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS:
         assert layer_id in cache.layer_preload_sec
         assert cache.layer_preload_sec[layer_id] >= 0.0
     expected_pixels = (
-        len(APPROVED_WATER_PRODUCTION_LAYER_IDS) * APPROVED_WATER_PRODUCTION_FRAME_COUNT
+        len(APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS) * APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
     )
     expected_pixels *= 1024 * 512
     assert cache.resident_pixel_count == expected_pixels

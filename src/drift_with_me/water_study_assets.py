@@ -61,6 +61,21 @@ APPROVED_WATER_PRODUCTION_LAYER_IDS: tuple[str, ...] = (
     "water_highlights_plane_d",
 )
 APPROVED_WATER_PRODUCTION_FRAME_COUNT = 24
+APPROVED_LOOK04_PLUS_SPARKLE_PROFILE = "approved_look04_plus_sparkle_v0_1"
+APPROVED_LOOK04_PLUS_SPARKLE_FPS = 12
+APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES = 5
+APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS: tuple[str, ...] = (
+    "water_deep_plane_e",
+    "water_mid_plane_e",
+    "water_surface_plane_e",
+    "water_surface_caustics_plane_e",
+    "water_highlights_plane_e",
+    "water_sparkle_plane_e",
+)
+APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT = 24
+APPROVED_WATER_IDENTITY_LAYER_IDS = (
+    APPROVED_WATER_PRODUCTION_LAYER_IDS + APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+)
 
 _WATER_STUDY_CACHE_BY_PYXEL_ID: dict[int, WaterStudyAssetCache] = {}
 
@@ -632,13 +647,125 @@ def load_approved_water_production_frame_sequences(
     return {layer_id: sequences[layer_id] for layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS}
 
 
+def load_approved_look04_plus_sparkle_frame_sequences(
+    pyxel_module: Any,
+    *,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> dict[str, WaterStudyFrameSequence]:
+    root = resources.files("drift_with_me").joinpath(
+        "assets/water_study/approved_look04_plus_sparkle"
+    )
+    production_manifest = json.loads(
+        root.joinpath("production_manifest.json").read_text(encoding="utf-8")
+    )
+    binding_manifest = json.loads(
+        root.joinpath("data/WTR_LOOK04_PLUS_SPARKLE_BINDING_MANIFEST_v0.1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    if str(binding_manifest["profile_id"]) != APPROVED_LOOK04_PLUS_SPARKLE_PROFILE:
+        raise ValueError(
+            f"LOOK04 plus sparkle binding must use {APPROVED_LOOK04_PLUS_SPARKLE_PROFILE}"
+        )
+    if int(production_manifest["fps"]) != APPROVED_LOOK04_PLUS_SPARKLE_FPS:
+        raise ValueError("LOOK04 plus sparkle production fps must be 12")
+    if int(binding_manifest["fps"]) != APPROVED_LOOK04_PLUS_SPARKLE_FPS:
+        raise ValueError("LOOK04 plus sparkle binding fps must be 12")
+    if str(production_manifest["variant"]) != "e":
+        raise ValueError("LOOK04 plus sparkle production variant must be e")
+
+    chunk_width, chunk_height = (int(value) for value in production_manifest["chunk_size"])
+    logical_width, logical_height = (int(value) for value in production_manifest["logical_size"])
+    chunk_grid_cols, chunk_grid_rows = (int(value) for value in production_manifest["chunk_grid"])
+    frame_count = int(production_manifest["frame_count"])
+    if (chunk_width, chunk_height) != (256, 256):
+        raise ValueError(
+            f"LOOK04 plus sparkle expects 256x256 chunks, got {chunk_width}x{chunk_height}"
+        )
+    if (logical_width, logical_height) != (1024, 512):
+        raise ValueError("LOOK04 plus sparkle logical plane must be 1024x512")
+    if (chunk_grid_cols, chunk_grid_rows) != (4, 2):
+        raise ValueError("LOOK04 plus sparkle chunk grid must be 4x2")
+    if frame_count != APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT:
+        raise ValueError(
+            f"LOOK04 plus sparkle expected {APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT} frames, "
+            f"got {frame_count}"
+        )
+
+    production_layers = production_manifest["layers"]
+    binding_layers = binding_manifest["layers"]
+    if tuple(str(layer["layer_id"]) for layer in production_layers) != (
+        APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    ):
+        raise ValueError("LOOK04 plus sparkle production layer order changed")
+    if (
+        tuple(str(layer["id"]) for layer in binding_layers)
+        != APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    ):
+        raise ValueError("LOOK04 plus sparkle binding layer order changed")
+
+    layer_colkeys: dict[str, int | None] = {}
+    for layer in production_layers:
+        layer_id = str(layer["layer_id"])
+        colkey_value = layer.get("colkey")
+        layer_colkeys[layer_id] = None if colkey_value is None else int(colkey_value)
+        if layer_id == "water_deep_plane_e":
+            if layer_colkeys[layer_id] is not None or not bool(layer["opaque"]):
+                raise ValueError("LOOK04 plus sparkle deep layer must be opaque")
+        elif layer_colkeys[layer_id] != 8 or bool(layer["opaque"]):
+            raise ValueError(f"{layer_id}: LOOK04 plus sparkle transparent layers need colkey 8")
+        if len(layer["frames"]) != frame_count:
+            raise ValueError(f"{layer_id}: expected {frame_count} frames")
+
+    sequences: dict[str, WaterStudyFrameSequence] = {}
+    for layer_id in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS:
+        layer_started_at = timer()
+        planes: list[WaterStudyPlane] = []
+        for frame_index in range(frame_count):
+            chunk_rows: dict[str, tuple[str, ...]] = {}
+            for row in range(chunk_grid_rows):
+                for col in range(chunk_grid_cols):
+                    source_suffix = f"c{row}{col}"
+                    normalized_suffix = f"c{col}{row}"
+                    chunk_rows[normalized_suffix] = parse_hex_rows(
+                        root.joinpath(
+                            "chunks_256/hex",
+                            f"{layer_id}_f{frame_index:03d}_{source_suffix}.hex.txt",
+                        ).read_text(encoding="ascii"),
+                        chunk_width,
+                        chunk_height,
+                        f"{layer_id}_f{frame_index:03d}_{source_suffix}",
+                    )
+            planes.append(
+                _plane_from_chunk_rows(
+                    pyxel_module,
+                    layer_id=f"{layer_id}_t{frame_index:02d}",
+                    logical_width=logical_width,
+                    logical_height=logical_height,
+                    chunk_width=chunk_width,
+                    chunk_height=chunk_height,
+                    colkey=layer_colkeys[layer_id],
+                    chunk_rows=chunk_rows,
+                )
+            )
+        sequences[layer_id] = WaterStudyFrameSequence(
+            layer_id=layer_id,
+            planes=tuple(planes),
+            hold_frames=(APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES,) * len(planes),
+        )
+        if layer_timing_callback is not None:
+            layer_timing_callback(layer_id, timer() - layer_started_at)
+    return {layer_id: sequences[layer_id] for layer_id in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS}
+
+
 def load_water_study_frame_sequences(
     pyxel_module: Any,
     *,
     layer_timing_callback: Callable[[str, float], None] | None = None,
     timer: Callable[[], float] = time.perf_counter,
 ) -> dict[str, WaterStudyFrameSequence]:
-    return load_approved_water_production_frame_sequences(
+    return load_approved_look04_plus_sparkle_frame_sequences(
         pyxel_module,
         layer_timing_callback=layer_timing_callback,
         timer=timer,

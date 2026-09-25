@@ -27,7 +27,8 @@ from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.water_study_assets import (
-    APPROVED_WATER_PRODUCTION_LAYER_IDS,
+    APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
+    APPROVED_WATER_IDENTITY_LAYER_IDS,
     WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_STEP_FRAMES,
     WaterStudyAssetCache,
@@ -67,20 +68,20 @@ class WaterStudyProfile:
 
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
     WaterStudyProfile(
-        "APPROVED_LOOK03",
-        layer_ids=APPROVED_WATER_PRODUCTION_LAYER_IDS,
+        "APPROVED_LOOK04_SPARKLE",
+        layer_ids=APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "APPROVED_LOOK03",
-        layer_ids=APPROVED_WATER_PRODUCTION_LAYER_IDS,
+        "APPROVED_LOOK04_SPARKLE",
+        layer_ids=APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "APPROVED_LOOK03",
-        layer_ids=APPROVED_WATER_PRODUCTION_LAYER_IDS,
+        "APPROVED_LOOK04_SPARKLE",
+        layer_ids=APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "APPROVED_LOOK03",
-        layer_ids=APPROVED_WATER_PRODUCTION_LAYER_IDS,
+        "APPROVED_LOOK04_SPARKLE",
+        layer_ids=APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
     ),
 )
 
@@ -98,6 +99,12 @@ WATER_STUDY_LAYER_MOTION: dict[str, tuple[float, float, float, float, float, flo
     "water_surface_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     "water_surface_caustics_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     "water_highlights_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_deep_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_mid_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_surface_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_surface_caustics_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_highlights_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_sparkle_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 }
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
@@ -1481,7 +1488,7 @@ class DriftWithMeApp:
         plane = self.water_study_plane_for_frame(layer_id, t)
         if plane is None:
             return 0
-        is_approved_production_layer = layer_id in APPROVED_WATER_PRODUCTION_LAYER_IDS
+        is_approved_production_layer = layer_id in APPROVED_WATER_IDENTITY_LAYER_IDS
         if is_approved_production_layer:
             offset_x, offset_y = 0.0, 0.0
         else:

@@ -1,0 +1,25 @@
+WTR_LOOK04 + sparkle第6層 production asset 接続用ハンドオフ
+
+前提:
+- 本パックの full_hex / chunks_256 / production_manifest.json を正本として扱うこと。
+- runtime / public build に preview mp4/gif/png を混入させないこと。
+- 6層をこの順で合成すること: deep -> mid -> surface -> surface_caustics -> highlights -> sparkle
+- sparkle はゲーム表現的な水面反射光。白〜青白の不規則 twinkle を 24f ループで持つ。
+
+接続仕様:
+- logical size: 1024x512
+- chunk: 256x256, grid 4x2
+- fps: 12
+- frame_count: 24
+- layer IDs:
+  - water_deep_plane_e (opaque)
+  - water_mid_plane_e (colkey=8)
+  - water_surface_plane_e (colkey=8)
+  - water_surface_caustics_plane_e (colkey=8)
+  - water_highlights_plane_e (colkey=8)
+  - water_sparkle_plane_e (colkey=8)
+
+禁止:
+- procedural で見た目を置換しない
+- palette を勝手に再割当しない
+- sparkle を別層へ吸収して消さない

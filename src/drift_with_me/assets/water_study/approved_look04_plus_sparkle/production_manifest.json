@@ -1,0 +1,793 @@
+{
+  "package": "WTR_LOOK04_Plus_Sparkle_Production_Assetization_v0.1",
+  "version": "0.1",
+  "source_basis": [
+    "WTR_LOOK04_ShapeShift_Motion_Study_v0.1",
+    "水面用きらめきピクセルオーバーレイ.png"
+  ],
+  "logical_size": [
+    1024,
+    512
+  ],
+  "frame_count": 24,
+  "fps": 12,
+  "variant": "e",
+  "chunk_size": [
+    256,
+    256
+  ],
+  "chunk_grid": [
+    4,
+    2
+  ],
+  "layers": [
+    {
+      "layer_id": "water_deep_plane_e",
+      "short_name": "deep",
+      "colkey": null,
+      "opaque": true,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "pyxel_png/deep/water_deep_plane_e_f000.png",
+          "full_hex": "full_hex/water_deep_plane_e_f000.hex.txt"
+        },
+        {
+          "frame": 1,
+          "png": "pyxel_png/deep/water_deep_plane_e_f001.png",
+          "full_hex": "full_hex/water_deep_plane_e_f001.hex.txt"
+        },
+        {
+          "frame": 2,
+          "png": "pyxel_png/deep/water_deep_plane_e_f002.png",
+          "full_hex": "full_hex/water_deep_plane_e_f002.hex.txt"
+        },
+        {
+          "frame": 3,
+          "png": "pyxel_png/deep/water_deep_plane_e_f003.png",
+          "full_hex": "full_hex/water_deep_plane_e_f003.hex.txt"
+        },
+        {
+          "frame": 4,
+          "png": "pyxel_png/deep/water_deep_plane_e_f004.png",
+          "full_hex": "full_hex/water_deep_plane_e_f004.hex.txt"
+        },
+        {
+          "frame": 5,
+          "png": "pyxel_png/deep/water_deep_plane_e_f005.png",
+          "full_hex": "full_hex/water_deep_plane_e_f005.hex.txt"
+        },
+        {
+          "frame": 6,
+          "png": "pyxel_png/deep/water_deep_plane_e_f006.png",
+          "full_hex": "full_hex/water_deep_plane_e_f006.hex.txt"
+        },
+        {
+          "frame": 7,
+          "png": "pyxel_png/deep/water_deep_plane_e_f007.png",
+          "full_hex": "full_hex/water_deep_plane_e_f007.hex.txt"
+        },
+        {
+          "frame": 8,
+          "png": "pyxel_png/deep/water_deep_plane_e_f008.png",
+          "full_hex": "full_hex/water_deep_plane_e_f008.hex.txt"
+        },
+        {
+          "frame": 9,
+          "png": "pyxel_png/deep/water_deep_plane_e_f009.png",
+          "full_hex": "full_hex/water_deep_plane_e_f009.hex.txt"
+        },
+        {
+          "frame": 10,
+          "png": "pyxel_png/deep/water_deep_plane_e_f010.png",
+          "full_hex": "full_hex/water_deep_plane_e_f010.hex.txt"
+        },
+        {
+          "frame": 11,
+          "png": "pyxel_png/deep/water_deep_plane_e_f011.png",
+          "full_hex": "full_hex/water_deep_plane_e_f011.hex.txt"
+        },
+        {
+          "frame": 12,
+          "png": "pyxel_png/deep/water_deep_plane_e_f012.png",
+          "full_hex": "full_hex/water_deep_plane_e_f012.hex.txt"
+        },
+        {
+          "frame": 13,
+          "png": "pyxel_png/deep/water_deep_plane_e_f013.png",
+          "full_hex": "full_hex/water_deep_plane_e_f013.hex.txt"
+        },
+        {
+          "frame": 14,
+          "png": "pyxel_png/deep/water_deep_plane_e_f014.png",
+          "full_hex": "full_hex/water_deep_plane_e_f014.hex.txt"
+        },
+        {
+          "frame": 15,
+          "png": "pyxel_png/deep/water_deep_plane_e_f015.png",
+          "full_hex": "full_hex/water_deep_plane_e_f015.hex.txt"
+        },
+        {
+          "frame": 16,
+          "png": "pyxel_png/deep/water_deep_plane_e_f016.png",
+          "full_hex": "full_hex/water_deep_plane_e_f016.hex.txt"
+        },
+        {
+          "frame": 17,
+          "png": "pyxel_png/deep/water_deep_plane_e_f017.png",
+          "full_hex": "full_hex/water_deep_plane_e_f017.hex.txt"
+        },
+        {
+          "frame": 18,
+          "png": "pyxel_png/deep/water_deep_plane_e_f018.png",
+          "full_hex": "full_hex/water_deep_plane_e_f018.hex.txt"
+        },
+        {
+          "frame": 19,
+          "png": "pyxel_png/deep/water_deep_plane_e_f019.png",
+          "full_hex": "full_hex/water_deep_plane_e_f019.hex.txt"
+        },
+        {
+          "frame": 20,
+          "png": "pyxel_png/deep/water_deep_plane_e_f020.png",
+          "full_hex": "full_hex/water_deep_plane_e_f020.hex.txt"
+        },
+        {
+          "frame": 21,
+          "png": "pyxel_png/deep/water_deep_plane_e_f021.png",
+          "full_hex": "full_hex/water_deep_plane_e_f021.hex.txt"
+        },
+        {
+          "frame": 22,
+          "png": "pyxel_png/deep/water_deep_plane_e_f022.png",
+          "full_hex": "full_hex/water_deep_plane_e_f022.hex.txt"
+        },
+        {
+          "frame": 23,
+          "png": "pyxel_png/deep/water_deep_plane_e_f023.png",
+          "full_hex": "full_hex/water_deep_plane_e_f023.hex.txt"
+        }
+      ]
+    },
+    {
+      "layer_id": "water_mid_plane_e",
+      "short_name": "mid",
+      "colkey": 8,
+      "opaque": false,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "pyxel_png/mid/water_mid_plane_e_f000.png",
+          "full_hex": "full_hex/water_mid_plane_e_f000.hex.txt"
+        },
+        {
+          "frame": 1,
+          "png": "pyxel_png/mid/water_mid_plane_e_f001.png",
+          "full_hex": "full_hex/water_mid_plane_e_f001.hex.txt"
+        },
+        {
+          "frame": 2,
+          "png": "pyxel_png/mid/water_mid_plane_e_f002.png",
+          "full_hex": "full_hex/water_mid_plane_e_f002.hex.txt"
+        },
+        {
+          "frame": 3,
+          "png": "pyxel_png/mid/water_mid_plane_e_f003.png",
+          "full_hex": "full_hex/water_mid_plane_e_f003.hex.txt"
+        },
+        {
+          "frame": 4,
+          "png": "pyxel_png/mid/water_mid_plane_e_f004.png",
+          "full_hex": "full_hex/water_mid_plane_e_f004.hex.txt"
+        },
+        {
+          "frame": 5,
+          "png": "pyxel_png/mid/water_mid_plane_e_f005.png",
+          "full_hex": "full_hex/water_mid_plane_e_f005.hex.txt"
+        },
+        {
+          "frame": 6,
+          "png": "pyxel_png/mid/water_mid_plane_e_f006.png",
+          "full_hex": "full_hex/water_mid_plane_e_f006.hex.txt"
+        },
+        {
+          "frame": 7,
+          "png": "pyxel_png/mid/water_mid_plane_e_f007.png",
+          "full_hex": "full_hex/water_mid_plane_e_f007.hex.txt"
+        },
+        {
+          "frame": 8,
+          "png": "pyxel_png/mid/water_mid_plane_e_f008.png",
+          "full_hex": "full_hex/water_mid_plane_e_f008.hex.txt"
+        },
+        {
+          "frame": 9,
+          "png": "pyxel_png/mid/water_mid_plane_e_f009.png",
+          "full_hex": "full_hex/water_mid_plane_e_f009.hex.txt"
+        },
+        {
+          "frame": 10,
+          "png": "pyxel_png/mid/water_mid_plane_e_f010.png",
+          "full_hex": "full_hex/water_mid_plane_e_f010.hex.txt"
+        },
+        {
+          "frame": 11,
+          "png": "pyxel_png/mid/water_mid_plane_e_f011.png",
+          "full_hex": "full_hex/water_mid_plane_e_f011.hex.txt"
+        },
+        {
+          "frame": 12,
+          "png": "pyxel_png/mid/water_mid_plane_e_f012.png",
+          "full_hex": "full_hex/water_mid_plane_e_f012.hex.txt"
+        },
+        {
+          "frame": 13,
+          "png": "pyxel_png/mid/water_mid_plane_e_f013.png",
+          "full_hex": "full_hex/water_mid_plane_e_f013.hex.txt"
+        },
+        {
+          "frame": 14,
+          "png": "pyxel_png/mid/water_mid_plane_e_f014.png",
+          "full_hex": "full_hex/water_mid_plane_e_f014.hex.txt"
+        },
+        {
+          "frame": 15,
+          "png": "pyxel_png/mid/water_mid_plane_e_f015.png",
+          "full_hex": "full_hex/water_mid_plane_e_f015.hex.txt"
+        },
+        {
+          "frame": 16,
+          "png": "pyxel_png/mid/water_mid_plane_e_f016.png",
+          "full_hex": "full_hex/water_mid_plane_e_f016.hex.txt"
+        },
+        {
+          "frame": 17,
+          "png": "pyxel_png/mid/water_mid_plane_e_f017.png",
+          "full_hex": "full_hex/water_mid_plane_e_f017.hex.txt"
+        },
+        {
+          "frame": 18,
+          "png": "pyxel_png/mid/water_mid_plane_e_f018.png",
+          "full_hex": "full_hex/water_mid_plane_e_f018.hex.txt"
+        },
+        {
+          "frame": 19,
+          "png": "pyxel_png/mid/water_mid_plane_e_f019.png",
+          "full_hex": "full_hex/water_mid_plane_e_f019.hex.txt"
+        },
+        {
+          "frame": 20,
+          "png": "pyxel_png/mid/water_mid_plane_e_f020.png",
+          "full_hex": "full_hex/water_mid_plane_e_f020.hex.txt"
+        },
+        {
+          "frame": 21,
+          "png": "pyxel_png/mid/water_mid_plane_e_f021.png",
+          "full_hex": "full_hex/water_mid_plane_e_f021.hex.txt"
+        },
+        {
+          "frame": 22,
+          "png": "pyxel_png/mid/water_mid_plane_e_f022.png",
+          "full_hex": "full_hex/water_mid_plane_e_f022.hex.txt"
+        },
+        {
+          "frame": 23,
+          "png": "pyxel_png/mid/water_mid_plane_e_f023.png",
+          "full_hex": "full_hex/water_mid_plane_e_f023.hex.txt"
+        }
+      ]
+    },
+    {
+      "layer_id": "water_surface_plane_e",
+      "short_name": "surface",
+      "colkey": 8,
+      "opaque": false,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "pyxel_png/surface/water_surface_plane_e_f000.png",
+          "full_hex": "full_hex/water_surface_plane_e_f000.hex.txt"
+        },
+        {
+          "frame": 1,
+          "png": "pyxel_png/surface/water_surface_plane_e_f001.png",
+          "full_hex": "full_hex/water_surface_plane_e_f001.hex.txt"
+        },
+        {
+          "frame": 2,
+          "png": "pyxel_png/surface/water_surface_plane_e_f002.png",
+          "full_hex": "full_hex/water_surface_plane_e_f002.hex.txt"
+        },
+        {
+          "frame": 3,
+          "png": "pyxel_png/surface/water_surface_plane_e_f003.png",
+          "full_hex": "full_hex/water_surface_plane_e_f003.hex.txt"
+        },
+        {
+          "frame": 4,
+          "png": "pyxel_png/surface/water_surface_plane_e_f004.png",
+          "full_hex": "full_hex/water_surface_plane_e_f004.hex.txt"
+        },
+        {
+          "frame": 5,
+          "png": "pyxel_png/surface/water_surface_plane_e_f005.png",
+          "full_hex": "full_hex/water_surface_plane_e_f005.hex.txt"
+        },
+        {
+          "frame": 6,
+          "png": "pyxel_png/surface/water_surface_plane_e_f006.png",
+          "full_hex": "full_hex/water_surface_plane_e_f006.hex.txt"
+        },
+        {
+          "frame": 7,
+          "png": "pyxel_png/surface/water_surface_plane_e_f007.png",
+          "full_hex": "full_hex/water_surface_plane_e_f007.hex.txt"
+        },
+        {
+          "frame": 8,
+          "png": "pyxel_png/surface/water_surface_plane_e_f008.png",
+          "full_hex": "full_hex/water_surface_plane_e_f008.hex.txt"
+        },
+        {
+          "frame": 9,
+          "png": "pyxel_png/surface/water_surface_plane_e_f009.png",
+          "full_hex": "full_hex/water_surface_plane_e_f009.hex.txt"
+        },
+        {
+          "frame": 10,
+          "png": "pyxel_png/surface/water_surface_plane_e_f010.png",
+          "full_hex": "full_hex/water_surface_plane_e_f010.hex.txt"
+        },
+        {
+          "frame": 11,
+          "png": "pyxel_png/surface/water_surface_plane_e_f011.png",
+          "full_hex": "full_hex/water_surface_plane_e_f011.hex.txt"
+        },
+        {
+          "frame": 12,
+          "png": "pyxel_png/surface/water_surface_plane_e_f012.png",
+          "full_hex": "full_hex/water_surface_plane_e_f012.hex.txt"
+        },
+        {
+          "frame": 13,
+          "png": "pyxel_png/surface/water_surface_plane_e_f013.png",
+          "full_hex": "full_hex/water_surface_plane_e_f013.hex.txt"
+        },
+        {
+          "frame": 14,
+          "png": "pyxel_png/surface/water_surface_plane_e_f014.png",
+          "full_hex": "full_hex/water_surface_plane_e_f014.hex.txt"
+        },
+        {
+          "frame": 15,
+          "png": "pyxel_png/surface/water_surface_plane_e_f015.png",
+          "full_hex": "full_hex/water_surface_plane_e_f015.hex.txt"
+        },
+        {
+          "frame": 16,
+          "png": "pyxel_png/surface/water_surface_plane_e_f016.png",
+          "full_hex": "full_hex/water_surface_plane_e_f016.hex.txt"
+        },
+        {
+          "frame": 17,
+          "png": "pyxel_png/surface/water_surface_plane_e_f017.png",
+          "full_hex": "full_hex/water_surface_plane_e_f017.hex.txt"
+        },
+        {
+          "frame": 18,
+          "png": "pyxel_png/surface/water_surface_plane_e_f018.png",
+          "full_hex": "full_hex/water_surface_plane_e_f018.hex.txt"
+        },
+        {
+          "frame": 19,
+          "png": "pyxel_png/surface/water_surface_plane_e_f019.png",
+          "full_hex": "full_hex/water_surface_plane_e_f019.hex.txt"
+        },
+        {
+          "frame": 20,
+          "png": "pyxel_png/surface/water_surface_plane_e_f020.png",
+          "full_hex": "full_hex/water_surface_plane_e_f020.hex.txt"
+        },
+        {
+          "frame": 21,
+          "png": "pyxel_png/surface/water_surface_plane_e_f021.png",
+          "full_hex": "full_hex/water_surface_plane_e_f021.hex.txt"
+        },
+        {
+          "frame": 22,
+          "png": "pyxel_png/surface/water_surface_plane_e_f022.png",
+          "full_hex": "full_hex/water_surface_plane_e_f022.hex.txt"
+        },
+        {
+          "frame": 23,
+          "png": "pyxel_png/surface/water_surface_plane_e_f023.png",
+          "full_hex": "full_hex/water_surface_plane_e_f023.hex.txt"
+        }
+      ]
+    },
+    {
+      "layer_id": "water_surface_caustics_plane_e",
+      "short_name": "surface_caustics",
+      "colkey": 8,
+      "opaque": false,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f000.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f000.hex.txt"
+        },
+        {
+          "frame": 1,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f001.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f001.hex.txt"
+        },
+        {
+          "frame": 2,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f002.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f002.hex.txt"
+        },
+        {
+          "frame": 3,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f003.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f003.hex.txt"
+        },
+        {
+          "frame": 4,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f004.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f004.hex.txt"
+        },
+        {
+          "frame": 5,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f005.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f005.hex.txt"
+        },
+        {
+          "frame": 6,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f006.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f006.hex.txt"
+        },
+        {
+          "frame": 7,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f007.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f007.hex.txt"
+        },
+        {
+          "frame": 8,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f008.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f008.hex.txt"
+        },
+        {
+          "frame": 9,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f009.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f009.hex.txt"
+        },
+        {
+          "frame": 10,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f010.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f010.hex.txt"
+        },
+        {
+          "frame": 11,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f011.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f011.hex.txt"
+        },
+        {
+          "frame": 12,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f012.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f012.hex.txt"
+        },
+        {
+          "frame": 13,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f013.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f013.hex.txt"
+        },
+        {
+          "frame": 14,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f014.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f014.hex.txt"
+        },
+        {
+          "frame": 15,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f015.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f015.hex.txt"
+        },
+        {
+          "frame": 16,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f016.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f016.hex.txt"
+        },
+        {
+          "frame": 17,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f017.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f017.hex.txt"
+        },
+        {
+          "frame": 18,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f018.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f018.hex.txt"
+        },
+        {
+          "frame": 19,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f019.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f019.hex.txt"
+        },
+        {
+          "frame": 20,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f020.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f020.hex.txt"
+        },
+        {
+          "frame": 21,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f021.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f021.hex.txt"
+        },
+        {
+          "frame": 22,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f022.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f022.hex.txt"
+        },
+        {
+          "frame": 23,
+          "png": "pyxel_png/surface_caustics/water_surface_caustics_plane_e_f023.png",
+          "full_hex": "full_hex/water_surface_caustics_plane_e_f023.hex.txt"
+        }
+      ]
+    },
+    {
+      "layer_id": "water_highlights_plane_e",
+      "short_name": "highlights",
+      "colkey": 8,
+      "opaque": false,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f000.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f000.hex.txt"
+        },
+        {
+          "frame": 1,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f001.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f001.hex.txt"
+        },
+        {
+          "frame": 2,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f002.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f002.hex.txt"
+        },
+        {
+          "frame": 3,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f003.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f003.hex.txt"
+        },
+        {
+          "frame": 4,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f004.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f004.hex.txt"
+        },
+        {
+          "frame": 5,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f005.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f005.hex.txt"
+        },
+        {
+          "frame": 6,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f006.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f006.hex.txt"
+        },
+        {
+          "frame": 7,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f007.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f007.hex.txt"
+        },
+        {
+          "frame": 8,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f008.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f008.hex.txt"
+        },
+        {
+          "frame": 9,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f009.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f009.hex.txt"
+        },
+        {
+          "frame": 10,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f010.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f010.hex.txt"
+        },
+        {
+          "frame": 11,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f011.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f011.hex.txt"
+        },
+        {
+          "frame": 12,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f012.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f012.hex.txt"
+        },
+        {
+          "frame": 13,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f013.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f013.hex.txt"
+        },
+        {
+          "frame": 14,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f014.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f014.hex.txt"
+        },
+        {
+          "frame": 15,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f015.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f015.hex.txt"
+        },
+        {
+          "frame": 16,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f016.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f016.hex.txt"
+        },
+        {
+          "frame": 17,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f017.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f017.hex.txt"
+        },
+        {
+          "frame": 18,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f018.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f018.hex.txt"
+        },
+        {
+          "frame": 19,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f019.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f019.hex.txt"
+        },
+        {
+          "frame": 20,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f020.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f020.hex.txt"
+        },
+        {
+          "frame": 21,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f021.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f021.hex.txt"
+        },
+        {
+          "frame": 22,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f022.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f022.hex.txt"
+        },
+        {
+          "frame": 23,
+          "png": "pyxel_png/highlights/water_highlights_plane_e_f023.png",
+          "full_hex": "full_hex/water_highlights_plane_e_f023.hex.txt"
+        }
+      ]
+    },
+    {
+      "layer_id": "water_sparkle_plane_e",
+      "short_name": "sparkle",
+      "colkey": 8,
+      "opaque": false,
+      "frames": [
+        {
+          "frame": 0,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f000.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f000.hex.txt"
+        },
+        {
+          "frame": 1,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f001.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f001.hex.txt"
+        },
+        {
+          "frame": 2,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f002.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f002.hex.txt"
+        },
+        {
+          "frame": 3,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f003.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f003.hex.txt"
+        },
+        {
+          "frame": 4,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f004.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f004.hex.txt"
+        },
+        {
+          "frame": 5,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f005.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f005.hex.txt"
+        },
+        {
+          "frame": 6,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f006.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f006.hex.txt"
+        },
+        {
+          "frame": 7,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f007.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f007.hex.txt"
+        },
+        {
+          "frame": 8,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f008.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f008.hex.txt"
+        },
+        {
+          "frame": 9,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f009.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f009.hex.txt"
+        },
+        {
+          "frame": 10,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f010.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f010.hex.txt"
+        },
+        {
+          "frame": 11,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f011.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f011.hex.txt"
+        },
+        {
+          "frame": 12,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f012.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f012.hex.txt"
+        },
+        {
+          "frame": 13,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f013.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f013.hex.txt"
+        },
+        {
+          "frame": 14,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f014.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f014.hex.txt"
+        },
+        {
+          "frame": 15,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f015.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f015.hex.txt"
+        },
+        {
+          "frame": 16,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f016.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f016.hex.txt"
+        },
+        {
+          "frame": 17,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f017.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f017.hex.txt"
+        },
+        {
+          "frame": 18,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f018.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f018.hex.txt"
+        },
+        {
+          "frame": 19,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f019.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f019.hex.txt"
+        },
+        {
+          "frame": 20,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f020.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f020.hex.txt"
+        },
+        {
+          "frame": 21,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f021.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f021.hex.txt"
+        },
+        {
+          "frame": 22,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f022.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f022.hex.txt"
+        },
+        {
+          "frame": 23,
+          "png": "pyxel_png/sparkle/water_sparkle_plane_e_f023.png",
+          "full_hex": "full_hex/water_sparkle_plane_e_f023.hex.txt"
+        }
+      ]
+    }
+  ]
+}

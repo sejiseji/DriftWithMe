@@ -1,0 +1,45 @@
+{
+  "profile_id": "approved_look04_plus_sparkle_v0_1",
+  "frame_count": 24,
+  "fps": 12,
+  "logical_size": [
+    1024,
+    512
+  ],
+  "chunk_size": [
+    256,
+    256
+  ],
+  "layers": [
+    {
+      "id": "water_deep_plane_e",
+      "colkey": null,
+      "path_pattern": "full_hex/water_deep_plane_e_f{frame:03d}.hex.txt"
+    },
+    {
+      "id": "water_mid_plane_e",
+      "colkey": 8,
+      "path_pattern": "full_hex/water_mid_plane_e_f{frame:03d}.hex.txt"
+    },
+    {
+      "id": "water_surface_plane_e",
+      "colkey": 8,
+      "path_pattern": "full_hex/water_surface_plane_e_f{frame:03d}.hex.txt"
+    },
+    {
+      "id": "water_surface_caustics_plane_e",
+      "colkey": 8,
+      "path_pattern": "full_hex/water_surface_caustics_plane_e_f{frame:03d}.hex.txt"
+    },
+    {
+      "id": "water_highlights_plane_e",
+      "colkey": 8,
+      "path_pattern": "full_hex/water_highlights_plane_e_f{frame:03d}.hex.txt"
+    },
+    {
+      "id": "water_sparkle_plane_e",
+      "colkey": 8,
+      "path_pattern": "full_hex/water_sparkle_plane_e_f{frame:03d}.hex.txt"
+    }
+  ]
+}
