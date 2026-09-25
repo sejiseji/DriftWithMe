@@ -2,7 +2,7 @@
   "name": "DriftWithMe P0",
   "short_name": "DriftWithMe",
   "description": "DriftWithMe Jack World P0 Pyxel prototype.",
-  "start_url": "./index.html?v=drift-with-me-web-347f79e1affc",
+  "start_url": "./index.html?v=drift-with-me-web-2a9e82db60b8",
   "scope": "./",
   "display": "fullscreen",
   "display_override": [

@@ -1,8 +1,10 @@
-PACKAGE_NAME = "WTR_LOOK04_Plus_Sparkle_Production_Assetization_v0.1"
+"""Color-corrected source metadata, integration only."""
+
 FRAME_COUNT = 24
 FPS = 12
 LOGICAL_SIZE = (1024, 512)
 CHUNK_SIZE = (256, 256)
+CHUNK_NAMING = "c{row}{column}"
 LAYERS = [
     ("water_deep_plane_e", "deep", None),
     ("water_mid_plane_e", "mid", 8),

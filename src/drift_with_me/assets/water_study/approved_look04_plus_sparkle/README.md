@@ -1,26 +1,31 @@
-# WTR_LOOK04_Plus_Sparkle_Production_Assetization_v0.1
+# WTR LOOK04 + Sparkle 色変換修正版 v0.1.1
 
-WTR_LOOK04 の 5 層構成に、ゲーム表現寄りの sparkle 第6層を追加した production asset パックです。
+前版 v0.1 のHEXには色変換バグがありました。本版で置き換えてください。
+画作りの再設計・モーション変更ではなく、前版同梱の合成PNGを正しくHEXへ再現する修正です。
 
-## 内容
-- 6層・24フレーム・12fps の Water Study 本番ソース
-- 各層の 1024x512 論理キャンバス HEX 正本
-- 256x256 / 4x2 chunk 分割 HEX
-- Pyxel パレット準拠 PNG 検査用ソース
-- 再構成プレビュー GIF / MP4 / コンタクトシート
-- Codex 接続用 manifest / handoff / 仕様書
+## 変更したもの
 
-## 層構成
-1. water_deep_plane_e
-2. water_mid_plane_e
-3. water_surface_plane_e
-4. water_surface_caustics_plane_e
-5. water_highlights_plane_e
-6. water_sparkle_plane_e
+- 16bit整数による色距離計算のオーバーフローで誤変換された色を復元。
+- 前5層は LOOK04 の原画PNGと厳密なRGB→パレット対応で再照合。最近傍の再減色は行っていません。
+- sparkleは前版変換の可逆範囲を検証して復元。形、透明領域、点灯フレームは維持。
+- プレビューは元の画像からではなく、納品用HEXを読み戻して生成。
+- ハッシュ、使用色、透過、チャンク再結合、原画一致、全24コマ合成一致の検証を追加。
+- チャンクの原点と行・列をmanifestに明示。
 
-## ルール
-- deep は不透明
-- それ以外の5層は透過 `colkey=8` 前提
-- deep〜highlights は LOOK04 motion study を基準に固定
-- sparkle 第6層のみ今回追加生成
-- Codex 側で再生成・再減色・再描画して完成扱いにしないこと
+## 変更していないもの
+
+6層の順序、ID `*_plane_e`、1024×512、24f、12fps、透明色8、各フレームの形と透過領域。
+第6層の点灯順や既存ループもそのままです。タイミングの見直しや連続性の改善はしていません。
+
+## 結果
+
+- 全5下層×24f: LOOK04原画に完全一致。
+- 修正版6層の全24コマ合成: 前版納品プレビューPNGと完全一致。
+- 実機・リポジトリへの接続確認は別途必要。合成PNG一致は実機FPSや見た目承認を意味しません。
+
+## 実行
+
+`python scripts/verify_production_sources.py`
+
+検証には numpy と Pillow が必要です。
+`verification/`、`pyxel_png/`、`previews/` は検査用です。runtime/public build へ同梱しないでください。

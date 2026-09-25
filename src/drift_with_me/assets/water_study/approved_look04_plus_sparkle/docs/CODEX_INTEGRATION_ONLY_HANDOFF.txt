@@ -1,25 +1,22 @@
-WTR_LOOK04 + sparkle第6層 production asset 接続用ハンドオフ
+WTR_LOOK04 + sparkle v0.1.1 色変換修正の接続
 
-前提:
-- 本パックの full_hex / chunks_256 / production_manifest.json を正本として扱うこと。
-- runtime / public build に preview mp4/gif/png を混入させないこと。
-- 6層をこの順で合成すること: deep -> mid -> surface -> surface_caustics -> highlights -> sparkle
-- sparkle はゲーム表現的な水面反射光。白〜青白の不規則 twinkle を 24f ループで持つ。
+先に渡したv0.1のHEXはGPT側の色変換バグで不正です。
+これを描画時palで逆補正せず、本版の正しい画素に置き換えてください。
 
-接続仕様:
-- logical size: 1024x512
-- chunk: 256x256, grid 4x2
-- fps: 12
-- frame_count: 24
-- layer IDs:
-  - water_deep_plane_e (opaque)
-  - water_mid_plane_e (colkey=8)
-  - water_surface_plane_e (colkey=8)
-  - water_surface_caustics_plane_e (colkey=8)
-  - water_highlights_plane_e (colkey=8)
-  - water_sparkle_plane_e (colkey=8)
+1. 現行HEADと作業ツリーを確認し、利用者の未コミット変更を保持する。
+2. 本パックの scripts/verify_production_sources.py を実行する。
+3. アセットID/形/再生は変更せず、全6層のHEXをv0.1.1へ置換する。
+4. 古い色修正、明度抑制、色循環がある場合、この素材の描画経路では使わない。
+   ただし既存ゲーム全体のパレットや別画面の演出を不用意に変えない。
+5. 1024×512 / 24f / 12fps / deep不透明・他はcolkey=8を維持。
+   新しい位相やドリフト、ランダム生成、フレーム間引きを追加しない。
+6. 起動時preload + 常駐cacheを継続し、旧画素のcacheを本版の内容で再構築する。
+7. 既存パックv0.1のchunk名cYX（row, column）はそのまま維持している。
+   manifestのlogical_origin=[x,y]を正として接続する。旧cXY形式と混同しない。
+8. verification / pyxel_png / previews はruntime/public buildに含めない。
+9. UIなし・既知frame番号を使った描画結果を、previews/reconstructed_NNN.pngと
+   同じ座標・同じ範囲で比較する。素材の画素一致と画面フィット/クロップは分けて確認。
+10. 関連テスト/check_all/smokeを実行し、実行したものだけ報告する。
 
-禁止:
-- procedural で見た目を置換しない
-- palette を勝手に再割当しない
-- sparkle を別層へ吸収して消さない
+本修正は色変換不具合の修正です。見た目やモーションの再設計はGPT側に戻してください。
+不正な旧HEXに合わせてpalの逆引き補正を残すと、次の正常素材も壊れるので禁止です。

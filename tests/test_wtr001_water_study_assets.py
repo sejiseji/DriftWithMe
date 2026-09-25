@@ -396,11 +396,7 @@ def test_look04_plus_sparkle_manifest_matches_binding_profile() -> None:
         "assets/water_study/approved_look04_plus_sparkle"
     )
     manifest = json.loads(root.joinpath("production_manifest.json").read_text(encoding="utf-8"))
-    binding = json.loads(
-        root.joinpath("data/WTR_LOOK04_PLUS_SPARKLE_BINDING_MANIFEST_v0.1.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    binding = json.loads(root.joinpath("data/binding_manifest.json").read_text(encoding="utf-8"))
 
     assert manifest["variant"] == "e"
     assert tuple(manifest["logical_size"]) == (1024, 512)

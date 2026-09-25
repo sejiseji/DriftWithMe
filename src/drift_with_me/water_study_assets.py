@@ -61,7 +61,7 @@ APPROVED_WATER_PRODUCTION_LAYER_IDS: tuple[str, ...] = (
     "water_highlights_plane_d",
 )
 APPROVED_WATER_PRODUCTION_FRAME_COUNT = 24
-APPROVED_LOOK04_PLUS_SPARKLE_PROFILE = "approved_look04_plus_sparkle_v0_1"
+APPROVED_LOOK04_PLUS_SPARKLE_PROFILE = "look04_plus_sparkle_colorfix_v0_1_1"
 APPROVED_LOOK04_PLUS_SPARKLE_FPS = 12
 APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES = 5
 APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS: tuple[str, ...] = (
@@ -660,9 +660,7 @@ def load_approved_look04_plus_sparkle_frame_sequences(
         root.joinpath("production_manifest.json").read_text(encoding="utf-8")
     )
     binding_manifest = json.loads(
-        root.joinpath("data/WTR_LOOK04_PLUS_SPARKLE_BINDING_MANIFEST_v0.1.json").read_text(
-            encoding="utf-8"
-        )
+        root.joinpath("data/binding_manifest.json").read_text(encoding="utf-8")
     )
     if str(binding_manifest["profile_id"]) != APPROVED_LOOK04_PLUS_SPARKLE_PROFILE:
         raise ValueError(
