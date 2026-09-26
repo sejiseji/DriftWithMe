@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from types import SimpleNamespace
 
 import drift_with_me.app as app_module
@@ -261,6 +262,81 @@ def test_wtr001_active_rects_are_screen_specific() -> None:
 
     app.screen = AppScreen.WATER_STUDY
     assert app.active_ui_rects() == (app.water_study_close_rect(),)
+
+
+def test_water_study_jack_float_is_deterministic_and_world_independent() -> None:
+    first = make_water_app()
+    second = make_water_app()
+    world_before = (
+        first.model.player.x,
+        first.model.player.z,
+        first.model.buddy.x,
+        first.model.buddy.z,
+    )
+
+    first.reset_water_study_jack_float()
+    second.reset_water_study_jack_float()
+    start = (first.water_study_jack_float.x, first.water_study_jack_float.y)
+    for _ in range(600):
+        first.update_water_study_jack_float(1.0 / 60.0)
+        second.update_water_study_jack_float(1.0 / 60.0)
+
+    first_state = first.water_study_jack_float
+    second_state = second.water_study_jack_float
+    assert (first_state.x, first_state.y) != start
+    assert first_state == second_state
+    assert math.hypot(first_state.vx, first_state.vy) <= (
+        app_module.WATER_STUDY_JACK_MAX_SPEED_PX_SEC + 0.000001
+    )
+    assert (
+        first.model.player.x,
+        first.model.player.z,
+        first.model.buddy.x,
+        first.model.buddy.z,
+    ) == world_before
+
+
+def test_water_study_jack_soft_boundary_curves_without_instant_bounce() -> None:
+    app = make_water_app()
+    app.reset_water_study_jack_float()
+    state = app.water_study_jack_float
+    lower_x, _upper_x, _lower_y, _upper_y = app.water_study_jack_bounds()
+    state.x = lower_x - 4.0
+    state.vx = -2.0
+    state.ax = 0.0
+    state.target_ax = 0.0
+    state.force_remaining_sec = 10.0
+
+    app.step_water_study_jack_float(state, 1.0 / 60.0)
+
+    assert -2.0 < state.vx < 0.0
+
+
+def test_water_study_jack_draws_existing_idle_asset_in_screen_space() -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    app.reset_water_study_jack_float()
+    state = app.water_study_jack_float
+    frame = SimpleNamespace(image=2, u=8, v=16, width=32, height=32)
+    definition = SimpleNamespace(anchor_px=(16.0, 32.0), colkey=0)
+    asset = SimpleNamespace(definition=definition, frame=lambda: frame)
+    app.sprite_assets = SimpleNamespace(
+        get=lambda asset_id: asset if asset_id == "jack_idle_32" else None
+    )
+
+    assert app.draw_water_study_jack()
+
+    args, kwargs = app.pyxel.blt_calls[-1]
+    assert args == (
+        round(state.x - 16.0),
+        round(state.y - 32.0),
+        2,
+        8,
+        16,
+        32,
+        32,
+    )
+    assert kwargs == {"colkey": 0}
 
 
 def test_water_study_draws_large_pause_title_and_raises_close_label(monkeypatch) -> None:
