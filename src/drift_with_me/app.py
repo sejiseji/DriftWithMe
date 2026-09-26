@@ -198,7 +198,6 @@ class DriftWithMeApp:
         self.combat_camera_restore: CombatCameraRestore | None = None
         self.combat_camera_snapshot_zoom: float | None = None
         self.water_study_clock = 0.0
-        self.water_study_menu_open = False
         self.water_study_profile_index = 0
         self.water_study_last_draw_ms = 0.0
         self.water_study_last_layer_count = 0
@@ -417,7 +416,6 @@ class DriftWithMeApp:
         started_at = time.perf_counter()
         self.ensure_water_study_planes()
         self.clear_world_input_latches()
-        self.water_study_menu_open = False
         self.water_study_clock = 0.0
         self.screen = AppScreen.WATER_STUDY
         self.water_study_open_latency_ms = (time.perf_counter() - started_at) * 1000.0
@@ -438,10 +436,20 @@ class DriftWithMeApp:
         if self.screen != AppScreen.WATER_STUDY:
             return False
         self.clear_world_input_latches()
-        self.water_study_menu_open = False
         self.previous_time = None
         self.screen = AppScreen.PLAY
         return True
+
+    def enter_pause_from_play(self) -> None:
+        if self.can_open_water_study():
+            self.enter_water_study()
+            return
+        if self.model.world_paused:
+            self.process_events(self.model.cancel_interaction())
+            self.camera_controller.cancel_focus()
+        self.screen = AppScreen.PAUSE
+        self.clear_world_input_latches()
+        self.model.cancel_auto_move()
 
     def handle_water_study_shortcut(self) -> bool:
         pyxel = self.pyxel
@@ -673,20 +681,10 @@ class DriftWithMeApp:
             self.model.cancel_auto_move()
             return
         if self.mouse_pressed_in(self.pause_button_rect()):
-            if self.model.world_paused:
-                self.process_events(self.model.cancel_interaction())
-                self.camera_controller.cancel_focus()
-            self.screen = AppScreen.PAUSE
-            self.pointer.cancel()
-            self.cancel_double_tap_move_gesture()
-            self.pending_auto_move_goal = None
-            self.pending_cancel_auto_move = False
-            self.model.cancel_auto_move()
+            self.enter_pause_from_play()
             return
         if self.mouse_pressed_in(self.sound_button_rect()):
             self.audio.toggle_mute()
-            return
-        if self.handle_water_study_menu_pointer_controls():
             return
 
         self.handle_debug_camera_shortcuts()
@@ -813,23 +811,6 @@ class DriftWithMeApp:
         self.model.debug.fixed_steps_last_callback = steps
         self.process_events(all_events)
         self.effects.update(elapsed, self.model)
-
-    def handle_water_study_menu_pointer_controls(self) -> bool:
-        if self.mouse_pressed_in(self.water_study_menu_button_rect()):
-            self.water_study_menu_open = not self.water_study_menu_open
-            self.clear_world_input_latches()
-            return True
-        if not self.water_study_menu_open:
-            return False
-        pointer = self.pointer_snapshot
-        if not pointer.pressed:
-            return False
-        if self.water_study_menu_item_rect().contains(pointer.x, pointer.y):
-            self.enter_water_study()
-            return True
-        self.water_study_menu_open = False
-        self.clear_world_input_latches()
-        return True
 
     def process_events(self, events) -> None:
         if not events:
@@ -1202,11 +1183,7 @@ class DriftWithMeApp:
             self.pause_button_rect(),
             self.sound_button_rect(),
             self.minimap_rect(),
-            self.water_study_menu_button_rect(),
         ]
-        if getattr(self, "water_study_menu_open", False):
-            rects.append(self.water_study_menu_panel_rect())
-            rects.append(self.water_study_menu_item_rect())
         if interaction is not None and interaction.kind in {"water_refill", "energy_refill"}:
             rects.append(self.interaction_chip_rect())
         elif self.last_denied_reason:
@@ -1362,25 +1339,6 @@ class DriftWithMeApp:
         x = self.runtime.screen_width / 2 - width / 2
         y = self.runtime.screen_height - height - 8.0
         return self.clamp_ui_rect(Rect(x, y, width, height), margin=4.0)
-
-    def water_study_menu_button_rect(self) -> Rect:
-        width = 58.0 if self.runtime.profile.name != "high" else 70.0
-        height = 22.0 if self.runtime.profile.name != "high" else 26.0
-        x = float(self.runtime.screen_width) - width - 8.0
-        y = self.build_label_rect().y + self.build_label_rect().height + 5.0
-        return self.clamp_ui_rect(Rect(x, y, width, height), margin=4.0)
-
-    def water_study_menu_panel_rect(self) -> Rect:
-        width = 124.0 if self.runtime.profile.name != "high" else 150.0
-        height = 54.0 if self.runtime.profile.name != "high" else 62.0
-        button = self.water_study_menu_button_rect()
-        x = float(self.runtime.screen_width) - width - 8.0
-        y = button.y + button.height + 4.0
-        return self.clamp_ui_rect(Rect(x, y, width, height), margin=4.0)
-
-    def water_study_menu_item_rect(self) -> Rect:
-        panel = self.water_study_menu_panel_rect()
-        return Rect(panel.x + 8.0, panel.y + 16.0, panel.width - 16.0, panel.height - 24.0)
 
     def water_study_close_rect(self) -> Rect:
         width = 64.0 if self.runtime.profile.name != "high" else 78.0
@@ -2129,7 +2087,6 @@ class DriftWithMeApp:
             )
             self.draw_tooltip()
             self.draw_combat_timing_bar()
-            self.draw_water_study_menu()
         if self.debug_enabled:
             render_stats = self.renderer.last_stats if self.renderer is not None else None
             pyxel.text(8, 48, f"pos={self.model.player.x:.1f},{self.model.player.z:.1f}", 7)
@@ -2174,16 +2131,6 @@ class DriftWithMeApp:
                 )
             pyxel.text(8, 158, "F focus / P pan", 7)
             pyxel.text(8, 168, f"proj={self.projection_mode} / V toggle", 7)
-
-    def draw_water_study_menu(self) -> None:
-        button = self.water_study_menu_button_rect()
-        self.draw_button(button, "MENU", 5, text_color=7, style_name="label")
-        if not self.water_study_menu_open:
-            return
-        panel = self.water_study_menu_panel_rect()
-        item = self.water_study_menu_item_rect()
-        self.draw_panel_frame(panel, fill=0, inner=5)
-        self.draw_button(item, "WATER STUDY", 11, text_color=0, style_name="label")
 
     def draw_meter(
         self, x: int, y: int, width: int, height: int, value: float, maximum: float, color: int

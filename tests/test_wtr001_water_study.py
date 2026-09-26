@@ -25,6 +25,7 @@ class FakePyxel:
     KEY_2 = 50
     KEY_3 = 51
     KEY_4 = 52
+    KEY_ESCAPE = 27
     KEY_M = 77
 
     def __init__(self, pressed: set[int] | None = None) -> None:
@@ -94,7 +95,6 @@ def make_water_app() -> DriftWithMeApp:
     app.pyxel = FakePyxel()
     app.screen = AppScreen.PLAY
     app.water_study_clock = 0.0
-    app.water_study_menu_open = False
     app.water_study_profile_index = 1
     app.water_study_last_draw_ms = 0.0
     app.water_study_last_layer_count = 0
@@ -187,9 +187,9 @@ def test_wtr001_m_does_not_open_during_combat() -> None:
     assert app.screen == AppScreen.PLAY
 
 
-def test_wtr001_menu_opens_panel_and_enters_water_study() -> None:
+def test_wtr001_pause_action_enters_water_study_directly() -> None:
     app = make_water_app()
-    button = app.water_study_menu_button_rect()
+    button = app.pause_button_rect()
     app.pointer_snapshot = PointerSnapshot(
         True,
         True,
@@ -197,19 +197,25 @@ def test_wtr001_menu_opens_panel_and_enters_water_study() -> None:
         button.y + button.height * 0.5,
     )
 
-    assert app.handle_water_study_menu_pointer_controls()
-    assert app.water_study_menu_open
+    app.update_play_screen(0.0)
 
-    item = app.water_study_menu_item_rect()
+    assert app.screen == AppScreen.WATER_STUDY
+
+
+def test_wtr001_pause_action_uses_legacy_pause_when_combat_blocks_water_study() -> None:
+    app = make_water_app()
+    app.model.combat_session = SimpleNamespace()
+    button = app.pause_button_rect()
     app.pointer_snapshot = PointerSnapshot(
         True,
         True,
-        item.x + item.width * 0.5,
-        item.y + item.height * 0.5,
+        button.x + button.width * 0.5,
+        button.y + button.height * 0.5,
     )
 
-    assert app.handle_water_study_menu_pointer_controls()
-    assert app.screen == AppScreen.WATER_STUDY
+    app.update_play_screen(0.0)
+
+    assert app.screen == AppScreen.PAUSE
 
 
 def test_wtr001_close_preserves_world_state() -> None:
@@ -251,10 +257,7 @@ def test_wtr001_close_preserves_world_state() -> None:
 def test_wtr001_active_rects_are_screen_specific() -> None:
     app = make_water_app()
 
-    assert app.water_study_menu_button_rect() in app.active_ui_rects()
-
-    app.water_study_menu_open = True
-    assert app.water_study_menu_item_rect() in app.active_ui_rects()
+    assert app.pause_button_rect() in app.active_ui_rects()
 
     app.screen = AppScreen.WATER_STUDY
     assert app.active_ui_rects() == (app.water_study_close_rect(),)
