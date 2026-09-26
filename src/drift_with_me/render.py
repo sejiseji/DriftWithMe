@@ -3194,18 +3194,20 @@ class Renderer:
         pyxel = self.pyxel
         radius = self.depth_scaled_radius(camera, point.depth, numerator=900, minimum=3)
         color = 8 if enemy.kind == "normal" else 2
-        if enemy.state == "REPELLED":
-            color = 12
-        elif enemy.state == "REST":
-            color = 13
-        elif enemy.state == "RETURN_HOME":
-            color = 5
-        elif enemy.state == "CAPTURED":
-            color = 12
-        elif enemy.state == "WINDUP":
-            color = 8
-        elif enemy.state == "RECOVER":
-            color = 13
+        show_exploration_state = model.combat_session is None
+        if show_exploration_state:
+            if enemy.state == "REPELLED":
+                color = 12
+            elif enemy.state == "REST":
+                color = 13
+            elif enemy.state == "RETURN_HOME":
+                color = 5
+            elif enemy.state == "CAPTURED":
+                color = 12
+            elif enemy.state == "WINDUP":
+                color = 8
+            elif enemy.state == "RECOVER":
+                color = 13
         x = int(point.x)
         y = int(point.y)
         sprite_placement = self.draw_enemy_sprite(
@@ -3227,6 +3229,8 @@ class Renderer:
                     y + int(math.sin(angle) * (radius + 3)),
                     7,
                 )
+        if not show_exploration_state:
+            return
         if enemy.state == "REST":
             pyxel.line(x - radius, y - radius - 3, x + radius, y - radius - 3, 7)
         elif enemy.state == "APPROACH":

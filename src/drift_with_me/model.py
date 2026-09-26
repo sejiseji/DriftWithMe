@@ -2782,8 +2782,17 @@ class GameModel:
             auto_move_stuck_elapsed=self.auto_move_stuck_elapsed,
         )
 
+    def cancel_enemy_exploration_action_for_combat(self, enemy: EnemyState) -> None:
+        enemy.state = "IDLE"
+        enemy.state_timer = 0.0
+        enemy.push_x_per_sec = 0.0
+        enemy.push_z_per_sec = 0.0
+        enemy.dash_x = 0.0
+        enemy.dash_z = 0.0
+
     def start_contact_combat(self, enemy: EnemyState, events: list[GameEvent]) -> None:
         snapshot = self.combat_snapshot_for(enemy)
+        self.cancel_enemy_exploration_action_for_combat(enemy)
         min_separation = self.combat_min_safe_separation(enemy)
         enemy_return_x, enemy_return_z = self.find_combat_enemy_anchor(
             enemy,

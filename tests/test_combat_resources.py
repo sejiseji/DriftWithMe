@@ -549,6 +549,55 @@ def test_abnormal_urchin_contact_starts_combat() -> None:
     assert combat_events[-1].payload["enemy_kind"] == "abnormal"
 
 
+def test_abnormal_windup_is_cancelled_when_contact_combat_starts() -> None:
+    model, _camera = make_model()
+    enemy = abnormal_enemy(model)
+    enemy.state = "WINDUP"
+    enemy.state_timer = 0.42
+    enemy.dash_x = -0.8
+    enemy.dash_z = 0.6
+    events: list = []
+
+    model.start_contact_combat(enemy, events)
+
+    assert model.combat_session is not None
+    assert model.combat_session.snapshot.enemy.state == "WINDUP"
+    assert model.combat_session.snapshot.enemy.dash_x == pytest.approx(-0.8)
+    assert model.combat_session.snapshot.enemy.dash_z == pytest.approx(0.6)
+    assert enemy.state == "IDLE"
+    assert enemy.state_timer == pytest.approx(0.0)
+    assert enemy.dash_x == pytest.approx(0.0)
+    assert enemy.dash_z == pytest.approx(0.0)
+
+
+def test_combat_enemy_never_draws_exploration_windup_telegraph() -> None:
+    model, _camera = make_model()
+    model.player.x = 300.0
+    model.player.z = 192.0
+    enemy = abnormal_enemy(model)
+    enemy.x = 307.0
+    enemy.z = 192.0
+    enemy.state = "WINDUP"
+    enemy.dash_x = 1.0
+    enemy.dash_z = 0.0
+    camera = camera_for_model(model)
+    pyxel = RecordingPyxel()
+    renderer = Renderer(pyxel)
+    renderer.draw_enemy_sprite = lambda *args, **kwargs: None
+    telegraphs: list[tuple] = []
+    renderer.draw_world_line = lambda *args, **kwargs: telegraphs.append(args)
+
+    renderer.draw_enemy(model, enemy, camera)
+    assert len(telegraphs) == 1
+
+    model.start_contact_combat(enemy, [])
+    enemy.state = "WINDUP"
+    enemy.dash_x = 1.0
+    renderer.draw_enemy(model, enemy, camera)
+
+    assert len(telegraphs) == 1
+
+
 def test_bat001_contact_starts_isolated_combat_without_world_knockback() -> None:
     model, camera = make_model()
     model.config["combat_v1_enabled"] = True
