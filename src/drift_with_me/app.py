@@ -80,6 +80,17 @@ class WaterMicroGlintFX:
 
 
 @dataclass
+class WaterSpecularFlashFX:
+    active: bool = False
+    x: int = 0
+    y: int = 0
+    age_frames: int = 0
+    life_frames: int = 0
+    style: str = "spark"
+    size_px: int = 3
+
+
+@dataclass
 class WaterStudyJackFloat:
     x: float
     y: float
@@ -154,6 +165,10 @@ WATER_MICRO_GLINT_MAX_ACTIVE = 16
 WATER_MICRO_GLINT_MIN_LIFE_FRAMES = 6
 WATER_MICRO_GLINT_MAX_LIFE_FRAMES = 18
 WATER_MICRO_GLINT_MIN_DISTANCE_PX = 12
+WATER_SPECULAR_FLASH_INTERVAL_MIN_FRAMES = 96
+WATER_SPECULAR_FLASH_INTERVAL_MAX_FRAMES = 210
+WATER_SPECULAR_FLASH_MIN_LIFE_FRAMES = 10
+WATER_SPECULAR_FLASH_MAX_LIFE_FRAMES = 22
 WATER_STUDY_JACK_FIXED_DT = 1.0 / 60.0
 WATER_STUDY_JACK_MAX_SPEED_PX_SEC = 12.0
 WATER_STUDY_JACK_DAMPING_PER_FRAME = 0.994
@@ -298,6 +313,10 @@ class DriftWithMeApp:
         self.water_micro_glint_spawn_cursor = 0
         self.water_micro_glint_last_spawn: tuple[int, int] | None = None
         self.water_micro_glints = [WaterMicroGlintFX() for _ in range(WATER_MICRO_GLINT_POOL_SIZE)]
+        self.water_specular_flash = WaterSpecularFlashFX()
+        self.water_specular_flash_frame = 0
+        self.water_specular_flash_next_spawn_frame = 90
+        self.water_specular_flash_rng_state = 0x4C454E53
         self.water_study_jack_float = self.new_water_study_jack_float()
 
         pyxel.init(
@@ -503,6 +522,7 @@ class DriftWithMeApp:
         self.ensure_water_study_planes()
         self.clear_world_input_latches()
         self.water_study_clock = 0.0
+        self.reset_water_specular_flash()
         self.reset_water_study_jack_float()
         self.screen = AppScreen.WATER_STUDY
         self.water_study_open_latency_ms = (time.perf_counter() - started_at) * 1000.0
@@ -556,6 +576,7 @@ class DriftWithMeApp:
         self.clear_world_input_latches()
         self.handle_water_study_profile_shortcuts()
         self.update_water_micro_glints(elapsed)
+        self.update_water_specular_flash(elapsed)
         self.update_water_study_jack_float(elapsed)
         if self.mouse_pressed_in(self.water_study_close_rect()):
             self.exit_water_study()
@@ -942,6 +963,96 @@ class DriftWithMeApp:
             while self.active_water_micro_glint_count() < target:
                 if not self.try_spawn_water_micro_glint():
                     break
+
+    def ensure_water_specular_flash_state(self) -> WaterSpecularFlashFX:
+        state = getattr(self, "water_specular_flash", None)
+        if state is None:
+            state = WaterSpecularFlashFX()
+            self.water_specular_flash = state
+        if not hasattr(self, "water_specular_flash_frame"):
+            self.water_specular_flash_frame = 0
+        if not hasattr(self, "water_specular_flash_next_spawn_frame"):
+            self.water_specular_flash_next_spawn_frame = 90
+        if not hasattr(self, "water_specular_flash_rng_state"):
+            self.water_specular_flash_rng_state = 0x4C454E53
+        return state
+
+    def reset_water_specular_flash(self) -> None:
+        self.water_specular_flash = WaterSpecularFlashFX()
+        self.water_specular_flash_frame = 0
+        self.water_specular_flash_next_spawn_frame = 90
+        self.water_specular_flash_rng_state = 0x4C454E53
+
+    def water_specular_flash_random(self) -> float:
+        self.ensure_water_specular_flash_state()
+        self.water_specular_flash_rng_state = (
+            1664525 * self.water_specular_flash_rng_state + 1013904223
+        ) & 0xFFFFFFFF
+        return self.water_specular_flash_rng_state / 4294967296.0
+
+    def water_specular_flash_can_place(self, x: int, y: int) -> bool:
+        center_x = self.runtime.screen_width // 2
+        center_y = self.runtime.screen_height // 2
+        if abs(x - center_x) < 70 and abs(y - center_y) < 18:
+            return False
+        close = self.water_study_close_rect()
+        if x >= close.x - 12 and y <= close.y + close.height + 10:
+            return False
+        jack = self.ensure_water_study_jack_float()
+        return (x - jack.x) ** 2 + (y - jack.y) ** 2 >= 36**2
+
+    def try_spawn_water_specular_flash(self) -> bool:
+        state = self.ensure_water_specular_flash_state()
+        if state.active:
+            return False
+        margin_x = 18
+        margin_y = 14
+        x_span = max(1, self.runtime.screen_width - margin_x * 2)
+        y_span = max(1, self.runtime.screen_height - margin_y * 2)
+        for _ in range(20):
+            x = margin_x + int(self.water_specular_flash_random() * x_span)
+            y = margin_y + int(self.water_specular_flash_random() * y_span)
+            if not self.water_specular_flash_can_place(x, y):
+                continue
+            life_span = (
+                WATER_SPECULAR_FLASH_MAX_LIFE_FRAMES - WATER_SPECULAR_FLASH_MIN_LIFE_FRAMES + 1
+            )
+            state.active = True
+            state.x = x
+            state.y = y
+            state.age_frames = 0
+            state.life_frames = WATER_SPECULAR_FLASH_MIN_LIFE_FRAMES + int(
+                self.water_specular_flash_random() * life_span
+            )
+            state.style = "lens" if self.water_specular_flash_random() < 0.34 else "spark"
+            state.size_px = 4 if self.water_specular_flash_random() < 0.25 else 3
+            return True
+        return False
+
+    def schedule_next_water_specular_flash(self) -> None:
+        span = (
+            WATER_SPECULAR_FLASH_INTERVAL_MAX_FRAMES - WATER_SPECULAR_FLASH_INTERVAL_MIN_FRAMES + 1
+        )
+        self.water_specular_flash_next_spawn_frame = (
+            self.water_specular_flash_frame
+            + WATER_SPECULAR_FLASH_INTERVAL_MIN_FRAMES
+            + int(self.water_specular_flash_random() * span)
+        )
+
+    def update_water_specular_flash(self, elapsed: float) -> None:
+        state = self.ensure_water_specular_flash_state()
+        steps = max(1, int(round(max(0.0, elapsed) * float(self.runtime.target_fps))))
+        for _ in range(min(4, steps)):
+            self.water_specular_flash_frame += 1
+            if state.active:
+                state.age_frames += 1
+                if state.age_frames >= state.life_frames:
+                    state.active = False
+                continue
+            if self.water_specular_flash_frame < self.water_specular_flash_next_spawn_frame:
+                continue
+            if self.try_spawn_water_specular_flash():
+                self.schedule_next_water_specular_flash()
 
     def reset_scene_for_debug(self) -> None:
         self.model.reset_scene()
@@ -1863,6 +1974,7 @@ class DriftWithMeApp:
         if profile.name == "FULL_SIX_OBSERVE":
             self.draw_water_study_simple_bubbles(t, 10)
             layer_count += 1
+        self.draw_water_specular_flash()
         self.draw_water_study_jack(profile)
         self.draw_water_micro_glints()
         self.water_study_last_draw_ms = (time.perf_counter() - started_at) * 1000.0
@@ -2103,6 +2215,40 @@ class DriftWithMeApp:
             else:
                 pyxel.line(glint.x, glint.y, glint.x + 1, glint.y, glint.color)
             calls += 1
+        return calls
+
+    def draw_water_specular_flash(self) -> int:
+        pyxel = self.pyxel
+        state = self.ensure_water_specular_flash_state()
+        if not state.active or state.life_frames <= 0:
+            return 0
+        progress = state.age_frames / max(1, state.life_frames - 1)
+        strength = min(1.0, progress / 0.18, (1.0 - progress) / 0.42)
+        if strength <= 0.0:
+            return 0
+        x = state.x
+        y = state.y
+        calls = 0
+        if strength < 0.36:
+            pyxel.pset(x, y, 12)
+            return 1
+
+        arm = max(2, state.size_px - (1 if strength < 0.72 else 0))
+        pyxel.line(x - arm, y, x + arm, y, 6)
+        pyxel.line(x, y - arm + 1, x, y + arm - 1, 12)
+        pyxel.pset(x, y, 7)
+        calls += 3
+        if strength >= 0.72:
+            pyxel.pset(x - 1, y, 7)
+            pyxel.pset(x + 1, y, 7)
+            calls += 2
+            if state.style == "lens":
+                flare_arm = arm + 3
+                pyxel.line(x - flare_arm, y, x + flare_arm, y, 12)
+                pyxel.pset(x - flare_arm - 3, y, 5)
+                pyxel.pset(x + flare_arm + 3, y, 5)
+                pyxel.pset(x, y, 7)
+                calls += 4
         return calls
 
     def draw_water_study_debug_overlay(self, profile: WaterStudyProfile) -> None:

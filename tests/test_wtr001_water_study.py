@@ -862,3 +862,46 @@ def test_water_study_micro_glints_stay_sparse_short_lived_and_stationary() -> No
     app.update_water_micro_glints(1 / app.runtime.target_fps)
 
     assert all((glint.x, glint.y) == before[id(glint)] for glint in active if glint.active)
+
+
+def test_water_study_specular_flash_is_rare_short_and_single() -> None:
+    app = make_water_app()
+    app.reset_water_specular_flash()
+    app.water_specular_flash_next_spawn_frame = 1
+
+    app.update_water_specular_flash(1 / app.runtime.target_fps)
+
+    flash = app.water_specular_flash
+    assert flash.active
+    assert 10 <= flash.life_frames <= 22
+    assert flash.style in {"spark", "lens"}
+    assert flash.size_px in {3, 4}
+    first_position = (flash.x, flash.y)
+
+    app.update_water_specular_flash(1 / app.runtime.target_fps)
+
+    assert app.water_specular_flash.active
+    assert (flash.x, flash.y) == first_position
+    assert app.water_specular_flash_next_spawn_frame >= 97
+
+
+def test_water_study_specular_flash_draws_primitives_without_sprite() -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    app.water_specular_flash = app_module.WaterSpecularFlashFX(
+        active=True,
+        x=80,
+        y=60,
+        age_frames=5,
+        life_frames=14,
+        style="lens",
+        size_px=4,
+    )
+
+    calls = app.draw_water_specular_flash()
+
+    assert calls == 9
+    assert app.pyxel.blt_calls == []
+    assert (80, 60, 7) in app.pyxel.pset_calls
+    assert (73, 60, 87, 60, 12) in app.pyxel.line_calls
+    assert all(abs(x2 - x1) <= 14 for x1, _y1, x2, _y2, _color in app.pyxel.line_calls)
