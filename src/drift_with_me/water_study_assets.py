@@ -72,6 +72,7 @@ APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS: tuple[str, ...] = (
     "water_highlights_plane_e",
     "water_sparkle_plane_e",
 )
+WATER_STUDY_RUNTIME_LAYER_IDS: tuple[str, ...] = APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS[:-1]
 APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT = 24
 APPROVED_WATER_IDENTITY_LAYER_IDS = (
     APPROVED_WATER_PRODUCTION_LAYER_IDS + APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
@@ -696,6 +697,7 @@ def load_approved_water_production_frame_sequences(
 def load_approved_look04_plus_sparkle_frame_sequences(
     pyxel_module: Any,
     *,
+    layer_ids: tuple[str, ...] = APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
     layer_timing_callback: Callable[[str, float], None] | None = None,
     timer: Callable[[], float] = time.perf_counter,
 ) -> dict[str, WaterStudyFrameSequence]:
@@ -748,6 +750,11 @@ def load_approved_look04_plus_sparkle_frame_sequences(
         != APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
     ):
         raise ValueError("LOOK04 plus sparkle binding layer order changed")
+    invalid_runtime_layers = [
+        layer_id for layer_id in layer_ids if layer_id not in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    ]
+    if invalid_runtime_layers:
+        raise ValueError("unknown LOOK04 runtime layers: " + ", ".join(invalid_runtime_layers))
 
     layer_colkeys: dict[str, int | None] = {}
     for layer in production_layers:
@@ -763,7 +770,7 @@ def load_approved_look04_plus_sparkle_frame_sequences(
             raise ValueError(f"{layer_id}: expected {frame_count} frames")
 
     sequences: dict[str, WaterStudyFrameSequence] = {}
-    for layer_id in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS:
+    for layer_id in layer_ids:
         layer_started_at = timer()
         planes: list[WaterStudyPlane] = []
         for frame_index in range(frame_count):
@@ -800,7 +807,7 @@ def load_approved_look04_plus_sparkle_frame_sequences(
         )
         if layer_timing_callback is not None:
             layer_timing_callback(layer_id, timer() - layer_started_at)
-    return {layer_id: sequences[layer_id] for layer_id in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS}
+    return {layer_id: sequences[layer_id] for layer_id in layer_ids}
 
 
 def load_water_study_frame_sequences(
@@ -811,6 +818,7 @@ def load_water_study_frame_sequences(
 ) -> dict[str, WaterStudyFrameSequence]:
     return load_approved_look04_plus_sparkle_frame_sequences(
         pyxel_module,
+        layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
         layer_timing_callback=layer_timing_callback,
         timer=timer,
     )
@@ -959,16 +967,11 @@ def preload_water_study_cache(
         timer=timer,
     )
     sequence_preload_sec = timer() - sequence_started_at
-    sparkle_fx_bank = load_water_sparkle_fx_bank(
-        pyxel_module,
-        layer_timing_callback=layer_timings.__setitem__,
-        timer=timer,
-    )
     cache = WaterStudyAssetCache(
         static_layers=static_layers,
         phase_layers=phase_layers,
         frame_sequences=frame_sequences,
-        sparkle_fx_bank=sparkle_fx_bank,
+        sparkle_fx_bank=None,
         ready=True,
         preload_total_sec=timer() - preload_started_at,
         static_preload_sec=static_preload_sec,

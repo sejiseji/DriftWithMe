@@ -20,6 +20,7 @@ from drift_with_me.water_study_assets import (
     WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_LAYER_IDS,
     WATER_STUDY_PHASE_STEP_FRAMES,
+    WATER_STUDY_RUNTIME_LAYER_IDS,
     WTR002_SURFACE_CAUSTICS_ASSET_ID,
     WTR002_SURFACE_CAUSTICS_FRAME_COUNT,
     WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID,
@@ -537,8 +538,8 @@ def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
     assert cache.ready
     assert cache.static_layers == {}
     assert cache.phase_layers == {}
-    assert tuple(cache.frame_sequences) == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
-    for layer_id in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS:
+    assert tuple(cache.frame_sequences) == WATER_STUDY_RUNTIME_LAYER_IDS
+    for layer_id in WATER_STUDY_RUNTIME_LAYER_IDS:
         assert (
             len(cache.frame_sequences[layer_id].planes) == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
         )
@@ -550,17 +551,13 @@ def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
     assert cache.static_preload_sec >= 0.0
     assert cache.phase_preload_sec >= 0.0
     assert cache.sequence_preload_sec >= 0.0
-    for layer_id in APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS:
+    for layer_id in WATER_STUDY_RUNTIME_LAYER_IDS:
         assert layer_id in cache.layer_preload_sec
         assert cache.layer_preload_sec[layer_id] >= 0.0
-    assert cache.sparkle_fx_bank is not None
-    assert cache.sparkle_fx_bank.bank_id == WATER_SPARKLE_FX_BANK_ID
-    assert WATER_SPARKLE_FX_BANK_ID in cache.layer_preload_sec
-    expected_pixels = (
-        len(APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS) * APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
-    )
+    assert cache.sparkle_fx_bank is None
+    assert WATER_SPARKLE_FX_BANK_ID not in cache.layer_preload_sec
+    expected_pixels = len(WATER_STUDY_RUNTIME_LAYER_IDS) * APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
     expected_pixels *= 1024 * 512
-    expected_pixels += 256 * 256
     assert cache.resident_pixel_count == expected_pixels
 
 

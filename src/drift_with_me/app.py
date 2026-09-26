@@ -27,12 +27,10 @@ from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.water_study_assets import (
-    APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
     APPROVED_WATER_IDENTITY_LAYER_IDS,
     WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_STEP_FRAMES,
-    WaterSparkleAnimDef,
-    WaterSparkleFxBank,
+    WATER_STUDY_RUNTIME_LAYER_IDS,
     WaterStudyAssetCache,
     WaterStudyPlane,
     preload_water_study_cache,
@@ -69,43 +67,32 @@ class WaterStudyProfile:
 
 
 @dataclass
-class WaterSparkleInstance:
+class WaterMicroGlintFX:
     active: bool = False
-    anim_index: int = 0
-    x: float = 0.0
-    y: float = 0.0
-    age_frames: int = 0
-    seed: int = 0
-
-
-@dataclass
-class WaterSparkleMicroParticle:
-    active: bool = False
-    x: float = 0.0
-    y: float = 0.0
+    x: int = 0
+    y: int = 0
     age_frames: int = 0
     life_frames: int = 0
     color: int = 5
     length_px: int = 1
-    horizontal: bool = True
 
 
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
     WaterStudyProfile(
-        "APPROVED_LOOK04_SPARKLE",
-        layer_ids=APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
+        "LOOK04_MICRO_GLINT",
+        layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "APPROVED_LOOK04_SPARKLE",
-        layer_ids=APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
+        "LOOK04_MICRO_GLINT",
+        layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "APPROVED_LOOK04_SPARKLE",
-        layer_ids=APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
+        "LOOK04_MICRO_GLINT",
+        layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
     ),
     WaterStudyProfile(
-        "APPROVED_LOOK04_SPARKLE",
-        layer_ids=APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
+        "LOOK04_MICRO_GLINT",
+        layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
     ),
 )
 
@@ -128,8 +115,13 @@ WATER_STUDY_LAYER_MOTION: dict[str, tuple[float, float, float, float, float, flo
     "water_surface_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     "water_surface_caustics_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     "water_highlights_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
-    "water_sparkle_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 }
+WATER_MICRO_GLINT_POOL_SIZE = 16
+WATER_MICRO_GLINT_MIN_ACTIVE = 8
+WATER_MICRO_GLINT_MAX_ACTIVE = 16
+WATER_MICRO_GLINT_MIN_LIFE_FRAMES = 6
+WATER_MICRO_GLINT_MAX_LIFE_FRAMES = 18
+WATER_MICRO_GLINT_MIN_DISTANCE_PX = 12
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
     # remain unchanged, but their broad bright cells are tempered at draw time.
@@ -215,12 +207,10 @@ class DriftWithMeApp:
         self.water_study_asset_cache: WaterStudyAssetCache | None = None
         self.water_study_planes: dict[str, WaterStudyPlane] = {}
         self.water_study_phase_planes: dict[str, tuple[WaterStudyPlane, ...]] = {}
-        self.water_sparkle_frame = 0
-        self.water_sparkle_spawn_cursor = 0
-        self.water_sparkle_next_spawn_frame = 1
-        self.water_sparkle_next_micro_frame = 1
-        self.water_sparkles = [WaterSparkleInstance() for _ in range(16)]
-        self.water_sparkle_micro_particles = [WaterSparkleMicroParticle() for _ in range(24)]
+        self.water_micro_glint_frame = 0
+        self.water_micro_glint_spawn_cursor = 0
+        self.water_micro_glint_last_spawn: tuple[int, int] | None = None
+        self.water_micro_glints = [WaterMicroGlintFX() for _ in range(WATER_MICRO_GLINT_POOL_SIZE)]
 
         pyxel.init(
             self.runtime.screen_width,
@@ -470,7 +460,7 @@ class DriftWithMeApp:
         self.water_study_clock += max(0.0, elapsed)
         self.clear_world_input_latches()
         self.handle_water_study_profile_shortcuts()
-        self.update_water_sparkle_fx(elapsed)
+        self.update_water_micro_glints(elapsed)
         if self.mouse_pressed_in(self.water_study_close_rect()):
             self.exit_water_study()
 
@@ -524,186 +514,91 @@ class DriftWithMeApp:
         y += orbit_y * orbit_scale * math.sin(elapsed_sec * 0.46 + phase * 1.3)
         return x, y
 
-    def ensure_water_sparkle_fx_state(self) -> None:
-        if not hasattr(self, "water_sparkles"):
-            self.water_sparkles = [WaterSparkleInstance() for _ in range(16)]
-        if not hasattr(self, "water_sparkle_micro_particles"):
-            self.water_sparkle_micro_particles = [WaterSparkleMicroParticle() for _ in range(24)]
-        if not hasattr(self, "water_sparkle_frame"):
-            self.water_sparkle_frame = 0
-        if not hasattr(self, "water_sparkle_spawn_cursor"):
-            self.water_sparkle_spawn_cursor = 0
-        if not hasattr(self, "water_sparkle_next_spawn_frame"):
-            self.water_sparkle_next_spawn_frame = 1
-        if not hasattr(self, "water_sparkle_next_micro_frame"):
-            self.water_sparkle_next_micro_frame = 1
+    def ensure_water_micro_glint_state(self) -> None:
+        if not hasattr(self, "water_micro_glints"):
+            self.water_micro_glints = [
+                WaterMicroGlintFX() for _ in range(WATER_MICRO_GLINT_POOL_SIZE)
+            ]
+        if not hasattr(self, "water_micro_glint_frame"):
+            self.water_micro_glint_frame = 0
+        if not hasattr(self, "water_micro_glint_spawn_cursor"):
+            self.water_micro_glint_spawn_cursor = 0
+        if not hasattr(self, "water_micro_glint_last_spawn"):
+            self.water_micro_glint_last_spawn = None
 
-    def water_sparkle_fx_bank(self) -> WaterSparkleFxBank | None:
-        cache = getattr(self, "water_study_asset_cache", None)
-        if cache is None or not getattr(cache, "ready", False):
-            return None
-        return getattr(cache, "sparkle_fx_bank", None)
-
-    def water_sparkle_hash(self, salt: int) -> int:
-        self.ensure_water_sparkle_fx_state()
+    def water_micro_glint_hash(self, salt: int) -> int:
+        self.ensure_water_micro_glint_state()
         value = (
-            int(self.water_sparkle_frame) * 1103515245
-            + int(self.water_sparkle_spawn_cursor) * 12345
+            int(self.water_micro_glint_frame) * 1103515245
+            + int(self.water_micro_glint_spawn_cursor) * 12345
             + int(salt) * 2654435761
         )
         return value & 0x7FFFFFFF
 
-    def water_sparkle_spawn_range(self, bank: WaterSparkleFxBank, key: str) -> tuple[int, int]:
-        spawn = bank.config.get("spawn", {})
-        low, high = spawn.get(key, (1, 1))
-        low = max(1, int(low))
-        high = max(low, int(high))
-        return low, high
+    def active_water_micro_glint_count(self) -> int:
+        self.ensure_water_micro_glint_state()
+        return sum(1 for glint in self.water_micro_glints if glint.active)
 
-    def water_sparkle_next_interval(self, bank: WaterSparkleFxBank, key: str, salt: int) -> int:
-        low, high = self.water_sparkle_spawn_range(bank, key)
-        return low + self.water_sparkle_hash(salt) % (high - low + 1)
-
-    def water_sparkle_category_cap(self, bank: WaterSparkleFxBank, category: str) -> int:
-        spawn = bank.config.get("spawn", {})
-        key_by_category = {
-            "large": "max_large_cross",
-            "medium": "max_medium_cross",
-            "small": "max_small_cross",
-            "large_glint": "max_large_glint",
-            "medium_glint": "max_medium_glint",
-            "micro_cluster": "max_micro_cluster",
-        }
-        return int(spawn.get(key_by_category.get(category, ""), 0))
-
-    def active_water_sparkle_count(
-        self, bank: WaterSparkleFxBank, category: str | None = None
-    ) -> int:
-        self.ensure_water_sparkle_fx_state()
-        count = 0
-        for sparkle in self.water_sparkles:
-            if not sparkle.active:
-                continue
-            if category is None:
-                count += 1
-                continue
-            if sparkle.anim_index < len(bank.animations):
-                count += int(bank.animations[sparkle.anim_index].category == category)
-        return count
-
-    def water_sparkle_can_place(
-        self,
-        bank: WaterSparkleFxBank,
-        animation: WaterSparkleAnimDef,
-        x: float,
-        y: float,
-    ) -> bool:
-        spawn = bank.config.get("spawn", {})
-        min_distance = int(spawn.get("min_spawn_distance_px", 20))
-        if animation.category in {"large", "large_glint"}:
-            min_distance = int(spawn.get("large_min_spawn_distance_px", 48))
-        center_x = x + animation.frame_width * 0.5
-        center_y = y + animation.frame_height * 0.5
-        min_distance_sq = float(min_distance * min_distance)
-        for sparkle in self.water_sparkles:
-            if not sparkle.active or sparkle.anim_index >= len(bank.animations):
-                continue
-            other_anim = bank.animations[sparkle.anim_index]
-            other_x = sparkle.x + other_anim.frame_width * 0.5
-            other_y = sparkle.y + other_anim.frame_height * 0.5
-            if (center_x - other_x) ** 2 + (center_y - other_y) ** 2 < min_distance_sq:
-                return False
-        return True
-
-    def try_spawn_water_sparkle(self, bank: WaterSparkleFxBank) -> None:
-        self.ensure_water_sparkle_fx_state()
-        free_slot = next((sparkle for sparkle in self.water_sparkles if not sparkle.active), None)
-        if free_slot is None:
-            return
-        for attempt in range(len(bank.animations) * 2):
-            anim_index = (self.water_sparkle_spawn_cursor + attempt) % len(bank.animations)
-            animation = bank.animations[anim_index]
-            if self.active_water_sparkle_count(
-                bank, animation.category
-            ) >= self.water_sparkle_category_cap(bank, animation.category):
-                continue
-            max_x = max(4, self.runtime.screen_width - animation.frame_width - 4)
-            max_y = max(4, self.runtime.screen_height - animation.frame_height - 4)
-            x_span = max(1, max_x - 4)
-            y_span = max(1, max_y - 4)
-            seed = self.water_sparkle_hash(37 + attempt)
-            x = 4 + seed % x_span
-            y = 4 + self.water_sparkle_hash(71 + attempt) % y_span
-            if not self.water_sparkle_can_place(bank, animation, x, y):
-                continue
-            free_slot.active = True
-            free_slot.anim_index = anim_index
-            free_slot.x = float(x)
-            free_slot.y = float(y)
-            free_slot.age_frames = 0
-            free_slot.seed = seed
-            self.water_sparkle_spawn_cursor += attempt + 1
-            return
-        self.water_sparkle_spawn_cursor += 1
-
-    def try_spawn_water_sparkle_micro_particle(self, bank: WaterSparkleFxBank) -> None:
-        self.ensure_water_sparkle_fx_state()
-        spawn = bank.config.get("spawn", {})
-        max_particles = int(spawn.get("max_micro_particles", 14))
-        active = sum(1 for particle in self.water_sparkle_micro_particles if particle.active)
-        if active >= max_particles:
-            return
-        free_slot = next(
-            (particle for particle in self.water_sparkle_micro_particles if not particle.active),
-            None,
+    def water_micro_glint_can_place(self, x: int, y: int) -> bool:
+        min_distance_sq = WATER_MICRO_GLINT_MIN_DISTANCE_PX**2
+        last_spawn = self.water_micro_glint_last_spawn
+        if last_spawn is not None and (
+            (x - last_spawn[0]) ** 2 + (y - last_spawn[1]) ** 2 < min_distance_sq
+        ):
+            return False
+        return all(
+            not glint.active or (x - glint.x) ** 2 + (y - glint.y) ** 2 >= min_distance_sq
+            for glint in self.water_micro_glints
         )
-        if free_slot is None:
-            return
-        seed = self.water_sparkle_hash(191)
-        colors = (5, 12, 6, 5, 12, 6, 7)
-        free_slot.active = True
-        free_slot.x = float(seed % max(1, self.runtime.screen_width))
-        free_slot.y = float(self.water_sparkle_hash(223) % max(1, self.runtime.screen_height))
-        free_slot.age_frames = 0
-        free_slot.life_frames = 8 + self.water_sparkle_hash(257) % 13
-        free_slot.color = colors[self.water_sparkle_hash(293) % len(colors)]
-        free_slot.length_px = 1 + self.water_sparkle_hash(307) % 2
-        free_slot.horizontal = bool(self.water_sparkle_hash(331) % 2)
 
-    def update_water_sparkle_fx(self, elapsed: float) -> None:
-        bank = self.water_sparkle_fx_bank()
-        if bank is None or not bool(bank.config.get("enabled", False)):
-            return
-        self.ensure_water_sparkle_fx_state()
+    def try_spawn_water_micro_glint(self) -> bool:
+        self.ensure_water_micro_glint_state()
+        free_slot = next((glint for glint in self.water_micro_glints if not glint.active), None)
+        if free_slot is None:
+            return False
+        margin = 4
+        x_span = max(1, self.runtime.screen_width - margin * 2)
+        y_span = max(1, self.runtime.screen_height - margin * 2)
+        for attempt in range(24):
+            x = margin + self.water_micro_glint_hash(37 + attempt * 2) % x_span
+            y = margin + self.water_micro_glint_hash(71 + attempt * 2) % y_span
+            if not self.water_micro_glint_can_place(x, y):
+                continue
+            life_span = WATER_MICRO_GLINT_MAX_LIFE_FRAMES - WATER_MICRO_GLINT_MIN_LIFE_FRAMES + 1
+            colors = (12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 5, 5, 5, 7)
+            free_slot.active = True
+            free_slot.x = x
+            free_slot.y = y
+            free_slot.age_frames = 0
+            free_slot.life_frames = (
+                WATER_MICRO_GLINT_MIN_LIFE_FRAMES
+                + self.water_micro_glint_hash(113 + attempt) % life_span
+            )
+            free_slot.color = colors[self.water_micro_glint_hash(149 + attempt) % len(colors)]
+            free_slot.length_px = 2 if self.water_micro_glint_hash(181 + attempt) % 5 == 0 else 1
+            self.water_micro_glint_last_spawn = (x, y)
+            self.water_micro_glint_spawn_cursor += attempt + 1
+            return True
+        self.water_micro_glint_spawn_cursor += 1
+        return False
+
+    def update_water_micro_glints(self, elapsed: float) -> None:
+        self.ensure_water_micro_glint_state()
         steps = max(1, int(round(max(0.0, elapsed) * float(self.runtime.target_fps))))
         for _ in range(min(4, steps)):
-            self.water_sparkle_frame += 1
-            for sparkle in self.water_sparkles:
-                if not sparkle.active or sparkle.anim_index >= len(bank.animations):
+            self.water_micro_glint_frame += 1
+            for glint in self.water_micro_glints:
+                if not glint.active:
                     continue
-                sparkle.age_frames += 1
-                if sparkle.age_frames >= bank.animations[sparkle.anim_index].duration_frames:
-                    sparkle.active = False
-            for particle in self.water_sparkle_micro_particles:
-                if not particle.active:
-                    continue
-                particle.age_frames += 1
-                if particle.age_frames >= particle.life_frames:
-                    particle.active = False
-            if self.water_sparkle_frame >= self.water_sparkle_next_spawn_frame:
-                self.try_spawn_water_sparkle(bank)
-                self.water_sparkle_next_spawn_frame = (
-                    self.water_sparkle_frame
-                    + self.water_sparkle_next_interval(bank, "sparkle_interval_frames", 401)
-                )
-            if self.water_sparkle_frame >= self.water_sparkle_next_micro_frame:
-                self.try_spawn_water_sparkle_micro_particle(bank)
-                if self.water_sparkle_hash(449) % 3 == 0:
-                    self.try_spawn_water_sparkle_micro_particle(bank)
-                self.water_sparkle_next_micro_frame = (
-                    self.water_sparkle_frame
-                    + self.water_sparkle_next_interval(bank, "micro_particle_interval_frames", 463)
-                )
+                glint.age_frames += 1
+                if glint.age_frames >= glint.life_frames:
+                    glint.active = False
+            target = WATER_MICRO_GLINT_MIN_ACTIVE + (
+                (self.water_micro_glint_frame // 30) * 7 + 3
+            ) % (WATER_MICRO_GLINT_MAX_ACTIVE - WATER_MICRO_GLINT_MIN_ACTIVE + 1)
+            while self.active_water_micro_glint_count() < target:
+                if not self.try_spawn_water_micro_glint():
+                    break
 
     def reset_scene_for_debug(self) -> None:
         self.model.reset_scene()
@@ -1675,10 +1570,7 @@ class DriftWithMeApp:
         if profile.name == "FULL_SIX_OBSERVE":
             self.draw_water_study_simple_bubbles(t, 10)
             layer_count += 1
-        sparkle_calls = self.draw_water_study_sparkle_fx()
-        if sparkle_calls > 0:
-            layer_count += 1
-            wrap_calls += sparkle_calls
+        self.draw_water_micro_glints()
         self.water_study_last_draw_ms = (time.perf_counter() - started_at) * 1000.0
         self.water_study_last_layer_count = layer_count
         self.water_study_last_wrap_calls = wrap_calls
@@ -1793,54 +1685,17 @@ class DriftWithMeApp:
             color = 5 if u < 0.35 else (12 if u < 0.78 else 6)
             pyxel.circb(x, y, radius, color)
 
-    def draw_water_study_sparkle_fx(self) -> int:
+    def draw_water_micro_glints(self) -> int:
         pyxel = self.pyxel
-        bank = self.water_sparkle_fx_bank()
-        if bank is None or not bool(bank.config.get("enabled", False)):
-            return 0
-        self.ensure_water_sparkle_fx_state()
+        self.ensure_water_micro_glint_state()
         calls = 0
-        for particle in self.water_sparkle_micro_particles:
-            if not particle.active:
+        for glint in self.water_micro_glints:
+            if not glint.active:
                 continue
-            x = int(round(particle.x))
-            y = int(round(particle.y))
-            if particle.length_px <= 1 or not hasattr(pyxel, "line"):
-                if hasattr(pyxel, "pset"):
-                    pyxel.pset(x, y, particle.color)
-                    calls += 1
-                continue
-            if particle.horizontal:
-                pyxel.line(x, y, x + particle.length_px, y, particle.color)
+            if glint.length_px == 1 or not hasattr(pyxel, "line"):
+                pyxel.pset(glint.x, glint.y, glint.color)
             else:
-                pyxel.line(x, y, x, y + particle.length_px, particle.color)
-            calls += 1
-
-        jitter_limit = int(bank.config.get("motion", {}).get("position_jitter_px", 0))
-        for sparkle in self.water_sparkles:
-            if not sparkle.active or sparkle.anim_index >= len(bank.animations):
-                continue
-            animation = bank.animations[sparkle.anim_index]
-            frame_index = sparkle.age_frames // max(1, animation.ticks_per_frame)
-            if frame_index >= animation.frame_count:
-                continue
-            sx, sy, width, height = animation.source_rect(frame_index)
-            jitter_span = max(0, jitter_limit) * 2 + 1
-            jitter_x = 0
-            jitter_y = 0
-            if jitter_span > 1:
-                jitter_x = (sparkle.seed + sparkle.age_frames * 3) % jitter_span - jitter_limit
-                jitter_y = (sparkle.seed // 7 + sparkle.age_frames * 5) % jitter_span - jitter_limit
-            pyxel.blt(
-                int(round(sparkle.x)) + jitter_x,
-                int(round(sparkle.y)) + jitter_y,
-                bank.image,
-                sx,
-                sy,
-                width,
-                height,
-                colkey=bank.colkey,
-            )
+                pyxel.line(glint.x, glint.y, glint.x + 1, glint.y, glint.color)
             calls += 1
         return calls
 

@@ -12,10 +12,8 @@ from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput
 from drift_with_me.math3d import Vec3
 from drift_with_me.model import GameModel
 from drift_with_me.water_study_assets import (
-    APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
     APPROVED_WATER_IDENTITY_LAYER_IDS,
-    WaterSparkleAnimDef,
-    WaterSparkleFxBank,
+    WATER_STUDY_RUNTIME_LAYER_IDS,
     WaterStudyChunk,
     WaterStudyPlane,
 )
@@ -128,41 +126,6 @@ def make_fake_water_cache() -> SimpleNamespace:
             if layer_id == "water_surface_plane_c"
             else None
         ),
-    )
-
-
-def make_fake_sparkle_bank() -> WaterSparkleFxBank:
-    return WaterSparkleFxBank(
-        image=object(),
-        bank_id="water_sparkle_fx_bank0_256",
-        width=256,
-        height=256,
-        colkey=8,
-        animations=(
-            WaterSparkleAnimDef(
-                asset_id="sparkle_cross_large",
-                bank_y=0,
-                frame_width=64,
-                frame_height=64,
-                frame_count=4,
-                ticks_per_frame=2,
-                category="large",
-            ),
-        ),
-        config={
-            "enabled": True,
-            "display_scale": 1,
-            "allow_runtime_upscale": False,
-            "spawn": {
-                "max_large_cross": 1,
-                "max_micro_particles": 2,
-                "sparkle_interval_frames": [8, 20],
-                "micro_particle_interval_frames": [2, 6],
-                "min_spawn_distance_px": 20,
-                "large_min_spawn_distance_px": 48,
-            },
-            "motion": {"position_jitter_px": 1},
-        },
     )
 
 
@@ -305,8 +268,8 @@ def test_wtr001_b_profile_shortcuts_switch_profiles() -> None:
     app.update_water_study_screen(0.25)
 
     assert app.water_study_profile_index == 3
-    assert app.water_study_profile().name == "APPROVED_LOOK04_SPARKLE"
-    assert app.water_study_profile().layer_ids == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    assert app.water_study_profile().name == "LOOK04_MICRO_GLINT"
+    assert app.water_study_profile().layer_ids == WATER_STUDY_RUNTIME_LAYER_IDS
 
 
 def test_wtr001_b_motion_weights_are_normalized() -> None:
@@ -359,13 +322,13 @@ def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
     app.water_study_profile_index = 3
     observe = app.water_study_profile()
 
-    assert baseline.name == "APPROVED_LOOK04_SPARKLE"
-    assert baseline.layer_ids == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
-    assert three_layer.layer_ids == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
-    assert full.layer_ids == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
+    assert baseline.name == "LOOK04_MICRO_GLINT"
+    assert baseline.layer_ids == WATER_STUDY_RUNTIME_LAYER_IDS
+    assert three_layer.layer_ids == WATER_STUDY_RUNTIME_LAYER_IDS
+    assert full.layer_ids == WATER_STUDY_RUNTIME_LAYER_IDS
     assert observe.layer_ids == full.layer_ids
     assert "water_upper_lightnet_plane_e" not in full.layer_ids
-    assert "water_sparkle_plane_e" in full.layer_ids
+    assert "water_sparkle_plane_e" not in full.layer_ids
 
 
 def test_wtr001_phase_plane_selection_uses_layer_step_frames() -> None:
@@ -483,8 +446,8 @@ def test_approved_water_production_planes_draw_with_identity_palette_and_no_moti
     app.water_study_asset_cache = None
     app.water_study_phase_planes = {}
     app.water_study_planes = {
-        "water_sparkle_plane_e": WaterStudyPlane(
-            layer_id="water_sparkle_plane_e",
+        "water_highlights_plane_e": WaterStudyPlane(
+            layer_id="water_highlights_plane_e",
             logical_width=1024,
             logical_height=512,
             chunk_width=256,
@@ -503,7 +466,7 @@ def test_approved_water_production_planes_draw_with_identity_palette_and_no_moti
     }
     monkeypatch.setitem(
         app_module.WATER_STUDY_LAYER_PALETTE_REMAPS,
-        "water_sparkle_plane_e",
+        "water_highlights_plane_e",
         ((6, 12), (7, 12), (12, 5)),
     )
 
@@ -512,52 +475,48 @@ def test_approved_water_production_planes_draw_with_identity_palette_and_no_moti
 
     monkeypatch.setattr(app, "water_study_layer_offset", fail_if_motion_is_requested)
 
-    assert "water_sparkle_plane_e" in APPROVED_WATER_IDENTITY_LAYER_IDS
+    assert "water_highlights_plane_e" in APPROVED_WATER_IDENTITY_LAYER_IDS
     assert "water_highlights_plane_d" in APPROVED_WATER_IDENTITY_LAYER_IDS
 
-    calls = app.draw_water_study_plane("water_sparkle_plane_e", 12.0)
+    calls = app.draw_water_study_plane("water_highlights_plane_e", 12.0)
 
     assert calls == 1
     assert app.pyxel.palette_calls == [(), ()]
     assert len(app.pyxel.blt_calls) == 1
 
 
-def test_wtr_spk001_water_study_draws_individual_sparkles_at_canonical_size() -> None:
+def test_water_study_draws_only_micro_glint_points_and_short_horizontal_lines() -> None:
     app = make_water_app()
     app.pyxel = FakeDrawPyxel()
-    bank = make_fake_sparkle_bank()
-    app.water_study_asset_cache = SimpleNamespace(ready=True, sparkle_fx_bank=bank)
-    app.ensure_water_sparkle_fx_state()
-    app.water_sparkles[0].active = True
-    app.water_sparkles[0].anim_index = 0
-    app.water_sparkles[0].x = 10.0
-    app.water_sparkles[0].y = 20.0
-    app.water_sparkles[0].age_frames = 2
-    app.water_sparkles[0].seed = 4
+    app.ensure_water_micro_glint_state()
+    app.water_micro_glints[0] = app_module.WaterMicroGlintFX(
+        active=True, x=10, y=20, life_frames=10, color=12, length_px=1
+    )
+    app.water_micro_glints[1] = app_module.WaterMicroGlintFX(
+        active=True, x=30, y=40, life_frames=12, color=6, length_px=2
+    )
 
-    calls = app.draw_water_study_sparkle_fx()
+    calls = app.draw_water_micro_glints()
 
-    assert calls == 1
-    assert len(app.pyxel.blt_calls) == 1
-    args, kwargs = app.pyxel.blt_calls[0]
-    assert args[2] is bank.image
-    assert args[3:7] == (64, 0, 64, 64)
-    assert len(args) == 7
-    assert kwargs == {"colkey": 8}
-    assert 9 <= args[0] <= 11
-    assert 19 <= args[1] <= 21
+    assert calls == 2
+    assert app.pyxel.blt_calls == []
+    assert app.pyxel.pset_calls == [(10, 20, 12)]
+    assert app.pyxel.line_calls == [(30, 40, 31, 40, 6)]
 
 
-def test_wtr_spk001_water_study_update_spawns_one_shot_sparkles() -> None:
+def test_water_study_micro_glints_stay_sparse_short_lived_and_stationary() -> None:
     app = make_water_app()
-    bank = make_fake_sparkle_bank()
-    app.water_study_asset_cache = SimpleNamespace(ready=True, sparkle_fx_bank=bank)
-    app.ensure_water_sparkle_fx_state()
-    app.water_sparkle_next_spawn_frame = 1
+    app.ensure_water_micro_glint_state()
 
-    app.update_water_sparkle_fx(1 / app.runtime.target_fps)
+    app.update_water_micro_glints(1 / app.runtime.target_fps)
 
-    active = [sparkle for sparkle in app.water_sparkles if sparkle.active]
-    assert len(active) == 1
-    assert active[0].anim_index == 0
-    assert bank.animations[0].duration_frames == 8
+    active = [glint for glint in app.water_micro_glints if glint.active]
+    assert 8 <= len(active) <= 16
+    assert all(6 <= glint.life_frames <= 18 for glint in active)
+    assert all(glint.color in {5, 12, 6, 7} for glint in active)
+    assert all(glint.length_px in {1, 2} for glint in active)
+    before = {id(glint): (glint.x, glint.y) for glint in active}
+
+    app.update_water_micro_glints(1 / app.runtime.target_fps)
+
+    assert all((glint.x, glint.y) == before[id(glint)] for glint in active if glint.active)
