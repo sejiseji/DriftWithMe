@@ -1575,20 +1575,26 @@ class DriftWithMeApp:
         self.water_study_last_layer_count = layer_count
         self.water_study_last_wrap_calls = wrap_calls
 
-        title = "WATER STUDY"
-        width, height = pixel_text_size(title, 1)
+        title = "PAUSE"
+        title_scale = 3
+        width, height = pixel_text_size(title, title_scale)
         draw_pixel_text(
             pyxel,
             int(self.runtime.screen_width / 2 - width / 2),
             int(self.runtime.screen_height / 2 - height / 2),
             title,
             7,
-            scale=1,
+            scale=title_scale,
         )
         if self.debug_enabled:
             self.draw_water_study_debug_overlay(profile)
         self.draw_button(
-            self.water_study_close_rect(), "CLOSE", 5, text_color=7, style_name="label"
+            self.water_study_close_rect(),
+            "CLOSE",
+            5,
+            text_color=7,
+            style_name="label",
+            text_offset_y=-2,
         )
 
     def draw_water_study_plane(self, layer_id: str, t: float) -> int:
@@ -2493,12 +2499,14 @@ class DriftWithMeApp:
         color: int,
         text_color: int = 0,
         style_name: str = "label",
+        text_offset_y: int = 0,
     ) -> None:
         pyxel = self.pyxel
         pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), color)
         pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
         text = self.fit_ui_text_to_width(label, int(rect.width) - 8, style_name)
-        self.draw_ui_text_in_rect(rect, text, text_color, style_name, align="center")
+        text_rect = Rect(rect.x, rect.y + text_offset_y, rect.width, rect.height)
+        self.draw_ui_text_in_rect(text_rect, text, text_color, style_name, align="center")
 
     def draw_panel_frame(self, rect: Rect, fill: int, inner: int | None = None) -> None:
         pyxel = self.pyxel

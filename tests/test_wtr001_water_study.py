@@ -260,6 +260,40 @@ def test_wtr001_active_rects_are_screen_specific() -> None:
     assert app.active_ui_rects() == (app.water_study_close_rect(),)
 
 
+def test_water_study_draws_large_pause_title_and_raises_close_label(monkeypatch) -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    app.debug_enabled = False
+    title_calls: list[tuple[tuple, dict]] = []
+    button_calls: list[tuple[tuple, dict]] = []
+    monkeypatch.setattr(
+        app_module,
+        "draw_pixel_text",
+        lambda *args, **kwargs: title_calls.append((args, kwargs)),
+    )
+    monkeypatch.setattr(
+        app,
+        "draw_button",
+        lambda *args, **kwargs: button_calls.append((args, kwargs)),
+    )
+
+    app.draw_water_study()
+
+    title_width, title_height = app_module.pixel_text_size("PAUSE", 3)
+    title_args, title_kwargs = title_calls[0]
+    assert title_args[1:] == (
+        int(app.runtime.screen_width / 2 - title_width / 2),
+        int(app.runtime.screen_height / 2 - title_height / 2),
+        "PAUSE",
+        7,
+    )
+    assert title_kwargs == {"scale": 3}
+    close_args, close_kwargs = button_calls[0]
+    assert close_args[0] == app.water_study_close_rect()
+    assert close_args[1:3] == ("CLOSE", 5)
+    assert close_kwargs["text_offset_y"] == -2
+
+
 def test_wtr001_b_profile_shortcuts_switch_profiles() -> None:
     app = make_water_app()
     app.screen = AppScreen.WATER_STUDY
