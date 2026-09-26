@@ -864,74 +864,86 @@
     "flash_enabled": false,
     "shake_enabled": true
   },
-  "water_jack_float": {
-    "enabled": true,
-    "screen_space_only": true,
-    "max_speed_px_per_frame": 0.2,
-    "force_magnitude": 0.0045,
-    "force_follow": 0.025,
-    "linear_drag": 0.994,
-    "force_change_frames": [
-      45,
-      120
-    ],
-    "soft_bounds": {
-      "x_ratio": [
-        0.15,
-        0.85
-      ],
-      "y_ratio": [
+  "water_study": {
+    "jack_immersion_float_enabled": true,
+    "legacy_wave_lift_enabled": false,
+    "jack_immersion_float": {
+      "horizontal": {
+        "max_speed_px_per_frame": 0.2,
+        "accel_min": 0.002,
+        "accel_max": 0.006,
+        "velocity_drag": 0.995,
+        "force_follow": 0.025,
+        "force_change_frames_min": 45,
+        "force_change_frames_max": 120,
+        "soft_bounds": {
+          "x_ratio": [
+            0.15,
+            0.85
+          ],
+          "y_ratio": [
+            0.18,
+            0.82
+          ]
+        }
+      },
+      "wave_energy_profile": [
+        0.05,
+        0.08,
+        0.12,
         0.2,
-        0.8
-      ]
-    },
-    "wave_lift_profile": [
-      0.05,
-      0.08,
-      0.12,
-      0.2,
-      0.36,
-      0.58,
-      0.82,
-      1.0,
-      0.78,
-      0.52,
-      0.3,
-      0.16,
-      0.08,
-      0.06,
-      0.1,
-      0.18,
-      0.34,
-      0.62,
-      0.88,
-      0.72,
-      0.46,
-      0.25,
-      0.12,
-      0.07
-    ],
-    "max_z_px": 7.0,
-    "z_spring": 0.03,
-    "z_damping": 0.16,
-    "lift_threshold": 0.55,
-    "lift_impulse": 0.78,
-    "lift_chance_per_frame": 0.024,
-    "lift_cooldown_frames": [
-      50,
-      110
-    ],
-    "torque_gain": 1.8,
-    "angular_drag": 0.992,
-    "max_omega_deg_per_frame": 0.58,
-    "lift_spin_deg_per_frame": 0.2,
-    "direction_hysteresis_deg": 7.0,
-    "landing_ripple": {
-      "enabled": true,
-      "medium_z": 3.5,
-      "large_z": 5.5
-    },
-    "debug_overlay": false
+        0.36,
+        0.58,
+        0.82,
+        1.0,
+        0.78,
+        0.52,
+        0.3,
+        0.16,
+        0.08,
+        0.06,
+        0.1,
+        0.18,
+        0.34,
+        0.62,
+        0.88,
+        0.72,
+        0.46,
+        0.25,
+        0.12,
+        0.07
+      ],
+      "immersion": {
+        "base_submerge_px": 2.5,
+        "min_submerge_px": 0.0,
+        "max_submerge_px": 6.0,
+        "spring": 0.045,
+        "damping": 0.9,
+        "sink_threshold": 0.65,
+        "sink_probability": 0.32,
+        "sink_impulse": 0.5,
+        "sink_cooldown_frames_min": 45,
+        "sink_cooldown_frames_max": 120
+      },
+      "rotation": {
+        "torque_gain": 1.8,
+        "max_angular_speed_deg_per_sec": 30.0,
+        "angular_drag": 0.991,
+        "sink_spin_deg_per_sec_max": 18.0,
+        "direction_hysteresis_deg": 7.0
+      },
+      "visual": {
+        "body_bob_px_max": 1.0,
+        "front_water_pass": [
+          "surface",
+          "surface_caustics"
+        ],
+        "front_highlights_enabled": false
+      },
+      "debug": {
+        "fixed_seed_supported": true
+      }
+    }
   },
   "shallow_water": {
     "enabled": true,

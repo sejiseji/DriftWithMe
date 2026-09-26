@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 from types import SimpleNamespace
 
+import pytest
+
 import drift_with_me.app as app_module
 from drift_with_me.app import AppScreen, DriftWithMeApp, PointerSnapshot
 from drift_with_me.audio import AudioEngine
@@ -47,6 +49,7 @@ class FakeDrawPyxel(FakePyxel):
         self.pset_calls: list[tuple[int, int, int]] = []
         self.line_calls: list[tuple[int, int, int, int, int]] = []
         self.ellib_calls: list[tuple[int, int, int, int, int]] = []
+        self.clip_calls: list[tuple[int, int, int, int] | tuple[()]] = []
 
     def pal(self, source_color: int | None = None, target_color: int | None = None) -> None:
         if source_color is None and target_color is None:
@@ -67,6 +70,19 @@ class FakeDrawPyxel(FakePyxel):
 
     def ellib(self, x: int, y: int, width: int, height: int, color: int) -> None:
         self.ellib_calls.append((x, y, width, height, color))
+
+    def clip(
+        self,
+        x: int | None = None,
+        y: int | None = None,
+        width: int | None = None,
+        height: int | None = None,
+    ) -> None:
+        if x is None and y is None and width is None and height is None:
+            self.clip_calls.append(())
+            return
+        assert x is not None and y is not None and width is not None and height is not None
+        self.clip_calls.append((x, y, width, height))
 
 
 def make_water_app() -> DriftWithMeApp:
@@ -181,6 +197,19 @@ def test_wtr001_close_keeps_resident_cache_for_reopen() -> None:
     assert app.enter_water_study()
     assert app.water_study_asset_cache is cache
     assert app.water_study_planes is cache.static_layers
+
+
+def test_water_study_reopen_resets_screen_space_immersion_only() -> None:
+    app = make_water_app()
+    world_before = (app.model.player.x, app.model.player.z)
+
+    assert app.enter_water_study()
+    app.water_study_jack_float.submerge_px = 6.0
+    assert app.exit_water_study()
+    assert app.enter_water_study()
+
+    assert app.water_study_jack_float.submerge_px == 2.5
+    assert (app.model.player.x, app.model.player.z) == world_before
 
 
 def test_wtr001_m_does_not_open_during_combat() -> None:
@@ -326,50 +355,88 @@ def test_water_study_jack_wave_phase_matches_approved_surface_frames() -> None:
     assert app.water_study_jack_wave_energy(7) == 1.0
 
 
-def test_water_study_jack_lift_requires_strong_wave_and_seeded_chance(monkeypatch) -> None:
+def test_water_study_jack_sink_requires_new_strong_wave_phase_and_seeded_chance(
+    monkeypatch,
+) -> None:
     app = make_water_app()
     app.reset_water_study_jack_float()
     state = app.water_study_jack_float
     monkeypatch.setattr(app, "water_study_jack_random", lambda _state: 0.0)
 
+    state.wave_phase = 1
     state.wave_energy = 0.52
-    assert not app.try_water_study_jack_lift(state)
-    assert state.vz == 0.0
+    assert not app.try_water_study_jack_sink(state)
+    assert state.submerge_v == 0.0
 
+    state.wave_phase = 6
     state.wave_energy = 0.82
-    assert app.try_water_study_jack_lift(state)
-    assert state.vz > 0.0
-    assert state.lift_cooldown_frames == 50
-    assert state.lift_count == 1
+    assert app.try_water_study_jack_sink(state)
+    assert state.submerge_v > 0.0
+    assert state.sink_cooldown_frames == 45
+    assert state.sink_count == 1
+    assert not app.try_water_study_jack_sink(state)
+    assert state.sink_count == 1
 
 
-def test_water_study_jack_lift_and_rotation_invariants_hold_for_ten_minutes() -> None:
+def test_water_study_jack_immersion_and_rotation_invariants_hold_for_ten_minutes() -> None:
     app = make_water_app()
     app.reset_water_study_jack_float()
     state = app.water_study_jack_float
     lower_x, upper_x, lower_y, upper_y = app.water_study_jack_bounds()
-    strong_wave_frames = 0
-    lift_phases: list[float] = []
-    previous_lifts = 0
+    strong_wave_phases = 0
+    sink_phases: list[float] = []
+    previous_sinks = 0
+    previous_phase = state.wave_phase
+    max_submerge = state.submerge_px
 
     for _ in range(10 * 60 * 60):
         app.step_water_study_jack_float(state, 1.0 / 60.0)
-        if state.wave_energy >= app_module.WATER_STUDY_JACK_LIFT_THRESHOLD:
-            strong_wave_frames += 1
-        if state.lift_count != previous_lifts:
-            lift_phases.append(state.wave_energy)
-            previous_lifts = state.lift_count
-        assert state.z <= app_module.WATER_STUDY_JACK_MAX_Z_PX + 0.000001
+        if (
+            state.wave_phase != previous_phase
+            and state.wave_energy >= app_module.WATER_STUDY_JACK_SINK_THRESHOLD
+        ):
+            strong_wave_phases += 1
+        previous_phase = state.wave_phase
+        if state.sink_count != previous_sinks:
+            sink_phases.append(state.wave_energy)
+            previous_sinks = state.sink_count
+        max_submerge = max(max_submerge, state.submerge_px)
+        assert state.submerge_px >= app_module.WATER_STUDY_JACK_BASE_SUBMERGE_PX
+        assert state.submerge_px <= app_module.WATER_STUDY_JACK_MAX_SUBMERGE_PX + 0.000001
         assert abs(state.omega_deg_per_frame) <= (
             app_module.WATER_STUDY_JACK_MAX_OMEGA_DEG_PER_FRAME + 0.000001
         )
 
     assert lower_x <= state.x <= upper_x
     assert lower_y <= state.y <= upper_y
-    assert lift_phases
-    assert all(energy >= app_module.WATER_STUDY_JACK_LIFT_THRESHOLD for energy in lift_phases)
-    assert len(lift_phases) < strong_wave_frames
+    assert max_submerge >= 4.0
+    assert sink_phases
+    assert all(energy >= app_module.WATER_STUDY_JACK_SINK_THRESHOLD for energy in sink_phases)
+    assert len(sink_phases) < strong_wave_phases
     assert 0 <= state.direction_index < 8
+
+
+def test_water_study_jack_submerge_clamps_and_restores_without_upward_bounce() -> None:
+    app = make_water_app()
+    app.reset_water_study_jack_float()
+    state = app.water_study_jack_float
+    state.submerge_px = 5.8
+    state.submerge_v = 1.0
+    state.sink_cooldown_frames = 200
+    state.last_sink_phase_checked = state.wave_phase
+
+    app.step_water_study_jack_immersion(state, 1.0)
+    assert state.submerge_px == app_module.WATER_STUDY_JACK_MAX_SUBMERGE_PX
+    assert state.submerge_v == 0.0
+
+    seen: list[float] = []
+    for _ in range(180):
+        app.step_water_study_jack_immersion(state, 1.0)
+        seen.append(state.submerge_px)
+
+    assert min(seen) >= app_module.WATER_STUDY_JACK_BASE_SUBMERGE_PX
+    assert state.submerge_px == app_module.WATER_STUDY_JACK_BASE_SUBMERGE_PX
+    assert state.submerge_v == 0.0
 
 
 def test_water_study_jack_direction_uses_hysteresis() -> None:
@@ -394,7 +461,7 @@ def test_water_study_jack_direction_uses_hysteresis() -> None:
     assert state.direction_index == 0
 
 
-def test_water_study_jack_seeded_lifts_change_visible_direction_gradually() -> None:
+def test_water_study_jack_seeded_sinks_change_visible_direction_gradually() -> None:
     app = make_water_app()
     app.reset_water_study_jack_float()
     state = app.water_study_jack_float
@@ -405,27 +472,7 @@ def test_water_study_jack_seeded_lifts_change_visible_direction_gradually() -> N
         visible_directions.add(state.direction_index)
 
     assert len(visible_directions) >= 2
-    assert state.lift_count > 0
-
-
-def test_water_study_jack_large_landing_emits_local_ripple() -> None:
-    app = make_water_app()
-    app.reset_water_study_jack_float()
-    state = app.water_study_jack_float
-    state.z = 6.0
-    state.vz = -1.0
-    state.lift_peak_z = 6.0
-    state.lift_cooldown_frames = 100
-    state.wave_energy = 0.0
-
-    for _ in range(20):
-        app.step_water_study_jack_lift(state, 1.0)
-        if state.z == 0.0:
-            break
-
-    assert state.z == 0.0
-    assert state.ripple_life_frames == 22
-    assert state.ripple_strength == 2
+    assert state.sink_count > 0
 
 
 def test_water_study_jack_draws_existing_idle_asset_in_screen_space() -> None:
@@ -443,15 +490,15 @@ def test_water_study_jack_draws_existing_idle_asset_in_screen_space() -> None:
         return asset if asset_id == "jack_front_32" else None
 
     app.sprite_assets = SimpleNamespace(get=get_asset)
-    state.z = 2.0
+    state.submerge_px = 4.0
 
     assert app.draw_water_study_jack()
 
-    args, kwargs = app.pyxel.blt_calls[-1]
+    args, kwargs = app.pyxel.blt_calls[0]
     assert requested_assets == ["jack_front_32"]
     assert args == (
         round(state.x - 16.0),
-        round(state.y - state.z - 32.0),
+        round(state.y + state.submerge_px - 32.0),
         2,
         8,
         16,
@@ -459,7 +506,66 @@ def test_water_study_jack_draws_existing_idle_asset_in_screen_space() -> None:
         32,
     )
     assert kwargs == {"colkey": 0}
-    assert app.pyxel.ellib_calls
+    assert app.pyxel.clip_calls == [
+        (
+            round(state.x - 16.0),
+            round(state.y + state.submerge_px - 32.0) + 28,
+            32,
+            4,
+        ),
+        (),
+    ]
+
+
+def test_water_study_jack_front_pass_uses_surface_then_caustics_and_resets_clip(
+    monkeypatch,
+) -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    state = app.new_water_study_jack_float()
+    state.submerge_px = 5.0
+    profile = app_module.WaterStudyProfile(
+        "TEST",
+        (
+            "water_deep_plane_e",
+            "water_surface_plane_e",
+            "water_surface_caustics_plane_e",
+            "water_highlights_plane_e",
+        ),
+    )
+    draws: list[tuple[str, float, tuple[int, int, int, int] | None]] = []
+
+    def record_draw(layer_id, clock, cull_rect=None):
+        draws.append((layer_id, clock, cull_rect))
+        return 1
+
+    monkeypatch.setattr(app, "draw_water_study_plane", record_draw)
+
+    calls = app.draw_water_study_jack_front_water(state, profile, 100, 50, 32, 32)
+
+    assert calls == 2
+    assert draws == [
+        ("water_surface_plane_e", 0.0, (100, 77, 32, 5)),
+        ("water_surface_caustics_plane_e", 0.0, (100, 77, 32, 5)),
+    ]
+    assert app.pyxel.clip_calls == [(100, 77, 32, 5), ()]
+
+
+def test_water_study_jack_front_pass_resets_clip_after_draw_error(monkeypatch) -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    state = app.new_water_study_jack_float()
+    profile = app_module.WaterStudyProfile("TEST", ("water_surface_plane_e",))
+
+    def fail_draw(*_args, **_kwargs):
+        raise RuntimeError("draw failed")
+
+    monkeypatch.setattr(app, "draw_water_study_plane", fail_draw)
+
+    with pytest.raises(RuntimeError, match="draw failed"):
+        app.draw_water_study_jack_front_water(state, profile, 100, 50, 32, 32)
+
+    assert app.pyxel.clip_calls[-1] == ()
 
 
 def test_water_study_draws_large_pause_title_and_raises_close_label(monkeypatch) -> None:
