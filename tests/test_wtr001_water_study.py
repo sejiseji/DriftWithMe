@@ -46,6 +46,7 @@ class FakeDrawPyxel(FakePyxel):
         self.blt_calls: list[tuple] = []
         self.pset_calls: list[tuple[int, int, int]] = []
         self.line_calls: list[tuple[int, int, int, int, int]] = []
+        self.ellib_calls: list[tuple[int, int, int, int, int]] = []
 
     def pal(self, source_color: int | None = None, target_color: int | None = None) -> None:
         if source_color is None and target_color is None:
@@ -63,6 +64,9 @@ class FakeDrawPyxel(FakePyxel):
 
     def line(self, x1: int, y1: int, x2: int, y2: int, color: int) -> None:
         self.line_calls.append((x1, y1, x2, y2, color))
+
+    def ellib(self, x: int, y: int, width: int, height: int, color: int) -> None:
+        self.ellib_calls.append((x, y, width, height, color))
 
 
 def make_water_app() -> DriftWithMeApp:
@@ -312,6 +316,118 @@ def test_water_study_jack_soft_boundary_curves_without_instant_bounce() -> None:
     assert -2.0 < state.vx < 0.0
 
 
+def test_water_study_jack_wave_phase_matches_approved_surface_frames() -> None:
+    app = make_water_app()
+
+    assert app.water_study_jack_wave_phase(0.0) == 0
+    assert app.water_study_jack_wave_phase(7.0 / 12.0) == 7
+    assert app.water_study_jack_wave_phase(23.0 / 12.0) == 23
+    assert app.water_study_jack_wave_phase(24.0 / 12.0) == 0
+    assert app.water_study_jack_wave_energy(7) == 1.0
+
+
+def test_water_study_jack_lift_requires_strong_wave_and_seeded_chance(monkeypatch) -> None:
+    app = make_water_app()
+    app.reset_water_study_jack_float()
+    state = app.water_study_jack_float
+    monkeypatch.setattr(app, "water_study_jack_random", lambda _state: 0.0)
+
+    state.wave_energy = 0.52
+    assert not app.try_water_study_jack_lift(state)
+    assert state.vz == 0.0
+
+    state.wave_energy = 0.82
+    assert app.try_water_study_jack_lift(state)
+    assert state.vz > 0.0
+    assert state.lift_cooldown_frames == 50
+    assert state.lift_count == 1
+
+
+def test_water_study_jack_lift_and_rotation_invariants_hold_for_ten_minutes() -> None:
+    app = make_water_app()
+    app.reset_water_study_jack_float()
+    state = app.water_study_jack_float
+    lower_x, upper_x, lower_y, upper_y = app.water_study_jack_bounds()
+    strong_wave_frames = 0
+    lift_phases: list[float] = []
+    previous_lifts = 0
+
+    for _ in range(10 * 60 * 60):
+        app.step_water_study_jack_float(state, 1.0 / 60.0)
+        if state.wave_energy >= app_module.WATER_STUDY_JACK_LIFT_THRESHOLD:
+            strong_wave_frames += 1
+        if state.lift_count != previous_lifts:
+            lift_phases.append(state.wave_energy)
+            previous_lifts = state.lift_count
+        assert state.z <= app_module.WATER_STUDY_JACK_MAX_Z_PX + 0.000001
+        assert abs(state.omega_deg_per_frame) <= (
+            app_module.WATER_STUDY_JACK_MAX_OMEGA_DEG_PER_FRAME + 0.000001
+        )
+
+    assert lower_x <= state.x <= upper_x
+    assert lower_y <= state.y <= upper_y
+    assert lift_phases
+    assert all(energy >= app_module.WATER_STUDY_JACK_LIFT_THRESHOLD for energy in lift_phases)
+    assert len(lift_phases) < strong_wave_frames
+    assert 0 <= state.direction_index < 8
+
+
+def test_water_study_jack_direction_uses_hysteresis() -> None:
+    app = make_water_app()
+    app.reset_water_study_jack_float()
+    state = app.water_study_jack_float
+
+    state.angle_deg = 29.0
+    app.update_water_study_jack_direction(state)
+    assert state.direction_index == 0
+
+    state.angle_deg = 30.0
+    app.update_water_study_jack_direction(state)
+    assert state.direction_index == 1
+
+    state.angle_deg = 16.0
+    app.update_water_study_jack_direction(state)
+    assert state.direction_index == 1
+
+    state.angle_deg = 15.0
+    app.update_water_study_jack_direction(state)
+    assert state.direction_index == 0
+
+
+def test_water_study_jack_seeded_lifts_change_visible_direction_gradually() -> None:
+    app = make_water_app()
+    app.reset_water_study_jack_float()
+    state = app.water_study_jack_float
+    visible_directions = {state.direction_index}
+
+    for _ in range(30 * 60):
+        app.step_water_study_jack_float(state, 1.0 / 60.0)
+        visible_directions.add(state.direction_index)
+
+    assert len(visible_directions) >= 2
+    assert state.lift_count > 0
+
+
+def test_water_study_jack_large_landing_emits_local_ripple() -> None:
+    app = make_water_app()
+    app.reset_water_study_jack_float()
+    state = app.water_study_jack_float
+    state.z = 6.0
+    state.vz = -1.0
+    state.lift_peak_z = 6.0
+    state.lift_cooldown_frames = 100
+    state.wave_energy = 0.0
+
+    for _ in range(20):
+        app.step_water_study_jack_lift(state, 1.0)
+        if state.z == 0.0:
+            break
+
+    assert state.z == 0.0
+    assert state.ripple_life_frames == 22
+    assert state.ripple_strength == 2
+
+
 def test_water_study_jack_draws_existing_idle_asset_in_screen_space() -> None:
     app = make_water_app()
     app.pyxel = FakeDrawPyxel()
@@ -320,16 +436,22 @@ def test_water_study_jack_draws_existing_idle_asset_in_screen_space() -> None:
     frame = SimpleNamespace(image=2, u=8, v=16, width=32, height=32)
     definition = SimpleNamespace(anchor_px=(16.0, 32.0), colkey=0)
     asset = SimpleNamespace(definition=definition, frame=lambda: frame)
-    app.sprite_assets = SimpleNamespace(
-        get=lambda asset_id: asset if asset_id == "jack_idle_32" else None
-    )
+    requested_assets: list[str] = []
+
+    def get_asset(asset_id: str):
+        requested_assets.append(asset_id)
+        return asset if asset_id == "jack_front_32" else None
+
+    app.sprite_assets = SimpleNamespace(get=get_asset)
+    state.z = 2.0
 
     assert app.draw_water_study_jack()
 
     args, kwargs = app.pyxel.blt_calls[-1]
+    assert requested_assets == ["jack_front_32"]
     assert args == (
         round(state.x - 16.0),
-        round(state.y - 32.0),
+        round(state.y - state.z - 32.0),
         2,
         8,
         16,
@@ -337,6 +459,7 @@ def test_water_study_jack_draws_existing_idle_asset_in_screen_space() -> None:
         32,
     )
     assert kwargs == {"colkey": 0}
+    assert app.pyxel.ellib_calls
 
 
 def test_water_study_draws_large_pause_title_and_raises_close_label(monkeypatch) -> None:

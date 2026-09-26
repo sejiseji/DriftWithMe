@@ -864,6 +864,75 @@
     "flash_enabled": false,
     "shake_enabled": true
   },
+  "water_jack_float": {
+    "enabled": true,
+    "screen_space_only": true,
+    "max_speed_px_per_frame": 0.2,
+    "force_magnitude": 0.0045,
+    "force_follow": 0.025,
+    "linear_drag": 0.994,
+    "force_change_frames": [
+      45,
+      120
+    ],
+    "soft_bounds": {
+      "x_ratio": [
+        0.15,
+        0.85
+      ],
+      "y_ratio": [
+        0.2,
+        0.8
+      ]
+    },
+    "wave_lift_profile": [
+      0.05,
+      0.08,
+      0.12,
+      0.2,
+      0.36,
+      0.58,
+      0.82,
+      1.0,
+      0.78,
+      0.52,
+      0.3,
+      0.16,
+      0.08,
+      0.06,
+      0.1,
+      0.18,
+      0.34,
+      0.62,
+      0.88,
+      0.72,
+      0.46,
+      0.25,
+      0.12,
+      0.07
+    ],
+    "max_z_px": 7.0,
+    "z_spring": 0.03,
+    "z_damping": 0.16,
+    "lift_threshold": 0.55,
+    "lift_impulse": 0.78,
+    "lift_chance_per_frame": 0.024,
+    "lift_cooldown_frames": [
+      50,
+      110
+    ],
+    "torque_gain": 1.8,
+    "angular_drag": 0.992,
+    "max_omega_deg_per_frame": 0.58,
+    "lift_spin_deg_per_frame": 0.2,
+    "direction_hysteresis_deg": 7.0,
+    "landing_ripple": {
+      "enabled": true,
+      "medium_z": 3.5,
+      "large_z": 5.5
+    },
+    "debug_overlay": false
+  },
   "shallow_water": {
     "enabled": true,
     "surface_tiles_enabled": false,

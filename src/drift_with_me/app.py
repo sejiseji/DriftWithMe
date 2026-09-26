@@ -27,6 +27,8 @@ from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.water_study_assets import (
+    APPROVED_LOOK04_PLUS_SPARKLE_FPS,
+    APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT,
     APPROVED_WATER_IDENTITY_LAYER_IDS,
     WATER_STUDY_PHASE_INITIAL_INDICES,
     WATER_STUDY_PHASE_STEP_FRAMES,
@@ -90,6 +92,21 @@ class WaterStudyJackFloat:
     force_remaining_sec: float = 0.0
     accumulator_sec: float = 0.0
     rng_state: int = 0x4A41434B
+    simulation_time_sec: float = 0.0
+    z: float = 0.0
+    vz: float = 0.0
+    lift_cooldown_frames: int = 0
+    lift_peak_z: float = 0.0
+    lift_count: int = 0
+    angle_deg: float = 0.0
+    omega_deg_per_frame: float = 0.0
+    direction_index: int = 0
+    visual_angle_deg: float = 0.0
+    wave_phase: int = 0
+    wave_energy: float = 0.0
+    ripple_age_frames: int = 0
+    ripple_life_frames: int = 0
+    ripple_strength: int = 0
 
 
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
@@ -138,14 +155,62 @@ WATER_MICRO_GLINT_MIN_LIFE_FRAMES = 6
 WATER_MICRO_GLINT_MAX_LIFE_FRAMES = 18
 WATER_MICRO_GLINT_MIN_DISTANCE_PX = 12
 WATER_STUDY_JACK_FIXED_DT = 1.0 / 60.0
-WATER_STUDY_JACK_MAX_SPEED_PX_SEC = 14.0
-WATER_STUDY_JACK_DAMPING_PER_FRAME = 0.995
-WATER_STUDY_JACK_ACCEL_BLEND_PER_FRAME = 0.035
+WATER_STUDY_JACK_MAX_SPEED_PX_SEC = 12.0
+WATER_STUDY_JACK_FORCE_MAG_PX_SEC2 = 16.2
+WATER_STUDY_JACK_DAMPING_PER_FRAME = 0.994
+WATER_STUDY_JACK_ACCEL_BLEND_PER_FRAME = 0.025
 WATER_STUDY_JACK_MIN_FORCE_SEC = 0.75
 WATER_STUDY_JACK_MAX_FORCE_SEC = 2.0
-WATER_STUDY_JACK_MIN_ACCEL_PX_SEC2 = 6.0
-WATER_STUDY_JACK_MAX_ACCEL_PX_SEC2 = 13.0
 WATER_STUDY_JACK_EDGE_FORCE_PX_SEC2 = 22.0
+WATER_STUDY_JACK_WAVE_LIFT_PROFILE: tuple[float, ...] = (
+    0.05,
+    0.08,
+    0.12,
+    0.20,
+    0.36,
+    0.58,
+    0.82,
+    1.00,
+    0.78,
+    0.52,
+    0.30,
+    0.16,
+    0.08,
+    0.06,
+    0.10,
+    0.18,
+    0.34,
+    0.62,
+    0.88,
+    0.72,
+    0.46,
+    0.25,
+    0.12,
+    0.07,
+)
+WATER_STUDY_JACK_MAX_Z_PX = 7.0
+WATER_STUDY_JACK_Z_SPRING = 0.030
+WATER_STUDY_JACK_Z_DAMPING = 0.16
+WATER_STUDY_JACK_LIFT_THRESHOLD = 0.55
+WATER_STUDY_JACK_LIFT_IMPULSE = 0.78
+WATER_STUDY_JACK_LIFT_CHANCE_PER_FRAME = 0.024
+WATER_STUDY_JACK_MIN_LIFT_COOLDOWN_FRAMES = 50
+WATER_STUDY_JACK_MAX_LIFT_COOLDOWN_FRAMES = 110
+WATER_STUDY_JACK_TORQUE_GAIN = 1.8
+WATER_STUDY_JACK_ANGULAR_DRAG = 0.992
+WATER_STUDY_JACK_MAX_OMEGA_DEG_PER_FRAME = 0.58
+WATER_STUDY_JACK_LIFT_SPIN_DEG_PER_FRAME = 0.20
+WATER_STUDY_JACK_DIRECTION_HYSTERESIS_DEG = 7.0
+WATER_STUDY_JACK_DIRECTION_VIEWS = (
+    "front",
+    "front_right",
+    "right",
+    "back_right",
+    "back",
+    "back_left",
+    "left",
+    "front_left",
+)
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
     # remain unchanged, but their broad bright cells are tempered at draw time.
@@ -515,34 +580,42 @@ class DriftWithMeApp:
             self.water_study_jack_float = state
         return state
 
+    def water_study_jack_config(self) -> dict:
+        raw = self.runtime.raw.get("water_jack_float", {})
+        return raw if isinstance(raw, dict) else {}
+
     @staticmethod
     def water_study_jack_random(state: WaterStudyJackFloat) -> float:
         state.rng_state = (1664525 * state.rng_state + 1013904223) & 0xFFFFFFFF
         return state.rng_state / 4294967296.0
 
     def choose_water_study_jack_force(self, state: WaterStudyJackFloat) -> None:
-        random_x = self.water_study_jack_random(state) * 2.0 - 1.0
-        random_y = self.water_study_jack_random(state) * 2.0 - 1.0
-        correlated_x = state.target_ax * 0.06 + random_x
-        correlated_y = state.target_ay * 0.06 + random_y
-        length = math.hypot(correlated_x, correlated_y)
-        if length < 0.05:
-            correlated_x, correlated_y, length = 1.0, 0.0, 1.0
-        strength_range = WATER_STUDY_JACK_MAX_ACCEL_PX_SEC2 - WATER_STUDY_JACK_MIN_ACCEL_PX_SEC2
-        strength = WATER_STUDY_JACK_MIN_ACCEL_PX_SEC2 + (
-            self.water_study_jack_random(state) * strength_range
+        config = self.water_study_jack_config()
+        force_magnitude = float(config.get("force_magnitude", 0.0045)) * 3600.0
+        random_x = (self.water_study_jack_random(state) * 2.0 - 1.0) * force_magnitude
+        random_y = (self.water_study_jack_random(state) * 2.0 - 1.0) * force_magnitude
+        state.target_ax = state.target_ax * 0.65 + random_x * 0.35
+        state.target_ay = state.target_ay * 0.65 + random_y * 0.35
+        force_change_frames = config.get("force_change_frames", (45, 120))
+        minimum_frames = int(force_change_frames[0])
+        maximum_frames = int(force_change_frames[1])
+        interval_frames = minimum_frames + int(
+            self.water_study_jack_random(state) * (maximum_frames - minimum_frames + 1)
         )
-        state.target_ax = correlated_x / length * strength
-        state.target_ay = correlated_y / length * strength
-        interval_range = WATER_STUDY_JACK_MAX_FORCE_SEC - WATER_STUDY_JACK_MIN_FORCE_SEC
-        state.force_remaining_sec = WATER_STUDY_JACK_MIN_FORCE_SEC + (
-            self.water_study_jack_random(state) * interval_range
-        )
+        state.force_remaining_sec = interval_frames / 60.0
 
     def water_study_jack_bounds(self) -> tuple[float, float, float, float]:
         width = float(self.runtime.screen_width)
         height = float(self.runtime.screen_height)
-        return width * 0.15, width * 0.85, height * 0.2, height * 0.82
+        soft_bounds = self.water_study_jack_config().get("soft_bounds", {})
+        x_ratio = soft_bounds.get("x_ratio", (0.15, 0.85))
+        y_ratio = soft_bounds.get("y_ratio", (0.2, 0.8))
+        return (
+            width * float(x_ratio[0]),
+            width * float(x_ratio[1]),
+            height * float(y_ratio[0]),
+            height * float(y_ratio[1]),
+        )
 
     @staticmethod
     def water_study_jack_edge_force(
@@ -560,31 +633,161 @@ class DriftWithMeApp:
         return 0.0
 
     def step_water_study_jack_float(self, state: WaterStudyJackFloat, dt: float) -> None:
+        config = self.water_study_jack_config()
         state.force_remaining_sec -= dt
         if state.force_remaining_sec <= 0.0:
             self.choose_water_study_jack_force(state)
 
         frame_amount = dt * 60.0
-        accel_blend = 1.0 - (1.0 - WATER_STUDY_JACK_ACCEL_BLEND_PER_FRAME) ** frame_amount
+        force_follow = float(config.get("force_follow", WATER_STUDY_JACK_ACCEL_BLEND_PER_FRAME))
+        accel_blend = 1.0 - (1.0 - force_follow) ** frame_amount
         state.ax += (state.target_ax - state.ax) * accel_blend
         state.ay += (state.target_ay - state.ay) * accel_blend
 
         lower_x, upper_x, lower_y, upper_y = self.water_study_jack_bounds()
         edge_x = self.water_study_jack_edge_force(state.x, lower_x, upper_x, 38.0)
         edge_y = self.water_study_jack_edge_force(state.y, lower_y, upper_y, 28.0)
-        state.vx += (state.ax + edge_x) * dt
-        state.vy += (state.ay + edge_y) * dt
+        total_ax = state.ax + edge_x
+        total_ay = state.ay + edge_y
+        state.vx += total_ax * dt
+        state.vy += total_ay * dt
 
-        damping = WATER_STUDY_JACK_DAMPING_PER_FRAME**frame_amount
+        linear_drag = float(config.get("linear_drag", WATER_STUDY_JACK_DAMPING_PER_FRAME))
+        damping = linear_drag**frame_amount
         state.vx *= damping
         state.vy *= damping
         speed = math.hypot(state.vx, state.vy)
-        if speed > WATER_STUDY_JACK_MAX_SPEED_PX_SEC:
-            speed_scale = WATER_STUDY_JACK_MAX_SPEED_PX_SEC / speed
+        max_speed = float(config.get("max_speed_px_per_frame", 0.2)) * 60.0
+        if speed > max_speed:
+            speed_scale = max_speed / speed
             state.vx *= speed_scale
             state.vy *= speed_scale
         state.x += state.vx * dt
         state.y += state.vy * dt
+        state.simulation_time_sec += dt
+        state.wave_phase = self.water_study_jack_wave_phase(state.simulation_time_sec)
+        state.wave_energy = self.water_study_jack_wave_energy(state.wave_phase)
+        self.step_water_study_jack_lift(state, frame_amount)
+        self.step_water_study_jack_rotation(state, total_ax, total_ay, frame_amount)
+
+    @staticmethod
+    def water_study_jack_wave_phase(elapsed_sec: float) -> int:
+        frame = int(max(0.0, elapsed_sec) * APPROVED_LOOK04_PLUS_SPARKLE_FPS)
+        return frame % APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
+
+    def water_study_jack_wave_energy(self, phase: int) -> float:
+        profile = self.water_study_jack_config().get(
+            "wave_lift_profile", WATER_STUDY_JACK_WAVE_LIFT_PROFILE
+        )
+        if len(profile) != APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT:
+            profile = WATER_STUDY_JACK_WAVE_LIFT_PROFILE
+        return float(profile[phase % len(profile)])
+
+    def try_water_study_jack_lift(self, state: WaterStudyJackFloat) -> bool:
+        config = self.water_study_jack_config()
+        threshold = float(config.get("lift_threshold", WATER_STUDY_JACK_LIFT_THRESHOLD))
+        if state.lift_cooldown_frames > 0 or state.wave_energy < threshold:
+            return False
+        chance = float(config.get("lift_chance_per_frame", WATER_STUDY_JACK_LIFT_CHANCE_PER_FRAME))
+        if self.water_study_jack_random(state) >= chance * state.wave_energy:
+            return False
+
+        impulse = float(config.get("lift_impulse", WATER_STUDY_JACK_LIFT_IMPULSE))
+        state.vz += impulse * state.wave_energy
+        cooldown = config.get("lift_cooldown_frames", (50, 110))
+        minimum = int(cooldown[0])
+        maximum = int(cooldown[1])
+        state.lift_cooldown_frames = minimum + int(
+            self.water_study_jack_random(state) * (maximum - minimum + 1)
+        )
+        lift_spin = float(
+            config.get("lift_spin_deg_per_frame", WATER_STUDY_JACK_LIFT_SPIN_DEG_PER_FRAME)
+        )
+        state.omega_deg_per_frame += (
+            (self.water_study_jack_random(state) * 2.0 - 1.0) * lift_spin * state.wave_energy
+        )
+        state.lift_count += 1
+        return True
+
+    def step_water_study_jack_lift(self, state: WaterStudyJackFloat, frame_amount: float) -> None:
+        config = self.water_study_jack_config()
+        if state.ripple_life_frames > 0:
+            state.ripple_age_frames += 1
+            if state.ripple_age_frames >= state.ripple_life_frames:
+                state.ripple_age_frames = 0
+                state.ripple_life_frames = 0
+                state.ripple_strength = 0
+        if state.lift_cooldown_frames > 0:
+            state.lift_cooldown_frames = max(
+                0, state.lift_cooldown_frames - max(1, round(frame_amount))
+            )
+        self.try_water_study_jack_lift(state)
+
+        previous_z = state.z
+        z_spring = float(config.get("z_spring", WATER_STUDY_JACK_Z_SPRING))
+        z_damping = float(config.get("z_damping", WATER_STUDY_JACK_Z_DAMPING))
+        state.vz += (-z_spring * state.z - z_damping * state.vz) * frame_amount
+        state.z += state.vz * frame_amount
+        max_z = float(config.get("max_z_px", WATER_STUDY_JACK_MAX_Z_PX))
+        if state.z > max_z:
+            state.z = max_z
+            state.vz = min(0.0, state.vz)
+        state.lift_peak_z = max(state.lift_peak_z, state.z)
+        if state.z <= 0.0:
+            state.z = 0.0
+            state.vz = max(0.0, state.vz)
+            if previous_z > 0.0:
+                self.start_water_study_jack_landing_ripple(state)
+                state.vz = 0.0
+                state.lift_peak_z = 0.0
+
+    def start_water_study_jack_landing_ripple(self, state: WaterStudyJackFloat) -> None:
+        ripple = self.water_study_jack_config().get("landing_ripple", {})
+        if not bool(ripple.get("enabled", True)):
+            return
+        medium_z = float(ripple.get("medium_z", 3.5))
+        large_z = float(ripple.get("large_z", 5.5))
+        if state.lift_peak_z < medium_z:
+            return
+        state.ripple_age_frames = 0
+        state.ripple_life_frames = 22 if state.lift_peak_z >= large_z else 16
+        state.ripple_strength = 2 if state.lift_peak_z >= large_z else 1
+
+    def step_water_study_jack_rotation(
+        self,
+        state: WaterStudyJackFloat,
+        total_ax: float,
+        total_ay: float,
+        frame_amount: float,
+    ) -> None:
+        config = self.water_study_jack_config()
+        vx_per_frame = state.vx / 60.0
+        vy_per_frame = state.vy / 60.0
+        fx_per_frame2 = total_ax / 3600.0
+        fy_per_frame2 = total_ay / 3600.0
+        torque = vx_per_frame * fy_per_frame2 - vy_per_frame * fx_per_frame2
+        torque_gain = float(config.get("torque_gain", WATER_STUDY_JACK_TORQUE_GAIN))
+        state.omega_deg_per_frame += torque * torque_gain * frame_amount
+        angular_drag = float(config.get("angular_drag", WATER_STUDY_JACK_ANGULAR_DRAG))
+        state.omega_deg_per_frame *= angular_drag**frame_amount
+        max_omega = float(
+            config.get("max_omega_deg_per_frame", WATER_STUDY_JACK_MAX_OMEGA_DEG_PER_FRAME)
+        )
+        state.omega_deg_per_frame = max(-max_omega, min(max_omega, state.omega_deg_per_frame))
+        state.angle_deg = (state.angle_deg + state.omega_deg_per_frame * frame_amount) % 360.0
+        self.update_water_study_jack_direction(state)
+
+    def update_water_study_jack_direction(self, state: WaterStudyJackFloat) -> None:
+        hysteresis = float(
+            self.water_study_jack_config().get(
+                "direction_hysteresis_deg", WATER_STUDY_JACK_DIRECTION_HYSTERESIS_DEG
+            )
+        )
+        current_center = state.direction_index * 45.0
+        delta = (state.angle_deg - current_center + 180.0) % 360.0 - 180.0
+        if abs(delta) > 22.5 + hysteresis:
+            state.direction_index = round(state.angle_deg / 45.0) % 8
+        state.visual_angle_deg = state.direction_index * 45.0
 
     def update_water_study_jack_float(self, elapsed: float) -> None:
         state = self.ensure_water_study_jack_float()
@@ -1683,18 +1886,24 @@ class DriftWithMeApp:
         sprite_assets = getattr(self, "sprite_assets", None)
         if sprite_assets is None:
             return False
-        asset_id = str(self.model.config.get("assets", {}).get("player_idle_asset", ""))
+        state = self.ensure_water_study_jack_float()
+        view = WATER_STUDY_JACK_DIRECTION_VIEWS[state.direction_index % 8]
+        asset_config = self.model.config.get("assets", {})
+        asset_id = str(asset_config.get(f"player_{view}_asset", ""))
         asset = sprite_assets.get(asset_id)
         if asset is None:
+            asset_id = str(asset_config.get("player_idle_asset", ""))
+            asset = sprite_assets.get(asset_id)
+        if asset is None:
             return False
-        state = self.ensure_water_study_jack_float()
+        self.draw_water_study_jack_contact(state)
         frame = asset.frame()
         anchor_x, anchor_y = asset.definition.anchor_px
         lag_x = max(-1.5, min(1.5, -state.vx * 0.09))
         lag_y = max(-1.0, min(1.0, -state.vy * 0.07))
         self.pyxel.blt(
             round(state.x - anchor_x + lag_x),
-            round(state.y - anchor_y + lag_y),
+            round(state.y - state.z - anchor_y + lag_y),
             frame.image,
             frame.u,
             frame.v,
@@ -1703,6 +1912,29 @@ class DriftWithMeApp:
             colkey=asset.definition.colkey,
         )
         return True
+
+    def draw_water_study_jack_contact(self, state: WaterStudyJackFloat) -> None:
+        x = round(state.x)
+        y = round(state.y)
+        if state.z > 0.35:
+            self.pyxel.ellib(x - 5, y - 1, 10, 3, 5)
+        if state.ripple_life_frames <= 0:
+            return
+        progress = state.ripple_age_frames / max(1, state.ripple_life_frames)
+        width = 7 + round(progress * (10 + state.ripple_strength * 4))
+        height = max(3, width // 3)
+        color = 7 if progress < 0.45 else 6
+        self.pyxel.ellib(x - width // 2, y - height // 2, width, height, color)
+        if state.ripple_strength > 1 and progress > 0.22:
+            inner_width = max(5, width - 6)
+            inner_height = max(2, height - 2)
+            self.pyxel.ellib(
+                x - inner_width // 2,
+                y - inner_height // 2,
+                inner_width,
+                inner_height,
+                12,
+            )
 
     def draw_water_study_plane(self, layer_id: str, t: float) -> int:
         pyxel = self.pyxel
