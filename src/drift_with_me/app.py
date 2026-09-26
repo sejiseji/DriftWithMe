@@ -185,9 +185,9 @@ WATER_STUDY_JACK_WAVE_ENERGY_PROFILE: tuple[float, ...] = (
     0.12,
     0.07,
 )
-WATER_STUDY_JACK_BASE_SUBMERGE_PX = 2.5
+WATER_STUDY_JACK_BASE_SUBMERGE_PX = 3.5
 WATER_STUDY_JACK_MIN_SUBMERGE_PX = 0.0
-WATER_STUDY_JACK_MAX_SUBMERGE_PX = 6.0
+WATER_STUDY_JACK_MAX_SUBMERGE_PX = 7.0
 WATER_STUDY_JACK_SUBMERGE_SPRING = 0.045
 WATER_STUDY_JACK_SUBMERGE_DAMPING = 0.90
 WATER_STUDY_JACK_SINK_THRESHOLD = 0.65
@@ -309,9 +309,6 @@ class DriftWithMeApp:
             display_scale=self.runtime.desktop_scale,
             headless=headless,
         )
-        self.water_study_asset_cache = preload_water_study_cache(pyxel)
-        self.water_study_planes = self.water_study_asset_cache.static_layers
-        self.water_study_phase_planes = self.water_study_asset_cache.phase_layers
         pyxel.mouse(True)
         self.ui_text = load_ui_text_renderer(pyxel, self.runtime)
         self.sprite_assets = load_runtime_sprite_library(pyxel, self.runtime.raw)

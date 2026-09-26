@@ -27,6 +27,7 @@ from drift_with_me.water_study_assets import (
     WTR_LOOK03_HIGHLIGHTS_ASSET_ID,
     WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT,
     WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID,
+    _image_from_rows,
     apply_dhex_patch_to_rows,
     clear_water_study_cache_for_tests,
     load_approved_look04_plus_sparkle_frame_sequences,
@@ -58,6 +59,28 @@ class FakeImage:
 
 class FakePyxel:
     Image = FakeImage
+
+
+class FakeBulkImage:
+    def __init__(self, width: int, height: int) -> None:
+        self.width = width
+        self.height = height
+        self.set_calls: list[tuple[int, int, list[str]]] = []
+
+    def set(self, x: int, y: int, rows: list[str]) -> None:
+        self.set_calls.append((x, y, rows))
+
+
+class FakeBulkPyxel:
+    Image = FakeBulkImage
+
+
+def test_water_study_image_uses_bulk_row_transfer_when_available() -> None:
+    rows = ("0123", "4567")
+
+    image = _image_from_rows(FakeBulkPyxel, rows, 4, 2)
+
+    assert image.set_calls == [(0, 0, list(rows))]
 
 
 def test_wtr001_bundled_water_layer_assets_match_contract() -> None:

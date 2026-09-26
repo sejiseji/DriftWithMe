@@ -204,6 +204,10 @@ class WaterStudyAssetCache:
 
 def _image_from_rows(pyxel_module: Any, rows: tuple[str, ...], width: int, height: int) -> Any:
     image = pyxel_module.Image(width, height)
+    image_set = getattr(image, "set", None)
+    if callable(image_set):
+        image_set(0, 0, list(rows))
+        return image
     for y, row in enumerate(rows):
         for x, color in enumerate(row):
             image.pset(x, y, int(color, 16))

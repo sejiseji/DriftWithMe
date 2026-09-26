@@ -16,6 +16,15 @@ DEFAULT_OUTPUTS = ("index.html", "docs/index.html", "web/index.html")
 DISABLED_GAMEPAD = 'gamepad: "disabled"'
 WEB_HASH_LENGTH = 12
 BUILD_INFO_RELATIVE_PATH = Path("src") / "drift_with_me" / "build_info.py"
+WATER_STUDY_ASSET_RELATIVE_PATH = Path("drift_with_me/assets/water_study")
+WATER_STUDY_RUNTIME_PACK = "approved_look04_plus_sparkle"
+WATER_STUDY_RUNTIME_LAYER_PREFIXES = (
+    "water_deep_plane_e_",
+    "water_mid_plane_e_",
+    "water_surface_plane_e_",
+    "water_surface_caustics_plane_e_",
+    "water_highlights_plane_e_",
+)
 
 
 HOST_CSS = """:root {
@@ -237,15 +246,38 @@ HOST_JS = """(() => {
 """
 
 
+def runtime_copy_ignored_names(source_root: Path, directory: Path, names: list[str]) -> set[str]:
+    ignored = {name for name in names if name == "__pycache__" or name.endswith(".egg-info")}
+    relative = directory.resolve().relative_to(source_root.resolve())
+    approved_root = WATER_STUDY_ASSET_RELATIVE_PATH / WATER_STUDY_RUNTIME_PACK
+    if relative == WATER_STUDY_ASSET_RELATIVE_PATH:
+        ignored.update(name for name in names if name != WATER_STUDY_RUNTIME_PACK)
+    elif relative == approved_root:
+        allowed = {"production_manifest.json", "data", "chunks_256"}
+        ignored.update(name for name in names if name not in allowed)
+    elif relative == approved_root / "data":
+        ignored.update(name for name in names if name != "binding_manifest.json")
+    elif relative == approved_root / "chunks_256":
+        ignored.update(name for name in names if name != "hex")
+    elif relative == approved_root / "chunks_256" / "hex":
+        ignored.update(
+            name for name in names if not name.startswith(WATER_STUDY_RUNTIME_LAYER_PREFIXES)
+        )
+    return ignored
+
+
 def copy_runtime_files(root: Path, app_dir: Path) -> None:
     if app_dir.exists():
         shutil.rmtree(app_dir)
     app_dir.mkdir(parents=True)
     shutil.copy2(root / "main.py", app_dir / "main.py")
+    source_root = root / "src"
     shutil.copytree(
-        root / "src",
+        source_root,
         app_dir / "src",
-        ignore=shutil.ignore_patterns("__pycache__", "*.egg-info"),
+        ignore=lambda directory, names: runtime_copy_ignored_names(
+            source_root, Path(directory), names
+        ),
     )
 
 

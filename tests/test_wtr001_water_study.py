@@ -208,7 +208,7 @@ def test_water_study_reopen_resets_screen_space_immersion_only() -> None:
     assert app.exit_water_study()
     assert app.enter_water_study()
 
-    assert app.water_study_jack_float.submerge_px == 2.5
+    assert app.water_study_jack_float.submerge_px == 3.5
     assert (app.model.player.x, app.model.player.z) == world_before
 
 
@@ -420,7 +420,7 @@ def test_water_study_jack_submerge_clamps_and_restores_without_upward_bounce() -
     app = make_water_app()
     app.reset_water_study_jack_float()
     state = app.water_study_jack_float
-    state.submerge_px = 5.8
+    state.submerge_px = 6.8
     state.submerge_v = 1.0
     state.sink_cooldown_frames = 200
     state.last_sink_phase_checked = state.wave_phase
