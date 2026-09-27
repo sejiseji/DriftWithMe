@@ -130,6 +130,8 @@ def load_ui_text_renderer(pyxel: Any, runtime: RuntimeConfig) -> UITextRenderer:
         "tooltip": int(font_config.get("tooltip_px", {}).get(profile_name, 16)),
         "numeric": int(font_config.get("numeric_px", {}).get(profile_name, 14)),
         "auxiliary": int(font_config.get("auxiliary_px", {}).get(profile_name, 12)),
+        "japanese": int(font_config.get("japanese_px", {}).get(profile_name, 14)),
+        "japanese_button": int(font_config.get("japanese_button_px", {}).get(profile_name, 13)),
     }
     font_path = str(font_config.get("path", ""))
     styles: dict[str, FontStyle] = {}

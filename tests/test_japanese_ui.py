@@ -39,6 +39,14 @@ def test_japanese_ui_text_draws_eight_pixels_higher_than_ascii() -> None:
     assert app.ui_text_language_y(40, "100%") == 40
 
 
+def test_japanese_ui_uses_dedicated_thinner_styles() -> None:
+    app = make_app("medium")
+
+    assert app.ui_text_style_name("水を補給する", "tooltip") == "japanese"
+    assert app.ui_text_style_name("探索へ", "button") == "japanese_button"
+    assert app.ui_text_style_name("WATER", "tooltip") == "tooltip"
+
+
 def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
     pyxel.init(64, 64, headless=True)
     primary_tokens = ("NONE", "BUBBLE", "GUARD", "ZAP")
@@ -51,6 +59,8 @@ def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
         app.ui_text = renderer
 
         assert renderer.font_loaded
+        assert renderer.text_height("japanese") < renderer.text_height("label")
+        assert renderer.text_height("japanese_button") < renderer.text_height("button")
         for token in primary_tokens:
             label = renderer.resources.token(token)
             label_rect = app.action_button_label_rect(app.action_button_visual_rect())

@@ -2155,8 +2155,9 @@ class DriftWithMeApp:
             text = "電撃チャンス！"
             color = 10
         progress = cue.progress
-        text_width = self.ui_renderer.text_width(text, "tooltip")
-        text_height = self.ui_renderer.text_height("tooltip")
+        style_name = self.ui_text_style_name(text, "tooltip")
+        text_width = self.ui_renderer.text_width(text, style_name)
+        text_height = self.ui_renderer.text_height(style_name)
         width = max(116, min(178, text_width + 24))
         height = max(26, text_height + 12)
         x = int((self.runtime.screen_width - width) / 2)
@@ -2178,7 +2179,7 @@ class DriftWithMeApp:
             int(rect.y + rect.height / 2 - text_height / 2 + 4),
             text,
             color,
-            "tooltip",
+            style_name,
         )
 
     def draw_start(self) -> None:
@@ -2228,7 +2229,7 @@ class DriftWithMeApp:
             Rect(header_pad, header.y, self.runtime.screen_width * 0.58, header.height),
             "ガドニア領住民課 岡山第三支部出張所",
             7,
-            preferred_styles=("label", "button", "auxiliary"),
+            preferred_styles=("japanese", "japanese_button", "auxiliary"),
         )
         if case is None or session is None:
             self.draw_office_complete()
@@ -2246,7 +2247,7 @@ class DriftWithMeApp:
             ),
             count_text,
             7,
-            preferred_styles=("button", "auxiliary"),
+            preferred_styles=("japanese_button", "auxiliary"),
             align="right",
         )
 
@@ -2304,7 +2305,7 @@ class DriftWithMeApp:
                 Rect(rect.x + 3, rect.y, rect.width - 6, rect.height),
                 prefix + question.jack_text,
                 13 if asked else 7,
-                preferred_styles=("label", "button", "auxiliary"),
+                preferred_styles=("japanese", "japanese_button", "auxiliary"),
             )
 
         if session.field_result is not None:
@@ -2348,7 +2349,7 @@ class DriftWithMeApp:
                 feedback_rect,
                 session.feedback,
                 10,
-                preferred_styles=("label", "button", "auxiliary"),
+                preferred_styles=("japanese", "japanese_button", "auxiliary"),
                 align="center",
             )
 
@@ -2357,7 +2358,7 @@ class DriftWithMeApp:
             self.office_rect(8, 210, 356, 23),
             hint,
             13,
-            preferred_styles=("label", "button", "auxiliary"),
+            preferred_styles=("japanese", "japanese_button", "auxiliary"),
         )
         if session.state not in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
             self.draw_office_button(
@@ -2374,14 +2375,14 @@ class DriftWithMeApp:
             self.office_rect(116, 78, 280, 34),
             "本日の試行案件は完了しました",
             7,
-            preferred_styles=("title", "label", "button"),
+            preferred_styles=("japanese", "japanese_button"),
             align="center",
         )
         self.draw_office_text_in_rect(
             self.office_rect(116, 116, 280, 24),
             "4件の処理結果を記録しました",
             13,
-            preferred_styles=("label", "button", "auxiliary"),
+            preferred_styles=("japanese_button", "auxiliary"),
             align="center",
         )
         self.draw_office_button(
@@ -2398,13 +2399,13 @@ class DriftWithMeApp:
             title_rect,
             title,
             12,
-            preferred_styles=("label", "button", "auxiliary"),
+            preferred_styles=("japanese", "japanese_button", "auxiliary"),
         )
 
     def office_text_style(
         self,
         rect: Rect,
-        preferred_styles: tuple[str, ...] = ("label", "button", "auxiliary"),
+        preferred_styles: tuple[str, ...] = ("japanese", "japanese_button", "auxiliary"),
     ) -> str:
         available_height = max(1, int(rect.height))
         for style_name in preferred_styles:
@@ -2418,7 +2419,7 @@ class DriftWithMeApp:
         rect: Rect,
         text: str,
         color: int,
-        preferred_styles: tuple[str, ...] = ("label", "button", "auxiliary"),
+        preferred_styles: tuple[str, ...] = ("japanese", "japanese_button", "auxiliary"),
         align: str = "left",
     ) -> None:
         style_name = self.office_text_style(rect, preferred_styles)
@@ -2448,7 +2449,7 @@ class DriftWithMeApp:
             Rect(rect.x + 4, rect.y, max(1.0, rect.width - 8), rect.height),
             label,
             text_color,
-            preferred_styles=("label", "button", "auxiliary"),
+            preferred_styles=("japanese_button", "auxiliary"),
             align="center",
         )
 
@@ -2473,7 +2474,7 @@ class DriftWithMeApp:
                 Rect(x, top + index * line_height, width, line_height),
                 line,
                 color,
-                preferred_styles=("label", "button", "auxiliary"),
+                preferred_styles=("japanese", "japanese_button", "auxiliary"),
             )
 
     def draw_office_portrait(self, rect: Rect, portrait_id: str) -> None:
@@ -3327,13 +3328,13 @@ class DriftWithMeApp:
             Rect(content_rect.x, content_rect.y, content_rect.width, row_height),
             "現在の案件",
             12,
-            preferred_styles=("label", "button", "auxiliary"),
+            preferred_styles=("japanese", "japanese_button", "auxiliary"),
         )
         self.draw_office_text_in_rect(
             Rect(content_rect.x, content_rect.y + row_height, content_rect.width, row_height),
             task.objective,
             7,
-            preferred_styles=("label", "button", "auxiliary"),
+            preferred_styles=("japanese", "japanese_button", "auxiliary"),
         )
 
     def draw_meter(
@@ -3593,10 +3594,12 @@ class DriftWithMeApp:
         meter_x = int(rect.x + 74)
         meter_w = max(24, int(rect.x + rect.width - meter_x - 8))
         label_w = max(12, meter_x - label_x - 5)
-        label = self.fit_ui_text_to_width(self.interaction_title(interaction), label_w, "button")
-        text_h = self.ui_renderer.text_height("button")
+        title = self.interaction_title(interaction)
+        style_name = self.ui_text_style_name(title, "button")
+        label = self.fit_ui_text_to_width(title, label_w, style_name)
+        text_h = self.ui_renderer.text_height(style_name)
         text_y = int(rect.y + rect.height / 2 - text_h / 2 + 3)
-        self.draw_ui_text(self.pyxel, label_x, text_y, label, 7, "button")
+        self.draw_ui_text(self.pyxel, label_x, text_y, label, 7, style_name)
         self.draw_meter(
             meter_x,
             int(rect.y + rect.height / 2 - 3),
@@ -3728,10 +3731,12 @@ class DriftWithMeApp:
         self.draw_button_icon_at(token, icon_x, icon_y, icon_size, color)
         label_x = icon_x + icon_size + gap
         label_w = max(8, int(rect.x + rect.width - label_x - 4))
-        label = self.fit_ui_text_to_width(self.ui_token(token), label_w, "button")
-        text_h = self.ui_renderer.text_height("button")
+        label_text = self.ui_token(token)
+        style_name = self.ui_text_style_name(label_text, "button")
+        label = self.fit_ui_text_to_width(label_text, label_w, style_name)
+        text_h = self.ui_renderer.text_height(style_name)
         text_y = int(rect.y + rect.height / 2 - text_h / 2 + 3)
-        self.draw_ui_text(self.pyxel, label_x, text_y, label, color, "button")
+        self.draw_ui_text(self.pyxel, label_x, text_y, label, color, style_name)
 
     def action_button_label_rect(self, rect: Rect) -> Rect:
         if rect.height <= 30:
@@ -3814,6 +3819,7 @@ class DriftWithMeApp:
                 self.pyxel.circb(cx + 6, cy, 5, 7)
 
     def draw_text_right(self, right_x: int, y: int, text: str, color: int, style_name: str) -> None:
+        style_name = self.ui_text_style_name(text, style_name)
         self.draw_ui_text(
             self.pyxel,
             right_x - self.ui_renderer.text_width(text, style_name),
@@ -3831,6 +3837,7 @@ class DriftWithMeApp:
         style_name: str,
         align: str = "left",
     ) -> None:
+        style_name = self.ui_text_style_name(text, style_name)
         text_width = self.ui_renderer.text_width(text, style_name)
         text_height = self.ui_renderer.text_height(style_name)
         if align == "right":
@@ -4032,10 +4039,11 @@ class DriftWithMeApp:
             return
         rect = self.tooltip_rect(two_lines=False)
         self.draw_panel_frame(rect, fill=0, inner=5)
-        fitted = self.fit_ui_text_to_width(text, int(rect.width) - 16, "tooltip")
+        style_name = self.ui_text_style_name(text, "tooltip")
+        fitted = self.fit_ui_text_to_width(text, int(rect.width) - 16, style_name)
         if rect.height <= 24:
-            text_w = self.ui_renderer.text_width(fitted, "tooltip")
-            text_h = self.ui_renderer.text_height("tooltip")
+            text_w = self.ui_renderer.text_width(fitted, style_name)
+            text_h = self.ui_renderer.text_height(style_name)
             x = int(rect.x + rect.width / 2 - text_w / 2)
             y = int(rect.y + rect.height / 2 - text_h / 2 + 3)
             self.draw_ui_text(
@@ -4044,14 +4052,14 @@ class DriftWithMeApp:
                 y,
                 fitted,
                 8 if self.last_denied_reason else 7,
-                "tooltip",
+                style_name,
             )
             return
         self.draw_ui_text_in_rect(
             Rect(rect.x + 8, rect.y + 4, rect.width - 16, rect.height - 8),
             fitted,
             8 if self.last_denied_reason else 7,
-            "tooltip",
+            style_name,
             align="center",
         )
 
@@ -4085,10 +4093,11 @@ class DriftWithMeApp:
     def wrap_ui_lines(self, lines: tuple[str, ...], max_width: int, style_name: str) -> list[str]:
         wrapped: list[str] = []
         for line in lines:
+            line_style = self.ui_text_style_name(line, style_name)
             current = ""
             for char in line:
                 candidate = current + char
-                if current and self.ui_renderer.text_width(candidate, style_name) > max_width:
+                if current and self.ui_renderer.text_width(candidate, line_style) > max_width:
                     wrapped.append(current)
                     current = char
                 else:
@@ -4149,15 +4158,27 @@ class DriftWithMeApp:
         return self.ui_renderer.resources.reason(reason)
 
     def draw_ui_text(self, pyxel, x: int, y: int, text: str, color: int, style_name: str) -> None:
+        style_name = self.ui_text_style_name(text, style_name)
         y = self.ui_text_language_y(y, text)
         self.ui_renderer.draw(pyxel, x, y, text, color, style_name)
 
     def draw_ui_text_center(self, x: int, y: int, text: str, color: int, style_name: str) -> None:
+        style_name = self.ui_text_style_name(text, style_name)
         y = self.ui_text_language_y(y, text)
         self.ui_renderer.draw_centered(self.pyxel, x, y, text, color, style_name)
 
     def fit_ui_text_to_width(self, text: str, max_width: int, style_name: str) -> str:
+        style_name = self.ui_text_style_name(text, style_name)
         return self.ui_renderer.fit_text(text, max_width, style_name)
+
+    def ui_text_style_name(self, text: str, style_name: str) -> str:
+        if not self.ui_text_has_japanese(text):
+            return style_name
+        if style_name == "button":
+            return "japanese_button"
+        if style_name in {"label", "body", "title", "tooltip", "resource"}:
+            return "japanese"
+        return style_name
 
     def ui_text_language_y(self, y: int, text: str) -> int:
         return y - 8 if self.ui_text_has_japanese(text) else y

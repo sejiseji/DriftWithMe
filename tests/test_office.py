@@ -187,18 +187,13 @@ def test_off001_office_layout_stays_inside_all_profiles() -> None:
 
 
 def test_off001_japanese_text_uses_largest_style_that_fits_each_profile() -> None:
-    expected_question_styles = {
-        "low": "button",
-        "medium": "label",
-        "high": "label",
-    }
+    expected_question_styles = {profile: "japanese" for profile in ("low", "medium", "high")}
     for profile, expected_style in expected_question_styles.items():
         app = DriftWithMeApp.__new__(DriftWithMeApp)
         app.runtime = load_runtime_config(profile)
         font = app.runtime.raw["ui"]["font"]
-        sizes = {
-            style: int(font[f"{style}_px"][profile]) for style in ("label", "button", "auxiliary")
-        }
+        styles = ("japanese", "japanese_button", "auxiliary")
+        sizes = {style: int(font[f"{style}_px"][profile]) for style in styles}
         app.ui_text = SimpleNamespace(
             text_height=lambda style, sizes=sizes: sizes[style],
             visual_vertical_metrics=lambda style, sizes=sizes: (
@@ -211,7 +206,7 @@ def test_off001_japanese_text_uses_largest_style_that_fits_each_profile() -> Non
         assert app.office_text_style(question_rect) == expected_style
         _, visible_height = app.ui_text.visual_vertical_metrics(expected_style)
         assert visible_height + 2 <= int(question_rect.height)
-        assert app.office_text_style(app.office_classification_rect(0)) == "label"
+        assert app.office_text_style(app.office_classification_rect(0)) == "japanese"
 
         task_rect = app.field_task_hud_rect()
         task_row = Rect(task_rect.x, task_rect.y, task_rect.width, (task_rect.height - 4) / 2)
@@ -224,7 +219,7 @@ def test_off001_office_text_centers_japanese_without_global_baseline_shift() -> 
     class FakeRenderer:
         @staticmethod
         def text_height(style_name: str) -> int:
-            return {"label": 16, "button": 14, "auxiliary": 12}[style_name]
+            return {"japanese": 14, "japanese_button": 13, "auxiliary": 12}[style_name]
 
         @staticmethod
         def text_width(text: str, style_name: str) -> int:
@@ -253,7 +248,7 @@ def test_off001_office_text_centers_japanese_without_global_baseline_shift() -> 
 
     app.draw_office_text_in_rect(Rect(10, 20, 80, 24), "現在の案件", 7)
 
-    assert draws == [(10, 20, "現在の案件", 7, "label")]
+    assert draws == [(10, 22, "現在の案件", 7, "japanese")]
 
 
 def test_off001_active_field_event_only_matches_designated_anomaly() -> None:

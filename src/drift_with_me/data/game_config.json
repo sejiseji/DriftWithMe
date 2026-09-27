@@ -607,6 +607,16 @@
         "low": 12,
         "medium": 12,
         "high": 15
+      },
+      "japanese_px": {
+        "low": 14,
+        "medium": 14,
+        "high": 18
+      },
+      "japanese_button_px": {
+        "low": 13,
+        "medium": 13,
+        "high": 16
       }
     }
   },
