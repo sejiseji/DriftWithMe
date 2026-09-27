@@ -23,6 +23,13 @@ from drift_with_me.math3d import (
     screen_to_ground_point,
 )
 from drift_with_me.model import GameModel, InputIntent, merge_intents
+from drift_with_me.office import (
+    CLASSIFICATION_ORDER,
+    CaseState,
+    Classification,
+    FieldResult,
+    OfficePrototype,
+)
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer, jack_blink_closed
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
@@ -42,6 +49,7 @@ from drift_with_me.world import load_world_data
 
 class AppScreen(Enum):
     START = auto()
+    OFFICE = auto()
     PLAY = auto()
     PAUSE = auto()
     WATER_STUDY = auto()
@@ -247,6 +255,10 @@ class DriftWithMeApp:
         self.runtime = config.load_runtime_config(profile)
         self.world = load_world_data()
         self.model = GameModel(self.runtime.raw, self.world)
+        self.office = OfficePrototype.load()
+        self.office_focus = "questions"
+        self.office_question_index = 0
+        self.office_classification_index = 0
         self.audio = AudioEngine(self.runtime.raw)
         self.effects = EffectSystem(self.runtime.raw)
         self.camera_controller = CameraController(
@@ -405,6 +417,8 @@ class DriftWithMeApp:
 
         if self.screen == AppScreen.START:
             self.update_start_screen()
+        elif self.screen == AppScreen.OFFICE:
+            self.update_office_screen()
         elif self.screen == AppScreen.PAUSE:
             self.update_pause_screen()
         elif self.screen == AppScreen.WATER_STUDY:
@@ -463,8 +477,123 @@ class DriftWithMeApp:
         self.pending_cancel_auto_move = False
         self.last_combat_scene_camera = None
         self.combat_camera_restore = None
+        self.screen = AppScreen.OFFICE
+
+    def update_office_screen(self) -> None:
+        self.clear_world_input_latches()
+        session = self.office.current_session
+        case = self.office.current_case
+        if session is None or case is None:
+            if self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
+                self.office_footer_action_rect()
+            ):
+                self.enter_exploration_from_office()
+            return
+
+        if session.state in {
+            CaseState.CLOSED_COUNTER,
+            CaseState.REFERRED,
+            CaseState.WAITING_DOCUMENTS,
+            CaseState.FIELD_CHECK_REQUIRED,
+            CaseState.FIELD_RETURNED,
+        }:
+            if self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
+                self.office_footer_action_rect()
+            ):
+                self.activate_office_footer_action()
+            return
+
+        if self.key_pressed("KEY_LEFT", "KEY_A"):
+            self.office_focus = "questions"
+        elif self.key_pressed("KEY_RIGHT", "KEY_D"):
+            self.office_focus = "classifications"
+
+        direction = int(self.key_pressed("KEY_DOWN", "KEY_S")) - int(
+            self.key_pressed("KEY_UP", "KEY_W")
+        )
+        if direction:
+            if self.office_focus == "questions":
+                count = max(1, len(case.questions))
+                self.office_question_index = (self.office_question_index + direction) % count
+            else:
+                count = len(CLASSIFICATION_ORDER)
+                self.office_classification_index = (
+                    self.office_classification_index + direction
+                ) % count
+
+        if self.key_pressed("KEY_ESCAPE", "KEY_X"):
+            self.office_focus = "questions"
+
+        if self.key_pressed("KEY_RETURN", "KEY_Z"):
+            if self.office_focus == "questions":
+                question = case.questions[self.office_question_index % len(case.questions)]
+                self.office.ask_question(question.question_id)
+            else:
+                classification = CLASSIFICATION_ORDER[
+                    self.office_classification_index % len(CLASSIFICATION_ORDER)
+                ]
+                self.office.classify(classification)
+            return
+
+        for index, question in enumerate(case.questions):
+            if self.mouse_pressed_in(self.office_question_rect(index, len(case.questions))):
+                self.office_focus = "questions"
+                self.office_question_index = index
+                self.office.ask_question(question.question_id)
+                return
+        for index, classification in enumerate(CLASSIFICATION_ORDER):
+            if self.mouse_pressed_in(self.office_classification_rect(index)):
+                self.office_focus = "classifications"
+                self.office_classification_index = index
+                self.office.classify(classification)
+                return
+
+    def key_pressed(self, *names: str) -> bool:
+        for name in names:
+            key = getattr(self.pyxel, name, None)
+            if key is not None and self.pyxel.btnp(key):
+                return True
+        return False
+
+    def activate_office_footer_action(self) -> None:
+        session = self.office.current_session
+        if session is None:
+            self.enter_exploration_from_office()
+            return
+        if session.state == CaseState.FIELD_CHECK_REQUIRED:
+            if self.office.prepare_field_task() is not None:
+                self.enter_exploration_from_office()
+            return
+        if self.office.advance_case():
+            self.office_focus = "questions"
+            self.office_question_index = 0
+            self.office_classification_index = 0
+
+    def enter_exploration_from_office(self) -> None:
+        self.clear_world_input_latches()
+        self.previous_time = None
         self.screen = AppScreen.PLAY
         self.show_location_label()
+
+    def complete_office_field_task(self) -> bool:
+        task = self.office.active_field_task
+        if task is None:
+            return False
+        result = FieldResult(
+            task_id=task.task_id,
+            case_id=task.case_id,
+            result_code="ANOMALOUS_URCHIN_FOUND",
+            discovered_fact_ids=("abnormal_urchin_present", "no_facility_damage"),
+            report_lines=("通常個体3", "異常個体1", "設備被害なし"),
+        )
+        if not self.office.complete_field_task(result):
+            return False
+        self.clear_world_input_latches()
+        self.model.cancel_auto_move()
+        self.camera_controller.cancel_focus()
+        self.previous_time = None
+        self.screen = AppScreen.OFFICE
+        return True
 
     def update_pause_screen(self) -> None:
         pyxel = self.pyxel
@@ -1299,10 +1428,14 @@ class DriftWithMeApp:
                 self.combat_camera_snapshot_zoom = self.camera_zoom(self.camera())
             elif event.kind == "combat_restored":
                 self.start_combat_camera_restore()
+                if self.office_field_event_matches(event.actor_id):
+                    self.complete_office_field_task()
             elif event.kind == "action_denied":
                 self.set_denied_reason(str(event.payload.get("reason", "denied")))
             elif event.kind == "inspection_completed":
                 self.show_location_label()
+                if self.office_field_event_matches(event.target_id):
+                    self.complete_office_field_task()
             elif event.kind == "interaction_started" and event.target_id is not None:
                 target = self.world.object_by_id(event.target_id)
                 interaction_kind = str(event.payload.get("interaction_kind", ""))
@@ -1335,6 +1468,15 @@ class DriftWithMeApp:
             camera_reactions_allowed=self.combat_camera_reactions_allowed(),
         )
         self.audio.play_events(events)
+
+    def office_field_event_matches(self, target_id: str | None) -> bool:
+        office = getattr(self, "office", None)
+        task = None if office is None else office.active_field_task
+        return (
+            task is not None
+            and task.completion_condition_id == "inspect_anomaly_source"
+            and target_id == "urchin_abnormal_04"
+        )
 
     def update_hitstop(self, elapsed: float, intent: InputIntent) -> bool:
         if self.hitstop_remaining <= 0.0:
@@ -1645,8 +1787,29 @@ class DriftWithMeApp:
         return not self.inspect_panel_rect().contains(pointer.x, pointer.y)
 
     def active_ui_rects(self) -> tuple[Rect, ...]:
-        if getattr(self, "screen", AppScreen.PLAY) == AppScreen.WATER_STUDY:
+        screen = getattr(self, "screen", AppScreen.PLAY)
+        if screen == AppScreen.WATER_STUDY:
             return (self.water_study_close_rect(),)
+        if screen == AppScreen.OFFICE:
+            office = getattr(self, "office", None)
+            case = None if office is None else office.current_case
+            session = None if office is None else office.current_session
+            rects: list[Rect] = []
+            if case is not None and session is not None:
+                if session.state in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
+                    rects.extend(
+                        self.office_question_rect(index, len(case.questions))
+                        for index in range(len(case.questions))
+                    )
+                    rects.extend(
+                        self.office_classification_rect(index)
+                        for index in range(len(CLASSIFICATION_ORDER))
+                    )
+                else:
+                    rects.append(self.office_footer_action_rect())
+            else:
+                rects.append(self.office_footer_action_rect())
+            return tuple(rects)
         interaction = self.model.interaction
         if interaction is not None and interaction.kind == "inspect":
             return (
@@ -1667,6 +1830,56 @@ class DriftWithMeApp:
         elif self.last_denied_reason:
             rects.append(self.tooltip_rect(two_lines=False))
         return tuple(rects)
+
+    def office_rect(self, x: float, y: float, width: float, height: float) -> Rect:
+        scale_x = self.runtime.screen_width / 512.0
+        scale_y = self.runtime.screen_height / 236.0
+        return Rect(x * scale_x, y * scale_y, width * scale_x, height * scale_y)
+
+    def office_header_rect(self) -> Rect:
+        return self.office_rect(0, 0, 512, 27)
+
+    def office_visitor_rect(self) -> Rect:
+        return self.office_rect(6, 31, 116, 173)
+
+    def office_dialog_rect(self) -> Rect:
+        return self.office_rect(126, 31, 246, 73)
+
+    def office_questions_panel_rect(self) -> Rect:
+        return self.office_rect(126, 108, 121, 96)
+
+    def office_memo_rect(self) -> Rect:
+        return self.office_rect(251, 108, 121, 96)
+
+    def office_classification_panel_rect(self) -> Rect:
+        return self.office_rect(376, 31, 130, 173)
+
+    def office_footer_rect(self) -> Rect:
+        return self.office_rect(0, 208, 512, 28)
+
+    def office_question_rect(self, index: int, count: int) -> Rect:
+        panel = self.office_questions_panel_rect()
+        available = max(1.0, panel.height - self.office_rect(0, 0, 0, 20).height)
+        row_height = min(self.office_rect(0, 0, 0, 15).height, available / max(1, count))
+        return Rect(
+            panel.x + self.office_rect(3, 0, 0, 0).x,
+            panel.y + self.office_rect(0, 19, 0, 0).y + index * row_height,
+            panel.width - self.office_rect(6, 0, 0, 0).x,
+            row_height,
+        )
+
+    def office_classification_rect(self, index: int) -> Rect:
+        panel = self.office_classification_panel_rect()
+        inset_x = self.office_rect(4, 0, 0, 0).x
+        return Rect(
+            panel.x + inset_x,
+            panel.y + self.office_rect(0, 24 + index * 31, 0, 0).y,
+            panel.width - inset_x * 2,
+            self.office_rect(0, 0, 0, 27).height,
+        )
+
+    def office_footer_action_rect(self) -> Rect:
+        return self.office_rect(376, 210, 130, 23)
 
     def ui_numeric_layout(self) -> dict:
         layout = getattr(self, "_ui_numeric_layout", None)
@@ -1881,6 +2094,8 @@ class DriftWithMeApp:
     def draw(self) -> None:
         if self.screen == AppScreen.START:
             self.draw_start()
+        elif self.screen == AppScreen.OFFICE:
+            self.draw_office()
         elif self.screen == AppScreen.PAUSE:
             self.draw_play()
             self.draw_pause()
@@ -1892,6 +2107,8 @@ class DriftWithMeApp:
             self.draw_build_label()
 
     def build_label_visible(self) -> bool:
+        if getattr(self, "screen", AppScreen.PLAY) == AppScreen.OFFICE:
+            return False
         mode = str(self.runtime.raw.get("ui", {}).get("build_label_mode", "always"))
         if mode == "hidden":
             return False
@@ -1990,6 +2207,283 @@ class DriftWithMeApp:
             13,
             "hint",
         )
+
+    def draw_office(self) -> None:
+        pyxel = self.pyxel
+        pyxel.cls(1)
+        header = self.office_header_rect()
+        footer = self.office_footer_rect()
+        pyxel.rect(0, 0, self.runtime.screen_width, int(header.height), 5)
+        header_bottom = int(header.y + header.height)
+        pyxel.line(0, header_bottom, self.runtime.screen_width, header_bottom, 12)
+        pyxel.rect(0, int(footer.y), self.runtime.screen_width, int(footer.height), 0)
+        pyxel.line(0, int(footer.y), self.runtime.screen_width, int(footer.y), 12)
+
+        office = self.office
+        case = office.current_case
+        session = office.current_session
+        title = self.fit_ui_text_to_width(
+            "ガドニア領住民課 岡山第三支部出張所",
+            int(self.runtime.screen_width * 0.58),
+            "label",
+        )
+        self.draw_ui_text(
+            pyxel,
+            int(self.office_rect(8, 0, 0, 0).x),
+            int(self.office_rect(0, 8, 0, 0).y),
+            title,
+            7,
+            "label",
+        )
+        if case is None or session is None:
+            self.draw_office_complete()
+            return
+
+        status = self.office_state_label(session.state)
+        count_text = f"案件 {office.current_index + 1}/{len(office.cases)}  {status}"
+        self.draw_text_right(
+            self.runtime.screen_width - int(self.office_rect(8, 0, 0, 0).x),
+            int(self.office_rect(0, 8, 0, 0).y),
+            count_text,
+            7,
+            "auxiliary",
+        )
+
+        visitor_rect = self.office_visitor_rect()
+        dialog_rect = self.office_dialog_rect()
+        questions_rect = self.office_questions_panel_rect()
+        memo_rect = self.office_memo_rect()
+        classification_rect = self.office_classification_panel_rect()
+        for rect in (visitor_rect, dialog_rect, questions_rect, memo_rect, classification_rect):
+            self.draw_panel_frame(rect, fill=0, inner=5)
+
+        self.draw_office_section_title(visitor_rect, "来訪者")
+        portrait = Rect(
+            visitor_rect.x + visitor_rect.width / 2 - self.office_rect(0, 0, 42, 0).width / 2,
+            visitor_rect.y + self.office_rect(0, 22, 0, 0).y,
+            self.office_rect(0, 0, 42, 0).width,
+            self.office_rect(0, 0, 0, 44).height,
+        )
+        self.draw_office_portrait(portrait, case.visitor.portrait_id)
+        visitor_lines = (
+            f"名前: {case.visitor.name}",
+            f"種別: {case.visitor.kind}",
+            f"用件: {case.initial_purpose}",
+            f"書類: {case.document_status}",
+        )
+        self.draw_office_compact_lines(
+            visitor_rect,
+            visitor_lines,
+            start_y=72,
+            color=7,
+            max_lines=5,
+        )
+
+        self.draw_office_section_title(dialog_rect, case.title)
+        dialogue_lines = tuple(f"{line.speaker}: {line.text}" for line in session.dialogue[-3:])
+        self.draw_office_compact_lines(
+            dialog_rect,
+            dialogue_lines,
+            start_y=23,
+            color=7,
+            max_lines=3,
+        )
+
+        self.draw_office_section_title(questions_rect, "質問")
+        for index, question in enumerate(case.questions):
+            rect = self.office_question_rect(index, len(case.questions))
+            asked = question.question_id in session.asked_question_ids
+            selected = self.office_focus == "questions" and index == self.office_question_index
+            fill = 1 if asked else (5 if selected else 0)
+            border = 13 if selected else (6 if asked else 7)
+            pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), fill)
+            pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), border)
+            prefix = "済 " if asked else ""
+            label = self.fit_ui_text_to_width(
+                prefix + question.jack_text,
+                int(rect.width) - 6,
+                "auxiliary",
+            )
+            self.draw_ui_text_in_rect(
+                Rect(rect.x + 3, rect.y, rect.width - 6, rect.height),
+                label,
+                13 if asked else 7,
+                "auxiliary",
+            )
+
+        if session.field_result is not None:
+            self.draw_office_section_title(memo_rect, "現地確認結果")
+            memo_lines = tuple(f"・{line}" for line in session.field_result.report_lines)
+        else:
+            self.draw_office_section_title(memo_rect, "聞き取りメモ")
+            memo_lines = tuple(f"・{fact.line}" for fact in session.memo_facts)
+        if not memo_lines:
+            memo_lines = ("質問すると記録されます",)
+        self.draw_office_compact_lines(
+            memo_rect,
+            memo_lines,
+            start_y=22,
+            color=13 if session.memo_facts else 6,
+            max_lines=5,
+        )
+
+        self.draw_office_section_title(classification_rect, "処理区分")
+        for index, classification in enumerate(CLASSIFICATION_ORDER):
+            rect = self.office_classification_rect(index)
+            selected = (
+                self.office_focus == "classifications" and index == self.office_classification_index
+            )
+            chosen = session.selected_classification == classification
+            classified = session.state not in {
+                CaseState.HEARING,
+                CaseState.READY_TO_CLASSIFY,
+            }
+            fill = 11 if chosen and classified else (5 if selected else 1)
+            text_color = 0 if fill == 11 else 7
+            self.draw_button(
+                rect,
+                self.office_classification_label(classification),
+                fill,
+                text_color=text_color,
+                style_name="auxiliary",
+            )
+        if session.feedback:
+            feedback_rect = self.office_rect(380, 180, 122, 21)
+            feedback = self.fit_ui_text_to_width(
+                session.feedback,
+                int(feedback_rect.width),
+                "auxiliary",
+            )
+            self.draw_ui_text_in_rect(feedback_rect, feedback, 10, "auxiliary", align="center")
+
+        hint = "質問または処理区分を選択"
+        self.draw_ui_text_in_rect(
+            self.office_rect(8, 210, 356, 23),
+            hint,
+            13,
+            "auxiliary",
+        )
+        if session.state not in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
+            self.draw_button(
+                self.office_footer_action_rect(),
+                self.office_footer_action_label(session.state),
+                11,
+                text_color=0,
+                style_name="button",
+            )
+
+    def draw_office_complete(self) -> None:
+        panel = self.office_rect(106, 68, 300, 96)
+        self.draw_panel_frame(panel, fill=0, inner=11)
+        self.draw_ui_text_in_rect(
+            self.office_rect(116, 78, 280, 34),
+            "本日の試行案件は完了しました",
+            7,
+            "title",
+            align="center",
+        )
+        self.draw_ui_text_in_rect(
+            self.office_rect(116, 116, 280, 24),
+            "4件の処理結果を記録しました",
+            13,
+            "auxiliary",
+            align="center",
+        )
+        self.draw_button(
+            self.office_footer_action_rect(),
+            "探索へ",
+            11,
+            text_color=0,
+            style_name="button",
+        )
+
+    def draw_office_section_title(self, rect: Rect, title: str) -> None:
+        title_height = self.office_rect(0, 0, 0, 18).height
+        title_rect = Rect(rect.x + 5, rect.y + 2, rect.width - 10, title_height)
+        fitted = self.fit_ui_text_to_width(title, int(title_rect.width), "auxiliary")
+        self.draw_ui_text_in_rect(title_rect, fitted, 12, "auxiliary")
+
+    def draw_office_compact_lines(
+        self,
+        rect: Rect,
+        lines: tuple[str, ...],
+        start_y: float,
+        color: int,
+        max_lines: int,
+    ) -> None:
+        line_height = self.office_rect(0, 0, 0, 15).height
+        x = rect.x + self.office_rect(4, 0, 0, 0).x
+        width = rect.width - self.office_rect(8, 0, 0, 0).x
+        for index, line in enumerate(lines[:max_lines]):
+            fitted = self.fit_ui_text_to_width(line, int(width), "auxiliary")
+            y = rect.y + self.office_rect(0, start_y, 0, 0).y + index * line_height
+            self.draw_ui_text_in_rect(
+                Rect(x, y, width, line_height),
+                fitted,
+                color,
+                "auxiliary",
+            )
+
+    def draw_office_portrait(self, rect: Rect, portrait_id: str) -> None:
+        pyxel = self.pyxel
+        x = int(rect.x)
+        y = int(rect.y)
+        width = max(16, int(rect.width))
+        height = max(18, int(rect.height))
+        accent_by_id = {
+            "office_visitor_01": 12,
+            "office_visitor_02": 11,
+            "office_visitor_lamel": 6,
+            "office_visitor_hero": 10,
+        }
+        accent = accent_by_id.get(portrait_id, 13)
+        pyxel.rect(x, y, width, height, 1)
+        pyxel.rectb(x, y, width, height, 5)
+        cx = x + width // 2
+        head_y = y + max(7, height // 3)
+        pyxel.circ(cx, head_y, max(4, width // 8), accent)
+        pyxel.rect(cx - width // 6, head_y + 4, max(7, width // 3), max(7, height // 3), accent)
+        pyxel.pset(cx - 2, head_y, 7)
+        pyxel.pset(cx + 2, head_y, 7)
+        if portrait_id == "office_visitor_lamel":
+            pyxel.line(cx - 5, head_y - 2, cx - 9, head_y - 6, 12)
+            pyxel.line(cx + 5, head_y - 2, cx + 9, head_y - 6, 12)
+        elif portrait_id == "office_visitor_hero":
+            pyxel.line(cx - 7, head_y - 6, cx + 7, head_y - 6, 7)
+            pyxel.line(cx + 6, head_y + 4, cx + 11, head_y + 11, 7)
+
+    @staticmethod
+    def office_classification_label(classification: Classification) -> str:
+        return {
+            Classification.COUNTER_COMPLETE: "窓口完結",
+            Classification.REFER_OTHER: "他部署案内",
+            Classification.MISSING_DOCUMENTS: "書類不足",
+            Classification.FIELD_CHECK: "現地確認",
+        }[classification]
+
+    @staticmethod
+    def office_state_label(state: CaseState) -> str:
+        return {
+            CaseState.NEW: "受付",
+            CaseState.HEARING: "聞き取り中",
+            CaseState.READY_TO_CLASSIFY: "処理判断",
+            CaseState.CLASSIFIED: "処理判断",
+            CaseState.CLOSED_COUNTER: "窓口完了",
+            CaseState.REFERRED: "案内済み",
+            CaseState.WAITING_DOCUMENTS: "書類待ち",
+            CaseState.FIELD_CHECK_REQUIRED: "現地確認",
+            CaseState.FIELD_ACTIVE: "外勤中",
+            CaseState.FIELD_RETURNED: "確認済み",
+            CaseState.RESOLVED: "完了",
+        }[state]
+
+    @staticmethod
+    def office_footer_action_label(state: CaseState) -> str:
+        if state == CaseState.FIELD_CHECK_REQUIRED:
+            return "現地へ"
+        if state == CaseState.FIELD_RETURNED:
+            return "案件完了"
+        return "次の案件"
 
     def draw_water_study(self) -> None:
         pyxel = self.pyxel
@@ -2694,7 +3188,12 @@ class DriftWithMeApp:
             "energy_refill",
         }
         if not inspect_modal:
-            self.draw_wordmark()
+            office = getattr(self, "office", None)
+            field_task = None if office is None else office.active_field_task
+            if field_task is not None and self.model.combat_session is None:
+                self.draw_field_task_hud()
+            else:
+                self.draw_wordmark()
             self.draw_minimap()
             if self.location_label_visible():
                 self.draw_location_label()
@@ -2730,7 +3229,12 @@ class DriftWithMeApp:
             )
             pyxel.text(8, 128, f"zap={self.model.debug.discharges}", 7)
             pyxel.text(8, 138, f"inspect={self.model.debug.inspected_count}", 7)
-            pyxel.text(8, 148, f"fx={len(self.effects.particles)}/{len(self.effects.emotes)}", 7)
+            pyxel.text(
+                8,
+                148,
+                f"fx={len(self.effects.particles)}/{len(self.effects.emotes)}",
+                7,
+            )
             if render_stats is not None:
                 chunks_text = (
                     f"chunks={render_stats.candidate_chunks}/64 "
@@ -2740,15 +3244,13 @@ class DriftWithMeApp:
                 pyxel.text(
                     184,
                     48,
-                    f"vis={render_stats.visible_static_objects}/{render_stats.candidate_static_objects}/{render_stats.total_static_objects}",
+                    "vis="
+                    f"{render_stats.visible_static_objects}/"
+                    f"{render_stats.candidate_static_objects}/"
+                    f"{render_stats.total_static_objects}",
                     7,
                 )
-                pyxel.text(
-                    184,
-                    58,
-                    chunks_text,
-                    7,
-                )
+                pyxel.text(184, 58, chunks_text, 7)
                 pyxel.text(
                     184,
                     68,
@@ -2757,6 +3259,29 @@ class DriftWithMeApp:
                 )
             pyxel.text(8, 158, "F focus / P pan", 7)
             pyxel.text(8, 168, f"proj={self.projection_mode} / V toggle", 7)
+
+    def field_task_hud_rect(self) -> Rect:
+        return self.office_rect(148, 7, 164, 38)
+
+    def draw_field_task_hud(self) -> None:
+        task = self.office.active_field_task
+        if task is None:
+            return
+        rect = self.field_task_hud_rect()
+        self.draw_panel_frame(rect, fill=0, inner=12)
+        self.draw_ui_text_in_rect(
+            Rect(rect.x + 5, rect.y + 2, rect.width - 10, rect.height * 0.42),
+            "現在の案件",
+            12,
+            "auxiliary",
+        )
+        objective = self.fit_ui_text_to_width(task.objective, int(rect.width) - 10, "auxiliary")
+        self.draw_ui_text_in_rect(
+            Rect(rect.x + 5, rect.y + rect.height * 0.43, rect.width - 10, rect.height * 0.53),
+            objective,
+            7,
+            "auxiliary",
+        )
 
     def draw_meter(
         self, x: int, y: int, width: int, height: int, value: float, maximum: float, color: int
@@ -3410,6 +3935,19 @@ class DriftWithMeApp:
             else:
                 color = 5
             self.pyxel.pset(px, py, color)
+        office = getattr(self, "office", None)
+        task = None if office is None else office.active_field_task
+        if task is not None and task.completion_condition_id == "inspect_anomaly_source":
+            target = self.model.enemy_by_id("urchin_abnormal_04")
+            if target is not None and target.state != "DEFEATED":
+                target_x, target_y = self.minimap_point(
+                    target.x,
+                    target.z,
+                    map_x,
+                    map_y,
+                    map_side,
+                )
+                self.pyxel.circb(target_x, target_y, 3, 10)
         px, py = self.minimap_point(
             self.model.player.x,
             self.model.player.z,

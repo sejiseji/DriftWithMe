@@ -11,7 +11,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_bundled_json_matches_prototype_spec_data() -> None:
-    for name in ("game_config.json", "prototype_world.json", "audio_events.json"):
+    for name in (
+        "game_config.json",
+        "prototype_world.json",
+        "audio_events.json",
+        "office_cases.json",
+    ):
         docs_data = json.loads(
             (ROOT / "docs" / "prototype_spec" / "data" / name).read_text(encoding="utf-8")
         )

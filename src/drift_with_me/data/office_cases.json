@@ -1,0 +1,129 @@
+{
+  "version": "0.1.0",
+  "cases": [
+    {
+      "case_id": "OFF-PROT-001",
+      "title": "住民証明書の発行",
+      "visitor": {
+        "id": "resident_a",
+        "name": "ミナ",
+        "kind": "魔族",
+        "portrait_id": "office_visitor_01"
+      },
+      "initial_purpose": "住民証明書を発行してほしい",
+      "document_status": "本人確認書類あり",
+      "questions": [
+        {
+          "id": "identity",
+          "jack": "本人確認書類を拝見してもよろしいでしょうか？",
+          "reply": "はい、こちらです。",
+          "memo": ["本人確認: 済"]
+        },
+        {
+          "id": "changes",
+          "jack": "登録内容に変更はありませんか？",
+          "reply": "ありません。",
+          "memo": ["登録変更: なし"]
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-PROT-002",
+      "title": "減免申請",
+      "visitor": {
+        "id": "resident_b",
+        "name": "グロウ",
+        "kind": "魔族",
+        "portrait_id": "office_visitor_02"
+      },
+      "initial_purpose": "減免申請をしたい",
+      "document_status": "不明",
+      "questions": [
+        {
+          "id": "attachment",
+          "jack": "添付書類はお持ちでしょうか？",
+          "reply": "申請書だけ持ってきました。",
+          "memo": ["添付書類: 不足"]
+        }
+      ],
+      "expected_classification": "MISSING_DOCUMENTS",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-PROT-003",
+      "title": "北側浅瀬の異常音",
+      "visitor": {
+        "id": "lamel",
+        "name": "ラメル",
+        "kind": "魔族（海棲型）",
+        "portrait_id": "office_visitor_lamel"
+      },
+      "initial_purpose": "夜になると水辺から異常音がする",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "when",
+          "jack": "いつ頃からでしょうか？",
+          "reply": "三日くらい前からです。",
+          "memo": ["発生: 約3日前から"]
+        },
+        {
+          "id": "frequency",
+          "jack": "毎晩でしょうか？",
+          "reply": "ほぼ毎晩です。",
+          "memo": ["頻度: ほぼ毎晩"]
+        },
+        {
+          "id": "place",
+          "jack": "場所はどこでしょうか？",
+          "reply": "北側の浅瀬の近くです。",
+          "memo": ["場所: 北側浅瀬付近"]
+        },
+        {
+          "id": "sound",
+          "jack": "どのような音でしょうか？",
+          "reply": "水の下で何かが動いているような音です。",
+          "memo": ["内容: 水中で何かが動く音"]
+        },
+        {
+          "id": "damage",
+          "jack": "何か被害はありますか？",
+          "reply": "今のところは分かりません。",
+          "memo": ["実害: 不明"]
+        }
+      ],
+      "expected_classification": "FIELD_CHECK",
+      "field_task": {
+        "task_id": "FIELD-PROT-003",
+        "location_id": "north_shallow",
+        "title": "北側浅瀬の異常音確認",
+        "objective": "異常音の発生源を確認する",
+        "completion_condition_id": "inspect_anomaly_source"
+      }
+    },
+    {
+      "case_id": "OFF-PROT-004",
+      "title": "出張所をダンジョンと思って来た勇者",
+      "visitor": {
+        "id": "hero_a",
+        "name": "旅の勇者",
+        "kind": "勇者",
+        "portrait_id": "office_visitor_hero"
+      },
+      "initial_purpose": "魔王軍施設の攻略",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "purpose",
+          "jack": "本日はどのようなご用件でしょうか？",
+          "reply": "魔王軍の拠点を攻略しに来た。",
+          "memo": ["行政手続目的: なし", "来訪目的: 討伐"]
+        }
+      ],
+      "expected_classification": "REFER_OTHER",
+      "field_task": null
+    }
+  ]
+}
