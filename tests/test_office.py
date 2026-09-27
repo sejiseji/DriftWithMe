@@ -247,7 +247,6 @@ def test_off001_office_layout_stays_inside_all_profiles() -> None:
             app.office_visitor_rect(),
             app.office_dialog_rect(),
             app.office_questions_panel_rect(),
-            app.office_memo_rect(),
             app.office_classification_panel_rect(),
             app.office_footer_rect(),
             app.office_footer_action_rect(),
@@ -258,6 +257,11 @@ def test_off001_office_layout_stays_inside_all_profiles() -> None:
             and rect.x + rect.width <= screen.width + 0.01
             and rect.y + rect.height <= screen.height + 0.01
             for rect in rects
+        )
+        assert app.office_dialog_rect().height == app.office_questions_panel_rect().height
+        assert (
+            app.office_questions_panel_rect().x + app.office_questions_panel_rect().width
+            < app.office_dialog_rect().x
         )
 
 
@@ -343,13 +347,13 @@ def test_off001_dialogue_wraps_without_ellipsis_and_paginates_full_exchange() ->
     session = app.office.current_session
     assert session is not None
     expected = "".join(f"{line.speaker}: {line.text}" for line in session.dialogue[-2:])
-    visible = "".join(line for page in playback.pages for line in page)
+    visible = "".join(line.text for page in playback.pages for line in page)
     max_width = int(app.office_dialogue_content_rect().width)
 
-    assert len(playback.pages) >= 2
+    assert playback.pages
     assert visible == expected
     assert all(
-        app.ui_text.text_width(line, "office_japanese") <= max_width
+        app.ui_text.text_width(line.text, "office_japanese") <= max_width
         for page in playback.pages
         for line in page
     )
@@ -357,10 +361,12 @@ def test_off001_dialogue_wraps_without_ellipsis_and_paginates_full_exchange() ->
 
 def test_off001_dialogue_typewriter_tap_completes_then_advances_page() -> None:
     app = make_office_dialogue_app()
+    app.ui_text = SimpleNamespace(text_width=lambda text, style_name: len(text) * 24)
     assert app.office.ask_question("identity")
     playback = app.sync_office_dialogue_playback()
+    assert len(playback.pages) > 1
     first_page = app.office_dialogue_current_page(playback)
-    first_page_characters = sum(len(line) for line in first_page)
+    first_page_characters = sum(len(line.text) for line in first_page)
 
     app.update_office_dialogue_playback(1.0 / OFFICE_DIALOGUE_CHARS_PER_SEC)
     assert int(playback.revealed_chars) == 1
@@ -372,6 +378,23 @@ def test_off001_dialogue_typewriter_tap_completes_then_advances_page() -> None:
     assert app.advance_office_dialogue_page()
     assert playback.page_index == 1
     assert playback.revealed_chars == 0.0
+
+
+def test_off001_dialogue_draws_visitor_speech_in_yellow() -> None:
+    app = make_office_dialogue_app()
+    assert app.office.ask_question("identity")
+    playback = app.sync_office_dialogue_playback()
+    page = app.office_dialogue_current_page(playback)
+    playback.revealed_chars = float(sum(len(line.text) for line in page))
+    draws: list[tuple[str, int]] = []
+    app.draw_office_text_in_rect = lambda rect, text, color, **kwargs: draws.append((text, color))
+    app.pyxel = SimpleNamespace(tri=lambda *args: None)
+    app.frame = 0
+
+    app.draw_office_dialogue(app.office_dialog_rect())
+
+    expected = [(line.text, 10 if line.visitor else 7) for line in page]
+    assert draws == expected
 
 
 def test_off001_new_exchange_restarts_dialogue_reveal() -> None:
@@ -392,7 +415,7 @@ def test_off001_dialogue_tap_is_consumed_before_question_buttons() -> None:
     app = make_office_dialogue_app()
     playback = app.sync_office_dialogue_playback()
     page = app.office_dialogue_current_page(playback)
-    page_characters = sum(len(line) for line in page)
+    page_characters = sum(len(line.text) for line in page)
     rect = app.office_dialog_rect()
     app.pointer = SimpleNamespace(cancel=lambda: None)
     app.double_tap_move = SimpleNamespace(cancel=lambda: None)

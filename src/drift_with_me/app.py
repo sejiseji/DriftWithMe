@@ -131,9 +131,15 @@ class WaterStudyJackFloat:
 @dataclass
 class OfficeDialoguePlayback:
     signature: tuple[str, tuple[tuple[str, str], ...]] | None = None
-    pages: tuple[tuple[str, ...], ...] = ()
+    pages: tuple[tuple[OfficeDialogueLine, ...], ...] = ()
     page_index: int = 0
     revealed_chars: float = 0.0
+
+
+@dataclass(frozen=True)
+class OfficeDialogueLine:
+    text: str
+    visitor: bool
 
 
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
@@ -242,7 +248,7 @@ WATER_STUDY_JACK_DIRECTION_VIEWS = (
     "front_left",
 )
 OFFICE_DIALOGUE_CHARS_PER_SEC = 72.0
-OFFICE_DIALOGUE_LINES_PER_PAGE = 2
+OFFICE_DIALOGUE_LINES_PER_PAGE = 8
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
     # remain unchanged, but their broad bright cells are tempered at draw time.
@@ -589,13 +595,12 @@ class DriftWithMeApp:
 
         content_rect = self.office_dialogue_content_rect()
         style_name = "office_japanese"
-        wrapped_lines: list[str] = []
+        wrapped_lines: list[OfficeDialogueLine] = []
         for speaker, text in recent:
             wrapped_lines.extend(
-                self.wrap_office_dialogue_text(
-                    f"{speaker}: {text}",
-                    max(1, int(content_rect.width)),
-                    style_name,
+                OfficeDialogueLine(text=line, visitor=speaker == case.visitor.name)
+                for line in self.wrap_office_dialogue_text(
+                    f"{speaker}: {text}", max(1, int(content_rect.width)), style_name
                 )
             )
         pages = tuple(
@@ -634,7 +639,7 @@ class DriftWithMeApp:
         page = self.office_dialogue_current_page(playback)
         if not page:
             return
-        character_count = sum(len(line) for line in page)
+        character_count = sum(len(line.text) for line in page)
         playback.revealed_chars = min(
             float(character_count),
             playback.revealed_chars + max(0.0, elapsed) * OFFICE_DIALOGUE_CHARS_PER_SEC,
@@ -645,7 +650,7 @@ class DriftWithMeApp:
         page = self.office_dialogue_current_page(playback)
         if not page:
             return False
-        character_count = sum(len(line) for line in page)
+        character_count = sum(len(line.text) for line in page)
         if int(playback.revealed_chars) < character_count:
             playback.revealed_chars = float(character_count)
             return True
@@ -658,7 +663,7 @@ class DriftWithMeApp:
     @staticmethod
     def office_dialogue_current_page(
         playback: OfficeDialoguePlayback,
-    ) -> tuple[str, ...]:
+    ) -> tuple[OfficeDialogueLine, ...]:
         if not playback.pages:
             return ()
         index = min(max(0, playback.page_index), len(playback.pages) - 1)
@@ -1959,7 +1964,7 @@ class DriftWithMeApp:
         return self.office_rect(6, 31, 116, 173)
 
     def office_dialog_rect(self) -> Rect:
-        return self.office_rect(126, 31, 246, 58)
+        return self.office_rect(251, 31, 121, 173)
 
     def office_dialogue_content_rect(self) -> Rect:
         panel = self.office_dialog_rect()
@@ -1975,10 +1980,7 @@ class DriftWithMeApp:
         )
 
     def office_questions_panel_rect(self) -> Rect:
-        return self.office_rect(126, 93, 121, 112)
-
-    def office_memo_rect(self) -> Rect:
-        return self.office_rect(251, 93, 121, 112)
+        return self.office_rect(126, 31, 121, 173)
 
     def office_classification_panel_rect(self) -> Rect:
         return self.office_rect(376, 31, 130, 173)
@@ -2383,9 +2385,8 @@ class DriftWithMeApp:
         visitor_rect = self.office_visitor_rect()
         dialog_rect = self.office_dialog_rect()
         questions_rect = self.office_questions_panel_rect()
-        memo_rect = self.office_memo_rect()
         classification_rect = self.office_classification_panel_rect()
-        for rect in (visitor_rect, dialog_rect, questions_rect, memo_rect, classification_rect):
+        for rect in (visitor_rect, questions_rect, dialog_rect, classification_rect):
             self.draw_panel_frame(rect, fill=0, inner=5)
 
         self.draw_office_section_title(visitor_rect, "来訪者")
@@ -2429,22 +2430,6 @@ class DriftWithMeApp:
                 13 if asked else 7,
                 preferred_styles=("office_japanese", "office_japanese_button"),
             )
-
-        if session.field_result is not None:
-            self.draw_office_section_title(memo_rect, "現地確認結果")
-            memo_lines = tuple(f"・{line}" for line in session.field_result.report_lines)
-        else:
-            self.draw_office_section_title(memo_rect, "聞き取りメモ")
-            memo_lines = tuple(f"・{fact.line}" for fact in session.memo_facts)
-        if not memo_lines:
-            memo_lines = ("質問すると記録されます",)
-        self.draw_office_compact_lines(
-            memo_rect,
-            memo_lines,
-            start_y=18,
-            color=13 if session.memo_facts else 6,
-            max_lines=5,
-        )
 
         self.draw_office_section_title(classification_rect, "処理区分")
         for index, classification in enumerate(CLASSIFICATION_ORDER):
@@ -2524,7 +2509,7 @@ class DriftWithMeApp:
         content_rect = self.office_dialogue_content_rect()
         line_height = content_rect.height / OFFICE_DIALOGUE_LINES_PER_PAGE
         for index, line in enumerate(page):
-            visible_count = min(len(line), remaining)
+            visible_count = min(len(line.text), remaining)
             remaining -= visible_count
             if visible_count <= 0:
                 continue
@@ -2535,12 +2520,12 @@ class DriftWithMeApp:
                     content_rect.width,
                     line_height,
                 ),
-                line[:visible_count],
-                7,
+                line.text[:visible_count],
+                10 if line.visitor else 7,
                 preferred_styles=("office_japanese", "office_japanese_button"),
             )
 
-        character_count = sum(len(line) for line in page)
+        character_count = sum(len(line.text) for line in page)
         has_next_page = playback.page_index + 1 < len(playback.pages)
         if (
             int(playback.revealed_chars) >= character_count
