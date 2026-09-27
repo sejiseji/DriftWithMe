@@ -167,6 +167,132 @@
         }
       ]
     },
+    "jack_idle_blink_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [16, 32],
+      "world_size": [16.0, 16.0],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "animation": {"mode": "static", "frame_id": "idle_blink_00"},
+      "frames": [
+        {
+          "id": "idle_blink_00",
+          "u": 64,
+          "v": 0,
+          "w": 32,
+          "h": 32,
+          "source_hash": "c698e933d1aa19454171aeae0137339d6d4c78a562f42311555d4f42d02cfd4a"
+        }
+      ]
+    },
+    "jack_front_left_blink_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [16, 32],
+      "world_size": [16.0, 16.0],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "animation": {"mode": "static", "frame_id": "front_left_blink_00"},
+      "frames": [
+        {
+          "id": "front_left_blink_00",
+          "u": 64,
+          "v": 0,
+          "w": 32,
+          "h": 32,
+          "source_hash": "c698e933d1aa19454171aeae0137339d6d4c78a562f42311555d4f42d02cfd4a"
+        }
+      ]
+    },
+    "jack_front_right_blink_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [16, 32],
+      "world_size": [16.0, 16.0],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "animation": {"mode": "static", "frame_id": "front_right_blink_00"},
+      "frames": [
+        {
+          "id": "front_right_blink_00",
+          "u": 96,
+          "v": 0,
+          "w": 32,
+          "h": 32,
+          "source_hash": "45373658baf9f2015c6b6fd414bcd4798116a576ba59d9b596f9926c8ea300f4"
+        }
+      ]
+    },
+    "jack_front_blink_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [16, 32],
+      "world_size": [16.0, 16.0],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "animation": {"mode": "static", "frame_id": "front_blink_00"},
+      "frames": [
+        {
+          "id": "front_blink_00",
+          "u": 64,
+          "v": 32,
+          "w": 32,
+          "h": 32,
+          "source_hash": "a880b87eb51101a96b0d5a774657778fb2a4158a6b7884dac8e6182179bcb6db"
+        }
+      ]
+    },
+    "jack_left_blink_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [16, 32],
+      "world_size": [16.0, 16.0],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "animation": {"mode": "static", "frame_id": "left_blink_00"},
+      "frames": [
+        {
+          "id": "left_blink_00",
+          "u": 64,
+          "v": 64,
+          "w": 32,
+          "h": 32,
+          "source_hash": "4eb64733de7ebec83537219a14b7eb279f6be1afb169b124766652dd61bb7e26"
+        }
+      ]
+    },
+    "jack_right_blink_32": {
+      "asset_version": "0.1.0",
+      "image_bank": 0,
+      "colkey": 0,
+      "anchor_px": [16, 32],
+      "world_size": [16.0, 16.0],
+      "projection_mode": "upright_height_billboard_v1",
+      "sort_anchor": "player_root_ground",
+      "flip_policy": "none",
+      "animation": {"mode": "static", "frame_id": "right_blink_00"},
+      "frames": [
+        {
+          "id": "right_blink_00",
+          "u": 96,
+          "v": 64,
+          "w": 32,
+          "h": 32,
+          "source_hash": "c65e6f6e218a16540f4a4208526211c1603494180de4689b9783e59160cce686"
+        }
+      ]
+    },
     "fuse_front_right_neutral_48": {
       "asset_version": "0.2.0",
       "image_bank": 0,

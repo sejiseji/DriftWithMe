@@ -87,6 +87,37 @@ GRASSLAND_MICRO_CLUMP_PATTERNS = (
 )
 
 
+def jack_blink_closed(blink_config: dict, presentation_time: float) -> bool:
+    if not bool(blink_config.get("enabled", True)):
+        return False
+    closed_sec = max(0.0, float(blink_config.get("closed_sec", 0.11)))
+    raw_pattern = blink_config.get("interval_pattern_sec", ())
+    if closed_sec <= 0.0 or not isinstance(raw_pattern, (list, tuple)):
+        return False
+    intervals = tuple(max(closed_sec, float(value)) for value in raw_pattern)
+    cycle_sec = sum(intervals)
+    if cycle_sec <= 0.0:
+        return False
+    raw_double_indices = blink_config.get("double_blink_indices", ())
+    double_indices = (
+        {int(value) for value in raw_double_indices}
+        if isinstance(raw_double_indices, (list, tuple))
+        else set()
+    )
+    double_gap_sec = max(0.0, float(blink_config.get("double_gap_sec", 0.15)))
+    phase = max(0.0, presentation_time) % cycle_sec
+    cursor = 0.0
+    for index, interval in enumerate(intervals):
+        cursor += interval
+        if cursor - closed_sec <= phase < cursor:
+            return True
+        if index in double_indices:
+            first_end = cursor - closed_sec - double_gap_sec
+            if first_end - closed_sec <= phase < first_end:
+                return True
+    return False
+
+
 @dataclass(frozen=True)
 class DrawCommand:
     depth: float
@@ -3419,22 +3450,37 @@ class Renderer:
         return hover * float(model.config["player"]["visual_hover_amplitude"]) / 2.0
 
     def player_sprite_asset(
-        self, model: GameModel, camera: CameraState | None = None
+        self,
+        model: GameModel,
+        camera: CameraState | None = None,
+        presentation_time: float | None = None,
     ) -> LoadedSpriteAsset | None:
         if camera is None:
             return self.configured_sprite_asset(model, "player_idle_asset")
-        selection = self.player_sprite_selection(model, camera)
+        selection = self.player_sprite_selection(model, camera, presentation_time)
         if selection is None:
             return None
         asset, _flip_x = selection
         return asset
 
     def player_sprite_selection(
-        self, model: GameModel, camera: CameraState
+        self,
+        model: GameModel,
+        camera: CameraState,
+        presentation_time: float | None = None,
     ) -> tuple[LoadedSpriteAsset, bool] | None:
         view_name = self.player_sprite_direction_view(model, camera)
         config_key = f"player_{view_name}_asset" if view_name != "idle" else "player_idle_asset"
         asset = self.configured_sprite_asset(model, config_key)
+        if presentation_time is not None and jack_blink_closed(
+            model.config.get("player", {}).get("blink", {}), presentation_time
+        ):
+            blink_key = (
+                f"player_{view_name}_blink_asset"
+                if view_name != "idle"
+                else "player_idle_blink_asset"
+            )
+            asset = self.configured_sprite_asset(model, blink_key) or asset
         using_idle_fallback = False
         if asset is None and config_key != "player_idle_asset":
             asset = self.configured_sprite_asset(model, "player_idle_asset")
@@ -3657,7 +3703,7 @@ class Renderer:
         z: float | None = None,
         y: float | None = None,
     ):
-        selection = self.player_sprite_selection(model, camera)
+        selection = self.player_sprite_selection(model, camera, presentation_time)
         if selection is None:
             return None
         asset, flip_x = selection
@@ -3700,7 +3746,7 @@ class Renderer:
         z: float | None = None,
         y: float | None = None,
     ) -> bool:
-        asset = self.player_sprite_asset(model, camera)
+        asset = self.player_sprite_asset(model, camera, presentation_time)
         if asset is None:
             return False
         placement = self.player_sprite_placement(model, camera, presentation_time, x, z, y)

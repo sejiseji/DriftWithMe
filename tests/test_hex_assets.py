@@ -23,7 +23,7 @@ from drift_with_me.hex_assets import (
 )
 from drift_with_me.math3d import CameraState, Vec3, screen_to_world_direction
 from drift_with_me.model import GameModel, InteractionState
-from drift_with_me.render import Renderer
+from drift_with_me.render import Renderer, jack_blink_closed
 from drift_with_me.world import load_world_data
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,6 +50,27 @@ JACK_DIRECTION_RECTS = {
     "right": (0, 96, 32, 32),
     "back_right": (32, 96, 32, 32),
     "back": (0, 128, 32, 32),
+}
+JACK_BLINK_HASHES = {
+    "front": "a880b87eb51101a96b0d5a774657778fb2a4158a6b7884dac8e6182179bcb6db",
+    "front_left": "c698e933d1aa19454171aeae0137339d6d4c78a562f42311555d4f42d02cfd4a",
+    "front_right": "45373658baf9f2015c6b6fd414bcd4798116a576ba59d9b596f9926c8ea300f4",
+    "left": "4eb64733de7ebec83537219a14b7eb279f6be1afb169b124766652dd61bb7e26",
+    "right": "c65e6f6e218a16540f4a4208526211c1603494180de4689b9783e59160cce686",
+}
+JACK_BLINK_RECTS = {
+    "front_left": (64, 0, 32, 32),
+    "front_right": (96, 0, 32, 32),
+    "front": (64, 32, 32, 32),
+    "left": (64, 64, 32, 32),
+    "right": (96, 64, 32, 32),
+}
+JACK_BLINK_EYE_RECTS = {
+    "front": ((8, 18, 11, 22), (20, 18, 23, 22)),
+    "front_left": ((5, 18, 7, 22), (18, 18, 21, 22)),
+    "front_right": ((10, 18, 13, 22), (24, 18, 26, 22)),
+    "left": ((7, 18, 10, 22),),
+    "right": ((21, 18, 24, 22),),
 }
 NORMAL_URCHIN_SOURCE_HASH = "06fec2bbf7eeac8b6e8b9fab9e4ebc4584c2a364c2ba03d3e34ee41878b0dfa4"
 NORMAL_URCHIN_RECT = (64, 160, 64, 64)
@@ -416,6 +437,58 @@ def test_jack_source_hex_preserves_received_pixels(direction: str) -> None:
     assert len(rows) == 32
     assert {len(row) for row in rows} == {32}
     assert pixel_hash(rows) == JACK_DIRECTION_HASHES[direction]
+
+
+@pytest.mark.parametrize("direction", tuple(JACK_BLINK_HASHES))
+def test_jack_blink_hex_is_a_fixed_32px_directional_frame(direction: str) -> None:
+    original_rows = tuple(
+        (ROOT / f"src/drift_with_me/assets/jack_{direction}_00.hex")
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+    rows = tuple(
+        (ROOT / f"src/drift_with_me/assets/jack_{direction}_blink_00.hex")
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+
+    assert len(rows) == 32
+    assert {len(row) for row in rows} == {32}
+    assert pixel_hash(rows) == JACK_BLINK_HASHES[direction]
+    changed = {
+        (x, y)
+        for y, (original_row, blink_row) in enumerate(zip(original_rows, rows, strict=True))
+        for x, (original, blink) in enumerate(zip(original_row, blink_row, strict=True))
+        if original != blink
+    }
+    allowed = {
+        (x, y)
+        for x0, y0, x1, y1 in JACK_BLINK_EYE_RECTS[direction]
+        for y in range(y0, y1 + 1)
+        for x in range(x0, x1 + 1)
+    }
+    assert changed
+    assert changed <= allowed
+
+
+def test_jack_blink_schedule_is_irregular_and_supports_double_blinks() -> None:
+    config = {
+        "enabled": True,
+        "closed_sec": 0.1,
+        "interval_pattern_sec": [1.0, 2.0],
+        "double_blink_indices": [0],
+        "double_gap_sec": 0.2,
+    }
+
+    assert not jack_blink_closed(config, 0.5)
+    assert jack_blink_closed(config, 0.65)
+    assert not jack_blink_closed(config, 0.8)
+    assert jack_blink_closed(config, 0.95)
+    assert not jack_blink_closed(config, 1.5)
+    assert jack_blink_closed(config, 2.95)
+    assert not jack_blink_closed({**config, "enabled": False}, 0.95)
 
 
 def test_normal_urchin_source_hex_preserves_received_pixels() -> None:
@@ -842,6 +915,8 @@ assert (back_frame.u, back_frame.v, back_frame.width, back_frame.height) == (0, 
 assert back_frame.source_hash == {JACK_BACK_SOURCE_HASH!r}
 jack_assets = {JACK_DIRECTION_HASHES!r}
 jack_rects = {JACK_DIRECTION_RECTS!r}
+jack_blink_assets = {JACK_BLINK_HASHES!r}
+jack_blink_rects = {JACK_BLINK_RECTS!r}
 urchin_rect = {NORMAL_URCHIN_RECT!r}
 abnormal_urchin_rect = {ABNORMAL_URCHIN_RECT!r}
 for direction, expected_hash in jack_assets.items():
@@ -855,6 +930,21 @@ for direction, expected_hash in jack_assets.items():
     assert jack.definition.world_size == (16.0, 16.0)
 for direction in jack_assets:
     assert runtime.raw["assets"][f"player_{{direction}}_asset"] == f"jack_{{direction}}_32"
+for direction, expected_hash in jack_blink_assets.items():
+    blink = library.get(f"jack_{{direction}}_blink_32")
+    assert blink is not None, direction
+    frame = blink.frame()
+    assert (frame.u, frame.v, frame.width, frame.height) == jack_blink_rects[direction]
+    assert frame.source_hash == expected_hash
+    assert blink.definition.anchor_px == (16.0, 32.0)
+    assert blink.definition.world_size == (16.0, 16.0)
+    assert runtime.raw["assets"][f"player_{{direction}}_blink_asset"] == (
+        f"jack_{{direction}}_blink_32"
+    )
+idle_blink = library.get("jack_idle_blink_32")
+assert idle_blink is not None
+assert idle_blink.frame().source_hash == jack_blink_assets["front_left"]
+assert runtime.raw["assets"]["player_idle_blink_asset"] == "jack_idle_blink_32"
 urchin = library.get("normal_urchin_idle_64")
 assert urchin is not None
 urchin_frame = urchin.frame()
@@ -1649,6 +1739,47 @@ def test_renderer_selects_player_direction_assets_for_screen_movement(tmp_path: 
         asset = renderer.player_sprite_asset(model, camera)
         assert asset is not None
         assert asset.definition.asset_id == f"jack_{expected}_32"
+
+
+def test_renderer_selects_closed_eye_asset_only_during_blink_window(tmp_path: Path) -> None:
+    import pyxel
+
+    assets = [
+        valid_asset("jack_front_32", "front.hex"),
+        valid_asset("jack_front_blink_32", "front_blink.hex"),
+    ]
+    manifest_path = write_manifest_assets(tmp_path, assets)
+    library = load_sprite_manifest_path(pyxel, manifest_path)
+    runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = True
+    raw["assets"]["player_front_asset"] = "jack_front_32"
+    raw["assets"]["player_front_blink_asset"] = "jack_front_blink_32"
+    raw["player"]["blink"] = {
+        "enabled": True,
+        "closed_sec": 0.1,
+        "interval_pattern_sec": [1.0],
+    }
+    model = GameModel(raw, load_world_data())
+    camera = CameraState.from_config(
+        raw,
+        Vec3(model.player.x, 0.0, model.player.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    renderer = Renderer(RecordingPyxel(), library)
+    model.player.moved_distance = 1.0
+    screen_down = screen_to_world_direction(camera, model.player.x, model.player.z, 0.0, 1.0)
+    model.player.last_move_x = screen_down.x
+    model.player.last_move_z = screen_down.y
+
+    open_asset = renderer.player_sprite_asset(model, camera, presentation_time=0.5)
+    closed_asset = renderer.player_sprite_asset(model, camera, presentation_time=0.95)
+
+    assert open_asset is not None
+    assert closed_asset is not None
+    assert open_asset.definition.asset_id == "jack_front_32"
+    assert closed_asset.definition.asset_id == "jack_front_blink_32"
 
 
 def test_renderer_selects_buddy_direction_assets_for_screen_movement(tmp_path: Path) -> None:

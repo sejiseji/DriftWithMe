@@ -517,6 +517,34 @@ def test_water_study_jack_draws_existing_idle_asset_in_screen_space() -> None:
     ]
 
 
+def test_water_study_jack_uses_shared_closed_eye_asset_during_blink() -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    app.reset_water_study_jack_float()
+    app.water_study_jack_float.direction_index = 0
+    app.presentation_time = 0.95
+    app.model.config["player"]["blink"] = {
+        "enabled": True,
+        "closed_sec": 0.1,
+        "interval_pattern_sec": [1.0],
+    }
+    definition = SimpleNamespace(anchor_px=(16.0, 32.0), colkey=0)
+    open_frame = SimpleNamespace(image=2, u=8, v=16, width=32, height=32)
+    blink_frame = SimpleNamespace(image=3, u=40, v=16, width=32, height=32)
+    open_asset = SimpleNamespace(definition=definition, frame=lambda: open_frame)
+    blink_asset = SimpleNamespace(definition=definition, frame=lambda: blink_frame)
+    assets = {
+        "jack_front_32": open_asset,
+        "jack_front_blink_32": blink_asset,
+    }
+    app.sprite_assets = SimpleNamespace(get=assets.get)
+
+    assert app.draw_water_study_jack()
+
+    args, _kwargs = app.pyxel.blt_calls[0]
+    assert args[2:5] == (3, 40, 16)
+
+
 def test_water_study_jack_front_pass_uses_surface_then_caustics_and_resets_clip(
     monkeypatch,
 ) -> None:

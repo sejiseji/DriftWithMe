@@ -24,7 +24,7 @@ from drift_with_me.math3d import (
 )
 from drift_with_me.model import GameModel, InputIntent, merge_intents
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
-from drift_with_me.render import Renderer
+from drift_with_me.render import Renderer, jack_blink_closed
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.water_study_assets import (
     APPROVED_LOOK04_PLUS_SPARKLE_FPS,
@@ -2012,6 +2012,12 @@ class DriftWithMeApp:
         asset_config = self.model.config.get("assets", {})
         asset_id = str(asset_config.get(f"player_{view}_asset", ""))
         asset = sprite_assets.get(asset_id)
+        if jack_blink_closed(
+            self.model.config.get("player", {}).get("blink", {}),
+            float(getattr(self, "presentation_time", 0.0)),
+        ):
+            blink_asset_id = str(asset_config.get(f"player_{view}_blink_asset", ""))
+            asset = sprite_assets.get(blink_asset_id) or asset
         if asset is None:
             asset_id = str(asset_config.get("player_idle_asset", ""))
             asset = sprite_assets.get(asset_id)
