@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 from drift_with_me.app import (
@@ -20,6 +23,14 @@ from drift_with_me.office import (
 )
 from drift_with_me.world import load_world_data
 
+ROOT = Path(__file__).resolve().parents[1]
+OFFICE_PORTRAIT_HASHES = {
+    "succubus_green": "813471a9c901d2b1c464e3cd871d4c50755539d32d753984ed6a756acf0ef014",
+    "tired_gray_oldman": "226b90cf1fdc909641fbe45f13254769718acaee38a9f77a65416ad5a474564c",
+    "nervous_elf_woodsman": "f0e7d85f511754ff8cb57d7f1501ee0983efd8b2b48f8218bbc6bb2854250bf6",
+    "smug_blond_hero": "da1d755d1be399591a653b08c7893d37b7ad710fb632d0ef7912c8850e99f1b2",
+}
+
 
 def test_off001_case_definitions_cover_each_classification_once() -> None:
     office = OfficePrototype.load()
@@ -34,6 +45,66 @@ def test_off001_case_definitions_cover_each_classification_once() -> None:
     assert [case.case_id for case in office.cases if case.field_task is not None] == [
         "OFF-PROT-003"
     ]
+
+
+def test_off001_cases_bind_approved_portrait_ids_in_order() -> None:
+    office = OfficePrototype.load()
+
+    assert [case.visitor.portrait_id for case in office.cases] == list(OFFICE_PORTRAIT_HASHES)
+
+
+def test_off001_portrait_sources_preserve_asset_contract() -> None:
+    manifest_path = ROOT / "src/drift_with_me/assets/jack_sprite.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assets = {asset["id"]: asset for asset in manifest["source_assets"]}
+
+    for asset_id, expected_hash in OFFICE_PORTRAIT_HASHES.items():
+        asset = assets[asset_id]
+        assert (asset["hex_width"], asset["hex_height"]) == (64, 64)
+        assert asset["colkey"] == 8
+        assert asset["source_hash"] == expected_hash
+        assert asset["ui_role"] == "office_visitor_portrait"
+        source_path = manifest_path.parent / asset["frames"][0]["path"]
+        rows = source_path.read_text(encoding="ascii").splitlines()
+        pixels = bytes(int(char, 16) for row in rows for char in row)
+        assert len(rows) == 64
+        assert all(len(row) == 64 for row in rows)
+        assert hashlib.sha256(pixels).hexdigest() == expected_hash
+
+
+def test_off001_portrait_draw_uses_asset_colkey_and_fits_panel() -> None:
+    calls: list[tuple[tuple, dict]] = []
+
+    class FakePyxel:
+        @staticmethod
+        def rect(*args) -> None:
+            del args
+
+        @staticmethod
+        def rectb(*args) -> None:
+            del args
+
+        @staticmethod
+        def blt(*args, **kwargs) -> None:
+            calls.append((args, kwargs))
+
+    frame = SimpleNamespace(image="portrait", u=0, v=0, width=64, height=64)
+    asset = SimpleNamespace(
+        frame=lambda: frame,
+        definition=SimpleNamespace(colkey=8),
+    )
+    app = DriftWithMeApp.__new__(DriftWithMeApp)
+    app.pyxel = FakePyxel()
+    app.sprite_assets = SimpleNamespace(
+        get=lambda asset_id: asset if asset_id == "succubus_green" else None
+    )
+
+    app.draw_office_portrait(Rect(10, 20, 48, 48), "succubus_green")
+
+    assert len(calls) == 1
+    args, kwargs = calls[0]
+    assert args == (10, 20, "portrait", 0, 0, 64, 64)
+    assert kwargs == {"colkey": 8, "scale": 0.75}
 
 
 def test_off001_hearing_updates_dialogue_and_memo_once() -> None:

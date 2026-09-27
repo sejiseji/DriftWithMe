@@ -2390,10 +2390,10 @@ class DriftWithMeApp:
 
         self.draw_office_section_title(visitor_rect, "来訪者")
         portrait = Rect(
-            visitor_rect.x + visitor_rect.width / 2 - self.office_rect(0, 0, 42, 0).width / 2,
-            visitor_rect.y + self.office_rect(0, 22, 0, 0).y,
-            self.office_rect(0, 0, 42, 0).width,
-            self.office_rect(0, 0, 0, 44).height,
+            visitor_rect.x + visitor_rect.width / 2 - self.office_rect(0, 0, 64, 0).width / 2,
+            visitor_rect.y + self.office_rect(0, 19, 0, 0).y,
+            self.office_rect(0, 0, 64, 0).width,
+            self.office_rect(0, 0, 0, 64).height,
         )
         self.draw_office_portrait(portrait, case.visitor.portrait_id)
         visitor_lines = (
@@ -2405,7 +2405,7 @@ class DriftWithMeApp:
         self.draw_office_compact_lines(
             visitor_rect,
             visitor_lines,
-            start_y=72,
+            start_y=91,
             color=7,
             max_lines=4,
         )
@@ -2642,27 +2642,37 @@ class DriftWithMeApp:
         y = int(rect.y)
         width = max(16, int(rect.width))
         height = max(18, int(rect.height))
-        accent_by_id = {
-            "office_visitor_01": 12,
-            "office_visitor_02": 11,
-            "office_visitor_lamel": 6,
-            "office_visitor_hero": 10,
-        }
-        accent = accent_by_id.get(portrait_id, 13)
         pyxel.rect(x, y, width, height, 1)
-        pyxel.rectb(x, y, width, height, 5)
+
+        sprite_assets = getattr(self, "sprite_assets", None)
+        asset = sprite_assets.get(portrait_id) if sprite_assets is not None else None
+        if asset is not None:
+            frame = asset.frame()
+            scale = min(width / frame.width, height / frame.height)
+            draw_width = frame.width * scale
+            draw_height = frame.height * scale
+            pyxel.blt(
+                round(x + (width - draw_width) / 2),
+                round(y + (height - draw_height) / 2),
+                frame.image,
+                frame.u,
+                frame.v,
+                frame.width,
+                frame.height,
+                colkey=asset.definition.colkey,
+                scale=scale,
+            )
+            pyxel.rectb(x, y, width, height, 5)
+            return
+
+        accent = 13
         cx = x + width // 2
         head_y = y + max(7, height // 3)
         pyxel.circ(cx, head_y, max(4, width // 8), accent)
         pyxel.rect(cx - width // 6, head_y + 4, max(7, width // 3), max(7, height // 3), accent)
         pyxel.pset(cx - 2, head_y, 7)
         pyxel.pset(cx + 2, head_y, 7)
-        if portrait_id == "office_visitor_lamel":
-            pyxel.line(cx - 5, head_y - 2, cx - 9, head_y - 6, 12)
-            pyxel.line(cx + 5, head_y - 2, cx + 9, head_y - 6, 12)
-        elif portrait_id == "office_visitor_hero":
-            pyxel.line(cx - 7, head_y - 6, cx + 7, head_y - 6, 7)
-            pyxel.line(cx + 6, head_y + 4, cx + 11, head_y + 11, 7)
+        pyxel.rectb(x, y, width, height, 5)
 
     @staticmethod
     def office_classification_label(classification: Classification) -> str:

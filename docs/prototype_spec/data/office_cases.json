@@ -4,7 +4,7 @@
     {
       "case_id": "OFF-PROT-001",
       "title": "住民証明書の発行",
-      "visitor": {"id": "resident_a", "name": "ミナ", "kind": "魔族", "portrait_id": "office_visitor_01"},
+      "visitor": {"id": "resident_a", "name": "ミナ", "kind": "魔族", "portrait_id": "succubus_green"},
       "initial_purpose": "住民証明書を発行してほしい",
       "document_status": "本人確認書類あり",
       "questions": [
@@ -17,7 +17,7 @@
     {
       "case_id": "OFF-PROT-002",
       "title": "減免申請",
-      "visitor": {"id": "resident_b", "name": "グロウ", "kind": "魔族", "portrait_id": "office_visitor_02"},
+      "visitor": {"id": "resident_b", "name": "グロウ", "kind": "魔族", "portrait_id": "tired_gray_oldman"},
       "initial_purpose": "減免申請をしたい",
       "document_status": "不明",
       "questions": [
@@ -29,7 +29,7 @@
     {
       "case_id": "OFF-PROT-003",
       "title": "北側浅瀬の異常音",
-      "visitor": {"id": "lamel", "name": "ラメル", "kind": "魔族（海棲型）", "portrait_id": "office_visitor_lamel"},
+      "visitor": {"id": "lamel", "name": "ラメル", "kind": "魔族（海棲型）", "portrait_id": "nervous_elf_woodsman"},
       "initial_purpose": "夜になると水辺から異常音がする",
       "document_status": "なし",
       "questions": [
@@ -45,7 +45,7 @@
     {
       "case_id": "OFF-PROT-004",
       "title": "出張所をダンジョンと思って来た勇者",
-      "visitor": {"id": "hero_a", "name": "旅の勇者", "kind": "勇者", "portrait_id": "office_visitor_hero"},
+      "visitor": {"id": "hero_a", "name": "旅の勇者", "kind": "勇者", "portrait_id": "smug_blond_hero"},
       "initial_purpose": "魔王軍施設の攻略",
       "document_status": "なし",
       "questions": [
