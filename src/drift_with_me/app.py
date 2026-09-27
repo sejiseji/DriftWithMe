@@ -1843,13 +1843,13 @@ class DriftWithMeApp:
         return self.office_rect(6, 31, 116, 173)
 
     def office_dialog_rect(self) -> Rect:
-        return self.office_rect(126, 31, 246, 73)
+        return self.office_rect(126, 31, 246, 58)
 
     def office_questions_panel_rect(self) -> Rect:
-        return self.office_rect(126, 108, 121, 96)
+        return self.office_rect(126, 93, 121, 112)
 
     def office_memo_rect(self) -> Rect:
-        return self.office_rect(251, 108, 121, 96)
+        return self.office_rect(251, 93, 121, 112)
 
     def office_classification_panel_rect(self) -> Rect:
         return self.office_rect(376, 31, 130, 173)
@@ -1859,11 +1859,12 @@ class DriftWithMeApp:
 
     def office_question_rect(self, index: int, count: int) -> Rect:
         panel = self.office_questions_panel_rect()
-        available = max(1.0, panel.height - self.office_rect(0, 0, 0, 20).height)
-        row_height = min(self.office_rect(0, 0, 0, 15).height, available / max(1, count))
+        heading_height = self.office_rect(0, 0, 0, 20).height
+        available = max(1.0, panel.height - heading_height)
+        row_height = available / max(1, count)
         return Rect(
             panel.x + self.office_rect(3, 0, 0, 0).x,
-            panel.y + self.office_rect(0, 19, 0, 0).y + index * row_height,
+            panel.y + heading_height + index * row_height,
             panel.width - self.office_rect(6, 0, 0, 0).x,
             row_height,
         )
@@ -2222,18 +2223,12 @@ class DriftWithMeApp:
         office = self.office
         case = office.current_case
         session = office.current_session
-        title = self.fit_ui_text_to_width(
+        header_pad = self.office_rect(8, 0, 0, 0).x
+        self.draw_office_text_in_rect(
+            Rect(header_pad, header.y, self.runtime.screen_width * 0.58, header.height),
             "ガドニア領住民課 岡山第三支部出張所",
-            int(self.runtime.screen_width * 0.58),
-            "label",
-        )
-        self.draw_ui_text(
-            pyxel,
-            int(self.office_rect(8, 0, 0, 0).x),
-            int(self.office_rect(0, 8, 0, 0).y),
-            title,
             7,
-            "label",
+            preferred_styles=("label", "button", "auxiliary"),
         )
         if case is None or session is None:
             self.draw_office_complete()
@@ -2241,12 +2236,18 @@ class DriftWithMeApp:
 
         status = self.office_state_label(session.state)
         count_text = f"案件 {office.current_index + 1}/{len(office.cases)}  {status}"
-        self.draw_text_right(
-            self.runtime.screen_width - int(self.office_rect(8, 0, 0, 0).x),
-            int(self.office_rect(0, 8, 0, 0).y),
+        status_x = self.runtime.screen_width * 0.61
+        self.draw_office_text_in_rect(
+            Rect(
+                status_x,
+                header.y,
+                self.runtime.screen_width - status_x - header_pad,
+                header.height,
+            ),
             count_text,
             7,
-            "auxiliary",
+            preferred_styles=("button", "auxiliary"),
+            align="right",
         )
 
         visitor_rect = self.office_visitor_rect()
@@ -2276,17 +2277,17 @@ class DriftWithMeApp:
             visitor_lines,
             start_y=72,
             color=7,
-            max_lines=5,
+            max_lines=4,
         )
 
         self.draw_office_section_title(dialog_rect, case.title)
-        dialogue_lines = tuple(f"{line.speaker}: {line.text}" for line in session.dialogue[-3:])
+        dialogue_lines = tuple(f"{line.speaker}: {line.text}" for line in session.dialogue[-2:])
         self.draw_office_compact_lines(
             dialog_rect,
             dialogue_lines,
-            start_y=23,
+            start_y=18,
             color=7,
-            max_lines=3,
+            max_lines=2,
         )
 
         self.draw_office_section_title(questions_rect, "質問")
@@ -2299,16 +2300,11 @@ class DriftWithMeApp:
             pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), fill)
             pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), border)
             prefix = "済 " if asked else ""
-            label = self.fit_ui_text_to_width(
-                prefix + question.jack_text,
-                int(rect.width) - 6,
-                "auxiliary",
-            )
-            self.draw_ui_text_in_rect(
+            self.draw_office_text_in_rect(
                 Rect(rect.x + 3, rect.y, rect.width - 6, rect.height),
-                label,
+                prefix + question.jack_text,
                 13 if asked else 7,
-                "auxiliary",
+                preferred_styles=("label", "button", "auxiliary"),
             )
 
         if session.field_result is not None:
@@ -2322,7 +2318,7 @@ class DriftWithMeApp:
         self.draw_office_compact_lines(
             memo_rect,
             memo_lines,
-            start_y=22,
+            start_y=18,
             color=13 if session.memo_facts else 6,
             max_lines=5,
         )
@@ -2340,68 +2336,121 @@ class DriftWithMeApp:
             }
             fill = 11 if chosen and classified else (5 if selected else 1)
             text_color = 0 if fill == 11 else 7
-            self.draw_button(
+            self.draw_office_button(
                 rect,
                 self.office_classification_label(classification),
                 fill,
                 text_color=text_color,
-                style_name="auxiliary",
             )
         if session.feedback:
             feedback_rect = self.office_rect(380, 180, 122, 21)
-            feedback = self.fit_ui_text_to_width(
+            self.draw_office_text_in_rect(
+                feedback_rect,
                 session.feedback,
-                int(feedback_rect.width),
-                "auxiliary",
+                10,
+                preferred_styles=("label", "button", "auxiliary"),
+                align="center",
             )
-            self.draw_ui_text_in_rect(feedback_rect, feedback, 10, "auxiliary", align="center")
 
         hint = "質問または処理区分を選択"
-        self.draw_ui_text_in_rect(
+        self.draw_office_text_in_rect(
             self.office_rect(8, 210, 356, 23),
             hint,
             13,
-            "auxiliary",
+            preferred_styles=("label", "button", "auxiliary"),
         )
         if session.state not in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
-            self.draw_button(
+            self.draw_office_button(
                 self.office_footer_action_rect(),
                 self.office_footer_action_label(session.state),
                 11,
                 text_color=0,
-                style_name="button",
             )
 
     def draw_office_complete(self) -> None:
         panel = self.office_rect(106, 68, 300, 96)
         self.draw_panel_frame(panel, fill=0, inner=11)
-        self.draw_ui_text_in_rect(
+        self.draw_office_text_in_rect(
             self.office_rect(116, 78, 280, 34),
             "本日の試行案件は完了しました",
             7,
-            "title",
+            preferred_styles=("title", "label", "button"),
             align="center",
         )
-        self.draw_ui_text_in_rect(
+        self.draw_office_text_in_rect(
             self.office_rect(116, 116, 280, 24),
             "4件の処理結果を記録しました",
             13,
-            "auxiliary",
+            preferred_styles=("label", "button", "auxiliary"),
             align="center",
         )
-        self.draw_button(
+        self.draw_office_button(
             self.office_footer_action_rect(),
             "探索へ",
             11,
             text_color=0,
-            style_name="button",
         )
 
     def draw_office_section_title(self, rect: Rect, title: str) -> None:
-        title_height = self.office_rect(0, 0, 0, 18).height
+        title_height = self.office_rect(0, 0, 0, 20).height
         title_rect = Rect(rect.x + 5, rect.y + 2, rect.width - 10, title_height)
-        fitted = self.fit_ui_text_to_width(title, int(title_rect.width), "auxiliary")
-        self.draw_ui_text_in_rect(title_rect, fitted, 12, "auxiliary")
+        self.draw_office_text_in_rect(
+            title_rect,
+            title,
+            12,
+            preferred_styles=("label", "button", "auxiliary"),
+        )
+
+    def office_text_style(
+        self,
+        rect: Rect,
+        preferred_styles: tuple[str, ...] = ("label", "button", "auxiliary"),
+    ) -> str:
+        available_height = max(1, int(rect.height))
+        for style_name in preferred_styles:
+            _, visible_height = self.ui_renderer.visual_vertical_metrics(style_name)
+            if visible_height + 2 <= available_height:
+                return style_name
+        return preferred_styles[-1]
+
+    def draw_office_text_in_rect(
+        self,
+        rect: Rect,
+        text: str,
+        color: int,
+        preferred_styles: tuple[str, ...] = ("label", "button", "auxiliary"),
+        align: str = "left",
+    ) -> None:
+        style_name = self.office_text_style(rect, preferred_styles)
+        fitted = self.ui_renderer.fit_text(text, max(1, int(rect.width)), style_name)
+        text_width = self.ui_renderer.text_width(fitted, style_name)
+        top_offset, visible_height = self.ui_renderer.visual_vertical_metrics(style_name)
+        if align == "right":
+            x = int(rect.x + rect.width - text_width)
+        elif align == "center":
+            x = int(rect.x + rect.width / 2 - text_width / 2)
+        else:
+            x = int(rect.x)
+        visible_y = rect.y + max(0.0, (rect.height - visible_height) / 2.0)
+        y = round(visible_y - top_offset)
+        self.ui_renderer.draw(self.pyxel, x, y, fitted, color, style_name)
+
+    def draw_office_button(
+        self,
+        rect: Rect,
+        label: str,
+        color: int,
+        text_color: int = 0,
+    ) -> None:
+        self.pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), color)
+        self.pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
+        self.draw_office_text_in_rect(
+            Rect(rect.x + 4, rect.y, max(1.0, rect.width - 8), rect.height),
+            label,
+            text_color,
+            preferred_styles=("label", "button", "auxiliary"),
+            align="center",
+        )
 
     def draw_office_compact_lines(
         self,
@@ -2411,17 +2460,20 @@ class DriftWithMeApp:
         color: int,
         max_lines: int,
     ) -> None:
-        line_height = self.office_rect(0, 0, 0, 15).height
         x = rect.x + self.office_rect(4, 0, 0, 0).x
         width = rect.width - self.office_rect(8, 0, 0, 0).x
-        for index, line in enumerate(lines[:max_lines]):
-            fitted = self.fit_ui_text_to_width(line, int(width), "auxiliary")
-            y = rect.y + self.office_rect(0, start_y, 0, 0).y + index * line_height
-            self.draw_ui_text_in_rect(
-                Rect(x, y, width, line_height),
-                fitted,
+        top = rect.y + self.office_rect(0, start_y, 0, 0).y
+        available_height = max(1.0, rect.y + rect.height - top)
+        visible_count = min(max_lines, len(lines))
+        if visible_count <= 0:
+            return
+        line_height = available_height / visible_count
+        for index, line in enumerate(lines[-visible_count:]):
+            self.draw_office_text_in_rect(
+                Rect(x, top + index * line_height, width, line_height),
+                line,
                 color,
-                "auxiliary",
+                preferred_styles=("label", "button", "auxiliary"),
             )
 
     def draw_office_portrait(self, rect: Rect, portrait_id: str) -> None:
@@ -3261,7 +3313,7 @@ class DriftWithMeApp:
             pyxel.text(8, 168, f"proj={self.projection_mode} / V toggle", 7)
 
     def field_task_hud_rect(self) -> Rect:
-        return self.office_rect(148, 7, 164, 38)
+        return self.office_rect(148, 7, 164, 42)
 
     def draw_field_task_hud(self) -> None:
         task = self.office.active_field_task
@@ -3269,18 +3321,19 @@ class DriftWithMeApp:
             return
         rect = self.field_task_hud_rect()
         self.draw_panel_frame(rect, fill=0, inner=12)
-        self.draw_ui_text_in_rect(
-            Rect(rect.x + 5, rect.y + 2, rect.width - 10, rect.height * 0.42),
+        content_rect = Rect(rect.x + 5, rect.y + 2, rect.width - 10, rect.height - 4)
+        row_height = content_rect.height / 2
+        self.draw_office_text_in_rect(
+            Rect(content_rect.x, content_rect.y, content_rect.width, row_height),
             "現在の案件",
             12,
-            "auxiliary",
+            preferred_styles=("label", "button", "auxiliary"),
         )
-        objective = self.fit_ui_text_to_width(task.objective, int(rect.width) - 10, "auxiliary")
-        self.draw_ui_text_in_rect(
-            Rect(rect.x + 5, rect.y + rect.height * 0.43, rect.width - 10, rect.height * 0.53),
-            objective,
+        self.draw_office_text_in_rect(
+            Rect(content_rect.x, content_rect.y + row_height, content_rect.width, row_height),
+            task.objective,
             7,
-            "auxiliary",
+            preferred_styles=("label", "button", "auxiliary"),
         )
 
     def draw_meter(

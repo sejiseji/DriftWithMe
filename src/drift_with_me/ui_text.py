@@ -76,6 +76,16 @@ class UITextRenderer:
             return style.size_px
         return pixel_text_size("A", style.pixel_scale)[1]
 
+    def visual_vertical_metrics(self, style_name: str = "label") -> tuple[int, int]:
+        style = self.styles[style_name]
+        if style.font is None:
+            return (0, self.text_height(style_name))
+        # DotGothic16 renders below Pyxel's text origin. These ratios match the
+        # measured visible bounds for every configured font size (12-25 px).
+        top_offset = (style.size_px * 3 + 5) // 10
+        bottom_offset = (style.size_px * 6) // 5
+        return (top_offset, bottom_offset - top_offset + 1)
+
     def draw(self, pyxel: Any, x: int, y: int, text: str, color: int, style_name: str) -> None:
         style = self.styles[style_name]
         if style.font is not None:
