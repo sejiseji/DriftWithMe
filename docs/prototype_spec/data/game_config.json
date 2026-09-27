@@ -951,7 +951,20 @@
           "surface",
           "surface_caustics"
         ],
-        "front_highlights_enabled": false
+        "front_highlights_enabled": false,
+        "rest_eye_close_enabled": true,
+        "rest_eye_close_interval_pattern_sec": [
+          11.0,
+          16.5,
+          13.2,
+          19.0
+        ],
+        "rest_eye_close_duration_pattern_sec": [
+          0.9,
+          1.25,
+          1.6,
+          1.05
+        ]
       },
       "debug": {
         "fixed_seed_supported": true

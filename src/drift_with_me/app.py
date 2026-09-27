@@ -612,6 +612,38 @@ class DriftWithMeApp:
             isinstance(water_study, dict) and water_study.get("jack_immersion_float_enabled", True)
         )
 
+    def water_study_jack_rest_eyes_closed(
+        self,
+        state: WaterStudyJackFloat | None = None,
+    ) -> bool:
+        visual = self.water_study_jack_config().get("visual", {})
+        if not isinstance(visual, dict) or not bool(visual.get("rest_eye_close_enabled", True)):
+            return False
+        raw_intervals = visual.get("rest_eye_close_interval_pattern_sec", ())
+        raw_durations = visual.get("rest_eye_close_duration_pattern_sec", ())
+        if not isinstance(raw_intervals, (list, tuple)) or not raw_intervals:
+            return False
+        if not isinstance(raw_durations, (list, tuple)) or not raw_durations:
+            return False
+        intervals = tuple(max(0.0, float(value)) for value in raw_intervals)
+        durations = tuple(max(0.0, float(value)) for value in raw_durations)
+        cycle_sec = sum(intervals)
+        if cycle_sec <= 0.0:
+            return False
+
+        elapsed = max(
+            0.0,
+            float((state or self.ensure_water_study_jack_float()).simulation_time_sec),
+        )
+        phase = elapsed % cycle_sec
+        interval_end = 0.0
+        for index, interval_sec in enumerate(intervals):
+            interval_end += interval_sec
+            duration_sec = min(interval_sec, durations[index % len(durations)])
+            if interval_end - duration_sec <= phase < interval_end:
+                return True
+        return False
+
     @staticmethod
     def water_study_jack_random(state: WaterStudyJackFloat) -> float:
         state.rng_state = (1664525 * state.rng_state + 1013904223) & 0xFFFFFFFF
@@ -2015,7 +2047,7 @@ class DriftWithMeApp:
         if jack_blink_closed(
             self.model.config.get("player", {}).get("blink", {}),
             float(getattr(self, "presentation_time", 0.0)),
-        ):
+        ) or self.water_study_jack_rest_eyes_closed(state):
             blink_asset_id = str(asset_config.get(f"player_{view}_blink_asset", ""))
             asset = sprite_assets.get(blink_asset_id) or asset
         if asset is None:

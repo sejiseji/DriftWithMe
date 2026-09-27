@@ -545,6 +545,72 @@ def test_water_study_jack_uses_shared_closed_eye_asset_during_blink() -> None:
     assert args[2:5] == (3, 40, 16)
 
 
+def test_water_study_jack_rest_eye_close_uses_local_irregular_schedule() -> None:
+    app = make_water_app()
+    state = app.new_water_study_jack_float()
+    visual = app.runtime.raw["water_study"]["jack_immersion_float"]["visual"]
+    visual.update(
+        {
+            "rest_eye_close_enabled": True,
+            "rest_eye_close_interval_pattern_sec": [2.0, 4.0],
+            "rest_eye_close_duration_pattern_sec": [1.0, 1.5],
+        }
+    )
+
+    state.simulation_time_sec = 0.5
+    assert not app.water_study_jack_rest_eyes_closed(state)
+    state.simulation_time_sec = 1.1
+    assert app.water_study_jack_rest_eyes_closed(state)
+    state.simulation_time_sec = 2.5
+    assert not app.water_study_jack_rest_eyes_closed(state)
+    state.simulation_time_sec = 4.6
+    assert app.water_study_jack_rest_eyes_closed(state)
+    state.simulation_time_sec = 6.2
+    assert not app.water_study_jack_rest_eyes_closed(state)
+
+    visual["rest_eye_close_enabled"] = False
+    state.simulation_time_sec = 1.1
+    assert not app.water_study_jack_rest_eyes_closed(state)
+
+
+def test_water_study_jack_rest_eye_close_uses_closed_eye_asset() -> None:
+    app = make_water_app()
+    app.pyxel = FakeDrawPyxel()
+    app.reset_water_study_jack_float()
+    state = app.water_study_jack_float
+    state.direction_index = 0
+    state.simulation_time_sec = 1.5
+    app.presentation_time = 0.5
+    app.model.config["player"]["blink"] = {
+        "enabled": True,
+        "closed_sec": 0.1,
+        "interval_pattern_sec": [10.0],
+    }
+    app.runtime.raw["water_study"]["jack_immersion_float"]["visual"].update(
+        {
+            "rest_eye_close_enabled": True,
+            "rest_eye_close_interval_pattern_sec": [2.0],
+            "rest_eye_close_duration_pattern_sec": [1.0],
+        }
+    )
+    definition = SimpleNamespace(anchor_px=(16.0, 32.0), colkey=0)
+    open_frame = SimpleNamespace(image=2, u=8, v=16, width=32, height=32)
+    blink_frame = SimpleNamespace(image=3, u=40, v=16, width=32, height=32)
+    assets = {
+        "jack_front_32": SimpleNamespace(definition=definition, frame=lambda: open_frame),
+        "jack_front_blink_32": SimpleNamespace(
+            definition=definition,
+            frame=lambda: blink_frame,
+        ),
+    }
+    app.sprite_assets = SimpleNamespace(get=assets.get)
+
+    assert app.draw_water_study_jack()
+
+    args, _kwargs = app.pyxel.blt_calls[0]
+    assert args[2:5] == (3, 40, 16)
+
+
 def test_water_study_jack_front_pass_uses_surface_then_caustics_and_resets_clip(
     monkeypatch,
 ) -> None:
