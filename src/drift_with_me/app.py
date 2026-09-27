@@ -248,7 +248,7 @@ WATER_STUDY_JACK_DIRECTION_VIEWS = (
     "front_left",
 )
 OFFICE_DIALOGUE_CHARS_PER_SEC = 72.0
-OFFICE_DIALOGUE_LINES_PER_PAGE = 8
+OFFICE_DIALOGUE_LINES_PER_PAGE = 5
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
     # remain unchanged, but their broad bright cells are tempered at draw time.
@@ -1964,7 +1964,7 @@ class DriftWithMeApp:
         return self.office_rect(6, 31, 116, 173)
 
     def office_dialog_rect(self) -> Rect:
-        return self.office_rect(251, 31, 121, 173)
+        return self.office_rect(126, 31, 246, 96)
 
     def office_dialogue_content_rect(self) -> Rect:
         panel = self.office_dialog_rect()
@@ -1980,7 +1980,7 @@ class DriftWithMeApp:
         )
 
     def office_questions_panel_rect(self) -> Rect:
-        return self.office_rect(126, 31, 121, 173)
+        return self.office_rect(126, 131, 246, 73)
 
     def office_classification_panel_rect(self) -> Rect:
         return self.office_rect(376, 31, 130, 173)
@@ -1991,12 +1991,20 @@ class DriftWithMeApp:
     def office_question_rect(self, index: int, count: int) -> Rect:
         panel = self.office_questions_panel_rect()
         heading_height = self.office_rect(0, 0, 0, 20).height
-        available = max(1.0, panel.height - heading_height)
-        row_height = available / max(1, count)
+        inset_x = self.office_rect(3, 0, 0, 0).x
+        gap_x = self.office_rect(3, 0, 0, 0).x
+        gap_y = self.office_rect(0, 0, 0, 1).height
+        columns = 2
+        rows = max(1, (count + columns - 1) // columns)
+        column_width = (panel.width - inset_x * 2 - gap_x) / columns
+        available_height = max(1.0, panel.height - heading_height - gap_y * (rows - 1))
+        row_height = available_height / rows
+        column = index % columns
+        row = index // columns
         return Rect(
-            panel.x + self.office_rect(3, 0, 0, 0).x,
-            panel.y + heading_height + index * row_height,
-            panel.width - self.office_rect(6, 0, 0, 0).x,
+            panel.x + inset_x + column * (column_width + gap_x),
+            panel.y + heading_height + row * (row_height + gap_y),
+            column_width,
             row_height,
         )
 

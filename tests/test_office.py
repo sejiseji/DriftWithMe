@@ -258,10 +258,24 @@ def test_off001_office_layout_stays_inside_all_profiles() -> None:
             and rect.y + rect.height <= screen.height + 0.01
             for rect in rects
         )
-        assert app.office_dialog_rect().height == app.office_questions_panel_rect().height
+        assert app.office_dialog_rect().x == app.office_questions_panel_rect().x
+        assert app.office_dialog_rect().width == app.office_questions_panel_rect().width
         assert (
-            app.office_questions_panel_rect().x + app.office_questions_panel_rect().width
-            < app.office_dialog_rect().x
+            app.office_dialog_rect().y + app.office_dialog_rect().height
+            < app.office_questions_panel_rect().y
+        )
+
+        question_rects = [app.office_question_rect(index, 5) for index in range(5)]
+        assert all(rect.height >= app.office_rect(0, 0, 0, 14).height for rect in question_rects)
+        assert all(
+            not (
+                left.x < right.x + right.width
+                and left.x + left.width > right.x
+                and left.y < right.y + right.height
+                and left.y + left.height > right.y
+            )
+            for index, left in enumerate(question_rects)
+            for right in question_rects[index + 1 :]
         )
 
 
@@ -361,7 +375,7 @@ def test_off001_dialogue_wraps_without_ellipsis_and_paginates_full_exchange() ->
 
 def test_off001_dialogue_typewriter_tap_completes_then_advances_page() -> None:
     app = make_office_dialogue_app()
-    app.ui_text = SimpleNamespace(text_width=lambda text, style_name: len(text) * 24)
+    app.ui_text = SimpleNamespace(text_width=lambda text, style_name: len(text) * 32)
     assert app.office.ask_question("identity")
     playback = app.sync_office_dialogue_playback()
     assert len(playback.pages) > 1
