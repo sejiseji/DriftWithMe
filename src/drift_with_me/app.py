@@ -517,8 +517,14 @@ class DriftWithMeApp:
             return
 
         self.update_office_dialogue_playback(elapsed)
+        confirm_pressed = self.key_pressed("KEY_RETURN", "KEY_Z")
         if self.mouse_pressed_in(self.office_dialog_rect()):
             self.advance_office_dialogue_page()
+            return
+        if confirm_pressed and self.office_dialogue_requires_advance():
+            self.advance_office_dialogue_page()
+            return
+        if self.office_dialogue_requires_advance():
             return
 
         if session.state in {
@@ -528,9 +534,7 @@ class DriftWithMeApp:
             CaseState.FIELD_CHECK_REQUIRED,
             CaseState.FIELD_RETURNED,
         }:
-            if self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
-                self.office_footer_action_rect()
-            ):
+            if confirm_pressed or self.mouse_pressed_in(self.office_footer_action_rect()):
                 self.activate_office_footer_action()
             return
 
@@ -555,7 +559,7 @@ class DriftWithMeApp:
         if self.key_pressed("KEY_ESCAPE", "KEY_X"):
             self.office_focus = "questions"
 
-        if self.key_pressed("KEY_RETURN", "KEY_Z"):
+        if confirm_pressed:
             if self.office_focus == "questions":
                 question = case.questions[self.office_question_index % len(case.questions)]
                 self.office.ask_question(question.question_id)
@@ -604,9 +608,9 @@ class DriftWithMeApp:
 
         content_rect = self.office_dialogue_content_rect()
         style_name = "office_japanese"
-        wrapped_lines: list[OfficeDialogueLine] = []
+        pages: list[tuple[OfficeDialogueLine, ...]] = []
         for speaker, text in recent:
-            wrapped_lines.extend(
+            wrapped_lines = tuple(
                 OfficeDialogueLine(
                     text=line.text,
                     visitor=speaker == case.visitor.name,
@@ -616,12 +620,12 @@ class DriftWithMeApp:
                     f"{speaker}: {text}", max(1, int(content_rect.width)), style_name
                 )
             )
-        pages = tuple(
-            tuple(wrapped_lines[index : index + OFFICE_DIALOGUE_LINES_PER_PAGE])
-            for index in range(0, len(wrapped_lines), OFFICE_DIALOGUE_LINES_PER_PAGE)
-        )
+            pages.extend(
+                tuple(wrapped_lines[index : index + OFFICE_DIALOGUE_LINES_PER_PAGE])
+                for index in range(0, len(wrapped_lines), OFFICE_DIALOGUE_LINES_PER_PAGE)
+            )
         playback.signature = signature
-        playback.pages = pages
+        playback.pages = tuple(pages)
         playback.page_index = 0
         playback.revealed_chars = 0.0
         return playback
@@ -721,6 +725,16 @@ class DriftWithMeApp:
         playback.page_index += 1
         playback.revealed_chars = 0.0
         return True
+
+    def office_dialogue_requires_advance(self) -> bool:
+        playback = self.sync_office_dialogue_playback()
+        page = self.office_dialogue_current_page(playback)
+        if not page:
+            return False
+        character_count = sum(len(line.text) for line in page)
+        return int(playback.revealed_chars) < character_count or playback.page_index + 1 < len(
+            playback.pages
+        )
 
     @staticmethod
     def office_dialogue_current_page(
@@ -1978,6 +1992,8 @@ class DriftWithMeApp:
             case = None if office is None else office.current_case
             session = None if office is None else office.current_session
             rects: list[Rect] = [self.office_dialog_rect()]
+            if self.office_dialogue_requires_advance():
+                return tuple(rects)
             if case is not None and session is not None:
                 if session.state in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
                     rects.extend(
@@ -2633,11 +2649,41 @@ class DriftWithMeApp:
         if (
             int(playback.revealed_chars) >= character_count
             and has_next_page
-            and getattr(self, "frame", 0) % 40 < 30
+            and getattr(self, "frame", 0) % 48 < 36
         ):
-            cx = int(rect.x + rect.width - self.office_rect(7, 0, 0, 0).x)
-            y = int(rect.y + rect.height - self.office_rect(0, 0, 0, 7).height)
-            self.pyxel.tri(cx - 3, y, cx + 3, y, cx, y + 4, 13)
+            self.draw_office_dialogue_advance_prompt(rect)
+
+    def draw_office_dialogue_advance_prompt(self, rect: Rect) -> None:
+        pattern = (
+            ".......77...",
+            "......7AA7..",
+            "777777AAAA7.",
+            "7AAAAAAAAAA7",
+            "77777AAAAAA7",
+            ".....7AAAA7.",
+            ".....7AAA7..",
+            "......777...",
+        )
+        scale_x = self.runtime.screen_width / 512.0
+        scale_y = self.runtime.screen_height / 236.0
+        pixel_size = max(1, int(round(min(scale_x, scale_y))))
+        icon_width = len(pattern[0]) * pixel_size
+        icon_height = len(pattern) * pixel_size
+        inset_x = max(1, int(round(3 * scale_x)))
+        inset_y = max(1, int(round(3 * scale_y)))
+        x = int(rect.x + rect.width - icon_width - inset_x)
+        y = int(rect.y + rect.height - icon_height - inset_y)
+        for row, pixels in enumerate(pattern):
+            for column, value in enumerate(pixels):
+                if value == ".":
+                    continue
+                self.pyxel.rect(
+                    x + column * pixel_size,
+                    y + row * pixel_size,
+                    pixel_size,
+                    pixel_size,
+                    int(value, 16),
+                )
 
     def draw_office_section_title(self, rect: Rect, title: str) -> None:
         title_height = self.office_rect(0, 0, 0, 20).height

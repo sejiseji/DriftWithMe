@@ -393,6 +393,8 @@ def test_off001_dialogue_wraps_without_ellipsis_and_paginates_full_exchange() ->
         for line in page
     )
     assert any(line.indent_px > 0 for page in playback.pages for line in page)
+    assert all(len({line.visitor for line in page}) == 1 for page in playback.pages)
+    assert [page[0].visitor for page in playback.pages] == [False, True]
 
 
 def test_off001_dialogue_typewriter_tap_completes_then_advances_page() -> None:
@@ -420,13 +422,16 @@ def test_off001_dialogue_draws_visitor_speech_in_yellow() -> None:
     app = make_office_dialogue_app()
     assert app.office.ask_question("identity")
     playback = app.sync_office_dialogue_playback()
+    playback.page_index = next(
+        index for index, candidate in enumerate(playback.pages) if candidate[0].visitor
+    )
     page = app.office_dialogue_current_page(playback)
     playback.revealed_chars = float(sum(len(line.text) for line in page))
     draws: list[tuple[str, int, float]] = []
     app.draw_office_text_in_rect = lambda rect, text, color, **kwargs: draws.append(
         (text, color, rect.x)
     )
-    app.pyxel = SimpleNamespace(tri=lambda *args: None)
+    app.pyxel = SimpleNamespace(rect=lambda *args: None)
     app.frame = 0
 
     app.draw_office_dialogue(app.office_dialog_rect())
@@ -434,6 +439,32 @@ def test_off001_dialogue_draws_visitor_speech_in_yellow() -> None:
     content_x = app.office_dialogue_content_rect().x
     expected = [(line.text, 10 if line.visitor else 7, content_x + line.indent_px) for line in page]
     assert draws == expected
+
+
+def test_off001_dialogue_draws_pointing_prompt_only_when_next_speech_is_ready() -> None:
+    app = make_office_dialogue_app()
+    assert app.office.ask_question("identity")
+    playback = app.sync_office_dialogue_playback()
+    page = app.office_dialogue_current_page(playback)
+    prompt_pixels: list[tuple[int, int, int, int, int]] = []
+    app.draw_office_text_in_rect = lambda *args, **kwargs: None
+    app.pyxel = SimpleNamespace(rect=lambda *args: prompt_pixels.append(args))
+    app.frame = 0
+
+    app.draw_office_dialogue(app.office_dialog_rect())
+    assert not prompt_pixels
+
+    playback.revealed_chars = float(sum(len(line.text) for line in page))
+    app.draw_office_dialogue(app.office_dialog_rect())
+
+    assert prompt_pixels
+    assert {pixel[-1] for pixel in prompt_pixels} == {7, 10}
+    dialog_rect = app.office_dialog_rect()
+    assert all(
+        dialog_rect.x <= x < dialog_rect.x + dialog_rect.width
+        and dialog_rect.y <= y < dialog_rect.y + dialog_rect.height
+        for x, y, _width, _height, _color in prompt_pixels
+    )
 
 
 def test_off001_visitor_info_is_complete_yellow_content_without_documents() -> None:
@@ -579,6 +610,7 @@ def test_off001_dialogue_tap_is_consumed_before_question_buttons() -> None:
         x=rect.x + rect.width / 2,
         y=rect.y + rect.height / 2,
     )
+    app.pyxel = SimpleNamespace(KEY_RETURN=1, KEY_Z=2, btnp=lambda key: False)
 
     app.update_office_screen(0.0)
 
@@ -586,6 +618,56 @@ def test_off001_dialogue_tap_is_consumed_before_question_buttons() -> None:
     assert session is not None
     assert playback.revealed_chars == page_characters
     assert not session.asked_question_ids
+
+
+def test_off001_next_question_is_locked_until_visitor_reply_is_shown() -> None:
+    app = make_office_dialogue_app()
+    assert app.office.ask_question("identity")
+    playback = app.sync_office_dialogue_playback()
+    page = app.office_dialogue_current_page(playback)
+    playback.revealed_chars = float(sum(len(line.text) for line in page))
+    second_question = app.office_question_rect(1, len(app.office.current_case.questions))
+    app.pointer_snapshot = SimpleNamespace(
+        pressed=True,
+        x=second_question.x + second_question.width / 2,
+        y=second_question.y + second_question.height / 2,
+    )
+    app.pointer = SimpleNamespace(cancel=lambda: None)
+    app.double_tap_move = SimpleNamespace(cancel=lambda: None)
+    app.model = SimpleNamespace(cancel_auto_move=lambda: None)
+    app.pyxel = SimpleNamespace(KEY_RETURN=1, KEY_Z=2, btnp=lambda key: False)
+
+    app.update_office_screen(0.0)
+
+    session = app.office.current_session
+    assert session is not None
+    assert session.asked_question_ids == {"identity"}
+    assert playback.page_index == 0
+
+
+def test_off001_dialogue_tap_advances_from_jack_to_visitor_reply() -> None:
+    app = make_office_dialogue_app()
+    assert app.office.ask_question("identity")
+    playback = app.sync_office_dialogue_playback()
+    jack_page = app.office_dialogue_current_page(playback)
+    playback.revealed_chars = float(sum(len(line.text) for line in jack_page))
+    rect = app.office_dialog_rect()
+    app.pointer_snapshot = SimpleNamespace(
+        pressed=True,
+        x=rect.x + rect.width / 2,
+        y=rect.y + rect.height / 2,
+    )
+    app.pointer = SimpleNamespace(cancel=lambda: None)
+    app.double_tap_move = SimpleNamespace(cancel=lambda: None)
+    app.model = SimpleNamespace(cancel_auto_move=lambda: None)
+    app.pyxel = SimpleNamespace(KEY_RETURN=1, KEY_Z=2, btnp=lambda key: False)
+
+    app.update_office_screen(0.0)
+
+    reply_page = app.office_dialogue_current_page(playback)
+    assert playback.page_index == 1
+    assert playback.revealed_chars == 0.0
+    assert all(line.visitor for line in reply_page)
 
 
 def test_off001_active_field_event_only_matches_designated_anomaly() -> None:
