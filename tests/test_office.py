@@ -278,6 +278,27 @@ def test_off001_office_layout_stays_inside_all_profiles() -> None:
             for right in question_rects[index + 1 :]
         )
 
+        classification_rects = [app.office_classification_rect(index) for index in range(4)]
+        assert classification_rects[0].x == classification_rects[2].x
+        assert classification_rects[1].x == classification_rects[3].x
+        assert classification_rects[0].y == classification_rects[1].y
+        assert classification_rects[2].y == classification_rects[3].y
+        assert all(
+            not (
+                left.x < right.x + right.width
+                and left.x + left.width > right.x
+                and left.y < right.y + right.height
+                and left.y + left.height > right.y
+            )
+            for index, left in enumerate(classification_rects)
+            for right in classification_rects[index + 1 :]
+        )
+        feedback_rect = app.office_classification_feedback_rect()
+        assert max(rect.y + rect.height for rect in classification_rects) < feedback_rect.y
+        assert feedback_rect.y + feedback_rect.height <= (
+            app.office_classification_panel_rect().y + app.office_classification_panel_rect().height
+        )
+
 
 def test_off001_japanese_text_uses_largest_style_that_fits_each_profile() -> None:
     expected_question_styles = {profile: "office_japanese" for profile in ("low", "medium", "high")}
@@ -409,6 +430,70 @@ def test_off001_dialogue_draws_visitor_speech_in_yellow() -> None:
 
     expected = [(line.text, 10 if line.visitor else 7) for line in page]
     assert draws == expected
+
+
+def test_off001_visitor_info_is_complete_yellow_content_without_documents() -> None:
+    app = make_office_dialogue_app()
+    app.office.current_index = 2
+    app.office.begin_current_case()
+    case = app.office.current_case
+    assert case is not None
+    lines = app.office_visitor_info_lines(case)
+    max_width = int(app.office_visitor_info_rect().width)
+    wrapped = tuple(
+        wrapped_line
+        for line in lines
+        for wrapped_line in app.wrap_office_dialogue_text(line, max_width)
+    )
+
+    assert lines == (
+        "名前: ラメル",
+        "種別: 魔族（海棲型）",
+        "用件: 夜になると水辺から異常音がする",
+    )
+    assert all("書類" not in line and "..." not in line for line in wrapped)
+    assert "".join(wrapped) == "".join(lines)
+    assert all(app.ui_text.text_width(line, "office_japanese") <= max_width for line in wrapped)
+
+
+def test_off001_visitor_info_fits_every_case_and_display_profile() -> None:
+    class FixedWidthRenderer:
+        @staticmethod
+        def text_width(text: str, style_name: str) -> int:
+            del style_name
+            return sum(6 if ord(char) < 128 else 12 for char in text)
+
+    for profile in ("low", "medium", "high"):
+        app = DriftWithMeApp.__new__(DriftWithMeApp)
+        app.runtime = load_runtime_config(profile)
+        app.ui_text = FixedWidthRenderer()
+        info_rect = app.office_visitor_info_rect()
+        for case in OfficePrototype.load().cases:
+            wrapped = tuple(
+                wrapped_line
+                for line in app.office_visitor_info_lines(case)
+                for wrapped_line in app.wrap_office_dialogue_text(
+                    line,
+                    int(info_rect.width),
+                )
+            )
+            assert len(wrapped) * 12 <= info_rect.height + 0.5
+
+
+def test_off001_classification_labels_are_equal_length_for_two_column_grid() -> None:
+    assert [
+        DriftWithMeApp.office_classification_label(classification)
+        for classification in CLASSIFICATION_ORDER
+    ] == ["窓口完結", "他部署へ", "書類不足", "現地確認"]
+
+
+def test_off001_wrapped_feedback_keeps_japanese_punctuation_with_previous_text() -> None:
+    app = make_office_dialogue_app()
+    text = "本人確認済みで、窓口で完了できる案件です。"
+    wrapped = app.wrap_office_dialogue_text(text, 120)
+
+    assert "".join(wrapped) == text
+    assert all(line[0] not in "、。！？" for line in wrapped if line)
 
 
 def test_off001_new_exchange_restarts_dialogue_reveal() -> None:

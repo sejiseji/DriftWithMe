@@ -25,6 +25,7 @@ from drift_with_me.math3d import (
 from drift_with_me.model import GameModel, InputIntent, merge_intents
 from drift_with_me.office import (
     CLASSIFICATION_ORDER,
+    CaseDefinition,
     CaseState,
     Classification,
     FieldResult,
@@ -626,8 +627,12 @@ class DriftWithMeApp:
         for char in text:
             candidate = current + char
             if current and self.ui_renderer.text_width(candidate, style_name) > max_width:
-                lines.append(current)
-                current = char
+                if char in "、。！？" and len(current) > 1:
+                    lines.append(current[:-1])
+                    current = current[-1] + char
+                else:
+                    lines.append(current)
+                    current = char
             else:
                 current = candidate
         if current:
@@ -1963,6 +1968,18 @@ class DriftWithMeApp:
     def office_visitor_rect(self) -> Rect:
         return self.office_rect(6, 31, 116, 173)
 
+    def office_visitor_info_rect(self) -> Rect:
+        panel = self.office_visitor_rect()
+        inset_x = self.office_rect(4, 0, 0, 0).x
+        top_inset = self.office_rect(0, 83, 0, 0).y
+        bottom_inset = self.office_rect(0, 0, 0, 3).height
+        return Rect(
+            panel.x + inset_x,
+            panel.y + top_inset,
+            panel.width - inset_x * 2,
+            panel.height - top_inset - bottom_inset,
+        )
+
     def office_dialog_rect(self) -> Rect:
         return self.office_rect(126, 31, 246, 96)
 
@@ -2011,11 +2028,31 @@ class DriftWithMeApp:
     def office_classification_rect(self, index: int) -> Rect:
         panel = self.office_classification_panel_rect()
         inset_x = self.office_rect(4, 0, 0, 0).x
+        gap_x = self.office_rect(3, 0, 0, 0).x
+        gap_y = self.office_rect(0, 0, 0, 3).height
+        columns = 2
+        column_width = (panel.width - inset_x * 2 - gap_x) / columns
+        column = index % columns
+        row = index // columns
+        return Rect(
+            panel.x + inset_x + column * (column_width + gap_x),
+            panel.y
+            + self.office_rect(0, 24, 0, 0).y
+            + row * (self.office_rect(0, 0, 0, 27).height + gap_y),
+            column_width,
+            self.office_rect(0, 0, 0, 27).height,
+        )
+
+    def office_classification_feedback_rect(self) -> Rect:
+        panel = self.office_classification_panel_rect()
+        inset_x = self.office_rect(4, 0, 0, 0).x
+        top_inset = self.office_rect(0, 88, 0, 0).y
+        bottom_inset = self.office_rect(0, 0, 0, 4).height
         return Rect(
             panel.x + inset_x,
-            panel.y + self.office_rect(0, 24 + index * 31, 0, 0).y,
+            panel.y + top_inset,
             panel.width - inset_x * 2,
-            self.office_rect(0, 0, 0, 27).height,
+            panel.height - top_inset - bottom_inset,
         )
 
     def office_footer_action_rect(self) -> Rect:
@@ -2405,18 +2442,11 @@ class DriftWithMeApp:
             self.office_rect(0, 0, 0, 64).height,
         )
         self.draw_office_portrait(portrait, case.visitor.portrait_id)
-        visitor_lines = (
-            f"名前: {case.visitor.name}",
-            f"種別: {case.visitor.kind}",
-            f"用件: {case.initial_purpose}",
-            f"書類: {case.document_status}",
-        )
-        self.draw_office_compact_lines(
-            visitor_rect,
+        visitor_lines = self.office_visitor_info_lines(case)
+        self.draw_office_wrapped_lines(
+            self.office_visitor_info_rect(),
             visitor_lines,
-            start_y=91,
-            color=7,
-            max_lines=4,
+            color=10,
         )
 
         self.draw_office_section_title(dialog_rect, case.title)
@@ -2457,14 +2487,13 @@ class DriftWithMeApp:
                 self.office_classification_label(classification),
                 fill,
                 text_color=text_color,
+                horizontal_padding=0,
             )
         if session.feedback:
-            feedback_rect = self.office_rect(380, 180, 122, 21)
-            self.draw_office_text_in_rect(
-                feedback_rect,
-                session.feedback,
-                10,
-                preferred_styles=("office_japanese", "office_japanese_button"),
+            self.draw_office_wrapped_lines(
+                self.office_classification_feedback_rect(),
+                (session.feedback,),
+                color=10,
                 align="center",
             )
 
@@ -2482,6 +2511,14 @@ class DriftWithMeApp:
                 11,
                 text_color=0,
             )
+
+    @staticmethod
+    def office_visitor_info_lines(case: CaseDefinition) -> tuple[str, ...]:
+        return (
+            f"名前: {case.visitor.name}",
+            f"種別: {case.visitor.kind}",
+            f"用件: {case.initial_purpose}",
+        )
 
     def draw_office_complete(self) -> None:
         panel = self.office_rect(106, 68, 300, 96)
@@ -2594,39 +2631,51 @@ class DriftWithMeApp:
         label: str,
         color: int,
         text_color: int = 0,
+        horizontal_padding: float = 4,
     ) -> None:
         self.pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), color)
         self.pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
         self.draw_office_text_in_rect(
-            Rect(rect.x + 4, rect.y, max(1.0, rect.width - 8), rect.height),
+            Rect(
+                rect.x + horizontal_padding,
+                rect.y,
+                max(1.0, rect.width - horizontal_padding * 2),
+                rect.height,
+            ),
             label,
             text_color,
             preferred_styles=("office_japanese_button", "office_japanese"),
             align="center",
         )
 
-    def draw_office_compact_lines(
+    def draw_office_wrapped_lines(
         self,
         rect: Rect,
         lines: tuple[str, ...],
-        start_y: float,
         color: int,
-        max_lines: int,
+        align: str = "left",
     ) -> None:
-        x = rect.x + self.office_rect(4, 0, 0, 0).x
-        width = rect.width - self.office_rect(8, 0, 0, 0).x
-        top = rect.y + self.office_rect(0, start_y, 0, 0).y
-        available_height = max(1.0, rect.y + rect.height - top)
-        visible_count = min(max_lines, len(lines))
-        if visible_count <= 0:
+        style_name = self.office_text_style(rect)
+        wrapped = tuple(
+            wrapped_line
+            for line in lines
+            for wrapped_line in self.wrap_office_dialogue_text(
+                line,
+                max(1, int(rect.width)),
+                style_name,
+            )
+        )
+        if not wrapped:
             return
-        line_height = available_height / visible_count
-        for index, line in enumerate(lines[-visible_count:]):
+        _, visible_height = self.ui_renderer.visual_vertical_metrics(style_name)
+        line_height = float(visible_height)
+        for index, line in enumerate(wrapped):
             self.draw_office_text_in_rect(
-                Rect(x, top + index * line_height, width, line_height),
+                Rect(rect.x, rect.y + index * line_height, rect.width, line_height),
                 line,
                 color,
-                preferred_styles=("office_japanese", "office_japanese_button"),
+                preferred_styles=(style_name,),
+                align=align,
             )
 
     def draw_office_portrait(self, rect: Rect, portrait_id: str) -> None:
@@ -2671,7 +2720,7 @@ class DriftWithMeApp:
     def office_classification_label(classification: Classification) -> str:
         return {
             Classification.COUNTER_COMPLETE: "窓口完結",
-            Classification.REFER_OTHER: "他部署案内",
+            Classification.REFER_OTHER: "他部署へ",
             Classification.MISSING_DOCUMENTS: "書類不足",
             Classification.FIELD_CHECK: "現地確認",
         }[classification]
