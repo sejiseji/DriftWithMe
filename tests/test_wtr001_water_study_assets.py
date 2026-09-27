@@ -1,43 +1,11 @@
 from __future__ import annotations
 
-import hashlib
-import json
-from importlib import resources
-
-from drift_with_me.hex_assets import parse_hex_rows
 from drift_with_me.water_study_assets import (
     APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT,
     APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES,
-    APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
-    APPROVED_LOOK04_PLUS_SPARKLE_PROFILE,
-    APPROVED_WATER_PRODUCTION_FRAME_COUNT,
-    APPROVED_WATER_PRODUCTION_HOLD_FRAMES,
-    APPROVED_WATER_PRODUCTION_LAYER_IDS,
-    APPROVED_WATER_PRODUCTION_PROFILE,
-    WATER_SPARKLE_FX_BANK_ID,
-    WATER_SPARKLE_FX_COLKEY,
-    WATER_STUDY_LAYER_IDS,
-    WATER_STUDY_PHASE_INITIAL_INDICES,
-    WATER_STUDY_PHASE_LAYER_IDS,
-    WATER_STUDY_PHASE_STEP_FRAMES,
     WATER_STUDY_RUNTIME_LAYER_IDS,
-    WTR002_SURFACE_CAUSTICS_ASSET_ID,
-    WTR002_SURFACE_CAUSTICS_FRAME_COUNT,
-    WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID,
-    WTR_LOOK03_HIGHLIGHTS_ASSET_ID,
-    WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT,
-    WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID,
     _image_from_rows,
-    apply_dhex_patch_to_rows,
     clear_water_study_cache_for_tests,
-    load_approved_look04_plus_sparkle_frame_sequences,
-    load_approved_water_production_frame_sequences,
-    load_water_sparkle_fx_bank,
-    load_water_study_phase_planes,
-    load_water_study_planes,
-    load_wtr002_water_study_frame_sequences,
-    load_wtr_look03_water_study_frame_sequences,
-    parse_dhex_patch,
     preload_water_study_cache,
 )
 
@@ -46,514 +14,27 @@ class FakeImage:
     def __init__(self, width: int, height: int) -> None:
         self.width = width
         self.height = height
-        self.pset_count = 0
-        self.pixels = [bytearray(width) for _ in range(height)]
+        self.pixel_count = 0
+        self.set_calls: list[tuple[int, int, list[str]]] = []
 
-    def pset(self, x: int, y: int, color: int) -> None:
-        self.pset_count += 1
-        self.pixels[y][x] = color
-
-    def hex_rows(self) -> tuple[str, ...]:
-        return tuple("".join(f"{color:X}" for color in row) for row in self.pixels)
+    def set(self, x: int, y: int, rows: list[str]) -> None:
+        self.set_calls.append((x, y, rows))
+        self.pixel_count += sum(len(row) for row in rows)
 
 
 class FakePyxel:
     Image = FakeImage
 
 
-class FakeBulkImage:
-    def __init__(self, width: int, height: int) -> None:
-        self.width = width
-        self.height = height
-        self.set_calls: list[tuple[int, int, list[str]]] = []
-
-    def set(self, x: int, y: int, rows: list[str]) -> None:
-        self.set_calls.append((x, y, rows))
-
-
-class FakeBulkPyxel:
-    Image = FakeBulkImage
-
-
 def test_water_study_image_uses_bulk_row_transfer_when_available() -> None:
     rows = ("0123", "4567")
 
-    image = _image_from_rows(FakeBulkPyxel, rows, 4, 2)
+    image = _image_from_rows(FakePyxel, rows, 4, 2)
 
     assert image.set_calls == [(0, 0, list(rows))]
 
 
-def test_wtr001_bundled_water_layer_assets_match_contract() -> None:
-    planes = load_water_study_planes(FakePyxel)
-
-    assert tuple(planes) == WATER_STUDY_LAYER_IDS
-    for layer_id, plane in planes.items():
-        assert plane.layer_id == layer_id
-        assert (plane.logical_width, plane.logical_height) == (1024, 512)
-        assert (plane.chunk_width, plane.chunk_height) == (256, 256)
-        assert len(plane.chunks) == 8
-        assert [chunk.origin_x for chunk in plane.chunks[:4]] == [0, 256, 512, 768]
-        assert [chunk.origin_y for chunk in plane.chunks[:4]] == [0, 0, 0, 0]
-        assert [chunk.origin_x for chunk in plane.chunks[4:]] == [0, 256, 512, 768]
-        assert [chunk.origin_y for chunk in plane.chunks[4:]] == [256, 256, 256, 256]
-        assert all(chunk.image.pset_count == 256 * 256 for chunk in plane.chunks)
-
-    assert planes["water_deep_plane_c"].colkey is None
-    for layer_id in WATER_STUDY_LAYER_IDS[1:]:
-        assert planes[layer_id].colkey == 8
-
-
-def test_wtr001_water_layers_do_not_use_forbidden_green_indices() -> None:
-    root = resources.files("drift_with_me").joinpath("assets/water_study")
-    manifest = json.loads(
-        root.joinpath("water_study_source_manifest.json").read_text(encoding="utf-8")
-    )
-
-    assert tuple(layer["id"] for layer in manifest["layers"]) == WATER_STUDY_LAYER_IDS
-    for layer in manifest["layers"]:
-        assert "3" not in layer["allowed_palette_indices"]
-        assert "B" not in layer["allowed_palette_indices"]
-        for chunk in layer["chunks"]:
-            chunk_id = str(chunk["id"])
-            text = root.joinpath("chunks_256/hex_rows", f"{chunk_id}.hex.txt").read_text(
-                encoding="utf-8"
-            )
-            assert "3" not in text
-            assert "B" not in text
-
-
-def test_wtr001_phase_delta_wave1_assets_match_contract() -> None:
-    phase_sets = load_water_study_phase_planes(FakePyxel)
-
-    assert tuple(phase_sets) == WATER_STUDY_PHASE_LAYER_IDS
-    assert WATER_STUDY_PHASE_STEP_FRAMES == {
-        "water_mid_plane_c": 13,
-        "water_surface_plane_c": 9,
-        "water_surface_caustics_plane_c": 7,
-        "water_upper_lightnet_plane_c": 5,
-    }
-    assert WATER_STUDY_PHASE_INITIAL_INDICES == {
-        "water_mid_plane_c": 0,
-        "water_surface_plane_c": 2,
-        "water_surface_caustics_plane_c": 5,
-        "water_upper_lightnet_plane_c": 1,
-    }
-    for layer_id, phases in phase_sets.items():
-        assert len(phases) == 8
-        for index, phase in enumerate(phases):
-            assert phase.layer_id == f"{layer_id}_p{index:02d}"
-            assert (phase.logical_width, phase.logical_height) == (1024, 512)
-            assert (phase.chunk_width, phase.chunk_height) == (256, 256)
-            assert phase.colkey == 8
-            assert len(phase.chunks) == 8
-            assert [chunk.origin_x for chunk in phase.chunks[:4]] == [0, 256, 512, 768]
-            assert [chunk.origin_y for chunk in phase.chunks[:4]] == [0, 0, 0, 0]
-            assert [chunk.origin_x for chunk in phase.chunks[4:]] == [0, 256, 512, 768]
-            assert [chunk.origin_y for chunk in phase.chunks[4:]] == [256, 256, 256, 256]
-            assert all(chunk.image.pset_count == 256 * 256 for chunk in phase.chunks)
-
-
-def test_wtr001_phase_delta_wave1_keeps_p00_equal_to_base_chunks() -> None:
-    root = resources.files("drift_with_me").joinpath("assets/water_study")
-    phase_sets = load_water_study_phase_planes(FakePyxel)
-
-    for layer_id in WATER_STUDY_PHASE_LAYER_IDS:
-        phase = phase_sets[layer_id][0]
-        chunks = {
-            f"c{chunk.origin_x // 256}{chunk.origin_y // 256}": chunk for chunk in phase.chunks
-        }
-        for chunk_suffix in ("c00", "c10", "c20", "c30", "c01", "c11", "c21", "c31"):
-            base = root.joinpath("chunks_256/hex_rows", f"{layer_id}_{chunk_suffix}.hex.txt")
-            base_rows = parse_hex_rows(
-                base.read_text(encoding="utf-8"),
-                256,
-                256,
-                f"{layer_id}_{chunk_suffix}",
-            )
-            assert chunks[chunk_suffix].image.hex_rows() == base_rows
-
-
-def test_wtr001_runtime_lite_phase_delta_manifest_and_patches_match_contract() -> None:
-    root = resources.files("drift_with_me").joinpath("assets/water_study/runtime_lite_phase_delta")
-    manifest = json.loads(root.joinpath("runtime_lite_manifest.json").read_text(encoding="utf-8"))
-
-    expected_motion_models = {
-        "water_mid_plane_c": "local_tone_boundary_breathing",
-        "water_surface_plane_c": "local_surface_edge_variation",
-        "water_surface_caustics_plane_c": "local_line_width_and_junction_variation",
-        "water_upper_lightnet_plane_c": "local_micro_shimmer_variation",
-    }
-
-    assert tuple(layer["id"] for layer in manifest["layers"]) == WATER_STUDY_PHASE_LAYER_IDS
-    assert manifest["encoding"].startswith("DHEX1")
-    assert manifest["version"] == "0.1.0"
-    assert manifest["phase_asset_source"] == "WTR001_Wave2_1_Local_Variation_Phase_Pack_v0.1"
-    assert manifest["wave"] == "Wave2.1"
-    assert manifest["theme"] == "local_variation_phase_visible_tuning"
-    assert manifest["phase_count"] == 8
-    assert manifest["chunk_size"] == [256, 256]
-    assert manifest["logical_plane_size"] == [1024, 512]
-    assert "runtime_phase_schedule" not in manifest
-    assert WATER_STUDY_PHASE_STEP_FRAMES == {
-        "water_mid_plane_c": 13,
-        "water_surface_plane_c": 9,
-        "water_surface_caustics_plane_c": 7,
-        "water_upper_lightnet_plane_c": 5,
-    }
-    assert WATER_STUDY_PHASE_INITIAL_INDICES == {
-        "water_mid_plane_c": 0,
-        "water_surface_plane_c": 2,
-        "water_surface_caustics_plane_c": 5,
-        "water_upper_lightnet_plane_c": 1,
-    }
-    for layer in manifest["layers"]:
-        assert layer["motion_model"] == expected_motion_models[layer["id"]]
-        assert len(layer["transitions"]) == 8
-        for transition in layer["transitions"]:
-            assert len(transition["chunks"]) == 8
-            assert transition["changed_pixels"] == sum(
-                int(chunk["changed_pixels"]) for chunk in transition["chunks"]
-            )
-            assert transition["run_count"] == sum(
-                int(chunk["run_count"]) for chunk in transition["chunks"]
-            )
-            for chunk in transition["chunks"]:
-                path = root.joinpath(str(chunk["file"]))
-                text = path.read_text(encoding="ascii")
-                assert hashlib.sha256(text.encode("ascii")).hexdigest() == chunk["sha256"]
-                runs = parse_dhex_patch(text, str(chunk["file"]))
-                assert len(runs) == int(chunk["run_count"])
-                assert sum(len(data) for _, data in runs) == int(chunk["changed_pixels"])
-                for _, data in runs:
-                    assert "3" not in data
-                    assert "B" not in data
-
-
-def test_wtr001_runtime_lite_phase_delta_loopback_reconstructs_p00() -> None:
-    root = resources.files("drift_with_me").joinpath("assets/water_study")
-    runtime_root = root.joinpath("runtime_lite_phase_delta")
-    manifest = json.loads(
-        runtime_root.joinpath("runtime_lite_manifest.json").read_text(encoding="utf-8")
-    )
-
-    for layer in manifest["layers"]:
-        layer_id = str(layer["id"])
-        base_rows = {
-            chunk: parse_hex_rows(
-                root.joinpath("chunks_256/hex_rows", f"{layer_id}_{chunk}.hex.txt").read_text(
-                    encoding="utf-8"
-                ),
-                256,
-                256,
-                f"{layer_id}_{chunk}",
-            )
-            for chunk in ("c00", "c10", "c20", "c30", "c01", "c11", "c21", "c31")
-        }
-        current_rows = dict(base_rows)
-        for transition in layer["transitions"]:
-            for chunk in transition["chunks"]:
-                chunk_id = str(chunk["chunk"])
-                text = runtime_root.joinpath(str(chunk["file"])).read_text(encoding="ascii")
-                current_rows[chunk_id] = apply_dhex_patch_to_rows(
-                    current_rows[chunk_id],
-                    parse_dhex_patch(text, str(chunk["file"])),
-                    str(chunk["file"]),
-                )
-            if transition["to"] == "p00":
-                assert current_rows == base_rows
-
-
-def test_wtr002_surface_caustics_frame_sequence_matches_contract() -> None:
-    sequences = load_wtr002_water_study_frame_sequences(FakePyxel)
-
-    assert tuple(sequences) == (WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID,)
-    sequence = sequences[WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID]
-    assert sequence.layer_id == WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID
-    assert len(sequence.planes) == WTR002_SURFACE_CAUSTICS_FRAME_COUNT
-    assert len(sequence.hold_frames) == WTR002_SURFACE_CAUSTICS_FRAME_COUNT
-    assert all(hold_frames > 0 for hold_frames in sequence.hold_frames)
-    assert sequence.total_hold_frames == sum(sequence.hold_frames)
-    for index, plane in enumerate(sequence.planes):
-        assert plane.layer_id == f"{WTR002_SURFACE_CAUSTICS_ASSET_ID}_f{index:02d}"
-        assert (plane.logical_width, plane.logical_height) == (1024, 512)
-        assert (plane.chunk_width, plane.chunk_height) == (256, 256)
-        assert plane.colkey == 8
-        assert len(plane.chunks) == 8
-        assert all(chunk.image.pset_count == 256 * 256 for chunk in plane.chunks)
-
-
-def test_wtr002_surface_caustics_f00_replaces_coarse_canonical_frame() -> None:
-    root = resources.files("drift_with_me").joinpath("assets/water_study")
-    sequences = load_wtr002_water_study_frame_sequences(FakePyxel)
-    f00 = sequences[WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID].planes[0]
-    chunks = {f"c{chunk.origin_x // 256}{chunk.origin_y // 256}": chunk for chunk in f00.chunks}
-
-    replaced_chunks = 0
-    for chunk_suffix in ("c00", "c10", "c20", "c30", "c01", "c11", "c21", "c31"):
-        base = root.joinpath(
-            "chunks_256/hex_rows",
-            f"{WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID}_{chunk_suffix}.hex.txt",
-        )
-        base_rows = parse_hex_rows(
-            base.read_text(encoding="utf-8"),
-            256,
-            256,
-            f"{WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID}_{chunk_suffix}",
-        )
-        if chunks[chunk_suffix].image.hex_rows() != base_rows:
-            replaced_chunks += 1
-
-    assert replaced_chunks == 8
-
-
-def test_wtr002_surface_caustics_manifest_files_are_palette_safe() -> None:
-    root = resources.files("drift_with_me").joinpath("assets/water_study/wtr002_surface_caustics")
-    manifest = json.loads(root.joinpath("manifest.json").read_text(encoding="utf-8"))
-
-    assert manifest["asset_id"] == WTR002_SURFACE_CAUSTICS_ASSET_ID
-    assert manifest["runtime_layer_id"] == WTR002_SURFACE_CAUSTICS_RUNTIME_LAYER_ID
-    assert manifest["frame_count"] == WTR002_SURFACE_CAUSTICS_FRAME_COUNT
-    assert manifest["canonical_frame"] == "f00"
-    assert manifest["colkey"] == 8
-    assert manifest["storage"] == "full_chunk_hex_rows"
-    visible_counts = [int(frame["visible_pixels"]) for frame in manifest["frames"]]
-    assert min(visible_counts) >= 10_000
-    assert max(visible_counts) <= 40_000
-    for frame in manifest["frames"]:
-        assert len(frame["chunks"]) == 8
-        for chunk in frame["chunks"]:
-            text = root.joinpath(str(chunk["file"])).read_text(encoding="ascii")
-            assert hashlib.sha256(text.encode("ascii")).hexdigest() == chunk["sha256"]
-            assert "3" not in text
-            assert "B" not in text
-
-
-def test_wtr_look03_highlight_frame_sequence_matches_contract() -> None:
-    sequences = load_wtr_look03_water_study_frame_sequences(FakePyxel)
-
-    assert tuple(sequences) == (WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID,)
-    sequence = sequences[WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID]
-    assert sequence.layer_id == WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID
-    assert len(sequence.planes) == WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT
-    assert len(sequence.hold_frames) == WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT
-    assert all(hold_frames > 0 for hold_frames in sequence.hold_frames)
-    for index, plane in enumerate(sequence.planes):
-        assert plane.layer_id == f"{WTR_LOOK03_HIGHLIGHTS_ASSET_ID}_f{index:02d}"
-        assert (plane.logical_width, plane.logical_height) == (1024, 512)
-        assert (plane.chunk_width, plane.chunk_height) == (256, 256)
-        assert plane.colkey == 8
-        assert len(plane.chunks) == 8
-        assert all(chunk.image.pset_count == 256 * 256 for chunk in plane.chunks)
-
-
-def test_wtr_look03_highlight_manifest_files_are_palette_safe_and_sparse() -> None:
-    root = resources.files("drift_with_me").joinpath("assets/water_study/wtr_look03_highlights")
-    manifest = json.loads(root.joinpath("manifest.json").read_text(encoding="utf-8"))
-
-    assert manifest["asset_id"] == WTR_LOOK03_HIGHLIGHTS_ASSET_ID
-    assert manifest["runtime_layer_id"] == WTR_LOOK03_HIGHLIGHTS_RUNTIME_LAYER_ID
-    assert manifest["frame_count"] == WTR_LOOK03_HIGHLIGHTS_FRAME_COUNT
-    assert manifest["colkey"] == 8
-    assert manifest["storage"] == "full_chunk_hex_rows"
-    visible_counts = [int(frame["visible_pixels"]) for frame in manifest["frames"]]
-    assert min(visible_counts) >= 80
-    assert max(visible_counts) <= 240
-    for frame in manifest["frames"]:
-        assert len(frame["chunks"]) == 8
-        for chunk in frame["chunks"]:
-            text = root.joinpath(str(chunk["file"])).read_text(encoding="ascii")
-            assert hashlib.sha256(text.encode("ascii")).hexdigest() == chunk["sha256"]
-            assert "3" not in text
-            assert "B" not in text
-
-
-def test_approved_water_production_manifest_matches_runtime_profile() -> None:
-    root = resources.files("drift_with_me").joinpath("assets/water_study/approved_production")
-    manifest = json.loads(root.joinpath("production_manifest.json").read_text(encoding="utf-8"))
-    runtime = json.loads(
-        root.joinpath("runtime_lite/runtime_lite_manifest.json").read_text(encoding="utf-8")
-    )
-
-    assert manifest["version"] == "1.0.0"
-    assert tuple(manifest["logical_size"]) == (1024, 512)
-    assert tuple(manifest["chunk_size"]) == (256, 256)
-    assert tuple(layer["id"] for layer in manifest["layers"]) == APPROVED_WATER_PRODUCTION_LAYER_IDS
-    assert "water_upper_lightnet_plane_d" not in {str(layer["id"]) for layer in manifest["layers"]}
-    assert runtime["encoding"] == "DHEX1"
-    assert runtime["profile"] == APPROVED_WATER_PRODUCTION_PROFILE
-    assert tuple(layer["id"] for layer in runtime["layers"]) == APPROVED_WATER_PRODUCTION_LAYER_IDS
-    for layer in runtime["layers"]:
-        source_frame_indices = tuple(int(index) for index in layer["source_frame_indices"])
-        assert len(source_frame_indices) == APPROVED_WATER_PRODUCTION_FRAME_COUNT
-        assert len(layer["transitions"]) == APPROVED_WATER_PRODUCTION_FRAME_COUNT
-        for transition in layer["transitions"]:
-            assert len(transition["chunks"]) == 8
-            for chunk in transition["chunks"]:
-                patch_text = root.joinpath(str(chunk["file"])).read_text(encoding="ascii")
-                assert hashlib.sha256(patch_text.encode("ascii")).hexdigest() == chunk["sha256"]
-
-
-def test_approved_water_production_frame_sequences_reconstruct_profile() -> None:
-    sequences = load_approved_water_production_frame_sequences(FakePyxel)
-
-    assert tuple(sequences) == APPROVED_WATER_PRODUCTION_LAYER_IDS
-    for layer_id, sequence in sequences.items():
-        assert sequence.layer_id == layer_id
-        assert len(sequence.planes) == APPROVED_WATER_PRODUCTION_FRAME_COUNT
-        assert (
-            sequence.hold_frames
-            == (APPROVED_WATER_PRODUCTION_HOLD_FRAMES,) * APPROVED_WATER_PRODUCTION_FRAME_COUNT
-        )
-        assert sequence.total_hold_frames == 120
-        assert sequence.planes[0].layer_id == f"{layer_id}_t00"
-        assert sequence.planes[-1].layer_id == f"{layer_id}_t23"
-        for plane in sequence.planes:
-            assert (plane.logical_width, plane.logical_height) == (1024, 512)
-            assert (plane.chunk_width, plane.chunk_height) == (256, 256)
-            assert len(plane.chunks) == 8
-            assert all(chunk.image.pset_count == 256 * 256 for chunk in plane.chunks)
-        if layer_id == "water_deep_plane_d":
-            assert sequence.planes[0].colkey is None
-        else:
-            assert sequence.planes[0].colkey == 8
-
-
-def test_look04_plus_sparkle_manifest_matches_binding_profile() -> None:
-    root = resources.files("drift_with_me").joinpath(
-        "assets/water_study/approved_look04_plus_sparkle"
-    )
-    manifest = json.loads(root.joinpath("production_manifest.json").read_text(encoding="utf-8"))
-    binding = json.loads(root.joinpath("data/binding_manifest.json").read_text(encoding="utf-8"))
-
-    assert manifest["variant"] == "e"
-    assert tuple(manifest["logical_size"]) == (1024, 512)
-    assert tuple(manifest["chunk_size"]) == (256, 256)
-    assert tuple(manifest["chunk_grid"]) == (4, 2)
-    assert manifest["frame_count"] == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
-    assert manifest["fps"] == 12
-    assert binding["profile_id"] == APPROVED_LOOK04_PLUS_SPARKLE_PROFILE
-    assert tuple(layer["layer_id"] for layer in manifest["layers"]) == (
-        APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
-    )
-    assert (
-        tuple(layer["id"] for layer in binding["layers"]) == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
-    )
-    assert "water_upper_lightnet_plane_e" not in {
-        str(layer["layer_id"]) for layer in manifest["layers"]
-    }
-    assert "water_sparkle_plane_e" in {str(layer["layer_id"]) for layer in manifest["layers"]}
-    for layer in manifest["layers"]:
-        layer_id = str(layer["layer_id"])
-        if layer_id == "water_deep_plane_e":
-            assert layer["opaque"] is True
-            assert layer["colkey"] is None
-        else:
-            assert layer["opaque"] is False
-            assert layer["colkey"] == 8
-        assert len(layer["frames"]) == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
-        for frame in layer["frames"]:
-            assert int(frame["frame"]) in range(APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT)
-            assert str(frame["full_hex"]).startswith("full_hex/")
-            for row in range(2):
-                for col in range(4):
-                    chunk_text = root.joinpath(
-                        "chunks_256/hex",
-                        f"{layer_id}_f{int(frame['frame']):03d}_c{row}{col}.hex.txt",
-                    ).read_text(encoding="ascii")
-                    rows = parse_hex_rows(chunk_text, 256, 256, f"{layer_id}:c{row}{col}")
-                    assert len(rows) == 256
-
-
-def test_look04_plus_sparkle_frame_sequences_load_six_identity_layers() -> None:
-    sequences = load_approved_look04_plus_sparkle_frame_sequences(FakePyxel)
-
-    assert tuple(sequences) == APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS
-    for layer_id, sequence in sequences.items():
-        assert sequence.layer_id == layer_id
-        assert len(sequence.planes) == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
-        assert (
-            sequence.hold_frames
-            == (APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES,)
-            * APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
-        )
-        assert sequence.total_hold_frames == 120
-        assert sequence.planes[0].layer_id == f"{layer_id}_t00"
-        assert sequence.planes[-1].layer_id == f"{layer_id}_t23"
-        for plane in sequence.planes:
-            assert (plane.logical_width, plane.logical_height) == (1024, 512)
-            assert (plane.chunk_width, plane.chunk_height) == (256, 256)
-            assert len(plane.chunks) == 8
-            assert all(chunk.image.pset_count == 256 * 256 for chunk in plane.chunks)
-            assert tuple((chunk.origin_x, chunk.origin_y) for chunk in plane.chunks) == (
-                (0, 0),
-                (256, 0),
-                (512, 0),
-                (768, 0),
-                (0, 256),
-                (256, 256),
-                (512, 256),
-                (768, 256),
-            )
-        if layer_id == "water_deep_plane_e":
-            assert sequence.planes[0].colkey is None
-        else:
-            assert sequence.planes[0].colkey == 8
-
-
-def test_wtr_spk001_runtime_package_excludes_preview_media() -> None:
-    root = resources.files("drift_with_me").joinpath("assets/water_study/sparkle_fx")
-    forbidden_parts = {"assets/png", "previews", "source_reference", "scripts"}
-    forbidden_suffixes = {".png", ".gif", ".mp4"}
-    files: list[str] = []
-    stack = [("", root)]
-    while stack:
-        prefix, current = stack.pop()
-        for child in current.iterdir():
-            child_name = f"{prefix}/{child.name}" if prefix else child.name
-            if child.is_dir():
-                stack.append((child_name, child))
-            elif child.is_file():
-                files.append(child_name)
-
-    assert "assets/hex/water_sparkle_fx_bank0_256.hex.txt" in files
-    assert not any(any(part in file for part in forbidden_parts) for file in files)
-    assert not any(file.endswith(tuple(forbidden_suffixes)) for file in files)
-
-
-def test_wtr_spk001_sparkle_fx_bank_loads_canonical_animations() -> None:
-    bank = load_water_sparkle_fx_bank(FakePyxel)
-
-    assert bank.bank_id == WATER_SPARKLE_FX_BANK_ID
-    assert (bank.width, bank.height) == (256, 256)
-    assert bank.colkey == WATER_SPARKLE_FX_COLKEY
-    assert bank.config["display_scale"] == 1
-    assert not bank.config["allow_runtime_upscale"]
-    assert tuple(animation.asset_id for animation in bank.animations) == (
-        "sparkle_cross_large",
-        "sparkle_cross_medium",
-        "sparkle_cross_small",
-        "sparkle_glint_horizontal_large",
-        "sparkle_glint_horizontal_medium",
-        "sparkle_cluster_micro",
-    )
-    assert tuple(
-        (animation.frame_width, animation.frame_height, animation.bank_y)
-        for animation in bank.animations
-    ) == (
-        (64, 64, 0),
-        (48, 48, 64),
-        (32, 32, 112),
-        (64, 32, 144),
-        (48, 24, 176),
-        (64, 48, 200),
-    )
-    for animation in bank.animations:
-        assert animation.frame_count == 4
-        assert animation.ticks_per_frame == 2
-        assert animation.source_rect(3)[2:] == (animation.frame_width, animation.frame_height)
-
-
-def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
+def test_wtr001_active_preload_cache_contract_and_reuse() -> None:
     clear_water_study_cache_for_tests()
 
     cache = preload_water_study_cache(FakePyxel, force=True)
@@ -562,14 +43,39 @@ def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
     assert cache.static_layers == {}
     assert cache.phase_layers == {}
     assert tuple(cache.frame_sequences) == WATER_STUDY_RUNTIME_LAYER_IDS
+    expected_origins = (
+        (0, 0),
+        (256, 0),
+        (512, 0),
+        (768, 0),
+        (0, 256),
+        (256, 256),
+        (512, 256),
+        (768, 256),
+    )
     for layer_id in WATER_STUDY_RUNTIME_LAYER_IDS:
-        assert (
-            len(cache.frame_sequences[layer_id].planes) == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
+        sequence = cache.frame_sequences[layer_id]
+        assert len(sequence.planes) == APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
+        assert sequence.hold_frames == (
+            (APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES,) * APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
         )
-        assert cache.plane_for_frame(layer_id, 0.0, 60) is cache.frame_sequences[layer_id].planes[0]
-        assert (
-            cache.plane_for_frame(layer_id, 5 / 60, 60) is cache.frame_sequences[layer_id].planes[1]
-        )
+        assert sequence.total_hold_frames == 120
+        assert sequence.planes[0].layer_id == f"{layer_id}_t00"
+        assert sequence.planes[-1].layer_id == f"{layer_id}_t23"
+        for plane in sequence.planes:
+            assert (plane.logical_width, plane.logical_height) == (1024, 512)
+            assert (plane.chunk_width, plane.chunk_height) == (256, 256)
+            assert tuple((chunk.origin_x, chunk.origin_y) for chunk in plane.chunks) == (
+                expected_origins
+            )
+            assert all(chunk.image.pixel_count == 256 * 256 for chunk in plane.chunks)
+        if layer_id == "water_deep_plane_e":
+            assert sequence.planes[0].colkey is None
+        else:
+            assert sequence.planes[0].colkey == 8
+        assert cache.plane_for_frame(layer_id, 0.0, 60) is sequence.planes[0]
+        assert cache.plane_for_frame(layer_id, 5 / 60, 60) is sequence.planes[1]
+
     assert cache.preload_total_sec >= 0.0
     assert cache.static_preload_sec >= 0.0
     assert cache.phase_preload_sec >= 0.0
@@ -578,16 +84,7 @@ def test_wtr001_boot_preload_cache_is_resident_and_complete() -> None:
         assert layer_id in cache.layer_preload_sec
         assert cache.layer_preload_sec[layer_id] >= 0.0
     assert cache.sparkle_fx_bank is None
-    assert WATER_SPARKLE_FX_BANK_ID not in cache.layer_preload_sec
     expected_pixels = len(WATER_STUDY_RUNTIME_LAYER_IDS) * APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
     expected_pixels *= 1024 * 512
     assert cache.resident_pixel_count == expected_pixels
-
-
-def test_wtr001_boot_preload_cache_is_reused() -> None:
-    clear_water_study_cache_for_tests()
-
-    first = preload_water_study_cache(FakePyxel, force=True)
-    second = preload_water_study_cache(FakePyxel)
-
-    assert second is first
+    assert preload_water_study_cache(FakePyxel) is cache

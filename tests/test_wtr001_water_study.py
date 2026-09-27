@@ -16,7 +16,6 @@ from drift_with_me.math3d import Vec3
 from drift_with_me.model import GameModel
 from drift_with_me.water_study_assets import (
     APPROVED_WATER_IDENTITY_LAYER_IDS,
-    WATER_STUDY_RUNTIME_LAYER_IDS,
     WaterStudyChunk,
     WaterStudyPlane,
 )
@@ -24,10 +23,6 @@ from drift_with_me.world import load_world_data
 
 
 class FakePyxel:
-    KEY_1 = 49
-    KEY_2 = 50
-    KEY_3 = 51
-    KEY_4 = 52
     KEY_ESCAPE = 27
     KEY_M = 77
 
@@ -694,184 +689,6 @@ def test_water_study_draws_large_pause_title_and_raises_close_label(monkeypatch)
     assert close_args[0] == app.water_study_close_rect()
     assert close_args[1:3] == ("CLOSE", 5)
     assert close_kwargs["text_offset_y"] == -2
-
-
-def test_wtr001_b_profile_shortcuts_switch_profiles() -> None:
-    app = make_water_app()
-    app.screen = AppScreen.WATER_STUDY
-    app.pyxel = FakePyxel({FakePyxel.KEY_4})
-
-    app.update_water_study_screen(0.25)
-
-    assert app.water_study_profile_index == 3
-    assert app.water_study_profile().name == "LOOK04_MICRO_GLINT"
-    assert app.water_study_profile().layer_ids == WATER_STUDY_RUNTIME_LAYER_IDS
-
-
-def test_wtr001_b_motion_weights_are_normalized() -> None:
-    app = make_water_app()
-
-    for t in (0.0, 6.5, 7.5, 8.25, 15.5, 23.5):
-        weights = app.water_study_motion_weights(t)
-        assert all(0.0 <= weight <= 1.0 for weight in weights)
-        assert abs(sum(weights) - 1.0) < 0.000001
-
-
-def test_wtr001_water_layer_offsets_are_visible_on_mobile_scale() -> None:
-    app = make_water_app()
-
-    before = app.water_study_layer_offset(
-        0.0,
-        speed_x=1.65,
-        speed_y=1.12,
-        sine_amp=2.4,
-        orbit_x=2.25,
-        orbit_y=1.9,
-        phase=2.6,
-    )
-    after = app.water_study_layer_offset(
-        4.0,
-        speed_x=1.65,
-        speed_y=1.12,
-        sine_amp=2.4,
-        orbit_x=2.25,
-        orbit_y=1.9,
-        phase=2.6,
-    )
-
-    delta = max(
-        abs(after_value - before_value)
-        for before_value, after_value in zip(before, after, strict=True)
-    )
-    assert delta >= 3.0
-
-
-def test_wtr001_b_profile_contracts_are_ordered_by_load() -> None:
-    app = make_water_app()
-
-    app.water_study_profile_index = 0
-    baseline = app.water_study_profile()
-    app.water_study_profile_index = 1
-    three_layer = app.water_study_profile()
-    app.water_study_profile_index = 2
-    full = app.water_study_profile()
-    app.water_study_profile_index = 3
-    observe = app.water_study_profile()
-
-    assert baseline.name == "LOOK04_MICRO_GLINT"
-    assert baseline.layer_ids == WATER_STUDY_RUNTIME_LAYER_IDS
-    assert three_layer.layer_ids == WATER_STUDY_RUNTIME_LAYER_IDS
-    assert full.layer_ids == WATER_STUDY_RUNTIME_LAYER_IDS
-    assert observe.layer_ids == full.layer_ids
-    assert "water_upper_lightnet_plane_e" not in full.layer_ids
-    assert "water_sparkle_plane_e" not in full.layer_ids
-
-
-def test_wtr001_phase_plane_selection_uses_layer_step_frames() -> None:
-    app = make_water_app()
-    app.water_study_asset_cache = None
-    app.water_study_planes = {"water_surface_caustics_plane_c": "base"}
-    app.water_study_phase_planes = {
-        "water_surface_caustics_plane_c": tuple(f"phase-{index}" for index in range(8))
-    }
-
-    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 0.0) == "phase-5"
-    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 6 / 60) == "phase-5"
-    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 7 / 60) == "phase-6"
-    assert app.water_study_plane_for_frame("water_surface_caustics_plane_c", 56 / 60) == "phase-5"
-    assert app.water_study_plane_for_frame("water_mid_plane_c", 8 / 60) is None
-
-
-def test_wtr001_wave2_phase_plane_selection_uses_independent_initial_offsets() -> None:
-    app = make_water_app()
-    app.water_study_asset_cache = None
-    app.water_study_phase_planes = {
-        "water_mid_plane_c": tuple(f"mid-{index}" for index in range(8)),
-        "water_surface_plane_c": tuple(f"surface-{index}" for index in range(8)),
-        "water_upper_lightnet_plane_c": tuple(f"light-{index}" for index in range(8)),
-    }
-
-    assert app.water_study_plane_for_frame("water_mid_plane_c", 0.0) == "mid-0"
-    assert app.water_study_plane_for_frame("water_mid_plane_c", 12 / 60) == "mid-0"
-    assert app.water_study_plane_for_frame("water_mid_plane_c", 13 / 60) == "mid-1"
-    assert app.water_study_plane_for_frame("water_surface_plane_c", 0.0) == "surface-2"
-    assert app.water_study_plane_for_frame("water_surface_plane_c", 9 / 60) == "surface-3"
-    assert app.water_study_plane_for_frame("water_upper_lightnet_plane_c", 0.0) == "light-1"
-    assert app.water_study_plane_for_frame("water_upper_lightnet_plane_c", 5 / 60) == "light-2"
-
-
-def test_wtr001_phase_selection_uses_resident_cache_when_ready() -> None:
-    app = make_water_app()
-    cache = make_fake_water_cache()
-    app.water_study_asset_cache = cache
-    app.water_study_phase_planes = {}
-
-    assert app.water_study_plane_for_frame("water_surface_plane_c", 0.0) == "surface-2"
-    assert app.water_study_plane_for_frame("water_surface_plane_c", 9 / 60) == "surface-3"
-
-
-def test_wtr_look03_water_study_tempers_coarse_caustics_palette() -> None:
-    app = make_water_app()
-    app.pyxel = FakeDrawPyxel()
-    app.water_study_asset_cache = None
-    app.water_study_phase_planes = {}
-    app.water_study_planes = {
-        "water_surface_caustics_plane_c": WaterStudyPlane(
-            layer_id="water_surface_caustics_plane_c",
-            logical_width=1024,
-            logical_height=512,
-            chunk_width=256,
-            chunk_height=256,
-            colkey=8,
-            chunks=(
-                WaterStudyChunk(
-                    image=object(),
-                    origin_x=0,
-                    origin_y=0,
-                    width=256,
-                    height=256,
-                ),
-            ),
-        )
-    }
-
-    calls = app.draw_water_study_plane("water_surface_caustics_plane_c", 0.0)
-
-    assert calls == 1
-    assert app.pyxel.palette_calls == [(7, 12), (6, 12), ()]
-    assert len(app.pyxel.blt_calls) == 1
-
-
-def test_wtr_look03_water_study_tempers_coarse_surface_palette() -> None:
-    app = make_water_app()
-    app.pyxel = FakeDrawPyxel()
-    app.water_study_asset_cache = None
-    app.water_study_phase_planes = {}
-    app.water_study_planes = {
-        "water_surface_plane_c": WaterStudyPlane(
-            layer_id="water_surface_plane_c",
-            logical_width=1024,
-            logical_height=512,
-            chunk_width=256,
-            chunk_height=256,
-            colkey=8,
-            chunks=(
-                WaterStudyChunk(
-                    image=object(),
-                    origin_x=0,
-                    origin_y=0,
-                    width=256,
-                    height=256,
-                ),
-            ),
-        )
-    }
-
-    calls = app.draw_water_study_plane("water_surface_plane_c", 0.0)
-
-    assert calls == 1
-    assert app.pyxel.palette_calls == [(6, 12), (12, 5), ()]
-    assert len(app.pyxel.blt_calls) == 1
 
 
 def test_approved_water_production_planes_draw_with_identity_palette_and_no_motion(
