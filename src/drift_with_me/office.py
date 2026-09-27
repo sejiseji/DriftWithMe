@@ -50,6 +50,7 @@ class MemoFact:
 @dataclass(frozen=True)
 class QuestionDefinition:
     question_id: str
+    button_label: str
     jack_text: str
     visitor_reply: str
     memo_updates: tuple[MemoFact, ...]
@@ -316,6 +317,7 @@ def parse_case_definitions(raw: dict[str, Any]) -> tuple[CaseDefinition, ...]:
             questions.append(
                 QuestionDefinition(
                     question_id=str(question["id"]),
+                    button_label=str(question["label"]),
                     jack_text=str(question["jack"]),
                     visitor_reply=str(question["reply"]),
                     memo_updates=memo_updates,

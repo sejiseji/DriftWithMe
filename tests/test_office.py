@@ -388,10 +388,11 @@ def test_off001_dialogue_wraps_without_ellipsis_and_paginates_full_exchange() ->
     assert playback.pages
     assert visible == expected
     assert all(
-        app.ui_text.text_width(line.text, "office_japanese") <= max_width
+        app.ui_text.text_width(line.text, "office_japanese") <= max_width - line.indent_px
         for page in playback.pages
         for line in page
     )
+    assert any(line.indent_px > 0 for page in playback.pages for line in page)
 
 
 def test_off001_dialogue_typewriter_tap_completes_then_advances_page() -> None:
@@ -421,14 +422,17 @@ def test_off001_dialogue_draws_visitor_speech_in_yellow() -> None:
     playback = app.sync_office_dialogue_playback()
     page = app.office_dialogue_current_page(playback)
     playback.revealed_chars = float(sum(len(line.text) for line in page))
-    draws: list[tuple[str, int]] = []
-    app.draw_office_text_in_rect = lambda rect, text, color, **kwargs: draws.append((text, color))
+    draws: list[tuple[str, int, float]] = []
+    app.draw_office_text_in_rect = lambda rect, text, color, **kwargs: draws.append(
+        (text, color, rect.x)
+    )
     app.pyxel = SimpleNamespace(tri=lambda *args: None)
     app.frame = 0
 
     app.draw_office_dialogue(app.office_dialog_rect())
 
-    expected = [(line.text, 10 if line.visitor else 7) for line in page]
+    content_x = app.office_dialogue_content_rect().x
+    expected = [(line.text, 10 if line.visitor else 7, content_x + line.indent_px) for line in page]
     assert draws == expected
 
 
@@ -443,7 +447,7 @@ def test_off001_visitor_info_is_complete_yellow_content_without_documents() -> N
     wrapped = tuple(
         wrapped_line
         for line in lines
-        for wrapped_line in app.wrap_office_dialogue_text(line, max_width)
+        for wrapped_line in app.wrap_office_hanging_text(line, max_width)
     )
 
     assert lines == (
@@ -451,9 +455,14 @@ def test_off001_visitor_info_is_complete_yellow_content_without_documents() -> N
         "種別: 魔族（海棲型）",
         "用件: 夜になると水辺から異常音がする",
     )
-    assert all("書類" not in line and "..." not in line for line in wrapped)
-    assert "".join(wrapped) == "".join(lines)
-    assert all(app.ui_text.text_width(line, "office_japanese") <= max_width for line in wrapped)
+    assert all("書類" not in line.text and "..." not in line.text for line in wrapped)
+    assert "".join(line.text for line in wrapped) == "".join(lines)
+    assert all(
+        app.ui_text.text_width(line.text, "office_japanese") <= max_width - line.indent_px
+        for line in wrapped
+    )
+    expected_indent = app.ui_text.text_width("種別: ", "office_japanese")
+    assert any(line.indent_px == expected_indent for line in wrapped)
 
 
 def test_off001_visitor_info_fits_every_case_and_display_profile() -> None:
@@ -472,12 +481,42 @@ def test_off001_visitor_info_fits_every_case_and_display_profile() -> None:
             wrapped = tuple(
                 wrapped_line
                 for line in app.office_visitor_info_lines(case)
-                for wrapped_line in app.wrap_office_dialogue_text(
+                for wrapped_line in app.wrap_office_hanging_text(
                     line,
                     int(info_rect.width),
                 )
             )
             assert len(wrapped) * 12 <= info_rect.height + 0.5
+
+
+def test_off001_question_buttons_use_short_labels_without_ellipsis() -> None:
+    expected_labels = (
+        "本人確認",
+        "登録変更",
+        "添付書類",
+        "発生時期",
+        "発生頻度",
+        "発生場所",
+        "音の特徴",
+        "被害状況",
+        "来訪目的",
+    )
+    office = OfficePrototype.load()
+    labels = tuple(question.button_label for case in office.cases for question in case.questions)
+
+    assert labels == expected_labels
+    assert all("..." not in label and "…" not in label for label in labels)
+    for profile in ("low", "medium", "high"):
+        app = DriftWithMeApp.__new__(DriftWithMeApp)
+        app.runtime = load_runtime_config(profile)
+        for case in office.cases:
+            for index, question in enumerate(case.questions):
+                rect = app.office_question_rect(index, len(case.questions))
+                available_width = int(rect.width - 6)
+                rendered_width = sum(
+                    6 if ord(char) < 128 else 12 for char in f"済 {question.button_label}"
+                )
+                assert rendered_width <= available_width
 
 
 def test_off001_classification_labels_are_equal_length_for_two_column_grid() -> None:
@@ -494,6 +533,22 @@ def test_off001_wrapped_feedback_keeps_japanese_punctuation_with_previous_text()
 
     assert "".join(wrapped) == text
     assert all(line[0] not in "、。！？" for line in wrapped if line)
+
+
+def test_off001_hanging_indent_starts_continuation_after_colon() -> None:
+    app = make_office_dialogue_app()
+    text = "用件: 夜になると水辺から異常音がする"
+    max_width = 108
+    wrapped = app.wrap_office_hanging_text(text, max_width)
+    expected_indent = app.ui_text.text_width("用件: ", "office_japanese")
+
+    assert "".join(line.text for line in wrapped) == text
+    assert wrapped[0].indent_px == 0
+    assert all(line.indent_px == expected_indent for line in wrapped[1:])
+    assert all(
+        app.ui_text.text_width(line.text, "office_japanese") <= max_width - line.indent_px
+        for line in wrapped
+    )
 
 
 def test_off001_new_exchange_restarts_dialogue_reveal() -> None:

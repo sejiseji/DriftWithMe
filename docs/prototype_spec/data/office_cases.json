@@ -8,8 +8,8 @@
       "initial_purpose": "住民証明書を発行してほしい",
       "document_status": "本人確認書類あり",
       "questions": [
-        {"id": "identity", "jack": "本人確認書類を拝見してもよろしいでしょうか？", "reply": "はい、こちらです。", "memo": ["本人確認: 済"]},
-        {"id": "changes", "jack": "登録内容に変更はありませんか？", "reply": "ありません。", "memo": ["登録変更: なし"]}
+        {"id": "identity", "label": "本人確認", "jack": "本人確認書類を拝見してもよろしいでしょうか？", "reply": "はい、こちらです。", "memo": ["本人確認: 済"]},
+        {"id": "changes", "label": "登録変更", "jack": "登録内容に変更はありませんか？", "reply": "ありません。", "memo": ["登録変更: なし"]}
       ],
       "expected_classification": "COUNTER_COMPLETE",
       "field_task": null
@@ -21,7 +21,7 @@
       "initial_purpose": "減免申請をしたい",
       "document_status": "不明",
       "questions": [
-        {"id": "attachment", "jack": "添付書類はお持ちでしょうか？", "reply": "申請書だけ持ってきました。", "memo": ["添付書類: 不足"]}
+        {"id": "attachment", "label": "添付書類", "jack": "添付書類はお持ちでしょうか？", "reply": "申請書だけ持ってきました。", "memo": ["添付書類: 不足"]}
       ],
       "expected_classification": "MISSING_DOCUMENTS",
       "field_task": null
@@ -33,11 +33,11 @@
       "initial_purpose": "夜になると水辺から異常音がする",
       "document_status": "なし",
       "questions": [
-        {"id": "when", "jack": "いつ頃からでしょうか？", "reply": "三日くらい前からです。", "memo": ["発生: 約3日前から"]},
-        {"id": "frequency", "jack": "毎晩でしょうか？", "reply": "ほぼ毎晩です。", "memo": ["頻度: ほぼ毎晩"]},
-        {"id": "place", "jack": "場所はどこでしょうか？", "reply": "北側の浅瀬の近くです。", "memo": ["場所: 北側浅瀬付近"]},
-        {"id": "sound", "jack": "どのような音でしょうか？", "reply": "水の下で何かが動いているような音です。", "memo": ["内容: 水中で何かが動く音"]},
-        {"id": "damage", "jack": "何か被害はありますか？", "reply": "今のところは分かりません。", "memo": ["実害: 不明"]}
+        {"id": "when", "label": "発生時期", "jack": "いつ頃からでしょうか？", "reply": "三日くらい前からです。", "memo": ["発生: 約3日前から"]},
+        {"id": "frequency", "label": "発生頻度", "jack": "毎晩でしょうか？", "reply": "ほぼ毎晩です。", "memo": ["頻度: ほぼ毎晩"]},
+        {"id": "place", "label": "発生場所", "jack": "場所はどこでしょうか？", "reply": "北側の浅瀬の近くです。", "memo": ["場所: 北側浅瀬付近"]},
+        {"id": "sound", "label": "音の特徴", "jack": "どのような音でしょうか？", "reply": "水の下で何かが動いているような音です。", "memo": ["内容: 水中で何かが動く音"]},
+        {"id": "damage", "label": "被害状況", "jack": "何か被害はありますか？", "reply": "今のところは分かりません。", "memo": ["実害: 不明"]}
       ],
       "expected_classification": "FIELD_CHECK",
       "field_task": {"task_id": "FIELD-PROT-003", "location_id": "north_shallow", "title": "北側浅瀬の異常音確認", "objective": "異常音の発生源を確認する", "completion_condition_id": "inspect_anomaly_source"}
@@ -49,7 +49,7 @@
       "initial_purpose": "魔王軍施設の攻略",
       "document_status": "なし",
       "questions": [
-        {"id": "purpose", "jack": "本日はどのようなご用件でしょうか？", "reply": "魔王軍の拠点を攻略しに来た。", "memo": ["行政手続目的: なし", "来訪目的: 討伐"]}
+        {"id": "purpose", "label": "来訪目的", "jack": "本日はどのようなご用件でしょうか？", "reply": "魔王軍の拠点を攻略しに来た。", "memo": ["行政手続目的: なし", "来訪目的: 討伐"]}
       ],
       "expected_classification": "REFER_OTHER",
       "field_task": null

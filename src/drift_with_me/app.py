@@ -141,6 +141,13 @@ class OfficeDialoguePlayback:
 class OfficeDialogueLine:
     text: str
     visitor: bool
+    indent_px: int = 0
+
+
+@dataclass(frozen=True)
+class OfficeWrappedTextLine:
+    text: str
+    indent_px: int = 0
 
 
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
@@ -250,6 +257,7 @@ WATER_STUDY_JACK_DIRECTION_VIEWS = (
 )
 OFFICE_DIALOGUE_CHARS_PER_SEC = 72.0
 OFFICE_DIALOGUE_LINES_PER_PAGE = 5
+OFFICE_LINE_START_PROHIBITED = "、。！？）"
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
     # remain unchanged, but their broad bright cells are tempered at draw time.
@@ -599,8 +607,12 @@ class DriftWithMeApp:
         wrapped_lines: list[OfficeDialogueLine] = []
         for speaker, text in recent:
             wrapped_lines.extend(
-                OfficeDialogueLine(text=line, visitor=speaker == case.visitor.name)
-                for line in self.wrap_office_dialogue_text(
+                OfficeDialogueLine(
+                    text=line.text,
+                    visitor=speaker == case.visitor.name,
+                    indent_px=line.indent_px,
+                )
+                for line in self.wrap_office_hanging_text(
                     f"{speaker}: {text}", max(1, int(content_rect.width)), style_name
                 )
             )
@@ -627,7 +639,7 @@ class DriftWithMeApp:
         for char in text:
             candidate = current + char
             if current and self.ui_renderer.text_width(candidate, style_name) > max_width:
-                if char in "、。！？" and len(current) > 1:
+                if char in OFFICE_LINE_START_PROHIBITED and len(current) > 1:
                     lines.append(current[:-1])
                     current = current[-1] + char
                 else:
@@ -638,6 +650,51 @@ class DriftWithMeApp:
         if current:
             lines.append(current)
         return tuple(lines)
+
+    def wrap_office_hanging_text(
+        self,
+        text: str,
+        max_width: int,
+        style_name: str = "office_japanese",
+    ) -> tuple[OfficeWrappedTextLine, ...]:
+        if not text:
+            return (OfficeWrappedTextLine(""),)
+
+        separator_end = -1
+        for separator in (": ", "："):
+            separator_index = text.find(separator)
+            if separator_index >= 0:
+                separator_end = separator_index + len(separator)
+                break
+        indent_px = (
+            self.ui_renderer.text_width(text[:separator_end], style_name)
+            if separator_end > 0
+            else 0
+        )
+        if indent_px >= max_width:
+            indent_px = 0
+
+        lines: list[str] = []
+        current = ""
+        for char in text:
+            continuation_indent = indent_px if lines else 0
+            line_width = max(1, max_width - continuation_indent)
+            candidate = current + char
+            if current and self.ui_renderer.text_width(candidate, style_name) > line_width:
+                if char in OFFICE_LINE_START_PROHIBITED and len(current) > 1:
+                    lines.append(current[:-1])
+                    current = current[-1] + char
+                else:
+                    lines.append(current)
+                    current = char
+            else:
+                current = candidate
+        if current:
+            lines.append(current)
+        return tuple(
+            OfficeWrappedTextLine(line, 0 if index == 0 else indent_px)
+            for index, line in enumerate(lines)
+        )
 
     def update_office_dialogue_playback(self, elapsed: float) -> None:
         playback = self.sync_office_dialogue_playback()
@@ -1966,7 +2023,7 @@ class DriftWithMeApp:
         return self.office_rect(0, 0, 512, 27)
 
     def office_visitor_rect(self) -> Rect:
-        return self.office_rect(6, 31, 116, 173)
+        return self.office_rect(6, 31, 124, 173)
 
     def office_visitor_info_rect(self) -> Rect:
         panel = self.office_visitor_rect()
@@ -1981,7 +2038,7 @@ class DriftWithMeApp:
         )
 
     def office_dialog_rect(self) -> Rect:
-        return self.office_rect(126, 31, 246, 96)
+        return self.office_rect(132, 31, 240, 96)
 
     def office_dialogue_content_rect(self) -> Rect:
         panel = self.office_dialog_rect()
@@ -1997,7 +2054,7 @@ class DriftWithMeApp:
         )
 
     def office_questions_panel_rect(self) -> Rect:
-        return self.office_rect(126, 131, 246, 73)
+        return self.office_rect(132, 131, 240, 73)
 
     def office_classification_panel_rect(self) -> Rect:
         return self.office_rect(376, 31, 130, 173)
@@ -2447,6 +2504,7 @@ class DriftWithMeApp:
             self.office_visitor_info_rect(),
             visitor_lines,
             color=10,
+            hanging_indent=True,
         )
 
         self.draw_office_section_title(dialog_rect, case.title)
@@ -2464,7 +2522,7 @@ class DriftWithMeApp:
             prefix = "済 " if asked else ""
             self.draw_office_text_in_rect(
                 Rect(rect.x + 3, rect.y, rect.width - 6, rect.height),
-                prefix + question.jack_text,
+                prefix + question.button_label,
                 13 if asked else 7,
                 preferred_styles=("office_japanese", "office_japanese_button"),
             )
@@ -2560,9 +2618,9 @@ class DriftWithMeApp:
                 continue
             self.draw_office_text_in_rect(
                 Rect(
-                    content_rect.x,
+                    content_rect.x + line.indent_px,
                     content_rect.y + index * line_height,
-                    content_rect.width,
+                    content_rect.width - line.indent_px,
                     line_height,
                 ),
                 line.text[:visible_count],
@@ -2654,15 +2712,27 @@ class DriftWithMeApp:
         lines: tuple[str, ...],
         color: int,
         align: str = "left",
+        hanging_indent: bool = False,
     ) -> None:
         style_name = self.office_text_style(rect)
         wrapped = tuple(
             wrapped_line
             for line in lines
-            for wrapped_line in self.wrap_office_dialogue_text(
-                line,
-                max(1, int(rect.width)),
-                style_name,
+            for wrapped_line in (
+                self.wrap_office_hanging_text(
+                    line,
+                    max(1, int(rect.width)),
+                    style_name,
+                )
+                if hanging_indent
+                else tuple(
+                    OfficeWrappedTextLine(text)
+                    for text in self.wrap_office_dialogue_text(
+                        line,
+                        max(1, int(rect.width)),
+                        style_name,
+                    )
+                )
             )
         )
         if not wrapped:
@@ -2671,8 +2741,13 @@ class DriftWithMeApp:
         line_height = float(visible_height)
         for index, line in enumerate(wrapped):
             self.draw_office_text_in_rect(
-                Rect(rect.x, rect.y + index * line_height, rect.width, line_height),
-                line,
+                Rect(
+                    rect.x + line.indent_px,
+                    rect.y + index * line_height,
+                    rect.width - line.indent_px,
+                    line_height,
+                ),
+                line.text,
                 color,
                 preferred_styles=(style_name,),
                 align=align,
