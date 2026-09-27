@@ -2229,7 +2229,7 @@ class DriftWithMeApp:
             Rect(header_pad, header.y, self.runtime.screen_width * 0.58, header.height),
             "ガドニア領住民課 岡山第三支部出張所",
             7,
-            preferred_styles=("japanese", "japanese_button", "auxiliary"),
+            preferred_styles=("office_japanese", "office_japanese_button"),
         )
         if case is None or session is None:
             self.draw_office_complete()
@@ -2247,7 +2247,7 @@ class DriftWithMeApp:
             ),
             count_text,
             7,
-            preferred_styles=("japanese_button", "auxiliary"),
+            preferred_styles=("office_japanese_button", "office_japanese"),
             align="right",
         )
 
@@ -2305,7 +2305,7 @@ class DriftWithMeApp:
                 Rect(rect.x + 3, rect.y, rect.width - 6, rect.height),
                 prefix + question.jack_text,
                 13 if asked else 7,
-                preferred_styles=("japanese", "japanese_button", "auxiliary"),
+                preferred_styles=("office_japanese", "office_japanese_button"),
             )
 
         if session.field_result is not None:
@@ -2349,7 +2349,7 @@ class DriftWithMeApp:
                 feedback_rect,
                 session.feedback,
                 10,
-                preferred_styles=("japanese", "japanese_button", "auxiliary"),
+                preferred_styles=("office_japanese", "office_japanese_button"),
                 align="center",
             )
 
@@ -2358,7 +2358,7 @@ class DriftWithMeApp:
             self.office_rect(8, 210, 356, 23),
             hint,
             13,
-            preferred_styles=("japanese", "japanese_button", "auxiliary"),
+            preferred_styles=("office_japanese", "office_japanese_button"),
         )
         if session.state not in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
             self.draw_office_button(
@@ -2375,14 +2375,14 @@ class DriftWithMeApp:
             self.office_rect(116, 78, 280, 34),
             "本日の試行案件は完了しました",
             7,
-            preferred_styles=("japanese", "japanese_button"),
+            preferred_styles=("office_japanese", "office_japanese_button"),
             align="center",
         )
         self.draw_office_text_in_rect(
             self.office_rect(116, 116, 280, 24),
             "4件の処理結果を記録しました",
             13,
-            preferred_styles=("japanese_button", "auxiliary"),
+            preferred_styles=("office_japanese_button", "office_japanese"),
             align="center",
         )
         self.draw_office_button(
@@ -2399,13 +2399,13 @@ class DriftWithMeApp:
             title_rect,
             title,
             12,
-            preferred_styles=("japanese", "japanese_button", "auxiliary"),
+            preferred_styles=("office_japanese", "office_japanese_button"),
         )
 
     def office_text_style(
         self,
         rect: Rect,
-        preferred_styles: tuple[str, ...] = ("japanese", "japanese_button", "auxiliary"),
+        preferred_styles: tuple[str, ...] = ("office_japanese", "office_japanese_button"),
     ) -> str:
         available_height = max(1, int(rect.height))
         for style_name in preferred_styles:
@@ -2419,7 +2419,7 @@ class DriftWithMeApp:
         rect: Rect,
         text: str,
         color: int,
-        preferred_styles: tuple[str, ...] = ("japanese", "japanese_button", "auxiliary"),
+        preferred_styles: tuple[str, ...] = ("office_japanese", "office_japanese_button"),
         align: str = "left",
     ) -> None:
         style_name = self.office_text_style(rect, preferred_styles)
@@ -2449,7 +2449,7 @@ class DriftWithMeApp:
             Rect(rect.x + 4, rect.y, max(1.0, rect.width - 8), rect.height),
             label,
             text_color,
-            preferred_styles=("japanese_button", "auxiliary"),
+            preferred_styles=("office_japanese_button", "office_japanese"),
             align="center",
         )
 
@@ -2474,7 +2474,7 @@ class DriftWithMeApp:
                 Rect(x, top + index * line_height, width, line_height),
                 line,
                 color,
-                preferred_styles=("japanese", "japanese_button", "auxiliary"),
+                preferred_styles=("office_japanese", "office_japanese_button"),
             )
 
     def draw_office_portrait(self, rect: Rect, portrait_id: str) -> None:
@@ -3328,13 +3328,13 @@ class DriftWithMeApp:
             Rect(content_rect.x, content_rect.y, content_rect.width, row_height),
             "現在の案件",
             12,
-            preferred_styles=("japanese", "japanese_button", "auxiliary"),
+            preferred_styles=("office_japanese", "office_japanese_button"),
         )
         self.draw_office_text_in_rect(
             Rect(content_rect.x, content_rect.y + row_height, content_rect.width, row_height),
             task.objective,
             7,
-            preferred_styles=("japanese", "japanese_button", "auxiliary"),
+            preferred_styles=("office_japanese", "office_japanese_button"),
         )
 
     def draw_meter(

@@ -47,7 +47,7 @@ def test_japanese_ui_uses_dedicated_thinner_styles() -> None:
     assert app.ui_text_style_name("WATER", "tooltip") == "tooltip"
 
 
-def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
+def test_ui_fonts_load_and_major_labels_fit_existing_buttons() -> None:
     pyxel.init(64, 64, headless=True)
     primary_tokens = ("NONE", "BUBBLE", "GUARD", "ZAP")
     context_tokens = ("CHECK", "REFILL", "CHARGE", "CANCEL_REFILL", "CANCEL_CHARGE")
@@ -61,6 +61,9 @@ def test_dotgothic16_font_loads_and_major_labels_fit_existing_buttons() -> None:
         assert renderer.font_loaded
         assert renderer.text_height("japanese") < renderer.text_height("label")
         assert renderer.text_height("japanese_button") < renderer.text_height("button")
+        assert renderer.text_height("office_japanese") == 12
+        assert renderer.visual_vertical_metrics("office_japanese") == (0, 12)
+        assert renderer.text_width("案件完了", "office_japanese") == 48
         for token in primary_tokens:
             label = renderer.resources.token(token)
             label_rect = app.action_button_label_rect(app.action_button_visual_rect())

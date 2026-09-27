@@ -563,6 +563,8 @@
     "font": {
       "family": "DotGothic16",
       "path": "assets/fonts/DotGothic16-Regular.ttf",
+      "office_japanese_family": "umplus_j12r",
+      "office_japanese_path": "assets/fonts/umplus_j12r_office.bdf",
       "label_px": {
         "low": 16,
         "medium": 16,
@@ -617,6 +619,16 @@
         "low": 13,
         "medium": 13,
         "high": 16
+      },
+      "office_japanese_px": {
+        "low": 12,
+        "medium": 12,
+        "high": 12
+      },
+      "office_japanese_button_px": {
+        "low": 12,
+        "medium": 12,
+        "high": 12
       }
     }
   },

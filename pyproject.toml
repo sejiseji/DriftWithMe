@@ -31,6 +31,7 @@ drift_with_me = [
     "assets/*.hex",
     "assets/*.pyxres",
     "assets/fonts/*.ttf",
+    "assets/fonts/*.bdf",
     "assets/i18n/*.json",
     "assets/water_study/approved_look04_plus_sparkle/production_manifest.json",
     "assets/water_study/approved_look04_plus_sparkle/data/*.json",

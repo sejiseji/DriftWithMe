@@ -187,30 +187,27 @@ def test_off001_office_layout_stays_inside_all_profiles() -> None:
 
 
 def test_off001_japanese_text_uses_largest_style_that_fits_each_profile() -> None:
-    expected_question_styles = {profile: "japanese" for profile in ("low", "medium", "high")}
+    expected_question_styles = {profile: "office_japanese" for profile in ("low", "medium", "high")}
     for profile, expected_style in expected_question_styles.items():
         app = DriftWithMeApp.__new__(DriftWithMeApp)
         app.runtime = load_runtime_config(profile)
         font = app.runtime.raw["ui"]["font"]
-        styles = ("japanese", "japanese_button", "auxiliary")
+        styles = ("office_japanese", "office_japanese_button")
         sizes = {style: int(font[f"{style}_px"][profile]) for style in styles}
         app.ui_text = SimpleNamespace(
             text_height=lambda style, sizes=sizes: sizes[style],
-            visual_vertical_metrics=lambda style, sizes=sizes: (
-                (sizes[style] * 3 + 5) // 10,
-                (sizes[style] * 6) // 5 - (sizes[style] * 3 + 5) // 10 + 1,
-            ),
+            visual_vertical_metrics=lambda style, sizes=sizes: (0, sizes[style]),
         )
 
         question_rect = app.office_question_rect(0, 5)
         assert app.office_text_style(question_rect) == expected_style
         _, visible_height = app.ui_text.visual_vertical_metrics(expected_style)
         assert visible_height + 2 <= int(question_rect.height)
-        assert app.office_text_style(app.office_classification_rect(0)) == "japanese"
+        assert app.office_text_style(app.office_classification_rect(0)) == "office_japanese"
 
         task_rect = app.field_task_hud_rect()
         task_row = Rect(task_rect.x, task_rect.y, task_rect.width, (task_rect.height - 4) / 2)
-        assert app.office_text_style(task_row) != "auxiliary"
+        assert app.office_text_style(task_row) == "office_japanese"
 
 
 def test_off001_office_text_centers_japanese_without_global_baseline_shift() -> None:
@@ -219,7 +216,7 @@ def test_off001_office_text_centers_japanese_without_global_baseline_shift() -> 
     class FakeRenderer:
         @staticmethod
         def text_height(style_name: str) -> int:
-            return {"japanese": 14, "japanese_button": 13, "auxiliary": 12}[style_name]
+            return {"office_japanese": 12, "office_japanese_button": 12}[style_name]
 
         @staticmethod
         def text_width(text: str, style_name: str) -> int:
@@ -228,9 +225,7 @@ def test_off001_office_text_centers_japanese_without_global_baseline_shift() -> 
 
         @classmethod
         def visual_vertical_metrics(cls, style_name: str) -> tuple[int, int]:
-            size = cls.text_height(style_name)
-            top_offset = (size * 3 + 5) // 10
-            return (top_offset, (size * 6) // 5 - top_offset + 1)
+            return (0, cls.text_height(style_name))
 
         @staticmethod
         def fit_text(text: str, max_width: int, style_name: str) -> str:
@@ -248,7 +243,7 @@ def test_off001_office_text_centers_japanese_without_global_baseline_shift() -> 
 
     app.draw_office_text_in_rect(Rect(10, 20, 80, 24), "現在の案件", 7)
 
-    assert draws == [(10, 22, "現在の案件", 7, "japanese")]
+    assert draws == [(10, 26, "現在の案件", 7, "office_japanese")]
 
 
 def test_off001_active_field_event_only_matches_designated_anomaly() -> None:

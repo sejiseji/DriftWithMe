@@ -16,6 +16,8 @@ class FontStyle:
     font: Any | None
     size_px: int
     pixel_scale: int
+    visual_top_px: int
+    visual_height_px: int
 
 
 class TextResources:
@@ -80,11 +82,7 @@ class UITextRenderer:
         style = self.styles[style_name]
         if style.font is None:
             return (0, self.text_height(style_name))
-        # DotGothic16 renders below Pyxel's text origin. These ratios match the
-        # measured visible bounds for every configured font size (12-25 px).
-        top_offset = (style.size_px * 3 + 5) // 10
-        bottom_offset = (style.size_px * 6) // 5
-        return (top_offset, bottom_offset - top_offset + 1)
+        return (style.visual_top_px, style.visual_height_px)
 
     def draw(self, pyxel: Any, x: int, y: int, text: str, color: int, style_name: str) -> None:
         style = self.styles[style_name]
@@ -132,15 +130,33 @@ def load_ui_text_renderer(pyxel: Any, runtime: RuntimeConfig) -> UITextRenderer:
         "auxiliary": int(font_config.get("auxiliary_px", {}).get(profile_name, 12)),
         "japanese": int(font_config.get("japanese_px", {}).get(profile_name, 14)),
         "japanese_button": int(font_config.get("japanese_button_px", {}).get(profile_name, 13)),
+        "office_japanese": int(font_config.get("office_japanese_px", {}).get(profile_name, 12)),
+        "office_japanese_button": int(
+            font_config.get("office_japanese_button_px", {}).get(profile_name, 12)
+        ),
     }
     font_path = str(font_config.get("path", ""))
+    office_font_path = str(font_config.get("office_japanese_path", font_path))
     styles: dict[str, FontStyle] = {}
     for style_name, size_px in style_sizes.items():
+        style_path = office_font_path if style_name.startswith("office_japanese") else font_path
+        is_bitmap = style_path.lower().endswith(".bdf")
+        if is_bitmap:
+            visual_top_px = 0
+            visual_height_px = size_px
+        else:
+            # DotGothic16 renders below Pyxel's text origin. These ratios match
+            # its measured visible bounds for every configured size (12-25 px).
+            visual_top_px = (size_px * 3 + 5) // 10
+            bottom_offset = (size_px * 6) // 5
+            visual_height_px = bottom_offset - visual_top_px + 1
         styles[style_name] = FontStyle(
             name=style_name,
-            font=_load_font(pyxel, font_path, size_px),
+            font=_load_font(pyxel, style_path, size_px),
             size_px=size_px,
             pixel_scale=max(1, round(size_px / 8)),
+            visual_top_px=visual_top_px,
+            visual_height_px=visual_height_px,
         )
     return UITextRenderer(text_resources, styles)
 
@@ -151,6 +167,8 @@ def _load_font(pyxel: Any, font_path: str, size_px: int) -> Any | None:
     try:
         traversable = resources.files("drift_with_me").joinpath(font_path)
         with resources.as_file(traversable) as path:
+            if font_path.lower().endswith(".bdf"):
+                return pyxel.Font(str(path))
             return pyxel.Font(str(path), size_px)
     except Exception as exc:
         print(f"ui_font_error: {type(exc).__name__}: {exc}")
