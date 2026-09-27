@@ -128,6 +128,14 @@ class WaterStudyJackFloat:
     wave_energy: float = 0.0
 
 
+@dataclass
+class OfficeDialoguePlayback:
+    signature: tuple[str, tuple[tuple[str, str], ...]] | None = None
+    pages: tuple[tuple[str, ...], ...] = ()
+    page_index: int = 0
+    revealed_chars: float = 0.0
+
+
 WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
     WaterStudyProfile(
         "LOOK04_MICRO_GLINT",
@@ -233,6 +241,8 @@ WATER_STUDY_JACK_DIRECTION_VIEWS = (
     "left",
     "front_left",
 )
+OFFICE_DIALOGUE_CHARS_PER_SEC = 72.0
+OFFICE_DIALOGUE_LINES_PER_PAGE = 2
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
     # remain unchanged, but their broad bright cells are tempered at draw time.
@@ -259,6 +269,7 @@ class DriftWithMeApp:
         self.office_focus = "questions"
         self.office_question_index = 0
         self.office_classification_index = 0
+        self.office_dialogue_playback = OfficeDialoguePlayback()
         self.audio = AudioEngine(self.runtime.raw)
         self.effects = EffectSystem(self.runtime.raw)
         self.camera_controller = CameraController(
@@ -418,7 +429,7 @@ class DriftWithMeApp:
         if self.screen == AppScreen.START:
             self.update_start_screen()
         elif self.screen == AppScreen.OFFICE:
-            self.update_office_screen()
+            self.update_office_screen(elapsed)
         elif self.screen == AppScreen.PAUSE:
             self.update_pause_screen()
         elif self.screen == AppScreen.WATER_STUDY:
@@ -479,7 +490,7 @@ class DriftWithMeApp:
         self.combat_camera_restore = None
         self.screen = AppScreen.OFFICE
 
-    def update_office_screen(self) -> None:
+    def update_office_screen(self, elapsed: float) -> None:
         self.clear_world_input_latches()
         session = self.office.current_session
         case = self.office.current_case
@@ -488,6 +499,11 @@ class DriftWithMeApp:
                 self.office_footer_action_rect()
             ):
                 self.enter_exploration_from_office()
+            return
+
+        self.update_office_dialogue_playback(elapsed)
+        if self.mouse_pressed_in(self.office_dialog_rect()):
+            self.advance_office_dialogue_page()
             return
 
         if session.state in {
@@ -547,6 +563,106 @@ class DriftWithMeApp:
                 self.office_classification_index = index
                 self.office.classify(classification)
                 return
+
+    def current_office_dialogue_playback(self) -> OfficeDialoguePlayback:
+        playback = getattr(self, "office_dialogue_playback", None)
+        if playback is None:
+            playback = OfficeDialoguePlayback()
+            self.office_dialogue_playback = playback
+        return playback
+
+    def sync_office_dialogue_playback(self) -> OfficeDialoguePlayback:
+        playback = self.current_office_dialogue_playback()
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None:
+            playback.signature = None
+            playback.pages = ()
+            playback.page_index = 0
+            playback.revealed_chars = 0.0
+            return playback
+
+        recent = tuple((line.speaker, line.text) for line in session.dialogue[-2:])
+        signature = (case.case_id, recent)
+        if playback.signature == signature:
+            return playback
+
+        content_rect = self.office_dialogue_content_rect()
+        style_name = "office_japanese"
+        wrapped_lines: list[str] = []
+        for speaker, text in recent:
+            wrapped_lines.extend(
+                self.wrap_office_dialogue_text(
+                    f"{speaker}: {text}",
+                    max(1, int(content_rect.width)),
+                    style_name,
+                )
+            )
+        pages = tuple(
+            tuple(wrapped_lines[index : index + OFFICE_DIALOGUE_LINES_PER_PAGE])
+            for index in range(0, len(wrapped_lines), OFFICE_DIALOGUE_LINES_PER_PAGE)
+        )
+        playback.signature = signature
+        playback.pages = pages
+        playback.page_index = 0
+        playback.revealed_chars = 0.0
+        return playback
+
+    def wrap_office_dialogue_text(
+        self,
+        text: str,
+        max_width: int,
+        style_name: str = "office_japanese",
+    ) -> tuple[str, ...]:
+        if not text:
+            return ("",)
+        lines: list[str] = []
+        current = ""
+        for char in text:
+            candidate = current + char
+            if current and self.ui_renderer.text_width(candidate, style_name) > max_width:
+                lines.append(current)
+                current = char
+            else:
+                current = candidate
+        if current:
+            lines.append(current)
+        return tuple(lines)
+
+    def update_office_dialogue_playback(self, elapsed: float) -> None:
+        playback = self.sync_office_dialogue_playback()
+        page = self.office_dialogue_current_page(playback)
+        if not page:
+            return
+        character_count = sum(len(line) for line in page)
+        playback.revealed_chars = min(
+            float(character_count),
+            playback.revealed_chars + max(0.0, elapsed) * OFFICE_DIALOGUE_CHARS_PER_SEC,
+        )
+
+    def advance_office_dialogue_page(self) -> bool:
+        playback = self.sync_office_dialogue_playback()
+        page = self.office_dialogue_current_page(playback)
+        if not page:
+            return False
+        character_count = sum(len(line) for line in page)
+        if int(playback.revealed_chars) < character_count:
+            playback.revealed_chars = float(character_count)
+            return True
+        if playback.page_index + 1 >= len(playback.pages):
+            return False
+        playback.page_index += 1
+        playback.revealed_chars = 0.0
+        return True
+
+    @staticmethod
+    def office_dialogue_current_page(
+        playback: OfficeDialoguePlayback,
+    ) -> tuple[str, ...]:
+        if not playback.pages:
+            return ()
+        index = min(max(0, playback.page_index), len(playback.pages) - 1)
+        return playback.pages[index]
 
     def key_pressed(self, *names: str) -> bool:
         for name in names:
@@ -1794,7 +1910,7 @@ class DriftWithMeApp:
             office = getattr(self, "office", None)
             case = None if office is None else office.current_case
             session = None if office is None else office.current_session
-            rects: list[Rect] = []
+            rects: list[Rect] = [self.office_dialog_rect()]
             if case is not None and session is not None:
                 if session.state in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
                     rects.extend(
@@ -1844,6 +1960,19 @@ class DriftWithMeApp:
 
     def office_dialog_rect(self) -> Rect:
         return self.office_rect(126, 31, 246, 58)
+
+    def office_dialogue_content_rect(self) -> Rect:
+        panel = self.office_dialog_rect()
+        left_inset = self.office_rect(4, 0, 0, 0).x
+        right_inset = self.office_rect(12, 0, 0, 0).x
+        top_inset = self.office_rect(0, 18, 0, 0).y
+        bottom_inset = self.office_rect(0, 0, 0, 3).height
+        return Rect(
+            panel.x + left_inset,
+            panel.y + top_inset,
+            panel.width - left_inset - right_inset,
+            panel.height - top_inset - bottom_inset,
+        )
 
     def office_questions_panel_rect(self) -> Rect:
         return self.office_rect(126, 93, 121, 112)
@@ -2282,14 +2411,7 @@ class DriftWithMeApp:
         )
 
         self.draw_office_section_title(dialog_rect, case.title)
-        dialogue_lines = tuple(f"{line.speaker}: {line.text}" for line in session.dialogue[-2:])
-        self.draw_office_compact_lines(
-            dialog_rect,
-            dialogue_lines,
-            start_y=18,
-            color=7,
-            max_lines=2,
-        )
+        self.draw_office_dialogue(dialog_rect)
 
         self.draw_office_section_title(questions_rect, "質問")
         for index, question in enumerate(case.questions):
@@ -2391,6 +2513,43 @@ class DriftWithMeApp:
             11,
             text_color=0,
         )
+
+    def draw_office_dialogue(self, rect: Rect) -> None:
+        playback = self.sync_office_dialogue_playback()
+        page = self.office_dialogue_current_page(playback)
+        if not page:
+            return
+
+        remaining = max(0, int(playback.revealed_chars))
+        content_rect = self.office_dialogue_content_rect()
+        line_height = content_rect.height / OFFICE_DIALOGUE_LINES_PER_PAGE
+        for index, line in enumerate(page):
+            visible_count = min(len(line), remaining)
+            remaining -= visible_count
+            if visible_count <= 0:
+                continue
+            self.draw_office_text_in_rect(
+                Rect(
+                    content_rect.x,
+                    content_rect.y + index * line_height,
+                    content_rect.width,
+                    line_height,
+                ),
+                line[:visible_count],
+                7,
+                preferred_styles=("office_japanese", "office_japanese_button"),
+            )
+
+        character_count = sum(len(line) for line in page)
+        has_next_page = playback.page_index + 1 < len(playback.pages)
+        if (
+            int(playback.revealed_chars) >= character_count
+            and has_next_page
+            and getattr(self, "frame", 0) % 40 < 30
+        ):
+            cx = int(rect.x + rect.width - self.office_rect(7, 0, 0, 0).x)
+            y = int(rect.y + rect.height - self.office_rect(0, 0, 0, 7).height)
+            self.pyxel.tri(cx - 3, y, cx + 3, y, cx, y + 4, 13)
 
     def draw_office_section_title(self, rect: Rect, title: str) -> None:
         title_height = self.office_rect(0, 0, 0, 20).height

@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from drift_with_me.app import AppScreen, DriftWithMeApp
+from drift_with_me.app import (
+    OFFICE_DIALOGUE_CHARS_PER_SEC,
+    AppScreen,
+    DriftWithMeApp,
+)
 from drift_with_me.config import load_runtime_config
 from drift_with_me.events import GameEvent
 from drift_with_me.input import Rect
@@ -244,6 +248,96 @@ def test_off001_office_text_centers_japanese_without_global_baseline_shift() -> 
     app.draw_office_text_in_rect(Rect(10, 20, 80, 24), "現在の案件", 7)
 
     assert draws == [(10, 26, "現在の案件", 7, "office_japanese")]
+
+
+def make_office_dialogue_app() -> DriftWithMeApp:
+    class FixedWidthRenderer:
+        @staticmethod
+        def text_width(text: str, style_name: str) -> int:
+            del style_name
+            return sum(6 if ord(char) < 128 else 12 for char in text)
+
+    app = DriftWithMeApp.__new__(DriftWithMeApp)
+    app.runtime = load_runtime_config("medium")
+    app.office = OfficePrototype.load()
+    app.ui_text = FixedWidthRenderer()
+    return app
+
+
+def test_off001_dialogue_wraps_without_ellipsis_and_paginates_full_exchange() -> None:
+    app = make_office_dialogue_app()
+    assert app.office.ask_question("identity")
+
+    playback = app.sync_office_dialogue_playback()
+    session = app.office.current_session
+    assert session is not None
+    expected = "".join(f"{line.speaker}: {line.text}" for line in session.dialogue[-2:])
+    visible = "".join(line for page in playback.pages for line in page)
+    max_width = int(app.office_dialogue_content_rect().width)
+
+    assert len(playback.pages) >= 2
+    assert visible == expected
+    assert all(
+        app.ui_text.text_width(line, "office_japanese") <= max_width
+        for page in playback.pages
+        for line in page
+    )
+
+
+def test_off001_dialogue_typewriter_tap_completes_then_advances_page() -> None:
+    app = make_office_dialogue_app()
+    assert app.office.ask_question("identity")
+    playback = app.sync_office_dialogue_playback()
+    first_page = app.office_dialogue_current_page(playback)
+    first_page_characters = sum(len(line) for line in first_page)
+
+    app.update_office_dialogue_playback(1.0 / OFFICE_DIALOGUE_CHARS_PER_SEC)
+    assert int(playback.revealed_chars) == 1
+
+    assert app.advance_office_dialogue_page()
+    assert playback.page_index == 0
+    assert playback.revealed_chars == first_page_characters
+
+    assert app.advance_office_dialogue_page()
+    assert playback.page_index == 1
+    assert playback.revealed_chars == 0.0
+
+
+def test_off001_new_exchange_restarts_dialogue_reveal() -> None:
+    app = make_office_dialogue_app()
+    playback = app.sync_office_dialogue_playback()
+    playback.revealed_chars = 999.0
+    previous_signature = playback.signature
+
+    assert app.office.ask_question("identity")
+    playback = app.sync_office_dialogue_playback()
+
+    assert playback.signature != previous_signature
+    assert playback.page_index == 0
+    assert playback.revealed_chars == 0.0
+
+
+def test_off001_dialogue_tap_is_consumed_before_question_buttons() -> None:
+    app = make_office_dialogue_app()
+    playback = app.sync_office_dialogue_playback()
+    page = app.office_dialogue_current_page(playback)
+    page_characters = sum(len(line) for line in page)
+    rect = app.office_dialog_rect()
+    app.pointer = SimpleNamespace(cancel=lambda: None)
+    app.double_tap_move = SimpleNamespace(cancel=lambda: None)
+    app.model = SimpleNamespace(cancel_auto_move=lambda: None)
+    app.pointer_snapshot = SimpleNamespace(
+        pressed=True,
+        x=rect.x + rect.width / 2,
+        y=rect.y + rect.height / 2,
+    )
+
+    app.update_office_screen(0.0)
+
+    session = app.office.current_session
+    assert session is not None
+    assert playback.revealed_chars == page_characters
+    assert not session.asked_question_ids
 
 
 def test_off001_active_field_event_only_matches_designated_anomaly() -> None:
