@@ -599,10 +599,7 @@ class DriftWithMeApp:
             return False
         if question.question_id in session.asked_question_ids:
             return self.select_office_answer_reference(question.question_id)
-        if not self.office.ask_question(question.question_id):
-            return False
-        self.select_office_answer_reference(question.question_id)
-        return True
+        return self.office.ask_question(question.question_id)
 
     def sync_office_answer_reference(self) -> str | None:
         case = self.office.current_case
@@ -676,7 +673,8 @@ class DriftWithMeApp:
             playback.revealed_chars = 0.0
             return playback
 
-        recent = tuple((line.speaker, line.text) for line in session.dialogue[-2:])
+        active_lines = self.office.active_dialogue_lines()
+        recent = tuple((line.speaker, line.text) for line in active_lines)
         signature = (case.case_id, recent)
         if playback.signature == signature:
             return playback
@@ -785,6 +783,14 @@ class DriftWithMeApp:
             float(character_count),
             playback.revealed_chars + max(0.0, elapsed) * OFFICE_DIALOGUE_CHARS_PER_SEC,
         )
+        if (
+            int(playback.revealed_chars) >= character_count
+            and playback.page_index + 1 >= len(playback.pages)
+            and not self.office.has_pending_dialogue_step()
+        ):
+            completed_question_id = self.office.complete_pending_question()
+            if completed_question_id is not None:
+                self.select_office_answer_reference(completed_question_id)
 
     def advance_office_dialogue_page(self) -> bool:
         playback = self.sync_office_dialogue_playback()
@@ -796,7 +802,10 @@ class DriftWithMeApp:
             playback.revealed_chars = float(character_count)
             return True
         if playback.page_index + 1 >= len(playback.pages):
-            return False
+            if not self.office.advance_dialogue_step():
+                return False
+            self.sync_office_dialogue_playback()
+            return True
         playback.page_index += 1
         playback.revealed_chars = 0.0
         return True
@@ -807,8 +816,10 @@ class DriftWithMeApp:
         if not page:
             return False
         character_count = sum(len(line.text) for line in page)
-        return int(playback.revealed_chars) < character_count or playback.page_index + 1 < len(
-            playback.pages
+        return (
+            int(playback.revealed_chars) < character_count
+            or playback.page_index + 1 < len(playback.pages)
+            or self.office.has_pending_dialogue_step()
         )
 
     @staticmethod
@@ -2762,7 +2773,9 @@ class DriftWithMeApp:
             )
 
         character_count = sum(len(line.text) for line in page)
-        has_next_page = playback.page_index + 1 < len(playback.pages)
+        has_next_page = (
+            playback.page_index + 1 < len(playback.pages) or self.office.has_pending_dialogue_step()
+        )
         if (
             int(playback.revealed_chars) >= character_count
             and has_next_page

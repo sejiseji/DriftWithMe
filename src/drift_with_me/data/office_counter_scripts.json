@@ -1,0 +1,509 @@
+{
+  "schema_version": "1.0",
+  "purpose": "authoring_sidecar_not_drop_in_question_schema",
+  "execution_status": "new_hooks_not_implemented_in_this_pack",
+  "question_registry": "questions_patch.json",
+  "runtime_rules": {
+    "questions_are_selectable_in_any_order": true,
+    "do_not_add_questions_or_reorder": true,
+    "do_not_mark_unasked_questions_answered": true,
+    "after_question_runs_only_on_first_completion": true,
+    "answer_recall_must_not_replay_documents": true,
+    "memo_changes": "use_existing_question_completion_path_once",
+    "flow_progress_persistence": "mark each turn_id complete once per case session",
+    "dialogue_lock": "reuse existing lock; last line completion is not the same as typewriter text reveal",
+    "classification_attempt_is_not_final_document_issuance": true
+  },
+  "cases": [
+    {
+      "case_id": "OFF-PROT-001",
+      "visitor_name": "ミナ",
+      "background": "新しい勤め先から、通勤手当の登録に使う住所の証明を求められた。髪や服装は華やかだが、書類は封筒にそろえて持参する几帳面な人。必要以上の個人情報まで載せるのか、少し気にしている。",
+      "tone": "丁寧で落ち着いた話し方。誘惑や種族の冗談は入れない。",
+      "real_world_basis": [
+        "R1",
+        "R2"
+      ],
+      "fictional_adaptation": "ゲーム内の住民証明書は住民票の写しを下敷きにする。写真付き身分証の名称、証明書の記載項目、手数料体系はゲーム内の簡略設定であり、現実の一律要件ではない。",
+      "opening": [
+        {
+          "turn_id": "mina_open_01",
+          "jack": "お待たせしました。今日はどのようなご用件でしょうか？",
+          "reply": "住民証明書を一通お願いします。勤め先から、住所を確認したいと言われて。"
+        },
+        {
+          "turn_id": "mina_open_02",
+          "jack": "請求書はお持ちですか。まだでしたら、こちらでご記入いただけます。",
+          "reply": "書いてきました。仕事の書類は慣れているんですが、役所のは少し緊張します。",
+          "document_action": {
+            "document_id": "certificate_request",
+            "action": "present",
+            "outcome": "請求書を提示。受付確定や証明書交付とは区別する。"
+          }
+        },
+        {
+          "turn_id": "mina_open_03",
+          "jack": "提出先から、載せる項目について指定はありましたか？",
+          "reply": "私の氏名と今の住所が分かればよいそうです。家族の分は要りません。"
+        },
+        {
+          "turn_id": "mina_open_04",
+          "jack": "ご本人の分を一通ですね。不要な項目を載せない形で確認します。",
+          "reply": "ありがとうございます。全部載せた方がよいのか、迷っていたんです。"
+        }
+      ],
+      "after_question": {
+        "identity": [
+          {
+            "turn_id": "mina_identity_check",
+            "jack": "書類と登録内容を照合しました。ご本人と確認できました。",
+            "reply": "よかった。古い住所のものと取り違えていないか、少し気になっていました。",
+            "document_action": {
+              "document_id": "photo_id",
+              "action": "verify",
+              "outcome": "本人確認を完了。質問応答だけで書類検証を実行したと扱わず、この照合を演出上含める。"
+            },
+            "requires_completed_questions": [
+              "identity"
+            ]
+          },
+          {
+            "turn_id": "mina_identity_return",
+            "jack": "身分証をお返しします。こちらの原本はお預かりしません。",
+            "reply": "はい、受け取りました。忘れないよう、先に鞄へしまっておきます。",
+            "document_action": {
+              "document_id": "photo_id",
+              "action": "return_original",
+              "outcome": "提示した身分証の原本を返却。"
+            },
+            "requires_completed_questions": [
+              "identity"
+            ]
+          }
+        ],
+        "changes": [
+          {
+            "turn_id": "mina_changes_check",
+            "jack": "登録内容に変更なしとして確認します。追加の変更届は不要です。",
+            "reply": "助かります。引っ越しの手続きまで必要かと思っていました。",
+            "requires_completed_questions": [
+              "changes"
+            ]
+          }
+        ]
+      },
+      "resolution": {
+        "classification": "COUNTER_COMPLETE",
+        "requires_completed_questions": [
+          "identity",
+          "changes"
+        ],
+        "if_requirements_missing": "未確認の質問は既存の質問処理で確認する。ボタンの選択を禁止せず、この交付台本の再生条件として扱う。台本導入前の既存判定ロジックをこのデータ差し替えで変更しない。",
+        "turns": [
+          {
+            "turn_id": "mina_close_01",
+            "jack": "請求書の氏名、住所、必要な通数を確認しました。受付します。",
+            "reply": "お願いします。今日はこのあと、そのまま勤め先に届けるつもりです。",
+            "document_action": {
+              "document_id": "certificate_request",
+              "action": "receive",
+              "outcome": "本人確認・記入内容確認後に請求を受付。"
+            }
+          },
+          {
+            "turn_id": "mina_close_02",
+            "jack": "交付の手数料はこちらです。ご案内の額をお支払いいただけますか？",
+            "reply": "はい、案内を見て用意してきました。こちらからお願いします。",
+            "document_action": {
+              "document_id": "issuance_fee",
+              "action": "collect",
+              "outcome": "金額や通貨は既存ゲーム設定を参照。数値・所持金処理を新設しない。"
+            }
+          },
+          {
+            "turn_id": "mina_close_03",
+            "jack": "お待たせしました。証明書と領収書です。内容をご確認ください。",
+            "reply": "氏名も住所も合っています。一通、確かに受け取りました。",
+            "document_action": {
+              "document_id": "certificate_and_receipt",
+              "action": "issue",
+              "outcome": "証明書・領収書を交付し、受領確認。"
+            }
+          },
+          {
+            "turn_id": "mina_close_04",
+            "jack": "お手続きは以上です。身分証やお荷物のお忘れ物はありませんか？",
+            "reply": "大丈夫です。何を確認したのか分かったので、次は迷わず来られそうです。"
+          }
+        ]
+      },
+      "feedback": {
+        "COUNTER_COMPLETE": "本人請求と記載内容を確認し、証明書を交付します。",
+        "REFER_OTHER": "住民証明書は、この窓口で扱う手続きです。",
+        "MISSING_DOCUMENTS": "不足と判断する前に、提示された書類をご確認ください。",
+        "FIELD_CHECK": "住所の証明は登録記録で確認します。現地確認は不要です。"
+      }
+    },
+    {
+      "case_id": "OFF-PROT-002",
+      "visitor_name": "グロウ",
+      "background": "倉庫の荷運びを長く続けてきたが、先月から仕事の日数が減った。家計を立て直したくて減免申請書を用意したものの、添付資料までは分からなかった。疲れて言葉は短いが、説明を聞いて必要な準備をしようとする。",
+      "tone": "短く控えめな受け答え。理解力を年齢や見た目で決めつけない。強い方言や説教は使わない。",
+      "real_world_basis": [
+        "R3",
+        "R4"
+      ],
+      "fictional_adaptation": "ゲーム内の住民共済保険料の減免は国民健康保険料の所得激減による減免を参考にした架空制度。出張所には申請取次ぎと補正案内の役割があるとする。減免要件・期限・金額は創作上省略する。",
+      "opening": [
+        {
+          "turn_id": "grow_open_01",
+          "jack": "減免のご相談ですね。お掛けになって、お話を聞かせてください。",
+          "reply": "仕事の日が減ってな。保険料を払うと、ほかの支払いが苦しくて。"
+        },
+        {
+          "turn_id": "grow_open_02",
+          "jack": "収入が減ったのはいつ頃からですか。差し支えない範囲でお願いします。",
+          "reply": "先月からだ。倉庫の仕事でな。辞めたわけではないが、呼ばれる日が少ない。"
+        },
+        {
+          "turn_id": "grow_open_03",
+          "jack": "世帯の収入などを確認して審査します。今日はまず書類を確認します。",
+          "reply": "困っていると言うだけでは、決まらないのは分かる。分からん所を教えてくれ。"
+        },
+        {
+          "turn_id": "grow_open_04",
+          "jack": "今日は申請書を提出されますか。それとも書き方の相談でしょうか？",
+          "reply": "できれば今日出したい。納める期限も近いので、そのことも相談したい。"
+        }
+      ],
+      "after_question": {
+        "attachment": [
+          {
+            "turn_id": "grow_attachment_check",
+            "jack": "申請書は確認できました。収入を確かめる添付資料が不足しています。",
+            "reply": "書いた紙だけで足りると思っていた。家の引き出しなら、明細があるはずだ。",
+            "document_action": {
+              "document_id": "relief_application",
+              "action": "inspect",
+              "outcome": "申請書あり・添付資料不足。減免の可否は未決定。"
+            },
+            "requires_completed_questions": [
+              "attachment"
+            ]
+          },
+          {
+            "turn_id": "grow_attachment_guide",
+            "jack": "給与明細や帳簿など、今年の収入を確認できるものはありますか？",
+            "reply": "月ごとの明細は捨てていない。そろっているか、帰って確かめてみる。",
+            "document_action": {
+              "document_id": "income_evidence",
+              "action": "explain_missing",
+              "outcome": "資料の例を説明。明細以外を認めない一律ルールにしない。"
+            },
+            "requires_completed_questions": [
+              "attachment"
+            ]
+          }
+        ]
+      },
+      "resolution": {
+        "classification": "MISSING_DOCUMENTS",
+        "requires_completed_questions": [
+          "attachment"
+        ],
+        "if_requirements_missing": "添付書類の有無を未確認のまま不足と断定しない。既存attachmentの応答を経てから不足資料案内の台本を使う。",
+        "turns": [
+          {
+            "turn_id": "grow_close_01",
+            "jack": "申請書は本日お預かりし、不足資料は後からそろえる形で担当へつなぎます。",
+            "reply": "今日来たことも記録してもらえるなら、少し安心した。頼むよ。",
+            "document_action": {
+              "document_id": "relief_application",
+              "action": "receive_pending_supplement",
+              "outcome": "ゲーム内の受付取次ぎ。提出日を記録し、不足資料の補正待ち。適用法令を一律化する記述ではない。"
+            }
+          },
+          {
+            "turn_id": "grow_close_02",
+            "jack": "不足している資料と提出先を、この案内にまとめます。",
+            "reply": "書いてもらえると助かる。家に戻ると、何を言われたか抜けてしまいそうでな。",
+            "document_action": {
+              "document_id": "supplement_guide",
+              "action": "issue",
+              "outcome": "不足資料案内を交付。"
+            }
+          },
+          {
+            "turn_id": "grow_close_03",
+            "jack": "同じ保険に加入している世帯の方の収入資料も、必要になる場合があります。",
+            "reply": "妻の分もある。どれが要るか、担当の人にも確認してから持ってくる。"
+          },
+          {
+            "turn_id": "grow_close_04",
+            "jack": "補正の期限は担当からご案内します。そろわない見込みなら早めにご相談ください。",
+            "reply": "分かった。集めるのに時間がかかりそうなら、先に連絡する。"
+          },
+          {
+            "turn_id": "grow_close_05",
+            "jack": "納付のご相談も担当へつなぎます。減免が決まる前の扱いもご確認ください。",
+            "reply": "申請したら、すぐ払わなくてよくなるわけではないんだな。聞いておく。",
+            "document_action": {
+              "document_id": "payment_consultation",
+              "action": "refer",
+              "outcome": "納付相談へ取次ぎ。支払免除・分納・期限延長の許可は約束しない。"
+            }
+          },
+          {
+            "turn_id": "grow_close_06",
+            "jack": "審査の結果は、担当から通知します。本日の受付だけで減免確定ではありません。",
+            "reply": "分かった。まずは資料だな。順番を教えてくれて、ありがとう。"
+          }
+        ]
+      },
+      "feedback": {
+        "COUNTER_COMPLETE": "受付と減免決定は別です。添付資料の確認と審査が必要です。",
+        "REFER_OTHER": "まず不足資料を案内します。納付相談は担当へ取り次ぎます。",
+        "MISSING_DOCUMENTS": "申請書を確認。不足資料の補正を案内し、審査は未決定です。",
+        "FIELD_CHECK": "確認に必要なのは収入の資料です。現地確認では補えません。"
+      }
+    },
+    {
+      "case_id": "OFF-PROT-003",
+      "visitor_name": "ラメル",
+      "background": "北側浅瀬に近い作業小屋を使う木こり。道具や木材の音には詳しいが、今回の低い音には心当たりがない。寝不足もあって落ち着かない。証拠をそろえていないと相談できないのでは、と心配して来た。",
+      "tone": "不安を自然に表すが、大げさな悲鳴や被害の断定はしない。木こりとしての経験を台詞ににじませる。",
+      "real_world_basis": [
+        "R5",
+        "R6"
+      ],
+      "fictional_adaptation": "聴取項目は公害相談を参考にするが、発生源不明の騒音を自治体が必ず調べる制度とはしない。本作では、北側浅瀬を出張所が安全確認を担当する管理区域とする最小限の設定案により、従来のFieldTaskへ接続する。",
+      "opening": [
+        {
+          "turn_id": "lamel_open_01",
+          "jack": "異常音のご相談ですね。分かる範囲でお話しいただけますか？",
+          "reply": "夜になると水辺で妙な音がするんです。気にしすぎかと思ったんですが。"
+        },
+        {
+          "turn_id": "lamel_open_02",
+          "jack": "録音や写真は、なくてもお話を伺えます。まず状況を整理しましょう。",
+          "reply": "それなら助かります。証拠を撮らないと、来ても駄目かと思っていました。"
+        },
+        {
+          "turn_id": "lamel_open_03",
+          "jack": "記録と連絡のため、お名前とご連絡先を確認してもよろしいですか？",
+          "reply": "ラメルです。連絡先はこちらに書きます。確認が済んだら知らせてください。",
+          "document_action": {
+            "document_id": "consultation_record",
+            "action": "record_contact",
+            "outcome": "相談者の連絡先を記録。ゲーム表示に住所・電話番号の架空実値を追加しない。"
+          }
+        }
+      ],
+      "after_question": {
+        "place": [
+          {
+            "turn_id": "lamel_place_check",
+            "jack": "ここは音が聞こえる方向ですね。発生源を見た場所とは分けて記録します。",
+            "reply": "はい。音の方角はそこです。でも、水の中の何が鳴っているかは見ていません。",
+            "document_action": {
+              "document_id": "area_map",
+              "action": "mark",
+              "outcome": "相談地図に方向を記録。原因や発生源の特定と混同しない。"
+            },
+            "requires_completed_questions": [
+              "place"
+            ]
+          }
+        ],
+        "damage": [
+          {
+            "turn_id": "lamel_damage_check",
+            "jack": "被害がないと決まったわけではなく、まだ確認できていないのですね。",
+            "reply": "そうです。音は怖いですが、何か壊れたとまでは言えません。",
+            "requires_completed_questions": [
+              "damage"
+            ]
+          }
+        ]
+      },
+      "resolution": {
+        "classification": "FIELD_CHECK",
+        "requires_completed_questions": [
+          "place"
+        ],
+        "if_requirements_missing": "place未回答なら場所を知っている前提の台詞を流さない。未確認の項目を自動で回答済みにしない。",
+        "turns": [
+          {
+            "turn_id": "lamel_close_01",
+            "jack": "伺った内容を相談記録にまとめます。分からない点は未確認として残します。",
+            "reply": "お願いします。想像したことと、実際に聞いたことは分けておいてください。",
+            "document_action": {
+              "document_id": "consultation_record",
+              "action": "receive_consultation",
+              "outcome": "申請の許認可ではなく相談受付として記録。"
+            }
+          },
+          {
+            "turn_id": "lamel_close_02",
+            "jack": "北側浅瀬は、こちらで安全確認を担当する区域です。私が現地を確認します。",
+            "reply": "ありがとうございます。原因が分かるまでは、近寄らないようにします。",
+            "author_note": "管理区域の安全確認というゲーム内設定。現実の岡山市の騒音調査範囲を表す台詞ではない。"
+          },
+          {
+            "turn_id": "lamel_close_03",
+            "jack": "危ない場所へ入って、証拠を集め直していただく必要はありません。",
+            "reply": "分かりました。気になっていましたが、夜に見に行くのはやめておきます。"
+          },
+          {
+            "turn_id": "lamel_close_04",
+            "jack": "この控えをお持ちください。追加のお話があれば、この相談の続きとして伺います。",
+            "reply": "助かります。また最初から説明しなくてよいなら、安心です。",
+            "document_action": {
+              "document_id": "consultation_copy",
+              "action": "issue",
+              "outcome": "相談の控えを交付。新しいcase_idやtask_idを採番しない。"
+            }
+          }
+        ]
+      },
+      "field_return": {
+        "preamble": [
+          {
+            "turn_id": "lamel_return_01",
+            "jack": "現地確認を終えました。確認できたことと、未確認の点をお伝えします。",
+            "reply": "お願いします。音のことだけでなく、通ってよい場所も気になっていました。"
+          }
+        ],
+        "report_source": "FieldResult.report_lines",
+        "empty_report_text": "現地確認の詳細記録はありません。",
+        "forbidden_static_claims": [
+          "通常個体3",
+          "異常個体1",
+          "設備被害なし",
+          "安全です",
+          "すべて解決しました"
+        ],
+        "closing": [
+          {
+            "turn_id": "lamel_return_02",
+            "jack": "今回の確認結果を記録に残します。状況が変われば、またお知らせください。",
+            "reply": "分かりました。何か聞こえても、まずは無理をせず連絡するようにします。"
+          }
+        ],
+        "note": "帰庁時の成果を台本で作らない。対応するFieldResultがあるときだけ再生。訪問者不在の演出では同内容を報告書として扱う。"
+      },
+      "feedback": {
+        "COUNTER_COMPLETE": "聞き取りだけでは現場の状況は確定しません。",
+        "REFER_OTHER": "この案件は管理区域の安全確認として現地へつなぎます。",
+        "MISSING_DOCUMENTS": "録音がないことだけを理由に、相談を止める必要はありません。",
+        "FIELD_CHECK": "相談を記録し、管理区域の安全確認へ向かいます。"
+      }
+    },
+    {
+      "case_id": "OFF-PROT-004",
+      "visitor_name": "旅の勇者",
+      "background": "古い旅の案内を読んで、出張所を魔王軍の拠点だと思い込んで来た。見栄は張るが、説明を受ければ待合席で待てる人物。危害を加える場面にはせず、役所の窓口で所管を間違えた訪問者として描く。",
+      "tone": "芝居がかった自信と、取り繕う言い回しを少量。Jackは最後まで事務的に丁寧。",
+      "real_world_basis": [
+        "R7"
+      ],
+      "fictional_adaptation": "討伐は実在制度ではない。総合案内・庁舎管理という考え方だけを使い、ゲーム内の庁舎管理担当へ引き継ぐ。討伐の許可や受付を行う部署は新設しない。",
+      "opening": [
+        {
+          "turn_id": "hero_open_01",
+          "jack": "お待たせしました。まずはこちらの窓口でご用件をお伺いします。",
+          "reply": "ふむ。門番ではなく、受付からとは。なかなか整った拠点だね。"
+        },
+        {
+          "turn_id": "hero_open_02",
+          "jack": "お呼びするお名前を伺えますか。本名でなくても、お間違いのない呼び方で。",
+          "reply": "旅の勇者、と呼んでもらおう。名を広めるのは、務めを果たしてからでいい。"
+        },
+        {
+          "turn_id": "hero_open_03",
+          "jack": "受付の内側は職員用です。こちらでお待ちいただけますか？",
+          "reply": "もちろん。無断で踏み込むほど、作法を知らないわけではない。"
+        }
+      ],
+      "after_question": {
+        "purpose": [
+          {
+            "turn_id": "hero_purpose_01",
+            "jack": "こちらは住民の手続きを扱う出張所です。討伐の受付はしていません。",
+            "reply": "住民の手続きだと。では、あの長い看板は脅し文句ではなかったのか。",
+            "requires_completed_questions": [
+              "purpose"
+            ]
+          },
+          {
+            "turn_id": "hero_purpose_02",
+            "jack": "ここが目的地だと分かった資料はありますか。宛先を一緒に確認しましょう。",
+            "reply": "旅先でもらった案内がある。少し古いが、この建物を指しているはずだ。",
+            "document_action": {
+              "document_id": "travel_note",
+              "action": "present",
+              "outcome": "古い案内を提示。行政申請書や通行許可とは扱わない。"
+            },
+            "requires_completed_questions": [
+              "purpose"
+            ]
+          },
+          {
+            "turn_id": "hero_purpose_03",
+            "jack": "これは施設の案内ですね。申請書ではありませんので、お返しします。",
+            "reply": "そうか。書いてあることは立派でも、出せば手続きになるわけではないのだな。",
+            "document_action": {
+              "document_id": "travel_note",
+              "action": "return_original",
+              "outcome": "行政申請として受理せず案内資料を返却。"
+            },
+            "requires_completed_questions": [
+              "purpose"
+            ]
+          }
+        ]
+      },
+      "resolution": {
+        "classification": "REFER_OTHER",
+        "requires_completed_questions": [
+          "purpose"
+        ],
+        "if_requirements_missing": "purpose未回答なら来訪目的を決めつけない。危険行為がないことをこの案件の前提にする。",
+        "turns": [
+          {
+            "turn_id": "hero_close_01",
+            "jack": "施設の案内については庁舎管理担当につなぎます。討伐を許可するものではありません。",
+            "reply": "分かった。まずは担当者から、今のこの建物について聞くとしよう。"
+          },
+          {
+            "turn_id": "hero_close_02",
+            "jack": "担当には、目的地の確認に来られたと伝えてもよろしいですか？",
+            "reply": "構わない。できれば、堂々と訪れたことも添えておいてくれ。"
+          },
+          {
+            "turn_id": "hero_close_03",
+            "jack": "担当窓口と待合場所をこちらに書きました。案内票をお受け取りください。",
+            "reply": "ありがとう。分かりやすい案内だ。これなら迷うこともない。",
+            "document_action": {
+              "document_id": "referral_slip",
+              "action": "issue",
+              "outcome": "案内票を交付。許可証・申請受理票ではない。"
+            }
+          },
+          {
+            "turn_id": "hero_close_04",
+            "jack": "お呼びするまで、待合席でお待ちください。職員用の扉には入れません。",
+            "reply": "心得た。英雄にも、待つべき時くらいは分かる。",
+            "author_note": "武器を抜く、威圧、立入り強行などがある場合の現実対応は本作の平穏な所管案内と分ける。"
+          }
+        ]
+      },
+      "feedback": {
+        "COUNTER_COMPLETE": "住民課で扱う申請はありません。所管の案内が必要です。",
+        "REFER_OTHER": "庁舎管理担当へ案内します。討伐の許可ではありません。",
+        "MISSING_DOCUMENTS": "申請書の不足ではなく、用件を扱う窓口が異なります。",
+        "FIELD_CHECK": "住民課の現地確認案件ではありません。担当へ案内します。"
+      }
+    }
+  ]
+}

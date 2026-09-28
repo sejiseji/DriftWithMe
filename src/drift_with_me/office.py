@@ -58,6 +58,39 @@ class QuestionDefinition:
 
 
 @dataclass(frozen=True)
+class CounterDialogueTurn:
+    turn_id: str
+    jack_text: str
+    visitor_reply: str
+    required_question_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class CounterResolutionDefinition:
+    classification: Classification
+    required_question_ids: tuple[str, ...]
+    missing_feedback: str
+    turns: tuple[CounterDialogueTurn, ...]
+
+
+@dataclass(frozen=True)
+class CounterFieldReturnDefinition:
+    preamble: tuple[CounterDialogueTurn, ...]
+    empty_report_text: str
+    closing: tuple[CounterDialogueTurn, ...]
+
+
+@dataclass(frozen=True)
+class CounterScriptDefinition:
+    case_id: str
+    opening: tuple[CounterDialogueTurn, ...]
+    after_question: dict[str, tuple[CounterDialogueTurn, ...]]
+    resolution: CounterResolutionDefinition
+    field_return: CounterFieldReturnDefinition | None
+    feedback: dict[Classification, str]
+
+
+@dataclass(frozen=True)
 class VisitorDefinition:
     visitor_id: str
     name: str
@@ -93,6 +126,12 @@ class DialogueLine:
 
 
 @dataclass(frozen=True)
+class DialogueStep:
+    step_id: str
+    lines: tuple[DialogueLine, ...]
+
+
+@dataclass(frozen=True)
 class FieldTask:
     task_id: str
     case_id: str
@@ -119,6 +158,10 @@ class CaseSession:
     asked_question_ids: set[str] = field(default_factory=set)
     memo_facts: list[MemoFact] = field(default_factory=list)
     dialogue: list[DialogueLine] = field(default_factory=list)
+    active_dialogue_line_count: int = 0
+    pending_dialogue_steps: list[DialogueStep] = field(default_factory=list)
+    completed_dialogue_turn_ids: set[str] = field(default_factory=set)
+    pending_question_id: str | None = None
     selected_question_id: str | None = None
     selected_classification: Classification | None = None
     state: CaseState = CaseState.NEW
@@ -150,13 +193,18 @@ CLASSIFICATION_RECONSIDER_FEEDBACK: dict[Classification, str] = {
 
 
 class OfficePrototype:
-    def __init__(self, cases: tuple[CaseDefinition, ...]) -> None:
+    def __init__(
+        self,
+        cases: tuple[CaseDefinition, ...],
+        counter_scripts: dict[str, CounterScriptDefinition] | None = None,
+    ) -> None:
         if not cases:
             raise ValueError("office prototype requires at least one case")
         case_ids = tuple(case.case_id for case in cases)
         if len(case_ids) != len(set(case_ids)):
             raise ValueError("office case ids must be unique")
         self.cases = cases
+        self.counter_scripts = counter_scripts or {}
         self.sessions = {case.case_id: CaseSession(case.case_id) for case in cases}
         self.current_index = 0
         self.active_field_task: FieldTask | None = None
@@ -164,7 +212,12 @@ class OfficePrototype:
 
     @classmethod
     def load(cls) -> OfficePrototype:
-        return cls(parse_case_definitions(config.load_data_json("office_cases.json")))
+        cases = parse_case_definitions(config.load_data_json("office_cases.json"))
+        scripts = parse_counter_script_definitions(
+            config.load_data_json("office_counter_scripts.json"),
+            cases,
+        )
+        return cls(cases, scripts)
 
     @property
     def complete(self) -> bool:
@@ -179,18 +232,115 @@ class OfficePrototype:
         case = self.current_case
         return None if case is None else self.sessions[case.case_id]
 
+    @property
+    def current_counter_script(self) -> CounterScriptDefinition | None:
+        case = self.current_case
+        return None if case is None else self.counter_scripts.get(case.case_id)
+
+    def active_dialogue_lines(self) -> tuple[DialogueLine, ...]:
+        session = self.current_session
+        if session is None or session.active_dialogue_line_count <= 0:
+            return ()
+        return tuple(session.dialogue[-session.active_dialogue_line_count :])
+
+    def has_pending_dialogue_step(self) -> bool:
+        session = self.current_session
+        return bool(session and session.pending_dialogue_steps)
+
+    def advance_dialogue_step(self) -> bool:
+        session = self.current_session
+        if session is None or not session.pending_dialogue_steps:
+            return False
+        self._show_dialogue_step(session, session.pending_dialogue_steps.pop(0))
+        return True
+
+    def _show_dialogue_step(self, session: CaseSession, step: DialogueStep) -> None:
+        session.dialogue.extend(step.lines)
+        session.active_dialogue_line_count = len(step.lines)
+        session.completed_dialogue_turn_ids.add(step.step_id)
+
+    @staticmethod
+    def _step_from_turn(turn: CounterDialogueTurn, visitor_name: str) -> DialogueStep:
+        return DialogueStep(
+            step_id=turn.turn_id,
+            lines=(
+                DialogueLine("Jack", turn.jack_text),
+                DialogueLine(visitor_name, turn.visitor_reply),
+            ),
+        )
+
+    def _eligible_steps(
+        self,
+        session: CaseSession,
+        visitor_name: str,
+        turns: tuple[CounterDialogueTurn, ...],
+        completed_question_ids: set[str],
+    ) -> list[DialogueStep]:
+        return [
+            self._step_from_turn(turn, visitor_name)
+            for turn in turns
+            if turn.turn_id not in session.completed_dialogue_turn_ids
+            and set(turn.required_question_ids) <= completed_question_ids
+        ]
+
+    def _start_script_turns(
+        self,
+        session: CaseSession,
+        visitor_name: str,
+        turns: tuple[CounterDialogueTurn, ...],
+        completed_question_ids: set[str],
+    ) -> bool:
+        steps = self._eligible_steps(
+            session,
+            visitor_name,
+            turns,
+            completed_question_ids,
+        )
+        if not steps:
+            return False
+        self._show_dialogue_step(session, steps[0])
+        session.pending_dialogue_steps.extend(steps[1:])
+        return True
+
+    def _queue_script_turns(
+        self,
+        session: CaseSession,
+        visitor_name: str,
+        turns: tuple[CounterDialogueTurn, ...],
+        completed_question_ids: set[str],
+    ) -> None:
+        session.pending_dialogue_steps.extend(
+            self._eligible_steps(
+                session,
+                visitor_name,
+                turns,
+                completed_question_ids,
+            )
+        )
+
     def begin_current_case(self) -> None:
         case = self.current_case
         session = self.current_session
         if case is None or session is None or session.state != CaseState.NEW:
             return
         session.state = CaseState.HEARING
+        script = self.current_counter_script
+        if script is not None and self._start_script_turns(
+            session,
+            case.visitor.name,
+            script.opening,
+            set(),
+        ):
+            return
         session.dialogue.append(DialogueLine(case.visitor.name, case.initial_purpose))
+        session.active_dialogue_line_count = 1
 
     def ask_question(self, question_id: str) -> bool:
         case = self.current_case
         session = self.current_session
         if case is None or session is None:
+            return False
+        if session.pending_dialogue_steps or session.pending_question_id is not None:
             return False
         if session.state not in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
             return False
@@ -201,39 +351,100 @@ class OfficePrototype:
         if question is None or question_id in session.asked_question_ids:
             return False
         session.selected_question_id = question_id
-        session.asked_question_ids.add(question_id)
+        session.pending_question_id = question_id
         session.dialogue.extend(
             (
                 DialogueLine("Jack", question.jack_text),
                 DialogueLine(case.visitor.name, question.visitor_reply),
             )
         )
+        session.active_dialogue_line_count = 2
+        script = self.current_counter_script
+        if script is not None:
+            self._queue_script_turns(
+                session,
+                case.visitor.name,
+                script.after_question.get(question_id, ()),
+                {*session.asked_question_ids, question_id},
+            )
+        return True
+
+    def complete_pending_question(self) -> str | None:
+        case = self.current_case
+        session = self.current_session
+        if (
+            case is None
+            or session is None
+            or session.pending_question_id is None
+            or session.pending_dialogue_steps
+        ):
+            return None
+        question_id = session.pending_question_id
+        question = next(
+            (item for item in case.questions if item.question_id == question_id),
+            None,
+        )
+        if question is None:
+            session.pending_question_id = None
+            return None
+        session.pending_question_id = None
+        session.asked_question_ids.add(question_id)
         known_fact_ids = {fact.fact_id for fact in session.memo_facts}
         session.memo_facts.extend(
             fact for fact in question.memo_updates if fact.fact_id not in known_fact_ids
         )
         session.state = CaseState.READY_TO_CLASSIFY
         session.feedback = ""
-        return True
+        return question_id
 
     def classify(self, classification: Classification | str) -> bool:
         case = self.current_case
         session = self.current_session
         if case is None or session is None:
             return False
+        if session.pending_dialogue_steps or session.pending_question_id is not None:
+            return False
         if session.state not in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
             return False
         selected = Classification(classification)
         session.selected_classification = selected
+        script = self.current_counter_script
         if selected != case.expected_classification:
-            session.feedback = CLASSIFICATION_RECONSIDER_FEEDBACK[case.expected_classification]
+            session.feedback = (
+                script.feedback.get(
+                    selected,
+                    CLASSIFICATION_RECONSIDER_FEEDBACK[case.expected_classification],
+                )
+                if script is not None
+                else CLASSIFICATION_RECONSIDER_FEEDBACK[case.expected_classification]
+            )
+            session.state = (
+                CaseState.READY_TO_CLASSIFY if session.asked_question_ids else CaseState.HEARING
+            )
+            return False
+        if (
+            script is not None
+            and not set(script.resolution.required_question_ids) <= session.asked_question_ids
+        ):
+            session.feedback = script.resolution.missing_feedback
             session.state = (
                 CaseState.READY_TO_CLASSIFY if session.asked_question_ids else CaseState.HEARING
             )
             return False
         session.state = CaseState.CLASSIFIED
-        session.feedback = CLASSIFICATION_SUCCESS_FEEDBACK[selected]
+        session.feedback = (
+            script.feedback.get(selected, CLASSIFICATION_SUCCESS_FEEDBACK[selected])
+            if script is not None
+            else CLASSIFICATION_SUCCESS_FEEDBACK[selected]
+        )
         session.state = CLASSIFICATION_RESULT_STATES[selected]
+        if script is not None:
+            self._start_script_turns(
+                session,
+                case.visitor.name,
+                script.resolution.turns,
+                set(session.asked_question_ids),
+            )
         return True
 
     def prepare_field_task(self) -> FieldTask | None:
@@ -244,6 +455,8 @@ class OfficePrototype:
             or session is None
             or session.state != CaseState.FIELD_CHECK_REQUIRED
             or case.field_task is None
+            or session.pending_dialogue_steps
+            or session.pending_question_id is not None
         ):
             return None
         definition = case.field_task
@@ -263,8 +476,14 @@ class OfficePrototype:
 
     def complete_field_task(self, result: FieldResult) -> bool:
         session = self.current_session
+        case = self.current_case
         task = self.active_field_task
-        if session is None or task is None or session.state != CaseState.FIELD_ACTIVE:
+        if (
+            case is None
+            or session is None
+            or task is None
+            or session.state != CaseState.FIELD_ACTIVE
+        ):
             return False
         if result.task_id != task.task_id or result.case_id != task.case_id:
             return False
@@ -272,11 +491,42 @@ class OfficePrototype:
         session.state = CaseState.FIELD_RETURNED
         session.feedback = "結果を記録しました。"
         self.active_field_task = None
+        script = self.current_counter_script
+        if script is not None and script.field_return is not None:
+            field_return = script.field_return
+            steps = self._eligible_steps(
+                session,
+                case.visitor.name,
+                field_return.preamble,
+                set(session.asked_question_ids),
+            )
+            report_lines = result.report_lines or (field_return.empty_report_text,)
+            steps.extend(
+                DialogueStep(
+                    step_id=f"{result.task_id}:report:{index}",
+                    lines=(DialogueLine("確認記録", line),),
+                )
+                for index, line in enumerate(report_lines)
+                if f"{result.task_id}:report:{index}" not in session.completed_dialogue_turn_ids
+            )
+            steps.extend(
+                self._eligible_steps(
+                    session,
+                    case.visitor.name,
+                    field_return.closing,
+                    set(session.asked_question_ids),
+                )
+            )
+            if steps:
+                self._show_dialogue_step(session, steps[0])
+                session.pending_dialogue_steps.extend(steps[1:])
         return True
 
     def advance_case(self) -> bool:
         session = self.current_session
         if session is None:
+            return False
+        if session.pending_dialogue_steps or session.pending_question_id is not None:
             return False
         if session.state not in {
             CaseState.CLOSED_COUNTER,
@@ -344,6 +594,116 @@ def parse_case_definitions(raw: dict[str, Any]) -> tuple[CaseDefinition, ...]:
             )
         )
     return tuple(cases)
+
+
+def parse_counter_script_definitions(
+    raw: dict[str, Any],
+    cases: tuple[CaseDefinition, ...],
+) -> dict[str, CounterScriptDefinition]:
+    case_by_id = {case.case_id: case for case in cases}
+    scripts: dict[str, CounterScriptDefinition] = {}
+    turn_ids: set[str] = set()
+    for item in raw.get("cases", ()):
+        case_id = str(item["case_id"])
+        if case_id in scripts or case_id not in case_by_id:
+            raise ValueError(f"unknown or duplicate counter script case: {case_id}")
+        case = case_by_id[case_id]
+        question_ids = {question.question_id for question in case.questions}
+        opening = parse_counter_dialogue_turns(item.get("opening", ()), turn_ids)
+        after_question: dict[str, tuple[CounterDialogueTurn, ...]] = {}
+        for question_id, turns_raw in item.get("after_question", {}).items():
+            question_id = str(question_id)
+            if question_id not in question_ids:
+                raise ValueError(f"unknown scripted question {case_id}:{question_id}")
+            after_question[question_id] = parse_counter_dialogue_turns(turns_raw, turn_ids)
+
+        resolution_raw = item["resolution"]
+        resolution_classification = Classification(str(resolution_raw["classification"]))
+        if resolution_classification != case.expected_classification:
+            raise ValueError(f"counter resolution mismatch for {case_id}")
+        required_question_ids = tuple(
+            str(value) for value in resolution_raw.get("requires_completed_questions", ())
+        )
+        if not set(required_question_ids) <= question_ids:
+            raise ValueError(f"unknown resolution question for {case_id}")
+        resolution = CounterResolutionDefinition(
+            classification=resolution_classification,
+            required_question_ids=required_question_ids,
+            missing_feedback=str(resolution_raw.get("if_requirements_missing", "")),
+            turns=parse_counter_dialogue_turns(resolution_raw.get("turns", ()), turn_ids),
+        )
+
+        field_return_raw = item.get("field_return")
+        field_return = None
+        if field_return_raw is not None:
+            if case.field_task is None:
+                raise ValueError(f"field return script without field task for {case_id}")
+            field_return = CounterFieldReturnDefinition(
+                preamble=parse_counter_dialogue_turns(
+                    field_return_raw.get("preamble", ()), turn_ids
+                ),
+                empty_report_text=str(
+                    field_return_raw.get("empty_report_text", "現地確認の詳細記録はありません。")
+                ),
+                closing=parse_counter_dialogue_turns(field_return_raw.get("closing", ()), turn_ids),
+            )
+
+        feedback = {
+            Classification(str(key)): str(value) for key, value in item.get("feedback", {}).items()
+        }
+        scripts[case_id] = CounterScriptDefinition(
+            case_id=case_id,
+            opening=opening,
+            after_question=after_question,
+            resolution=resolution,
+            field_return=field_return,
+            feedback=feedback,
+        )
+        for turn in (*opening, *resolution.turns):
+            validate_counter_turn_requirements(case_id, turn, question_ids)
+        for turns in after_question.values():
+            for turn in turns:
+                validate_counter_turn_requirements(case_id, turn, question_ids)
+        if field_return is not None:
+            for turn in (*field_return.preamble, *field_return.closing):
+                validate_counter_turn_requirements(case_id, turn, question_ids)
+
+    if set(scripts) != set(case_by_id):
+        missing = sorted(set(case_by_id) - set(scripts))
+        raise ValueError(f"missing counter scripts: {', '.join(missing)}")
+    return scripts
+
+
+def parse_counter_dialogue_turns(
+    turns_raw: Any,
+    known_turn_ids: set[str],
+) -> tuple[CounterDialogueTurn, ...]:
+    turns: list[CounterDialogueTurn] = []
+    for raw in turns_raw:
+        turn_id = str(raw["turn_id"])
+        if turn_id in known_turn_ids:
+            raise ValueError(f"duplicate counter dialogue turn: {turn_id}")
+        known_turn_ids.add(turn_id)
+        turns.append(
+            CounterDialogueTurn(
+                turn_id=turn_id,
+                jack_text=str(raw["jack"]),
+                visitor_reply=str(raw["reply"]),
+                required_question_ids=tuple(
+                    str(value) for value in raw.get("requires_completed_questions", ())
+                ),
+            )
+        )
+    return tuple(turns)
+
+
+def validate_counter_turn_requirements(
+    case_id: str,
+    turn: CounterDialogueTurn,
+    question_ids: set[str],
+) -> None:
+    if not set(turn.required_question_ids) <= question_ids:
+        raise ValueError(f"unknown turn requirement for {case_id}:{turn.turn_id}")
 
 
 def parse_memo_fact(question_id: str, index: int, line: str) -> MemoFact:

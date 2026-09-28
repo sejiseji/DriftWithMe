@@ -33,6 +33,31 @@ OFFICE_PORTRAIT_HASHES = {
 }
 
 
+def drain_office_dialogue(office: OfficePrototype) -> str | None:
+    while office.has_pending_dialogue_step():
+        assert office.advance_dialogue_step()
+    return office.complete_pending_question()
+
+
+def ask_and_complete(office: OfficePrototype, question_id: str) -> None:
+    assert office.ask_question(question_id)
+    assert drain_office_dialogue(office) == question_id
+
+
+def finish_app_office_dialogue(app: DriftWithMeApp) -> None:
+    while True:
+        playback = app.sync_office_dialogue_playback()
+        assert playback.pages
+        playback.page_index = len(playback.pages) - 1
+        page = app.office_dialogue_current_page(playback)
+        playback.revealed_chars = float(sum(len(line.text) for line in page))
+        if app.office.has_pending_dialogue_step():
+            assert app.advance_office_dialogue_page()
+            continue
+        app.update_office_dialogue_playback(0.0)
+        return
+
+
 def test_off001_case_definitions_cover_each_classification_once() -> None:
     office = OfficePrototype.load()
 
@@ -48,11 +73,99 @@ def test_off001_case_definitions_cover_each_classification_once() -> None:
     ]
 
 
+def test_off001_counter_scripts_define_44_unique_extra_exchanges() -> None:
+    office = OfficePrototype.load()
+    turns = []
+    for script in office.counter_scripts.values():
+        turns.extend(script.opening)
+        turns.extend(turn for group in script.after_question.values() for turn in group)
+        turns.extend(script.resolution.turns)
+        if script.field_return is not None:
+            turns.extend(script.field_return.preamble)
+            turns.extend(script.field_return.closing)
+
+    assert len(turns) == 44
+    assert len({turn.turn_id for turn in turns}) == 44
+    assert set(office.counter_scripts) == {case.case_id for case in office.cases}
+
+
+def test_off001_opening_and_question_followups_complete_in_order_once() -> None:
+    office = OfficePrototype.load()
+    session = office.current_session
+    assert session is not None
+
+    assert office.active_dialogue_lines()[0].text.startswith("お待たせしました")
+    assert not office.ask_question("identity")
+    drain_office_dialogue(office)
+
+    assert office.ask_question("identity")
+    assert session.pending_question_id == "identity"
+    assert not session.asked_question_ids
+    assert not session.memo_facts
+    while office.has_pending_dialogue_step():
+        assert office.advance_dialogue_step()
+        assert not session.asked_question_ids
+    assert office.complete_pending_question() == "identity"
+
+    dialogue_count = len(session.dialogue)
+    assert session.asked_question_ids == {"identity"}
+    assert [fact.line for fact in session.memo_facts] == ["本人確認: 済"]
+    assert not office.ask_question("identity")
+    assert len(session.dialogue) == dialogue_count
+
+
+def test_off001_resolution_requires_defined_questions_and_blocks_early_exit() -> None:
+    office = OfficePrototype.load()
+    drain_office_dialogue(office)
+    ask_and_complete(office, "identity")
+    session = office.current_session
+    assert session is not None
+
+    assert not office.classify(Classification.COUNTER_COMPLETE)
+    assert "質問" in session.feedback
+    ask_and_complete(office, "changes")
+    assert office.classify(Classification.COUNTER_COMPLETE)
+    assert office.has_pending_dialogue_step()
+    assert not office.advance_case()
+    drain_office_dialogue(office)
+    assert office.advance_case()
+
+
+def test_off001_field_return_uses_actual_result_lines() -> None:
+    office = OfficePrototype.load()
+    office.current_index = 2
+    office.begin_current_case()
+    drain_office_dialogue(office)
+    ask_and_complete(office, "place")
+    assert office.classify(Classification.FIELD_CHECK)
+    assert office.prepare_field_task() is None
+    drain_office_dialogue(office)
+    task = office.prepare_field_task()
+    assert task is not None
+
+    actual_report = ("実機個体数2", "現場設備に傷あり")
+    assert office.complete_field_task(
+        FieldResult(
+            task_id=task.task_id,
+            case_id=task.case_id,
+            result_code="CUSTOM_TEST_RESULT",
+            discovered_fact_ids=("custom_fact",),
+            report_lines=actual_report,
+        )
+    )
+    drain_office_dialogue(office)
+    session = office.current_session
+    assert session is not None
+    report_texts = tuple(line.text for line in session.dialogue if line.speaker == "確認記録")
+    assert report_texts == actual_report
+
+
 def test_off001_answer_summary_is_independent_with_reply_fallback() -> None:
     data_path = ROOT / "src/drift_with_me/data/office_cases.json"
     raw = json.loads(data_path.read_text(encoding="utf-8"))
     first_question = raw["cases"][0]["questions"][0]
     first_question["answer_summary"] = "本人確認書類あり"
+    raw["cases"][0]["questions"][1].pop("answer_summary")
 
     cases = parse_case_definitions(raw)
 
@@ -122,23 +235,33 @@ def test_off001_portrait_draw_uses_asset_colkey_and_fits_panel() -> None:
 
 def test_off001_hearing_updates_dialogue_and_memo_once() -> None:
     office = OfficePrototype.load()
+    drain_office_dialogue(office)
     case = office.current_case
     session = office.current_session
     assert case is not None
     assert session is not None
 
-    assert office.ask_question("identity")
+    ask_and_complete(office, "identity")
     assert not office.ask_question("identity")
 
     assert session.state == CaseState.READY_TO_CLASSIFY
     assert session.asked_question_ids == {"identity"}
     assert [fact.line for fact in session.memo_facts] == ["本人確認: 済"]
-    assert [line.speaker for line in session.dialogue] == ["ミナ", "Jack", "ミナ"]
+    assert [line.speaker for line in session.dialogue[-6:]] == [
+        "Jack",
+        "ミナ",
+        "Jack",
+        "ミナ",
+        "Jack",
+        "ミナ",
+    ]
+    assert {"mina_identity_check", "mina_identity_return"} <= (session.completed_dialogue_turn_ids)
 
 
 def test_off001_wrong_classification_returns_to_hearing_without_losing_facts() -> None:
     office = OfficePrototype.load()
-    office.ask_question("identity")
+    drain_office_dialogue(office)
+    ask_and_complete(office, "identity")
     session = office.current_session
     assert session is not None
 
@@ -164,10 +287,12 @@ def test_off001_four_cases_follow_fixed_success_routes() -> None:
         session = office.current_session
         assert case is not None
         assert session is not None
+        drain_office_dialogue(office)
         for question in case.questions:
-            assert office.ask_question(question.question_id)
+            ask_and_complete(office, question.question_id)
         assert office.classify(case.expected_classification)
         assert session.state == expected_state
+        drain_office_dialogue(office)
         if expected_state == CaseState.FIELD_CHECK_REQUIRED:
             task = office.prepare_field_task()
             assert task is not None
@@ -181,6 +306,7 @@ def test_off001_four_cases_follow_fixed_success_routes() -> None:
                 )
             )
             assert session.state == CaseState.FIELD_RETURNED
+            drain_office_dialogue(office)
         assert office.advance_case()
 
     assert office.complete
@@ -196,9 +322,11 @@ def test_off001_field_bridge_preserves_ids_memo_and_result() -> None:
     assert case is not None
     assert session is not None
 
+    drain_office_dialogue(office)
     for question in case.questions:
-        office.ask_question(question.question_id)
+        ask_and_complete(office, question.question_id)
     assert office.classify(Classification.FIELD_CHECK)
+    drain_office_dialogue(office)
     task = office.prepare_field_task()
     assert task is not None
     assert task.task_id == "FIELD-PROT-003"
@@ -216,6 +344,7 @@ def test_off001_field_bridge_preserves_ids_memo_and_result() -> None:
     assert office.complete_field_task(result)
     assert session.field_result is result
     assert session.state == CaseState.FIELD_RETURNED
+    drain_office_dialogue(office)
 
 
 def test_off001_hearing_is_isolated_from_world_state() -> None:
@@ -223,6 +352,7 @@ def test_off001_hearing_is_isolated_from_world_state() -> None:
     world = load_world_data()
     model = GameModel(runtime.raw, world)
     office = OfficePrototype.load()
+    drain_office_dialogue(office)
     before = (
         model.world_tick,
         model.player.x,
@@ -234,7 +364,7 @@ def test_off001_hearing_is_isolated_from_world_state() -> None:
         model.combat_session,
     )
 
-    office.ask_question("identity")
+    ask_and_complete(office, "identity")
     office.classify(Classification.COUNTER_COMPLETE)
 
     after = (
@@ -384,6 +514,7 @@ def make_office_dialogue_app() -> DriftWithMeApp:
     app = DriftWithMeApp.__new__(DriftWithMeApp)
     app.runtime = load_runtime_config("medium")
     app.office = OfficePrototype.load()
+    drain_office_dialogue(app.office)
     app.ui_text = FixedWidthRenderer()
     return app
 
@@ -537,7 +668,7 @@ def test_off001_visitor_info_fits_every_case_and_display_profile() -> None:
 def test_off001_question_buttons_use_short_labels_without_ellipsis() -> None:
     expected_labels = (
         "本人確認",
-        "登録変更",
+        "登録内容",
         "添付書類",
         "発生時期",
         "発生頻度",
@@ -614,6 +745,7 @@ def test_off001_answer_reference_auto_selects_without_reasking() -> None:
     question = case.questions[0]
 
     assert app.ask_or_select_office_question(question)
+    finish_app_office_dialogue(app)
     dialogue_count = len(session.dialogue)
     assert app.sync_office_answer_reference() == question.question_id
 
@@ -627,12 +759,13 @@ def test_off001_answer_footer_cycles_answered_questions_in_definition_order() ->
     app = make_office_dialogue_app()
     app.office.current_index = 2
     app.office.begin_current_case()
+    drain_office_dialogue(app.office)
     case = app.office.current_case
     assert case is not None
     first = case.questions[0]
     third = case.questions[2]
-    assert app.office.ask_question(first.question_id)
-    assert app.office.ask_question(third.question_id)
+    ask_and_complete(app.office, first.question_id)
+    ask_and_complete(app.office, third.question_id)
     assert app.select_office_answer_reference(third.question_id)
 
     assert app.cycle_office_answer_reference()
@@ -648,7 +781,9 @@ def test_off001_answer_footer_tap_cycles_reference_without_changing_dialogue() -
     assert case is not None
     assert session is not None
     assert app.ask_or_select_office_question(case.questions[0])
+    finish_app_office_dialogue(app)
     assert app.ask_or_select_office_question(case.questions[1])
+    finish_app_office_dialogue(app)
     playback = app.sync_office_dialogue_playback()
     playback.page_index = len(playback.pages) - 1
     final_page = app.office_dialogue_current_page(playback)
@@ -696,14 +831,15 @@ def test_off001_answer_footer_draws_only_number_in_yellow_and_fits_profiles() ->
     case = app.office.current_case
     assert case is not None
     assert app.ask_or_select_office_question(case.questions[0])
-    playback = app.sync_office_dialogue_playback()
-    playback.page_index = len(playback.pages) - 1
-    final_page = app.office_dialogue_current_page(playback)
-    playback.revealed_chars = float(sum(len(line.text) for line in final_page))
+    finish_app_office_dialogue(app)
 
     app.draw_office_answer_reference()
 
-    assert draws == [("回答", 13), ("①", 10), ("：はい、こちらです。", 13)]
+    assert draws == [
+        ("回答", 13),
+        ("①", 10),
+        ("：本人請求で本人確認書類を提示済み", 13),
+    ]
     for profile in ("low", "medium", "high"):
         profile_app = DriftWithMeApp.__new__(DriftWithMeApp)
         profile_app.runtime = load_runtime_config(profile)
@@ -806,7 +942,8 @@ def test_off001_next_question_is_locked_until_visitor_reply_is_shown() -> None:
 
     session = app.office.current_session
     assert session is not None
-    assert session.asked_question_ids == {"identity"}
+    assert not session.asked_question_ids
+    assert session.pending_question_id == "identity"
     assert playback.page_index == 0
 
 
@@ -840,11 +977,13 @@ def test_off001_active_field_event_only_matches_designated_anomaly() -> None:
     app.office = OfficePrototype.load()
     app.office.current_index = 2
     app.office.begin_current_case()
+    drain_office_dialogue(app.office)
     case = app.office.current_case
     assert case is not None
     for question in case.questions:
-        app.office.ask_question(question.question_id)
-    app.office.classify(Classification.FIELD_CHECK)
+        ask_and_complete(app.office, question.question_id)
+    assert app.office.classify(Classification.FIELD_CHECK)
+    drain_office_dialogue(app.office)
     assert app.office.prepare_field_task() is not None
 
     assert app.office_field_event_matches("urchin_abnormal_04")
@@ -879,11 +1018,13 @@ def test_off001_inspection_event_returns_active_field_task_to_same_case() -> Non
     app.office = OfficePrototype.load()
     app.office.current_index = 2
     app.office.begin_current_case()
+    drain_office_dialogue(app.office)
     case = app.office.current_case
     assert case is not None
     for question in case.questions:
-        app.office.ask_question(question.question_id)
-    app.office.classify(Classification.FIELD_CHECK)
+        ask_and_complete(app.office, question.question_id)
+    assert app.office.classify(Classification.FIELD_CHECK)
+    drain_office_dialogue(app.office)
     assert app.office.prepare_field_task() is not None
 
     app.pointer = SimpleNamespace(cancel=lambda: None)
