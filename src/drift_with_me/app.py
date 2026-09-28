@@ -1713,6 +1713,11 @@ class DriftWithMeApp:
                 self.start_combat_camera_restore()
                 if self.office_field_event_matches(event.actor_id):
                     self.complete_office_field_task()
+            elif event.kind == "discharge_succeeded":
+                if not bool(
+                    event.payload.get("combat_counter")
+                ) and self.office_field_event_matches(event.target_id):
+                    self.complete_office_field_task()
             elif event.kind == "action_denied":
                 self.set_denied_reason(str(event.payload.get("reason", "denied")))
             elif event.kind == "inspection_completed":

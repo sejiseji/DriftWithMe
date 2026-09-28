@@ -1013,7 +1013,7 @@ def test_off001_start_game_enters_office_without_advancing_world() -> None:
     assert app.hitstop_remaining == 0.0
 
 
-def test_off001_inspection_event_returns_active_field_task_to_same_case() -> None:
+def make_active_office_field_event_app() -> DriftWithMeApp:
     app = DriftWithMeApp.__new__(DriftWithMeApp)
     app.office = OfficePrototype.load()
     app.office.current_index = 2
@@ -1035,6 +1035,7 @@ def test_off001_inspection_event_returns_active_field_task_to_same_case() -> Non
     app.audio = SimpleNamespace(play_events=lambda events: None)
     app.request_hitstop_from_events = lambda events: 0.0
     app.combat_camera_reactions_allowed = lambda: True
+    app.start_combat_camera_restore = lambda: None
     app.show_location_label = lambda: None
     app.pending_action_pressed = False
     app.pending_interact_pressed = False
@@ -1043,6 +1044,11 @@ def test_off001_inspection_event_returns_active_field_task_to_same_case() -> Non
     app.accumulator = 0.0
     app.previous_time = 1.0
     app.screen = AppScreen.PLAY
+    return app
+
+
+def test_off001_inspection_event_returns_active_field_task_to_same_case() -> None:
+    app = make_active_office_field_event_app()
     event = GameEvent(
         event_id=1,
         world_tick=10,
@@ -1061,3 +1067,59 @@ def test_off001_inspection_event_returns_active_field_task_to_same_case() -> Non
     assert session.state == CaseState.FIELD_RETURNED
     assert session.field_result is not None
     assert session.field_result.task_id == "FIELD-PROT-003"
+
+
+def test_off001_exploration_discharge_returns_active_field_task_to_same_case() -> None:
+    app = make_active_office_field_event_app()
+    event = GameEvent(
+        event_id=1,
+        world_tick=10,
+        kind="discharge_succeeded",
+        actor_id="buddy",
+        target_id="urchin_abnormal_04",
+        world_position=(800.0, 0.0, 704.0),
+        payload={"energy_cost": 20.0},
+    )
+
+    app.process_events([event])
+
+    session = app.office.current_session
+    assert app.screen == AppScreen.OFFICE
+    assert session is not None
+    assert session.state == CaseState.FIELD_RETURNED
+    assert session.field_result is not None
+    assert session.field_result.task_id == "FIELD-PROT-003"
+
+
+def test_off001_combat_discharge_waits_for_combat_restore_before_returning() -> None:
+    app = make_active_office_field_event_app()
+    discharge = GameEvent(
+        event_id=1,
+        world_tick=10,
+        kind="discharge_succeeded",
+        actor_id="buddy",
+        target_id="urchin_abnormal_04",
+        world_position=(800.0, 0.0, 704.0),
+        payload={"energy_cost": 20.0, "combat_counter": True},
+    )
+
+    app.process_events([discharge])
+
+    session = app.office.current_session
+    assert app.screen == AppScreen.PLAY
+    assert session is not None
+    assert session.state == CaseState.FIELD_ACTIVE
+
+    restored = GameEvent(
+        event_id=2,
+        world_tick=11,
+        kind="combat_restored",
+        actor_id="urchin_abnormal_04",
+        target_id="player",
+        world_position=(800.0, 0.0, 704.0),
+        payload={"combat_outcome": "defeat"},
+    )
+    app.process_events([restored])
+
+    assert app.screen == AppScreen.OFFICE
+    assert session.state == CaseState.FIELD_RETURNED
