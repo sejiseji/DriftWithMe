@@ -30,6 +30,7 @@ from drift_with_me.office import (
     Classification,
     FieldResult,
     OfficePrototype,
+    QuestionDefinition,
 )
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer, jack_blink_closed
@@ -258,6 +259,7 @@ WATER_STUDY_JACK_DIRECTION_VIEWS = (
 OFFICE_DIALOGUE_CHARS_PER_SEC = 72.0
 OFFICE_DIALOGUE_LINES_PER_PAGE = 5
 OFFICE_LINE_START_PROHIBITED = "、。！？）"
+OFFICE_QUESTION_NUMBERS = "①②③④⑤"
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
     # remain unchanged, but their broad bright cells are tempered at draw time.
@@ -285,6 +287,8 @@ class DriftWithMeApp:
         self.office_question_index = 0
         self.office_classification_index = 0
         self.office_dialogue_playback = OfficeDialoguePlayback()
+        self.office_answer_case_id: str | None = None
+        self.office_answer_question_id: str | None = None
         self.audio = AudioEngine(self.runtime.raw)
         self.effects = EffectSystem(self.runtime.raw)
         self.camera_controller = CameraController(
@@ -527,6 +531,12 @@ class DriftWithMeApp:
         if self.office_dialogue_requires_advance():
             return
 
+        if (
+            self.mouse_pressed_in(self.office_answer_footer_rect())
+            and self.cycle_office_answer_reference()
+        ):
+            return
+
         if session.state in {
             CaseState.CLOSED_COUNTER,
             CaseState.REFERRED,
@@ -562,7 +572,7 @@ class DriftWithMeApp:
         if confirm_pressed:
             if self.office_focus == "questions":
                 question = case.questions[self.office_question_index % len(case.questions)]
-                self.office.ask_question(question.question_id)
+                self.ask_or_select_office_question(question)
             else:
                 classification = CLASSIFICATION_ORDER[
                     self.office_classification_index % len(CLASSIFICATION_ORDER)
@@ -574,7 +584,7 @@ class DriftWithMeApp:
             if self.mouse_pressed_in(self.office_question_rect(index, len(case.questions))):
                 self.office_focus = "questions"
                 self.office_question_index = index
-                self.office.ask_question(question.question_id)
+                self.ask_or_select_office_question(question)
                 return
         for index, classification in enumerate(CLASSIFICATION_ORDER):
             if self.mouse_pressed_in(self.office_classification_rect(index)):
@@ -582,6 +592,71 @@ class DriftWithMeApp:
                 self.office_classification_index = index
                 self.office.classify(classification)
                 return
+
+    def ask_or_select_office_question(self, question: QuestionDefinition) -> bool:
+        session = self.office.current_session
+        if session is None:
+            return False
+        if question.question_id in session.asked_question_ids:
+            return self.select_office_answer_reference(question.question_id)
+        if not self.office.ask_question(question.question_id):
+            return False
+        self.select_office_answer_reference(question.question_id)
+        return True
+
+    def sync_office_answer_reference(self) -> str | None:
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None:
+            self.office_answer_case_id = None
+            self.office_answer_question_id = None
+            return None
+        if getattr(self, "office_answer_case_id", None) != case.case_id:
+            self.office_answer_case_id = case.case_id
+            self.office_answer_question_id = None
+        selected = getattr(self, "office_answer_question_id", None)
+        if selected not in session.asked_question_ids:
+            self.office_answer_question_id = None
+        return self.office_answer_question_id
+
+    def select_office_answer_reference(self, question_id: str) -> bool:
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None or question_id not in session.asked_question_ids:
+            return False
+        if not any(question.question_id == question_id for question in case.questions):
+            return False
+        self.office_answer_case_id = case.case_id
+        self.office_answer_question_id = question_id
+        return True
+
+    def cycle_office_answer_reference(self) -> bool:
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None:
+            return False
+        answered = tuple(
+            question.question_id
+            for question in case.questions
+            if question.question_id in session.asked_question_ids
+        )
+        if not answered:
+            return False
+        selected = self.sync_office_answer_reference()
+        next_index = (
+            0 if selected not in answered else (answered.index(selected) + 1) % len(answered)
+        )
+        return self.select_office_answer_reference(answered[next_index])
+
+    def selected_office_answer(self) -> tuple[int, QuestionDefinition] | None:
+        case = self.office.current_case
+        selected = self.sync_office_answer_reference()
+        if case is None or selected is None or self.office_dialogue_requires_advance():
+            return None
+        for index, question in enumerate(case.questions):
+            if question.question_id == selected:
+                return (index, question)
+        return None
 
     def current_office_dialogue_playback(self) -> OfficeDialoguePlayback:
         playback = getattr(self, "office_dialogue_playback", None)
@@ -1995,6 +2070,8 @@ class DriftWithMeApp:
             if self.office_dialogue_requires_advance():
                 return tuple(rects)
             if case is not None and session is not None:
+                if session.asked_question_ids:
+                    rects.append(self.office_answer_footer_rect())
                 if session.state in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
                     rects.extend(
                         self.office_question_rect(index, len(case.questions))
@@ -2077,6 +2154,9 @@ class DriftWithMeApp:
 
     def office_footer_rect(self) -> Rect:
         return self.office_rect(0, 208, 512, 28)
+
+    def office_answer_footer_rect(self) -> Rect:
+        return self.office_rect(8, 210, 356, 23)
 
     def office_question_rect(self, index: int, count: int) -> Rect:
         panel = self.office_questions_panel_rect()
@@ -2474,15 +2554,16 @@ class DriftWithMeApp:
         case = office.current_case
         session = office.current_session
         header_pad = self.office_rect(8, 0, 0, 0).x
-        self.draw_office_text_in_rect(
-            Rect(header_pad, header.y, self.runtime.screen_width * 0.58, header.height),
-            "ガドニア領住民課 岡山第三支部出張所",
-            7,
-            preferred_styles=("office_japanese", "office_japanese_button"),
-        )
         if case is None or session is None:
             self.draw_office_complete()
             return
+
+        self.draw_office_text_in_rect(
+            Rect(header_pad, header.y, self.runtime.screen_width * 0.58, header.height),
+            "質問または処理区分を選択",
+            13,
+            preferred_styles=("office_japanese", "office_japanese_button"),
+        )
 
         status = self.office_state_label(session.state)
         count_text = f"案件 {office.current_index + 1}/{len(office.cases)}  {status}"
@@ -2535,13 +2616,7 @@ class DriftWithMeApp:
             border = 13 if selected else (6 if asked else 7)
             pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), fill)
             pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), border)
-            prefix = "済 " if asked else ""
-            self.draw_office_text_in_rect(
-                Rect(rect.x + 3, rect.y, rect.width - 6, rect.height),
-                prefix + question.button_label,
-                13 if asked else 7,
-                preferred_styles=("office_japanese", "office_japanese_button"),
-            )
+            self.draw_office_question_label(rect, index, question.button_label, asked)
 
         self.draw_office_section_title(classification_rect, "処理区分")
         for index, classification in enumerate(CLASSIFICATION_ORDER):
@@ -2571,13 +2646,7 @@ class DriftWithMeApp:
                 align="center",
             )
 
-        hint = "質問または処理区分を選択"
-        self.draw_office_text_in_rect(
-            self.office_rect(8, 210, 356, 23),
-            hint,
-            13,
-            preferred_styles=("office_japanese", "office_japanese_button"),
-        )
+        self.draw_office_answer_reference()
         if session.state not in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
             self.draw_office_button(
                 self.office_footer_action_rect(),
@@ -2585,6 +2654,45 @@ class DriftWithMeApp:
                 11,
                 text_color=0,
             )
+
+    @staticmethod
+    def office_question_number(index: int) -> str:
+        if 0 <= index < len(OFFICE_QUESTION_NUMBERS):
+            return OFFICE_QUESTION_NUMBERS[index]
+        return f"{index + 1}."
+
+    def draw_office_question_label(
+        self,
+        rect: Rect,
+        index: int,
+        label: str,
+        asked: bool,
+    ) -> None:
+        base_color = 13 if asked else 7
+        self.draw_office_colored_text_in_rect(
+            Rect(rect.x + 3, rect.y, rect.width - 6, rect.height),
+            (
+                (self.office_question_number(index), 10 if asked else base_color),
+                (f" {'済 ' if asked else ''}{label}", base_color),
+            ),
+            preferred_styles=("office_japanese", "office_japanese_button"),
+            align="center",
+        )
+
+    def draw_office_answer_reference(self) -> None:
+        selected = self.selected_office_answer()
+        if selected is None:
+            return
+        index, question = selected
+        self.draw_office_colored_text_in_rect(
+            self.office_answer_footer_rect(),
+            (
+                ("回答", 13),
+                (self.office_question_number(index), 10),
+                (f"：{question.visitor_reply}", 13),
+            ),
+            preferred_styles=("office_japanese", "office_japanese_button"),
+        )
 
     @staticmethod
     def office_visitor_info_lines(case: CaseDefinition) -> tuple[str, ...]:
@@ -2728,6 +2836,30 @@ class DriftWithMeApp:
         visible_y = rect.y + max(0.0, (rect.height - visible_height) / 2.0)
         y = round(visible_y - top_offset)
         self.ui_renderer.draw(self.pyxel, x, y, fitted, color, style_name)
+
+    def draw_office_colored_text_in_rect(
+        self,
+        rect: Rect,
+        segments: tuple[tuple[str, int], ...],
+        preferred_styles: tuple[str, ...] = ("office_japanese", "office_japanese_button"),
+        align: str = "left",
+    ) -> None:
+        style_name = self.office_text_style(rect, preferred_styles)
+        total_width = sum(
+            self.ui_renderer.text_width(text, style_name) for text, _color in segments
+        )
+        top_offset, visible_height = self.ui_renderer.visual_vertical_metrics(style_name)
+        if align == "right":
+            x = int(rect.x + rect.width - total_width)
+        elif align == "center":
+            x = int(rect.x + rect.width / 2 - total_width / 2)
+        else:
+            x = int(rect.x)
+        visible_y = rect.y + max(0.0, (rect.height - visible_height) / 2.0)
+        y = round(visible_y - top_offset)
+        for text, color in segments:
+            self.ui_renderer.draw(self.pyxel, x, y, text, color, style_name)
+            x += self.ui_renderer.text_width(text, style_name)
 
     def draw_office_button(
         self,

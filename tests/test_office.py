@@ -249,6 +249,7 @@ def test_off001_office_layout_stays_inside_all_profiles() -> None:
             app.office_questions_panel_rect(),
             app.office_classification_panel_rect(),
             app.office_footer_rect(),
+            app.office_answer_footer_rect(),
             app.office_footer_action_rect(),
         )
         assert all(
@@ -545,9 +546,152 @@ def test_off001_question_buttons_use_short_labels_without_ellipsis() -> None:
                 rect = app.office_question_rect(index, len(case.questions))
                 available_width = int(rect.width - 6)
                 rendered_width = sum(
-                    6 if ord(char) < 128 else 12 for char in f"済 {question.button_label}"
+                    6 if ord(char) < 128 else 12
+                    for char in f"{app.office_question_number(index)} 済 {question.button_label}"
                 )
                 assert rendered_width <= available_width
+
+
+def test_off001_answered_question_colors_only_circled_number_yellow() -> None:
+    draws: list[tuple[int, str, int]] = []
+
+    class FakeRenderer:
+        @staticmethod
+        def text_width(text: str, style_name: str) -> int:
+            del style_name
+            return len(text) * 8
+
+        @staticmethod
+        def visual_vertical_metrics(style_name: str) -> tuple[int, int]:
+            del style_name
+            return (0, 12)
+
+        @staticmethod
+        def draw(pyxel, x: int, y: int, text: str, color: int, style_name: str) -> None:
+            del pyxel, y, style_name
+            draws.append((x, text, color))
+
+    app = DriftWithMeApp.__new__(DriftWithMeApp)
+    app.ui_text = FakeRenderer()
+    app.pyxel = object()
+
+    app.draw_office_question_label(Rect(10, 20, 160, 24), 0, "本人確認", True)
+
+    assert [(text, color) for _x, text, color in draws] == [
+        ("①", 10),
+        (" 済 本人確認", 13),
+    ]
+    assert draws[1][0] == draws[0][0] + 8
+
+
+def test_off001_answer_reference_auto_selects_without_reasking() -> None:
+    app = make_office_dialogue_app()
+    case = app.office.current_case
+    session = app.office.current_session
+    assert case is not None
+    assert session is not None
+    question = case.questions[0]
+
+    assert app.ask_or_select_office_question(question)
+    dialogue_count = len(session.dialogue)
+    assert app.sync_office_answer_reference() == question.question_id
+
+    assert app.ask_or_select_office_question(question)
+    assert len(session.dialogue) == dialogue_count
+    assert session.asked_question_ids == {question.question_id}
+    assert app.sync_office_answer_reference() == question.question_id
+
+
+def test_off001_answer_footer_cycles_answered_questions_in_definition_order() -> None:
+    app = make_office_dialogue_app()
+    app.office.current_index = 2
+    app.office.begin_current_case()
+    case = app.office.current_case
+    assert case is not None
+    first = case.questions[0]
+    third = case.questions[2]
+    assert app.office.ask_question(first.question_id)
+    assert app.office.ask_question(third.question_id)
+    assert app.select_office_answer_reference(third.question_id)
+
+    assert app.cycle_office_answer_reference()
+    assert app.sync_office_answer_reference() == first.question_id
+    assert app.cycle_office_answer_reference()
+    assert app.sync_office_answer_reference() == third.question_id
+
+
+def test_off001_answer_footer_tap_cycles_reference_without_changing_dialogue() -> None:
+    app = make_office_dialogue_app()
+    case = app.office.current_case
+    session = app.office.current_session
+    assert case is not None
+    assert session is not None
+    assert app.ask_or_select_office_question(case.questions[0])
+    assert app.ask_or_select_office_question(case.questions[1])
+    playback = app.sync_office_dialogue_playback()
+    playback.page_index = len(playback.pages) - 1
+    final_page = app.office_dialogue_current_page(playback)
+    playback.revealed_chars = float(sum(len(line.text) for line in final_page))
+    dialogue_count = len(session.dialogue)
+    footer = app.office_answer_footer_rect()
+    app.pointer_snapshot = SimpleNamespace(
+        pressed=True,
+        x=footer.x + footer.width / 2,
+        y=footer.y + footer.height / 2,
+    )
+    app.pointer = SimpleNamespace(cancel=lambda: None)
+    app.double_tap_move = SimpleNamespace(cancel=lambda: None)
+    app.model = SimpleNamespace(cancel_auto_move=lambda: None)
+    app.pyxel = SimpleNamespace(KEY_RETURN=1, KEY_Z=2, btnp=lambda key: False)
+
+    app.update_office_screen(0.0)
+
+    assert app.sync_office_answer_reference() == case.questions[0].question_id
+    assert len(session.dialogue) == dialogue_count
+
+
+def test_off001_answer_footer_draws_only_number_in_yellow_and_fits_profiles() -> None:
+    draws: list[tuple[str, int]] = []
+
+    class FakeRenderer:
+        @staticmethod
+        def text_width(text: str, style_name: str) -> int:
+            del style_name
+            return sum(6 if ord(char) < 128 else 12 for char in text)
+
+        @staticmethod
+        def visual_vertical_metrics(style_name: str) -> tuple[int, int]:
+            del style_name
+            return (0, 12)
+
+        @staticmethod
+        def draw(pyxel, x: int, y: int, text: str, color: int, style_name: str) -> None:
+            del pyxel, x, y, style_name
+            draws.append((text, color))
+
+    app = make_office_dialogue_app()
+    app.ui_text = FakeRenderer()
+    app.pyxel = object()
+    case = app.office.current_case
+    assert case is not None
+    assert app.ask_or_select_office_question(case.questions[0])
+    playback = app.sync_office_dialogue_playback()
+    playback.page_index = len(playback.pages) - 1
+    final_page = app.office_dialogue_current_page(playback)
+    playback.revealed_chars = float(sum(len(line.text) for line in final_page))
+
+    app.draw_office_answer_reference()
+
+    assert draws == [("回答", 13), ("①", 10), ("：はい、こちらです。", 13)]
+    for profile in ("low", "medium", "high"):
+        profile_app = DriftWithMeApp.__new__(DriftWithMeApp)
+        profile_app.runtime = load_runtime_config(profile)
+        footer_width = int(profile_app.office_answer_footer_rect().width)
+        for candidate_case in OfficePrototype.load().cases:
+            for index, question in enumerate(candidate_case.questions):
+                text = f"回答{profile_app.office_question_number(index)}：{question.visitor_reply}"
+                rendered_width = sum(6 if ord(char) < 128 else 12 for char in text)
+                assert rendered_width <= footer_width
 
 
 def test_off001_classification_labels_are_equal_length_for_two_column_grid() -> None:
