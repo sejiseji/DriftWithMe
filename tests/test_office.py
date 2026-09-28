@@ -20,6 +20,7 @@ from drift_with_me.office import (
     Classification,
     FieldResult,
     OfficePrototype,
+    parse_case_definitions,
 )
 from drift_with_me.world import load_world_data
 
@@ -45,6 +46,18 @@ def test_off001_case_definitions_cover_each_classification_once() -> None:
     assert [case.case_id for case in office.cases if case.field_task is not None] == [
         "OFF-PROT-003"
     ]
+
+
+def test_off001_answer_summary_is_independent_with_reply_fallback() -> None:
+    data_path = ROOT / "src/drift_with_me/data/office_cases.json"
+    raw = json.loads(data_path.read_text(encoding="utf-8"))
+    first_question = raw["cases"][0]["questions"][0]
+    first_question["answer_summary"] = "本人確認書類あり"
+
+    cases = parse_case_definitions(raw)
+
+    assert cases[0].questions[0].answer_summary == "本人確認書類あり"
+    assert cases[0].questions[1].answer_summary == cases[0].questions[1].visitor_reply
 
 
 def test_off001_cases_bind_approved_portrait_ids_in_order() -> None:
@@ -552,7 +565,7 @@ def test_off001_question_buttons_use_short_labels_without_ellipsis() -> None:
                 assert rendered_width <= available_width
 
 
-def test_off001_answered_question_colors_only_circled_number_yellow() -> None:
+def test_off001_only_referenced_answer_colors_circled_number_yellow() -> None:
     draws: list[tuple[int, str, int]] = []
 
     class FakeRenderer:
@@ -575,13 +588,21 @@ def test_off001_answered_question_colors_only_circled_number_yellow() -> None:
     app.ui_text = FakeRenderer()
     app.pyxel = object()
 
-    app.draw_office_question_label(Rect(10, 20, 160, 24), 0, "本人確認", True)
+    app.draw_office_question_label(Rect(10, 20, 160, 24), 0, "本人確認", True, True)
 
     assert [(text, color) for _x, text, color in draws] == [
         ("①", 10),
         (" 済 本人確認", 13),
     ]
     assert draws[1][0] == draws[0][0] + 8
+
+    draws.clear()
+    app.draw_office_question_label(Rect(10, 20, 160, 24), 1, "登録変更", True, False)
+
+    assert [(text, color) for _x, text, color in draws] == [
+        ("②", 13),
+        (" 済 登録変更", 13),
+    ]
 
 
 def test_off001_answer_reference_auto_selects_without_reasking() -> None:
@@ -689,7 +710,7 @@ def test_off001_answer_footer_draws_only_number_in_yellow_and_fits_profiles() ->
         footer_width = int(profile_app.office_answer_footer_rect().width)
         for candidate_case in OfficePrototype.load().cases:
             for index, question in enumerate(candidate_case.questions):
-                text = f"回答{profile_app.office_question_number(index)}：{question.visitor_reply}"
+                text = f"回答{profile_app.office_question_number(index)}：{question.answer_summary}"
                 rendered_width = sum(6 if ord(char) < 128 else 12 for char in text)
                 assert rendered_width <= footer_width
 

@@ -53,6 +53,7 @@ class QuestionDefinition:
     button_label: str
     jack_text: str
     visitor_reply: str
+    answer_summary: str
     memo_updates: tuple[MemoFact, ...]
 
 
@@ -320,6 +321,7 @@ def parse_case_definitions(raw: dict[str, Any]) -> tuple[CaseDefinition, ...]:
                     button_label=str(question["label"]),
                     jack_text=str(question["jack"]),
                     visitor_reply=str(question["reply"]),
+                    answer_summary=str(question.get("answer_summary", question["reply"])),
                     memo_updates=memo_updates,
                 )
             )

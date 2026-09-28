@@ -2608,6 +2608,8 @@ class DriftWithMeApp:
         self.draw_office_dialogue(dialog_rect)
 
         self.draw_office_section_title(questions_rect, "質問")
+        selected_answer = self.selected_office_answer()
+        selected_answer_id = None if selected_answer is None else selected_answer[1].question_id
         for index, question in enumerate(case.questions):
             rect = self.office_question_rect(index, len(case.questions))
             asked = question.question_id in session.asked_question_ids
@@ -2616,7 +2618,13 @@ class DriftWithMeApp:
             border = 13 if selected else (6 if asked else 7)
             pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), fill)
             pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), border)
-            self.draw_office_question_label(rect, index, question.button_label, asked)
+            self.draw_office_question_label(
+                rect,
+                index,
+                question.button_label,
+                asked,
+                question.question_id == selected_answer_id,
+            )
 
         self.draw_office_section_title(classification_rect, "処理区分")
         for index, classification in enumerate(CLASSIFICATION_ORDER):
@@ -2667,12 +2675,13 @@ class DriftWithMeApp:
         index: int,
         label: str,
         asked: bool,
+        answer_selected: bool,
     ) -> None:
         base_color = 13 if asked else 7
         self.draw_office_colored_text_in_rect(
             Rect(rect.x + 3, rect.y, rect.width - 6, rect.height),
             (
-                (self.office_question_number(index), 10 if asked else base_color),
+                (self.office_question_number(index), 10 if answer_selected else base_color),
                 (f" {'済 ' if asked else ''}{label}", base_color),
             ),
             preferred_styles=("office_japanese", "office_japanese_button"),
@@ -2689,7 +2698,7 @@ class DriftWithMeApp:
             (
                 ("回答", 13),
                 (self.office_question_number(index), 10),
-                (f"：{question.visitor_reply}", 13),
+                (f"：{question.answer_summary}", 13),
             ),
             preferred_styles=("office_japanese", "office_japanese_button"),
         )
