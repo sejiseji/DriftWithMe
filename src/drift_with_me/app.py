@@ -260,6 +260,14 @@ OFFICE_DIALOGUE_CHARS_PER_SEC = 72.0
 OFFICE_DIALOGUE_LINES_PER_PAGE = 5
 OFFICE_LINE_START_PROHIBITED = "、。！？）"
 OFFICE_QUESTION_NUMBERS = "①②③④⑤"
+OFFICE_PORTRAIT_BLINK_DURATION_FRAMES = 5
+OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES = (167, 251, 199, 307, 223)
+OFFICE_PORTRAIT_BLINK_OVERLAY_IDS = {
+    "succubus_green": "succubus_green_blink_overlay",
+    "tired_gray_oldman": "tired_gray_oldman_blink_overlay",
+    "nervous_elf_woodsman": "nervous_elf_woodsman_blink_overlay",
+    "smug_blond_hero": "smug_blond_hero_blink_overlay",
+}
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
     # remain unchanged, but their broad bright cells are tempered at draw time.
@@ -2973,9 +2981,11 @@ class DriftWithMeApp:
             scale = min(width / frame.width, height / frame.height)
             draw_width = frame.width * scale
             draw_height = frame.height * scale
+            draw_x = round(x + (width - draw_width) / 2)
+            draw_y = round(y + (height - draw_height) / 2)
             pyxel.blt(
-                round(x + (width - draw_width) / 2),
-                round(y + (height - draw_height) / 2),
+                draw_x,
+                draw_y,
                 frame.image,
                 frame.u,
                 frame.v,
@@ -2984,6 +2994,24 @@ class DriftWithMeApp:
                 colkey=asset.definition.colkey,
                 scale=scale,
             )
+            overlay_id = OFFICE_PORTRAIT_BLINK_OVERLAY_IDS.get(portrait_id)
+            if overlay_id is not None and self.office_portrait_blink_closed(
+                getattr(self, "frame", 0), portrait_id
+            ):
+                overlay = sprite_assets.get(overlay_id)
+                if overlay is not None:
+                    overlay_frame = overlay.frame()
+                    pyxel.blt(
+                        draw_x,
+                        draw_y,
+                        overlay_frame.image,
+                        overlay_frame.u,
+                        overlay_frame.v,
+                        overlay_frame.width,
+                        overlay_frame.height,
+                        colkey=overlay.definition.colkey,
+                        scale=scale,
+                    )
             pyxel.rectb(x, y, width, height, 5)
             return
 
@@ -2995,6 +3023,25 @@ class DriftWithMeApp:
         pyxel.pset(cx - 2, head_y, 7)
         pyxel.pset(cx + 2, head_y, 7)
         pyxel.rectb(x, y, width, height, 5)
+
+    @staticmethod
+    def office_portrait_blink_closed(frame: int, portrait_id: str) -> bool:
+        if portrait_id not in OFFICE_PORTRAIT_BLINK_OVERLAY_IDS:
+            return False
+        duration = OFFICE_PORTRAIT_BLINK_DURATION_FRAMES
+        period = sum(OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES) + duration * len(
+            OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES
+        )
+        seed = sum((index + 1) * ord(char) for index, char in enumerate(portrait_id))
+        phase = (max(0, int(frame)) + seed) % period
+        for interval in OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES:
+            if phase < interval:
+                return False
+            phase -= interval
+            if phase < duration:
+                return True
+            phase -= duration
+        return False
 
     @staticmethod
     def office_classification_label(classification: Classification) -> str:

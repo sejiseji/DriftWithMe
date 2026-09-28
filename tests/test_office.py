@@ -7,6 +7,9 @@ from types import SimpleNamespace
 
 from drift_with_me.app import (
     OFFICE_DIALOGUE_CHARS_PER_SEC,
+    OFFICE_PORTRAIT_BLINK_DURATION_FRAMES,
+    OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES,
+    OFFICE_PORTRAIT_BLINK_OVERLAY_IDS,
     AppScreen,
     DriftWithMeApp,
 )
@@ -30,6 +33,20 @@ OFFICE_PORTRAIT_HASHES = {
     "tired_gray_oldman": "226b90cf1fdc909641fbe45f13254769718acaee38a9f77a65416ad5a474564c",
     "nervous_elf_woodsman": "f0e7d85f511754ff8cb57d7f1501ee0983efd8b2b48f8218bbc6bb2854250bf6",
     "smug_blond_hero": "da1d755d1be399591a653b08c7893d37b7ad710fb632d0ef7912c8850e99f1b2",
+}
+OFFICE_PORTRAIT_BLINK_HASHES = {
+    "succubus_green_blink_overlay": (
+        "21a6a6bf7378d8364e4084d88b678a84147e8ee8d63867a0d74d70ce62a5b23f"
+    ),
+    "tired_gray_oldman_blink_overlay": (
+        "df53f05abbb4a080d76ba7b6edd965efb49567ae084dd2ffcc30b79ea9e996e0"
+    ),
+    "nervous_elf_woodsman_blink_overlay": (
+        "c80bcb83c482b40c0f0521eb29efa2dc11956ae57a877dbcd48cf7187177c44b"
+    ),
+    "smug_blond_hero_blink_overlay": (
+        "fa533ac40d1ecaf12bd9dbb96b492905eb73e670d28a86561f48de21f9e7b1f9"
+    ),
 }
 
 
@@ -198,6 +215,49 @@ def test_off001_portrait_sources_preserve_asset_contract() -> None:
         assert hashlib.sha256(pixels).hexdigest() == expected_hash
 
 
+def test_off001_portrait_blink_overlays_are_sparse_and_preserve_asset_contract() -> None:
+    manifest_path = ROOT / "src/drift_with_me/assets/jack_sprite.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assets = {asset["id"]: asset for asset in manifest["source_assets"]}
+
+    assert set(OFFICE_PORTRAIT_BLINK_OVERLAY_IDS.values()) == set(OFFICE_PORTRAIT_BLINK_HASHES)
+    for asset_id, expected_hash in OFFICE_PORTRAIT_BLINK_HASHES.items():
+        asset = assets[asset_id]
+        source_path = manifest_path.parent / asset["frames"][0]["path"]
+        rows = source_path.read_text(encoding="ascii").splitlines()
+        pixels = bytes(int(char, 16) for row in rows for char in row)
+        opaque_count = sum(pixel != 8 for pixel in pixels)
+
+        assert (asset["hex_width"], asset["hex_height"]) == (64, 64)
+        assert asset["colkey"] == 8
+        assert asset["ui_role"] == "office_visitor_blink_overlay"
+        assert len(rows) == 64
+        assert all(len(row) == 64 for row in rows)
+        assert 8 <= opaque_count <= 96
+        assert hashlib.sha256(pixels).hexdigest() == expected_hash
+
+
+def test_off001_portrait_blink_schedule_is_short_and_irregular() -> None:
+    portrait_id = "succubus_green"
+    duration = OFFICE_PORTRAIT_BLINK_DURATION_FRAMES
+    period = sum(OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES) + duration * len(
+        OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES
+    )
+
+    def closed(frame: int) -> bool:
+        return DriftWithMeApp.office_portrait_blink_closed(frame, portrait_id)
+
+    starts = [frame for frame in range(1, period * 2) if closed(frame) and not closed(frame - 1)]
+    gaps = [right - left for left, right in zip(starts, starts[1:], strict=False)]
+
+    assert len(starts) >= 8
+    assert set(gaps) == {interval + duration for interval in OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES}
+    for start in starts[1:-1]:
+        assert all(closed(frame) for frame in range(start, start + duration))
+        assert not closed(start + duration)
+    assert not DriftWithMeApp.office_portrait_blink_closed(200, "unknown_portrait")
+
+
 def test_off001_portrait_draw_uses_asset_colkey_and_fits_panel() -> None:
     calls: list[tuple[tuple, dict]] = []
 
@@ -231,6 +291,54 @@ def test_off001_portrait_draw_uses_asset_colkey_and_fits_panel() -> None:
     args, kwargs = calls[0]
     assert args == (10, 20, "portrait", 0, 0, 64, 64)
     assert kwargs == {"colkey": 8, "scale": 0.75}
+
+
+def test_off001_portrait_draw_overlays_closed_eyes_without_shifting() -> None:
+    calls: list[tuple[tuple, dict]] = []
+
+    class FakePyxel:
+        @staticmethod
+        def rect(*args) -> None:
+            del args
+
+        @staticmethod
+        def rectb(*args) -> None:
+            del args
+
+        @staticmethod
+        def blt(*args, **kwargs) -> None:
+            calls.append((args, kwargs))
+
+    portrait_frame = SimpleNamespace(image="portrait", u=0, v=0, width=64, height=64)
+    overlay_frame = SimpleNamespace(image="blink", u=0, v=0, width=64, height=64)
+    portrait_asset = SimpleNamespace(
+        frame=lambda: portrait_frame,
+        definition=SimpleNamespace(colkey=8),
+    )
+    overlay_asset = SimpleNamespace(
+        frame=lambda: overlay_frame,
+        definition=SimpleNamespace(colkey=8),
+    )
+    assets = {
+        "succubus_green": portrait_asset,
+        "succubus_green_blink_overlay": overlay_asset,
+    }
+    app = DriftWithMeApp.__new__(DriftWithMeApp)
+    app.pyxel = FakePyxel()
+    app.sprite_assets = SimpleNamespace(get=assets.get)
+    app.frame = next(
+        frame for frame in range(2000) if app.office_portrait_blink_closed(frame, "succubus_green")
+    )
+
+    app.draw_office_portrait(Rect(10, 20, 48, 48), "succubus_green")
+
+    assert len(calls) == 2
+    portrait_args, portrait_kwargs = calls[0]
+    overlay_args, overlay_kwargs = calls[1]
+    assert portrait_args == (10, 20, "portrait", 0, 0, 64, 64)
+    assert overlay_args == (10, 20, "blink", 0, 0, 64, 64)
+    assert portrait_kwargs == {"colkey": 8, "scale": 0.75}
+    assert overlay_kwargs == portrait_kwargs
 
 
 def test_off001_hearing_updates_dialogue_and_memo_once() -> None:
