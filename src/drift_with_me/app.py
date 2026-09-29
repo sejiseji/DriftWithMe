@@ -577,13 +577,16 @@ class DriftWithMeApp:
         elif self.key_pressed("KEY_RIGHT", "KEY_D"):
             self.office_focus = "classifications"
 
+        visible_question_count = self.office_visible_question_count()
         direction = int(self.key_pressed("KEY_DOWN", "KEY_S")) - int(
             self.key_pressed("KEY_UP", "KEY_W")
         )
         if direction:
             if self.office_focus == "questions":
-                count = max(1, len(case.questions))
-                self.office_question_index = (self.office_question_index + direction) % count
+                if visible_question_count:
+                    self.office_question_index = (
+                        self.office_question_index + direction
+                    ) % visible_question_count
             else:
                 count = len(CLASSIFICATION_ORDER)
                 self.office_classification_index = (
@@ -595,8 +598,9 @@ class DriftWithMeApp:
 
         if confirm_pressed:
             if self.office_focus == "questions":
-                question = case.questions[self.office_question_index % len(case.questions)]
-                self.ask_or_select_office_question(question)
+                if visible_question_count:
+                    question = case.questions[self.office_question_index % visible_question_count]
+                    self.ask_or_select_office_question(question)
             else:
                 classification = CLASSIFICATION_ORDER[
                     self.office_classification_index % len(CLASSIFICATION_ORDER)
@@ -604,7 +608,7 @@ class DriftWithMeApp:
                 self.office.classify(classification)
             return
 
-        for index, question in enumerate(case.questions):
+        for index, question in enumerate(case.questions[:visible_question_count]):
             if self.mouse_pressed_in(self.office_question_rect(index, len(case.questions))):
                 self.office_focus = "questions"
                 self.office_question_index = index
@@ -616,6 +620,16 @@ class DriftWithMeApp:
                 self.office_classification_index = index
                 self.office.classify(classification)
                 return
+
+    def office_visible_question_count(self) -> int:
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None:
+            return 0
+        visible_count = len(session.asked_question_ids)
+        if session.pending_question_id is not None or not self.office_dialogue_requires_advance():
+            visible_count += 1
+        return min(len(case.questions), visible_count)
 
     def ask_or_select_office_question(self, question: QuestionDefinition) -> bool:
         session = self.office.current_session
@@ -815,6 +829,20 @@ class DriftWithMeApp:
             completed_question_id = self.office.complete_pending_question()
             if completed_question_id is not None:
                 self.select_office_answer_reference(completed_question_id)
+                case = self.office.current_case
+                if case is not None:
+                    completed_index = next(
+                        (
+                            index
+                            for index, question in enumerate(case.questions)
+                            if question.question_id == completed_question_id
+                        ),
+                        0,
+                    )
+                    self.office_question_index = min(
+                        completed_index + 1,
+                        len(case.questions) - 1,
+                    )
 
     def advance_office_dialogue_page(self) -> bool:
         playback = self.sync_office_dialogue_playback()
@@ -2113,9 +2141,10 @@ class DriftWithMeApp:
                 if session.asked_question_ids:
                     rects.append(self.office_answer_footer_rect())
                 if session.state in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
+                    visible_question_count = self.office_visible_question_count()
                     rects.extend(
                         self.office_question_rect(index, len(case.questions))
-                        for index in range(len(case.questions))
+                        for index in range(visible_question_count)
                     )
                     rects.extend(
                         self.office_classification_rect(index)
@@ -2650,7 +2679,8 @@ class DriftWithMeApp:
         self.draw_office_section_title(questions_rect, "質問")
         selected_answer = self.selected_office_answer()
         selected_answer_id = None if selected_answer is None else selected_answer[1].question_id
-        for index, question in enumerate(case.questions):
+        visible_question_count = self.office_visible_question_count()
+        for index, question in enumerate(case.questions[:visible_question_count]):
             rect = self.office_question_rect(index, len(case.questions))
             asked = question.question_id in session.asked_question_ids
             selected = self.office_focus == "questions" and index == self.office_question_index

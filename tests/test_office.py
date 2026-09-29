@@ -1069,6 +1069,70 @@ def test_off001_dialogue_tap_is_consumed_before_question_buttons() -> None:
     assert not session.asked_question_ids
 
 
+def test_off001_questions_reveal_in_definition_order_after_each_exchange() -> None:
+    app = make_office_dialogue_app()
+    case = app.office.current_case
+    assert case is not None
+
+    assert app.office_visible_question_count() == 0
+    opening = app.sync_office_dialogue_playback()
+    opening.page_index = len(opening.pages) - 1
+    opening_page = app.office_dialogue_current_page(opening)
+    opening.revealed_chars = float(sum(len(line.text) for line in opening_page))
+    assert app.office_visible_question_count() == 1
+
+    assert app.ask_or_select_office_question(case.questions[0])
+    assert app.office_visible_question_count() == 1
+    finish_app_office_dialogue(app)
+
+    assert app.office_visible_question_count() == 2
+    assert app.office_question_index == 1
+
+
+def test_off001_hidden_future_question_does_not_accept_pointer_input() -> None:
+    app = make_office_dialogue_app()
+    case = app.office.current_case
+    session = app.office.current_session
+    assert case is not None
+    assert session is not None
+    opening = app.sync_office_dialogue_playback()
+    opening.page_index = len(opening.pages) - 1
+    opening_page = app.office_dialogue_current_page(opening)
+    opening.revealed_chars = float(sum(len(line.text) for line in opening_page))
+    hidden_question = app.office_question_rect(1, len(case.questions))
+    app.office_focus = "questions"
+    app.office_question_index = 0
+    app.office_classification_index = 0
+    app.pointer_snapshot = SimpleNamespace(
+        pressed=True,
+        x=hidden_question.x + hidden_question.width / 2,
+        y=hidden_question.y + hidden_question.height / 2,
+    )
+    app.pointer = SimpleNamespace(cancel=lambda: None)
+    app.double_tap_move = SimpleNamespace(cancel=lambda: None)
+    app.model = SimpleNamespace(cancel_auto_move=lambda: None)
+    app.pyxel = SimpleNamespace(
+        KEY_RETURN=1,
+        KEY_Z=2,
+        KEY_LEFT=3,
+        KEY_A=4,
+        KEY_RIGHT=5,
+        KEY_D=6,
+        KEY_DOWN=7,
+        KEY_S=8,
+        KEY_UP=9,
+        KEY_W=10,
+        KEY_ESCAPE=11,
+        KEY_X=12,
+        btnp=lambda key: False,
+    )
+
+    app.update_office_screen(0.0)
+
+    assert session.pending_question_id is None
+    assert not session.asked_question_ids
+
+
 def test_off001_next_question_is_locked_until_visitor_reply_is_shown() -> None:
     app = make_office_dialogue_app()
     assert app.office.ask_question("identity")
