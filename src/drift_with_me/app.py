@@ -284,6 +284,21 @@ OFFICE_PORTRAIT_BLINK_OVERLAY_IDS = {
         "closed": "smug_blond_hero_blink_overlay",
     },
 }
+OFFICE_PORTRAIT_SMILE_IDS = {
+    "succubus_green": "succubus_green_smile",
+    "tired_gray_oldman": "tired_gray_oldman_smile",
+    "nervous_elf_woodsman": "nervous_elf_woodsman_smile",
+    "smug_blond_hero": "smug_blond_hero_smile",
+}
+OFFICE_PORTRAIT_SMILE_STATES = frozenset(
+    {
+        CaseState.CLOSED_COUNTER,
+        CaseState.REFERRED,
+        CaseState.WAITING_DOCUMENTS,
+        CaseState.FIELD_RETURNED,
+        CaseState.RESOLVED,
+    }
+)
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
     # remain unchanged, but their broad bright cells are tempered at draw time.
@@ -2665,7 +2680,11 @@ class DriftWithMeApp:
             self.office_rect(0, 0, 64, 0).width,
             self.office_rect(0, 0, 0, 64).height,
         )
-        self.draw_office_portrait(portrait, case.visitor.portrait_id)
+        self.draw_office_portrait(
+            portrait,
+            case.visitor.portrait_id,
+            smile=session.state in OFFICE_PORTRAIT_SMILE_STATES,
+        )
         visitor_lines = self.office_visitor_info_lines(
             case,
             include_purpose=visible_question_count > 0,
@@ -3021,7 +3040,7 @@ class DriftWithMeApp:
                 align=align,
             )
 
-    def draw_office_portrait(self, rect: Rect, portrait_id: str) -> None:
+    def draw_office_portrait(self, rect: Rect, portrait_id: str, *, smile: bool = False) -> None:
         pyxel = self.pyxel
         x = int(rect.x)
         y = int(rect.y)
@@ -3030,7 +3049,13 @@ class DriftWithMeApp:
         pyxel.rect(x, y, width, height, 1)
 
         sprite_assets = getattr(self, "sprite_assets", None)
-        asset = sprite_assets.get(portrait_id) if sprite_assets is not None else None
+        smile_asset_id = OFFICE_PORTRAIT_SMILE_IDS.get(portrait_id)
+        using_smile = smile and smile_asset_id is not None
+        asset_id = smile_asset_id if using_smile else portrait_id
+        asset = sprite_assets.get(asset_id) if sprite_assets is not None else None
+        if asset is None and using_smile and sprite_assets is not None:
+            asset = sprite_assets.get(portrait_id)
+            using_smile = False
         if asset is not None:
             frame = asset.frame()
             scale = min(width / frame.width, height / frame.height)
@@ -3049,7 +3074,11 @@ class DriftWithMeApp:
                 colkey=asset.definition.colkey,
                 scale=scale,
             )
-            blink_pose = self.office_portrait_blink_pose(getattr(self, "frame", 0), portrait_id)
+            blink_pose = (
+                None
+                if using_smile
+                else self.office_portrait_blink_pose(getattr(self, "frame", 0), portrait_id)
+            )
             blink_overlays = OFFICE_PORTRAIT_BLINK_OVERLAY_IDS.get(portrait_id)
             if blink_pose is not None and blink_overlays is not None:
                 overlay = sprite_assets.get(blink_overlays[blink_pose])

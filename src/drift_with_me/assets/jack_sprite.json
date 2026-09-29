@@ -2864,12 +2864,12 @@
         {
           "id": "idle_00",
           "path": "succubus_green_64.hex",
-          "source_hash": "b562196a410dff1be9327bbba9f974247ce39151977b0968018149d0a6db3afe"
+          "source_hash": "026857797839e79119c91e5ed66ab91584638a5aba5ba2cb693d155c23d170ca"
         }
       ],
-      "source_hash": "b562196a410dff1be9327bbba9f974247ce39151977b0968018149d0a6db3afe",
+      "source_hash": "026857797839e79119c91e5ed66ab91584638a5aba5ba2cb693d155c23d170ca",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -2894,12 +2894,12 @@
         {
           "id": "idle_00",
           "path": "tired_gray_oldman_64.hex",
-          "source_hash": "502800d3e91ea6f8ae8c10bf758250471692d5025ae591e338a1bafab271e7c5"
+          "source_hash": "2a86a9c904e4aa80995ffdaa9fcb224764e8a213813c66d77bca687b8062ba6e"
         }
       ],
-      "source_hash": "502800d3e91ea6f8ae8c10bf758250471692d5025ae591e338a1bafab271e7c5",
+      "source_hash": "2a86a9c904e4aa80995ffdaa9fcb224764e8a213813c66d77bca687b8062ba6e",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -2924,12 +2924,12 @@
         {
           "id": "idle_00",
           "path": "nervous_elf_woodsman_64.hex",
-          "source_hash": "5befb78e54f151325acd09d36769f90995cd232b7647208d37fb677dd3d6debd"
+          "source_hash": "e912b8d625343987ba314809e5d82422a1ad9b47565804be3194dd6052a43ea1"
         }
       ],
-      "source_hash": "5befb78e54f151325acd09d36769f90995cd232b7647208d37fb677dd3d6debd",
+      "source_hash": "e912b8d625343987ba314809e5d82422a1ad9b47565804be3194dd6052a43ea1",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -2954,12 +2954,12 @@
         {
           "id": "idle_00",
           "path": "smug_blond_hero_64.hex",
-          "source_hash": "3cd0103c7dcd4ef504583400b4fbb6101b912e680d37ae0f36e5c66ccd93165c"
+          "source_hash": "a2a6d7f1c050253729462893444c70dd65a5e9c9652a6eb9a9cd0c161f432ed1"
         }
       ],
-      "source_hash": "3cd0103c7dcd4ef504583400b4fbb6101b912e680d37ae0f36e5c66ccd93165c",
+      "source_hash": "a2a6d7f1c050253729462893444c70dd65a5e9c9652a6eb9a9cd0c161f432ed1",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -2984,12 +2984,12 @@
         {
           "id": "closed_00",
           "path": "succubus_green_blink_overlay_64.hex",
-          "source_hash": "4403f25064df83113291c7f7a196eceecd429f95081129568a61943ce81d9a55"
+          "source_hash": "2aaa90907078163e2c79cd91656fa88851cad08e45711984b220f870202443f4"
         }
       ],
-      "source_hash": "4403f25064df83113291c7f7a196eceecd429f95081129568a61943ce81d9a55",
+      "source_hash": "2aaa90907078163e2c79cd91656fa88851cad08e45711984b220f870202443f4",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -3014,12 +3014,12 @@
         {
           "id": "closed_00",
           "path": "tired_gray_oldman_blink_overlay_64.hex",
-          "source_hash": "ea21166a7b621b01fdfc2546da6c87cc44a39bbb4743d8b6d8ef3981b9ea83f7"
+          "source_hash": "425763e8d65210fcf841ffa23a39ed0e785f97271d97bbabd3825c6c25db4e17"
         }
       ],
-      "source_hash": "ea21166a7b621b01fdfc2546da6c87cc44a39bbb4743d8b6d8ef3981b9ea83f7",
+      "source_hash": "425763e8d65210fcf841ffa23a39ed0e785f97271d97bbabd3825c6c25db4e17",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -3044,12 +3044,12 @@
         {
           "id": "closed_00",
           "path": "nervous_elf_woodsman_blink_overlay_64.hex",
-          "source_hash": "4b35c638fac6ebf419d96055f57c37370a759967f4c404c20a54981535a8135b"
+          "source_hash": "1b9b015c7a5523258296203af1059d8f3ae6ac4dbe164e65202a27a7abc0bea2"
         }
       ],
-      "source_hash": "4b35c638fac6ebf419d96055f57c37370a759967f4c404c20a54981535a8135b",
+      "source_hash": "1b9b015c7a5523258296203af1059d8f3ae6ac4dbe164e65202a27a7abc0bea2",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -3074,12 +3074,12 @@
         {
           "id": "closed_00",
           "path": "smug_blond_hero_blink_overlay_64.hex",
-          "source_hash": "17f188a3b67d41619ebc2f46f539e366dfc1560706e4fd07510c445f5bf9bd1f"
+          "source_hash": "3fd034d8a4ea02f7ea67f2d3573ab3d8aca467b07f8f5cb560d5b8a637ac6f31"
         }
       ],
-      "source_hash": "17f188a3b67d41619ebc2f46f539e366dfc1560706e4fd07510c445f5bf9bd1f",
+      "source_hash": "3fd034d8a4ea02f7ea67f2d3573ab3d8aca467b07f8f5cb560d5b8a637ac6f31",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -3104,12 +3104,12 @@
         {
           "id": "half_00",
           "path": "succubus_green_blink_half_overlay_64.hex",
-          "source_hash": "46e85e496bbca09593f091cc3ed8e06850d22cc434b9ef4fbf6d8e3e5af8aa59"
+          "source_hash": "3d13d7878bd1834b6f21b94b6e3c0fef506f8b9074e78d9a901aefa2daa46366"
         }
       ],
-      "source_hash": "46e85e496bbca09593f091cc3ed8e06850d22cc434b9ef4fbf6d8e3e5af8aa59",
+      "source_hash": "3d13d7878bd1834b6f21b94b6e3c0fef506f8b9074e78d9a901aefa2daa46366",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -3134,12 +3134,12 @@
         {
           "id": "half_00",
           "path": "tired_gray_oldman_blink_half_overlay_64.hex",
-          "source_hash": "a4e491df0c813e3d5511ad83745b2c50f95ed0c71ea7af2494a0b3eb556d4c79"
+          "source_hash": "3071155da330f1e4ea89fcac40bbcbd0d91f12e16179739586a55e2e4dd10714"
         }
       ],
-      "source_hash": "a4e491df0c813e3d5511ad83745b2c50f95ed0c71ea7af2494a0b3eb556d4c79",
+      "source_hash": "3071155da330f1e4ea89fcac40bbcbd0d91f12e16179739586a55e2e4dd10714",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -3164,12 +3164,12 @@
         {
           "id": "half_00",
           "path": "nervous_elf_woodsman_blink_half_overlay_64.hex",
-          "source_hash": "3ae3c0b38f5f6d6ea92f1c69415ec7d56c53f82175778655114b9906efde0fc9"
+          "source_hash": "dd85ee26a7bc07b9e15b6687fd1870386d973ce57bbb6cbfde4f7274702ee301"
         }
       ],
-      "source_hash": "3ae3c0b38f5f6d6ea92f1c69415ec7d56c53f82175778655114b9906efde0fc9",
+      "source_hash": "dd85ee26a7bc07b9e15b6687fd1870386d973ce57bbb6cbfde4f7274702ee301",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -3194,13 +3194,133 @@
         {
           "id": "half_00",
           "path": "smug_blond_hero_blink_half_overlay_64.hex",
-          "source_hash": "d5b9d25a8704f0728967cb977477ccddaa375130fdf2ee03e535c1404a920f69"
+          "source_hash": "919167cf031029809274fdbaab65eac9578f8bb03be26af3f6ea125721e1392d"
         }
       ],
-      "source_hash": "d5b9d25a8704f0728967cb977477ccddaa375130fdf2ee03e535c1404a920f69",
+      "source_hash": "919167cf031029809274fdbaab65eac9578f8bb03be26af3f6ea125721e1392d",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
       "ui_role": "office_visitor_blink_overlay"
+    },
+    {
+      "schema_version": 1,
+      "id": "succubus_green_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "smile_00",
+          "path": "succubus_green_smile_64.hex",
+          "source_hash": "0254cc1baa08d5c3c41c6bc95cadae4200fff1487f85a54b5184141294576d87"
+        }
+      ],
+      "source_hash": "0254cc1baa08d5c3c41c6bc95cadae4200fff1487f85a54b5184141294576d87",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "ui_role": "office_visitor_portrait_smile"
+    },
+    {
+      "schema_version": 1,
+      "id": "tired_gray_oldman_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "smile_00",
+          "path": "tired_gray_oldman_smile_64.hex",
+          "source_hash": "ac41851ab735ec23760c08873f27cb5a0b3513ec2fdedbc1518b8f712e3f62cd"
+        }
+      ],
+      "source_hash": "ac41851ab735ec23760c08873f27cb5a0b3513ec2fdedbc1518b8f712e3f62cd",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "ui_role": "office_visitor_portrait_smile"
+    },
+    {
+      "schema_version": 1,
+      "id": "nervous_elf_woodsman_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "smile_00",
+          "path": "nervous_elf_woodsman_smile_64.hex",
+          "source_hash": "af99e6dc4cccf83c42a589da2a6c838811c0023444def3da0d65ab61d875a67c"
+        }
+      ],
+      "source_hash": "af99e6dc4cccf83c42a589da2a6c838811c0023444def3da0d65ab61d875a67c",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "ui_role": "office_visitor_portrait_smile"
+    },
+    {
+      "schema_version": 1,
+      "id": "smug_blond_hero_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "smile_00",
+          "path": "smug_blond_hero_smile_64.hex",
+          "source_hash": "c54d721c4b4e0a1c90f44b0d3f768f04757aca8eb706188f69fed5b148893617"
+        }
+      ],
+      "source_hash": "c54d721c4b4e0a1c90f44b0d3f768f04757aca8eb706188f69fed5b148893617",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "ui_role": "office_visitor_portrait_smile"
     }
   ],
   "notes": [
@@ -3230,6 +3350,6 @@
     "Giant tree 02x direct v0.1 source HEX assets are loaded as source_assets. They use colkey 8, keep color index 0 visible black, and are available as solid obstacle visuals while existing AABB collision remains authoritative.",
     "Giant tree roots approved v0.1 source HEX assets supersede the active root/stump obstacle visuals. They are direct approved-image extractions, use colkey 8, keep color index 0 visible black, and retain authored AABB collision as the gameplay source of truth.",
     "Water base tiles v0.1 are 64x64 opaque ground material sources for shallow water tiling. Runtime metadata uses colkey 8 because the current source-asset schema requires an integer colkey and these water sources contain no color index 8.",
-    "OFF001 visitor portraits and half/closed eye overlays use the Direct v2.1 canonical 64x64 HEX sources with colkey 8."
+    "OFF001 visitor neutral, smile, and half/closed blink assets use the Portrait States Direct v1.0 canonical 64x64 HEX sources with colkey 8."
   ]
 }

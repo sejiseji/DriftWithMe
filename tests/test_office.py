@@ -12,6 +12,8 @@ from drift_with_me.app import (
     OFFICE_PORTRAIT_BLINK_HALF_FRAMES,
     OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES,
     OFFICE_PORTRAIT_BLINK_OVERLAY_IDS,
+    OFFICE_PORTRAIT_SMILE_IDS,
+    OFFICE_PORTRAIT_SMILE_STATES,
     AppScreen,
     DriftWithMeApp,
 )
@@ -31,35 +33,43 @@ from drift_with_me.world import load_world_data
 
 ROOT = Path(__file__).resolve().parents[1]
 OFFICE_PORTRAIT_HASHES = {
-    "succubus_green": "b562196a410dff1be9327bbba9f974247ce39151977b0968018149d0a6db3afe",
-    "tired_gray_oldman": "502800d3e91ea6f8ae8c10bf758250471692d5025ae591e338a1bafab271e7c5",
-    "nervous_elf_woodsman": "5befb78e54f151325acd09d36769f90995cd232b7647208d37fb677dd3d6debd",
-    "smug_blond_hero": "3cd0103c7dcd4ef504583400b4fbb6101b912e680d37ae0f36e5c66ccd93165c",
+    "succubus_green": "026857797839e79119c91e5ed66ab91584638a5aba5ba2cb693d155c23d170ca",
+    "tired_gray_oldman": "2a86a9c904e4aa80995ffdaa9fcb224764e8a213813c66d77bca687b8062ba6e",
+    "nervous_elf_woodsman": "e912b8d625343987ba314809e5d82422a1ad9b47565804be3194dd6052a43ea1",
+    "smug_blond_hero": "a2a6d7f1c050253729462893444c70dd65a5e9c9652a6eb9a9cd0c161f432ed1",
+}
+OFFICE_PORTRAIT_SMILE_HASHES = {
+    "succubus_green_smile": ("0254cc1baa08d5c3c41c6bc95cadae4200fff1487f85a54b5184141294576d87"),
+    "tired_gray_oldman_smile": ("ac41851ab735ec23760c08873f27cb5a0b3513ec2fdedbc1518b8f712e3f62cd"),
+    "nervous_elf_woodsman_smile": (
+        "af99e6dc4cccf83c42a589da2a6c838811c0023444def3da0d65ab61d875a67c"
+    ),
+    "smug_blond_hero_smile": ("c54d721c4b4e0a1c90f44b0d3f768f04757aca8eb706188f69fed5b148893617"),
 }
 OFFICE_PORTRAIT_BLINK_HASHES = {
     "succubus_green_blink_half_overlay": (
-        "46e85e496bbca09593f091cc3ed8e06850d22cc434b9ef4fbf6d8e3e5af8aa59"
+        "3d13d7878bd1834b6f21b94b6e3c0fef506f8b9074e78d9a901aefa2daa46366"
     ),
     "succubus_green_blink_overlay": (
-        "4403f25064df83113291c7f7a196eceecd429f95081129568a61943ce81d9a55"
+        "2aaa90907078163e2c79cd91656fa88851cad08e45711984b220f870202443f4"
     ),
     "tired_gray_oldman_blink_half_overlay": (
-        "a4e491df0c813e3d5511ad83745b2c50f95ed0c71ea7af2494a0b3eb556d4c79"
+        "3071155da330f1e4ea89fcac40bbcbd0d91f12e16179739586a55e2e4dd10714"
     ),
     "tired_gray_oldman_blink_overlay": (
-        "ea21166a7b621b01fdfc2546da6c87cc44a39bbb4743d8b6d8ef3981b9ea83f7"
+        "425763e8d65210fcf841ffa23a39ed0e785f97271d97bbabd3825c6c25db4e17"
     ),
     "nervous_elf_woodsman_blink_half_overlay": (
-        "3ae3c0b38f5f6d6ea92f1c69415ec7d56c53f82175778655114b9906efde0fc9"
+        "dd85ee26a7bc07b9e15b6687fd1870386d973ce57bbb6cbfde4f7274702ee301"
     ),
     "nervous_elf_woodsman_blink_overlay": (
-        "4b35c638fac6ebf419d96055f57c37370a759967f4c404c20a54981535a8135b"
+        "1b9b015c7a5523258296203af1059d8f3ae6ac4dbe164e65202a27a7abc0bea2"
     ),
     "smug_blond_hero_blink_half_overlay": (
-        "d5b9d25a8704f0728967cb977477ccddaa375130fdf2ee03e535c1404a920f69"
+        "919167cf031029809274fdbaab65eac9578f8bb03be26af3f6ea125721e1392d"
     ),
     "smug_blond_hero_blink_overlay": (
-        "17f188a3b67d41619ebc2f46f539e366dfc1560706e4fd07510c445f5bf9bd1f"
+        "3fd034d8a4ea02f7ea67f2d3573ab3d8aca467b07f8f5cb560d5b8a637ac6f31"
     ),
 }
 
@@ -220,7 +230,7 @@ def test_off001_portrait_sources_preserve_asset_contract() -> None:
         assert (asset["hex_width"], asset["hex_height"]) == (64, 64)
         assert asset["colkey"] == 8
         assert asset["source_hash"] == expected_hash
-        assert asset["source_policy"] == "off001_visitor_blink_eye_overlay_64_direct_v2_1"
+        assert asset["source_policy"] == "off001_visitor_portrait_states_64_direct_v1_0"
         assert asset["ui_role"] == "office_visitor_portrait"
         source_path = manifest_path.parent / asset["frames"][0]["path"]
         rows = source_path.read_text(encoding="ascii").splitlines()
@@ -230,7 +240,28 @@ def test_off001_portrait_sources_preserve_asset_contract() -> None:
         assert hashlib.sha256(pixels).hexdigest() == expected_hash
 
 
-def test_off001_portrait_blink_overlays_are_sparse_and_preserve_asset_contract() -> None:
+def test_off001_portrait_smiles_preserve_asset_contract() -> None:
+    manifest_path = ROOT / "src/drift_with_me/assets/jack_sprite.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assets = {asset["id"]: asset for asset in manifest["source_assets"]}
+
+    assert set(OFFICE_PORTRAIT_SMILE_IDS.values()) == set(OFFICE_PORTRAIT_SMILE_HASHES)
+    for asset_id, expected_hash in OFFICE_PORTRAIT_SMILE_HASHES.items():
+        asset = assets[asset_id]
+        assert (asset["hex_width"], asset["hex_height"]) == (64, 64)
+        assert asset["colkey"] == 8
+        assert asset["source_hash"] == expected_hash
+        assert asset["source_policy"] == "off001_visitor_portrait_states_64_direct_v1_0"
+        assert asset["ui_role"] == "office_visitor_portrait_smile"
+        source_path = manifest_path.parent / asset["frames"][0]["path"]
+        rows = source_path.read_text(encoding="ascii").splitlines()
+        pixels = bytes(int(char, 16) for row in rows for char in row)
+        assert len(rows) == 64
+        assert all(len(row) == 64 for row in rows)
+        assert hashlib.sha256(pixels).hexdigest() == expected_hash
+
+
+def test_off001_portrait_blink_overlays_preserve_asset_contract() -> None:
     manifest_path = ROOT / "src/drift_with_me/assets/jack_sprite.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assets = {asset["id"]: asset for asset in manifest["source_assets"]}
@@ -250,11 +281,11 @@ def test_off001_portrait_blink_overlays_are_sparse_and_preserve_asset_contract()
 
         assert (asset["hex_width"], asset["hex_height"]) == (64, 64)
         assert asset["colkey"] == 8
-        assert asset["source_policy"] == "off001_visitor_blink_eye_overlay_64_direct_v2_1"
+        assert asset["source_policy"] == "off001_visitor_portrait_states_64_direct_v1_0"
         assert asset["ui_role"] == "office_visitor_blink_overlay"
         assert len(rows) == 64
         assert all(len(row) == 64 for row in rows)
-        assert 8 <= opaque_count <= 192
+        assert 8 <= opaque_count <= 1024
         assert hashlib.sha256(pixels).hexdigest() == expected_hash
 
 
@@ -381,6 +412,51 @@ def test_off001_portrait_draw_overlays_closed_eyes_without_shifting() -> None:
         assert overlay_kwargs == portrait_kwargs
 
 
+def test_off001_portrait_draw_uses_smile_without_blink_overlay() -> None:
+    calls: list[tuple[tuple, dict]] = []
+
+    class FakePyxel:
+        @staticmethod
+        def rect(*args) -> None:
+            del args
+
+        @staticmethod
+        def rectb(*args) -> None:
+            del args
+
+        @staticmethod
+        def blt(*args, **kwargs) -> None:
+            calls.append((args, kwargs))
+
+    smile_frame = SimpleNamespace(image="smile", u=0, v=0, width=64, height=64)
+    blink_frame = SimpleNamespace(image="blink", u=0, v=0, width=64, height=64)
+    smile_asset = SimpleNamespace(
+        frame=lambda: smile_frame,
+        definition=SimpleNamespace(colkey=8),
+    )
+    blink_asset = SimpleNamespace(
+        frame=lambda: blink_frame,
+        definition=SimpleNamespace(colkey=8),
+    )
+    assets = {
+        "succubus_green_smile": smile_asset,
+        "succubus_green_blink_half_overlay": blink_asset,
+        "succubus_green_blink_overlay": blink_asset,
+    }
+    app = DriftWithMeApp.__new__(DriftWithMeApp)
+    app.pyxel = FakePyxel()
+    app.sprite_assets = SimpleNamespace(get=assets.get)
+    app.frame = next(
+        frame
+        for frame in range(2000)
+        if app.office_portrait_blink_pose(frame, "succubus_green") == "closed"
+    )
+
+    app.draw_office_portrait(Rect(10, 20, 48, 48), "succubus_green", smile=True)
+
+    assert calls == [((10, 20, "smile", 0, 0, 64, 64), {"colkey": 8, "scale": 0.75})]
+
+
 def test_off001_hearing_updates_dialogue_and_memo_once() -> None:
     office = OfficePrototype.load()
     drain_office_dialogue(office)
@@ -416,6 +492,7 @@ def test_off001_wrong_classification_returns_to_hearing_without_losing_facts() -
     assert not office.classify(Classification.FIELD_CHECK)
 
     assert session.state == CaseState.READY_TO_CLASSIFY
+    assert session.state not in OFFICE_PORTRAIT_SMILE_STATES
     assert session.feedback
     assert [fact.line for fact in session.memo_facts] == ["本人確認: 済"]
     assert office.current_index == 0
@@ -440,6 +517,9 @@ def test_off001_four_cases_follow_fixed_success_routes() -> None:
             ask_and_complete(office, question.question_id)
         assert office.classify(case.expected_classification)
         assert session.state == expected_state
+        assert (session.state in OFFICE_PORTRAIT_SMILE_STATES) == (
+            expected_state != CaseState.FIELD_CHECK_REQUIRED
+        )
         drain_office_dialogue(office)
         if expected_state == CaseState.FIELD_CHECK_REQUIRED:
             task = office.prepare_field_task()
