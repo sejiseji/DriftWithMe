@@ -171,12 +171,21 @@
       "asset_version": "0.1.0",
       "image_bank": 0,
       "colkey": 0,
-      "anchor_px": [16, 32],
-      "world_size": [16.0, 16.0],
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
       "projection_mode": "upright_height_billboard_v1",
       "sort_anchor": "player_root_ground",
       "flip_policy": "none",
-      "animation": {"mode": "static", "frame_id": "idle_blink_00"},
+      "animation": {
+        "mode": "static",
+        "frame_id": "idle_blink_00"
+      },
       "frames": [
         {
           "id": "idle_blink_00",
@@ -192,12 +201,21 @@
       "asset_version": "0.1.0",
       "image_bank": 0,
       "colkey": 0,
-      "anchor_px": [16, 32],
-      "world_size": [16.0, 16.0],
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
       "projection_mode": "upright_height_billboard_v1",
       "sort_anchor": "player_root_ground",
       "flip_policy": "none",
-      "animation": {"mode": "static", "frame_id": "front_left_blink_00"},
+      "animation": {
+        "mode": "static",
+        "frame_id": "front_left_blink_00"
+      },
       "frames": [
         {
           "id": "front_left_blink_00",
@@ -213,12 +231,21 @@
       "asset_version": "0.1.0",
       "image_bank": 0,
       "colkey": 0,
-      "anchor_px": [16, 32],
-      "world_size": [16.0, 16.0],
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
       "projection_mode": "upright_height_billboard_v1",
       "sort_anchor": "player_root_ground",
       "flip_policy": "none",
-      "animation": {"mode": "static", "frame_id": "front_right_blink_00"},
+      "animation": {
+        "mode": "static",
+        "frame_id": "front_right_blink_00"
+      },
       "frames": [
         {
           "id": "front_right_blink_00",
@@ -234,12 +261,21 @@
       "asset_version": "0.1.0",
       "image_bank": 0,
       "colkey": 0,
-      "anchor_px": [16, 32],
-      "world_size": [16.0, 16.0],
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
       "projection_mode": "upright_height_billboard_v1",
       "sort_anchor": "player_root_ground",
       "flip_policy": "none",
-      "animation": {"mode": "static", "frame_id": "front_blink_00"},
+      "animation": {
+        "mode": "static",
+        "frame_id": "front_blink_00"
+      },
       "frames": [
         {
           "id": "front_blink_00",
@@ -255,12 +291,21 @@
       "asset_version": "0.1.0",
       "image_bank": 0,
       "colkey": 0,
-      "anchor_px": [16, 32],
-      "world_size": [16.0, 16.0],
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
       "projection_mode": "upright_height_billboard_v1",
       "sort_anchor": "player_root_ground",
       "flip_policy": "none",
-      "animation": {"mode": "static", "frame_id": "left_blink_00"},
+      "animation": {
+        "mode": "static",
+        "frame_id": "left_blink_00"
+      },
       "frames": [
         {
           "id": "left_blink_00",
@@ -276,12 +321,21 @@
       "asset_version": "0.1.0",
       "image_bank": 0,
       "colkey": 0,
-      "anchor_px": [16, 32],
-      "world_size": [16.0, 16.0],
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16.0,
+        16.0
+      ],
       "projection_mode": "upright_height_billboard_v1",
       "sort_anchor": "player_root_ground",
       "flip_policy": "none",
-      "animation": {"mode": "static", "frame_id": "right_blink_00"},
+      "animation": {
+        "mode": "static",
+        "frame_id": "right_blink_00"
+      },
       "frames": [
         {
           "id": "right_blink_00",
@@ -2810,12 +2864,12 @@
         {
           "id": "idle_00",
           "path": "succubus_green_64.hex",
-          "source_hash": "813471a9c901d2b1c464e3cd871d4c50755539d32d753984ed6a756acf0ef014"
+          "source_hash": "b562196a410dff1be9327bbba9f974247ce39151977b0968018149d0a6db3afe"
         }
       ],
-      "source_hash": "813471a9c901d2b1c464e3cd871d4c50755539d32d753984ed6a756acf0ef014",
+      "source_hash": "b562196a410dff1be9327bbba9f974247ce39151977b0968018149d0a6db3afe",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portraits_64_v1_0_hex",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -2840,12 +2894,12 @@
         {
           "id": "idle_00",
           "path": "tired_gray_oldman_64.hex",
-          "source_hash": "226b90cf1fdc909641fbe45f13254769718acaee38a9f77a65416ad5a474564c"
+          "source_hash": "502800d3e91ea6f8ae8c10bf758250471692d5025ae591e338a1bafab271e7c5"
         }
       ],
-      "source_hash": "226b90cf1fdc909641fbe45f13254769718acaee38a9f77a65416ad5a474564c",
+      "source_hash": "502800d3e91ea6f8ae8c10bf758250471692d5025ae591e338a1bafab271e7c5",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portraits_64_v1_0_hex",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -2870,12 +2924,12 @@
         {
           "id": "idle_00",
           "path": "nervous_elf_woodsman_64.hex",
-          "source_hash": "f0e7d85f511754ff8cb57d7f1501ee0983efd8b2b48f8218bbc6bb2854250bf6"
+          "source_hash": "5befb78e54f151325acd09d36769f90995cd232b7647208d37fb677dd3d6debd"
         }
       ],
-      "source_hash": "f0e7d85f511754ff8cb57d7f1501ee0983efd8b2b48f8218bbc6bb2854250bf6",
+      "source_hash": "5befb78e54f151325acd09d36769f90995cd232b7647208d37fb677dd3d6debd",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portraits_64_v1_0_hex",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -2900,12 +2954,12 @@
         {
           "id": "idle_00",
           "path": "smug_blond_hero_64.hex",
-          "source_hash": "da1d755d1be399591a653b08c7893d37b7ad710fb632d0ef7912c8850e99f1b2"
+          "source_hash": "3cd0103c7dcd4ef504583400b4fbb6101b912e680d37ae0f36e5c66ccd93165c"
         }
       ],
-      "source_hash": "da1d755d1be399591a653b08c7893d37b7ad710fb632d0ef7912c8850e99f1b2",
+      "source_hash": "3cd0103c7dcd4ef504583400b4fbb6101b912e680d37ae0f36e5c66ccd93165c",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portraits_64_v1_0_hex",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -2930,12 +2984,12 @@
         {
           "id": "closed_00",
           "path": "succubus_green_blink_overlay_64.hex",
-          "source_hash": "21a6a6bf7378d8364e4084d88b678a84147e8ee8d63867a0d74d70ce62a5b23f"
+          "source_hash": "4403f25064df83113291c7f7a196eceecd429f95081129568a61943ce81d9a55"
         }
       ],
-      "source_hash": "21a6a6bf7378d8364e4084d88b678a84147e8ee8d63867a0d74d70ce62a5b23f",
+      "source_hash": "4403f25064df83113291c7f7a196eceecd429f95081129568a61943ce81d9a55",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_generated_blink_overlay_v1",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -2960,12 +3014,12 @@
         {
           "id": "closed_00",
           "path": "tired_gray_oldman_blink_overlay_64.hex",
-          "source_hash": "df53f05abbb4a080d76ba7b6edd965efb49567ae084dd2ffcc30b79ea9e996e0"
+          "source_hash": "ea21166a7b621b01fdfc2546da6c87cc44a39bbb4743d8b6d8ef3981b9ea83f7"
         }
       ],
-      "source_hash": "df53f05abbb4a080d76ba7b6edd965efb49567ae084dd2ffcc30b79ea9e996e0",
+      "source_hash": "ea21166a7b621b01fdfc2546da6c87cc44a39bbb4743d8b6d8ef3981b9ea83f7",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_generated_blink_overlay_v1",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -2990,12 +3044,12 @@
         {
           "id": "closed_00",
           "path": "nervous_elf_woodsman_blink_overlay_64.hex",
-          "source_hash": "c80bcb83c482b40c0f0521eb29efa2dc11956ae57a877dbcd48cf7187177c44b"
+          "source_hash": "4b35c638fac6ebf419d96055f57c37370a759967f4c404c20a54981535a8135b"
         }
       ],
-      "source_hash": "c80bcb83c482b40c0f0521eb29efa2dc11956ae57a877dbcd48cf7187177c44b",
+      "source_hash": "4b35c638fac6ebf419d96055f57c37370a759967f4c404c20a54981535a8135b",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_generated_blink_overlay_v1",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -3020,12 +3074,132 @@
         {
           "id": "closed_00",
           "path": "smug_blond_hero_blink_overlay_64.hex",
-          "source_hash": "fa533ac40d1ecaf12bd9dbb96b492905eb73e670d28a86561f48de21f9e7b1f9"
+          "source_hash": "17f188a3b67d41619ebc2f46f539e366dfc1560706e4fd07510c445f5bf9bd1f"
         }
       ],
-      "source_hash": "fa533ac40d1ecaf12bd9dbb96b492905eb73e670d28a86561f48de21f9e7b1f9",
+      "source_hash": "17f188a3b67d41619ebc2f46f539e366dfc1560706e4fd07510c445f5bf9bd1f",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_generated_blink_overlay_v1",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "ui_role": "office_visitor_blink_overlay"
+    },
+    {
+      "schema_version": 1,
+      "id": "succubus_green_blink_half_overlay",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "half_00",
+          "path": "succubus_green_blink_half_overlay_64.hex",
+          "source_hash": "46e85e496bbca09593f091cc3ed8e06850d22cc434b9ef4fbf6d8e3e5af8aa59"
+        }
+      ],
+      "source_hash": "46e85e496bbca09593f091cc3ed8e06850d22cc434b9ef4fbf6d8e3e5af8aa59",
+      "render_mode": "screen_space_portrait_overlay",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "ui_role": "office_visitor_blink_overlay"
+    },
+    {
+      "schema_version": 1,
+      "id": "tired_gray_oldman_blink_half_overlay",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "half_00",
+          "path": "tired_gray_oldman_blink_half_overlay_64.hex",
+          "source_hash": "a4e491df0c813e3d5511ad83745b2c50f95ed0c71ea7af2494a0b3eb556d4c79"
+        }
+      ],
+      "source_hash": "a4e491df0c813e3d5511ad83745b2c50f95ed0c71ea7af2494a0b3eb556d4c79",
+      "render_mode": "screen_space_portrait_overlay",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "ui_role": "office_visitor_blink_overlay"
+    },
+    {
+      "schema_version": 1,
+      "id": "nervous_elf_woodsman_blink_half_overlay",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "half_00",
+          "path": "nervous_elf_woodsman_blink_half_overlay_64.hex",
+          "source_hash": "3ae3c0b38f5f6d6ea92f1c69415ec7d56c53f82175778655114b9906efde0fc9"
+        }
+      ],
+      "source_hash": "3ae3c0b38f5f6d6ea92f1c69415ec7d56c53f82175778655114b9906efde0fc9",
+      "render_mode": "screen_space_portrait_overlay",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
+      "ui_role": "office_visitor_blink_overlay"
+    },
+    {
+      "schema_version": 1,
+      "id": "smug_blond_hero_blink_half_overlay",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        32
+      ],
+      "world_size": [
+        64.0,
+        64.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "half_00",
+          "path": "smug_blond_hero_blink_half_overlay_64.hex",
+          "source_hash": "d5b9d25a8704f0728967cb977477ccddaa375130fdf2ee03e535c1404a920f69"
+        }
+      ],
+      "source_hash": "d5b9d25a8704f0728967cb977477ccddaa375130fdf2ee03e535c1404a920f69",
+      "render_mode": "screen_space_portrait_overlay",
+      "source_policy": "off001_visitor_blink_eye_overlay_64_direct_v2_1",
       "ui_role": "office_visitor_blink_overlay"
     }
   ],
@@ -3056,6 +3230,6 @@
     "Giant tree 02x direct v0.1 source HEX assets are loaded as source_assets. They use colkey 8, keep color index 0 visible black, and are available as solid obstacle visuals while existing AABB collision remains authoritative.",
     "Giant tree roots approved v0.1 source HEX assets supersede the active root/stump obstacle visuals. They are direct approved-image extractions, use colkey 8, keep color index 0 visible black, and retain authored AABB collision as the gameplay source of truth.",
     "Water base tiles v0.1 are 64x64 opaque ground material sources for shallow water tiling. Runtime metadata uses colkey 8 because the current source-asset schema requires an integer colkey and these water sources contain no color index 8.",
-    "OFF001 visitor portraits v1.0 are canonical 64x64 screen-space UI sources. They use colkey 8 and are rendered at authored 1x size in the medium profile."
+    "OFF001 visitor portraits and half/closed eye overlays use the Direct v2.1 canonical 64x64 HEX sources with colkey 8."
   ]
 }

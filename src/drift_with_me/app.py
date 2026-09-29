@@ -260,13 +260,29 @@ OFFICE_DIALOGUE_CHARS_PER_SEC = 72.0
 OFFICE_DIALOGUE_LINES_PER_PAGE = 5
 OFFICE_LINE_START_PROHIBITED = "、。！？）"
 OFFICE_QUESTION_NUMBERS = "①②③④⑤"
-OFFICE_PORTRAIT_BLINK_DURATION_FRAMES = 5
+OFFICE_PORTRAIT_BLINK_HALF_FRAMES = 2
+OFFICE_PORTRAIT_BLINK_CLOSED_FRAMES = 3
+OFFICE_PORTRAIT_BLINK_DURATION_FRAMES = (
+    OFFICE_PORTRAIT_BLINK_HALF_FRAMES * 2 + OFFICE_PORTRAIT_BLINK_CLOSED_FRAMES
+)
 OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES = (167, 251, 199, 307, 223)
 OFFICE_PORTRAIT_BLINK_OVERLAY_IDS = {
-    "succubus_green": "succubus_green_blink_overlay",
-    "tired_gray_oldman": "tired_gray_oldman_blink_overlay",
-    "nervous_elf_woodsman": "nervous_elf_woodsman_blink_overlay",
-    "smug_blond_hero": "smug_blond_hero_blink_overlay",
+    "succubus_green": {
+        "half": "succubus_green_blink_half_overlay",
+        "closed": "succubus_green_blink_overlay",
+    },
+    "tired_gray_oldman": {
+        "half": "tired_gray_oldman_blink_half_overlay",
+        "closed": "tired_gray_oldman_blink_overlay",
+    },
+    "nervous_elf_woodsman": {
+        "half": "nervous_elf_woodsman_blink_half_overlay",
+        "closed": "nervous_elf_woodsman_blink_overlay",
+    },
+    "smug_blond_hero": {
+        "half": "smug_blond_hero_blink_half_overlay",
+        "closed": "smug_blond_hero_blink_overlay",
+    },
 }
 WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
     # LOOK03 highlights should sit on top of fine water motion. The source planes
@@ -2994,11 +3010,10 @@ class DriftWithMeApp:
                 colkey=asset.definition.colkey,
                 scale=scale,
             )
-            overlay_id = OFFICE_PORTRAIT_BLINK_OVERLAY_IDS.get(portrait_id)
-            if overlay_id is not None and self.office_portrait_blink_closed(
-                getattr(self, "frame", 0), portrait_id
-            ):
-                overlay = sprite_assets.get(overlay_id)
+            blink_pose = self.office_portrait_blink_pose(getattr(self, "frame", 0), portrait_id)
+            blink_overlays = OFFICE_PORTRAIT_BLINK_OVERLAY_IDS.get(portrait_id)
+            if blink_pose is not None and blink_overlays is not None:
+                overlay = sprite_assets.get(blink_overlays[blink_pose])
                 if overlay is not None:
                     overlay_frame = overlay.frame()
                     pyxel.blt(
@@ -3025,9 +3040,9 @@ class DriftWithMeApp:
         pyxel.rectb(x, y, width, height, 5)
 
     @staticmethod
-    def office_portrait_blink_closed(frame: int, portrait_id: str) -> bool:
+    def office_portrait_blink_pose(frame: int, portrait_id: str) -> str | None:
         if portrait_id not in OFFICE_PORTRAIT_BLINK_OVERLAY_IDS:
-            return False
+            return None
         duration = OFFICE_PORTRAIT_BLINK_DURATION_FRAMES
         period = sum(OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES) + duration * len(
             OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES
@@ -3036,12 +3051,16 @@ class DriftWithMeApp:
         phase = (max(0, int(frame)) + seed) % period
         for interval in OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES:
             if phase < interval:
-                return False
+                return None
             phase -= interval
             if phase < duration:
-                return True
+                if phase < OFFICE_PORTRAIT_BLINK_HALF_FRAMES:
+                    return "half"
+                if phase < OFFICE_PORTRAIT_BLINK_HALF_FRAMES + OFFICE_PORTRAIT_BLINK_CLOSED_FRAMES:
+                    return "closed"
+                return "half"
             phase -= duration
-        return False
+        return None
 
     @staticmethod
     def office_classification_label(classification: Classification) -> str:
