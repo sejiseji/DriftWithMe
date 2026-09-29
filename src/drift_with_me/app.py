@@ -2654,6 +2654,7 @@ class DriftWithMeApp:
         dialog_rect = self.office_dialog_rect()
         questions_rect = self.office_questions_panel_rect()
         classification_rect = self.office_classification_panel_rect()
+        visible_question_count = self.office_visible_question_count()
         for rect in (visitor_rect, questions_rect, dialog_rect, classification_rect):
             self.draw_panel_frame(rect, fill=0, inner=5)
 
@@ -2665,7 +2666,10 @@ class DriftWithMeApp:
             self.office_rect(0, 0, 0, 64).height,
         )
         self.draw_office_portrait(portrait, case.visitor.portrait_id)
-        visitor_lines = self.office_visitor_info_lines(case)
+        visitor_lines = self.office_visitor_info_lines(
+            case,
+            include_purpose=visible_question_count > 0,
+        )
         self.draw_office_wrapped_lines(
             self.office_visitor_info_rect(),
             visitor_lines,
@@ -2679,7 +2683,6 @@ class DriftWithMeApp:
         self.draw_office_section_title(questions_rect, "質問")
         selected_answer = self.selected_office_answer()
         selected_answer_id = None if selected_answer is None else selected_answer[1].question_id
-        visible_question_count = self.office_visible_question_count()
         for index, question in enumerate(case.questions[:visible_question_count]):
             rect = self.office_question_rect(index, len(case.questions))
             asked = question.question_id in session.asked_question_ids
@@ -2774,12 +2777,18 @@ class DriftWithMeApp:
         )
 
     @staticmethod
-    def office_visitor_info_lines(case: CaseDefinition) -> tuple[str, ...]:
-        return (
+    def office_visitor_info_lines(
+        case: CaseDefinition,
+        *,
+        include_purpose: bool = True,
+    ) -> tuple[str, ...]:
+        lines = (
             f"名前: {case.visitor.name}",
             f"種別: {case.visitor.kind}",
-            f"用件: {case.initial_purpose}",
         )
+        if include_purpose:
+            return (*lines, f"用件: {case.initial_purpose}")
+        return lines
 
     def draw_office_complete(self) -> None:
         panel = self.office_rect(106, 68, 300, 96)

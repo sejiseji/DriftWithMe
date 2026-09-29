@@ -789,6 +789,31 @@ def test_off001_visitor_info_is_complete_yellow_content_without_documents() -> N
     assert any(line.indent_px == expected_indent for line in wrapped)
 
 
+def test_off001_visitor_purpose_appears_with_first_question() -> None:
+    app = make_office_dialogue_app()
+    case = app.office.current_case
+    assert case is not None
+
+    initial_lines = app.office_visitor_info_lines(
+        case,
+        include_purpose=app.office_visible_question_count() > 0,
+    )
+    assert app.office_visible_question_count() == 0
+    assert all(not line.startswith("用件:") for line in initial_lines)
+
+    opening = app.sync_office_dialogue_playback()
+    opening.page_index = len(opening.pages) - 1
+    opening_page = app.office_dialogue_current_page(opening)
+    opening.revealed_chars = float(sum(len(line.text) for line in opening_page))
+    revealed_lines = app.office_visitor_info_lines(
+        case,
+        include_purpose=app.office_visible_question_count() > 0,
+    )
+
+    assert app.office_visible_question_count() == 1
+    assert revealed_lines[-1] == f"用件: {case.initial_purpose}"
+
+
 def test_off001_visitor_info_fits_every_case_and_display_profile() -> None:
     class FixedWidthRenderer:
         @staticmethod
