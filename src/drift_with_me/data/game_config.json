@@ -307,6 +307,16 @@
       }
     ]
   },
+  "tree_wind": {
+    "enabled": true,
+    "combat_hidden": true,
+    "min_scale": 0.35,
+    "active_frames": 84,
+    "cycle_min_frames": 300,
+    "cycle_variation_frames": 180,
+    "band_source_px": 24,
+    "shift_px": 1
+  },
   "ambient_motes": {
     "enabled": true,
     "affine_only": true,

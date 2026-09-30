@@ -78,6 +78,10 @@ ATMOSPHERE_SOLID_STRENGTH = 0.8
 ATMOSPHERE_DEFAULT_STATIC_STRENGTH = 0.5
 ATMOSPHERE_ENEMY_STRENGTH = 0.35
 ATMOSPHERE_BUDDY_STRENGTH = 0.15
+TREE_WIND_PROFILES = {
+    "tree_leafy_a": (103, 42, 55, 46),
+    "tree_thin_b": (101, 44, 53, 16),
+}
 ATMOSPHERE_PLAYER_STRENGTH = 0.1
 GRASSLAND_MICRO_CLUMP_PATTERNS = (
     ((0.15, 0.24, 5, 0), (0.58, 0.38, 4, 1), (0.84, 0.78, 6, 0)),
@@ -2855,8 +2859,99 @@ class Renderer:
         )
         if placement is None:
             return False
+        if self.draw_tree_wind_sprite(model, obj, asset, placement):
+            return True
         self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
+
+    def draw_tree_wind_sprite(
+        self,
+        model: GameModel,
+        obj: StaticObject,
+        asset: LoadedSpriteAsset,
+        placement,
+    ) -> bool:
+        window = self.tree_wind_source_window(model, obj, placement.scale)
+        profile = TREE_WIND_PROFILES.get(obj.visual)
+        if window is None or profile is None:
+            return False
+
+        frame = self.atmospheric_sprite_frame(asset, asset.frame())
+        shift_top, shift_bottom = window
+        shift_px = max(1, int(model.config.get("tree_wind", {}).get("shift_px", 1)))
+
+        def draw_slice(source_y: int, source_bottom: int, offset_x: int = 0) -> None:
+            height = source_bottom - source_y
+            if height <= 0:
+                return
+            self.pyxel.blt(
+                placement.blt_x + offset_x,
+                placement.blt_y + source_y * placement.scale,
+                frame.image,
+                frame.u,
+                frame.v + source_y,
+                frame.width,
+                height,
+                colkey=asset.definition.colkey,
+                scale=placement.scale,
+            )
+
+        draw_slice(0, shift_top)
+        draw_slice(shift_top, shift_bottom, shift_px)
+        draw_slice(shift_bottom, frame.height)
+
+        _, trunk_left, trunk_right, trunk_top = profile
+        trunk_left = max(0, min(frame.width, trunk_left))
+        trunk_right = max(trunk_left, min(frame.width, trunk_right))
+        trunk_top = max(0, min(frame.height, trunk_top))
+        if trunk_right > trunk_left and trunk_top < frame.height:
+            self.pyxel.blt(
+                placement.blt_x + trunk_left * placement.scale,
+                placement.blt_y + trunk_top * placement.scale,
+                frame.image,
+                frame.u + trunk_left,
+                frame.v + trunk_top,
+                trunk_right - trunk_left,
+                frame.height - trunk_top,
+                colkey=asset.definition.colkey,
+                scale=placement.scale,
+            )
+        return True
+
+    def tree_wind_source_window(
+        self,
+        model: GameModel,
+        obj: StaticObject,
+        scale: float,
+    ) -> tuple[int, int] | None:
+        profile = TREE_WIND_PROFILES.get(obj.visual)
+        config = model.config.get("tree_wind", {})
+        if (
+            profile is None
+            or not config.get("enabled", False)
+            or (config.get("combat_hidden", True) and model.combat_session is not None)
+            or scale < float(config.get("min_scale", 0.35))
+        ):
+            return None
+
+        active_frames = max(2, int(config.get("active_frames", 84)))
+        cycle_min = max(active_frames + 1, int(config.get("cycle_min_frames", 300)))
+        cycle_variation = max(1, int(config.get("cycle_variation_frames", 180)))
+        seed = sum((index + 1) * ord(char) for index, char in enumerate(obj.id))
+        cycle_frames = cycle_min + seed % cycle_variation
+        phase = (int(model.world_tick) + (seed * 17) % cycle_frames) % cycle_frames
+        if phase >= active_frames:
+            return None
+
+        crown_bottom = profile[0]
+        band_height = max(2, min(crown_bottom, int(config.get("band_source_px", 24))))
+        progress = phase / max(active_frames - 1, 1)
+        center = progress * crown_bottom
+        shift_top = max(0, int(math.floor(center - band_height / 2)))
+        shift_bottom = min(crown_bottom, int(math.ceil(center + band_height / 2)))
+        if shift_bottom <= shift_top:
+            return None
+        return shift_top, shift_bottom
 
     def draw_reactive_prop_sprite(
         self,
