@@ -1061,8 +1061,15 @@
     "enabled": true,
     "combat_hidden": true,
     "min_scale": 0.28,
-    "sway_stage_frames": 8,
-    "sway_peak_frames": 12,
+    "sway_frame_durations": [
+      6,
+      7,
+      8,
+      8,
+      7,
+      7,
+      8
+    ],
     "interval_min_frames": 180,
     "interval_variation_frames": 180
   },

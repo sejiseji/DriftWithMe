@@ -87,7 +87,12 @@ TREE_FOLIAGE_SWAY_FRAME_IDS = (
     "sway_right_01",
     "sway_right_02",
     "sway_right_03",
+    "sway_right_04",
+    "sway_right_05",
+    "sway_right_06",
+    "sway_right_07",
 )
+TREE_FOLIAGE_SWAY_FRAME_DURATIONS = (6, 7, 8, 8, 7, 7, 8)
 ATMOSPHERE_PLAYER_STRENGTH = 0.1
 GRASSLAND_MICRO_CLUMP_PATTERNS = (
     ((0.15, 0.24, 5, 0), (0.58, 0.38, 4, 1), (0.84, 0.78, 6, 0)),
@@ -2902,9 +2907,16 @@ class Renderer:
         if scale < max(0.0, float(config.get("min_scale", 0.28))):
             return TREE_FOLIAGE_IDLE_FRAME_ID
 
-        stage_frames = max(1, int(config.get("sway_stage_frames", 5)))
-        peak_frames = max(1, int(config.get("sway_peak_frames", 6)))
-        active_frames = stage_frames * 4 + peak_frames
+        raw_durations = config.get(
+            "sway_frame_durations",
+            TREE_FOLIAGE_SWAY_FRAME_DURATIONS,
+        )
+        if not isinstance(raw_durations, (list, tuple)) or len(raw_durations) != len(
+            TREE_FOLIAGE_SWAY_FRAME_IDS
+        ):
+            raw_durations = TREE_FOLIAGE_SWAY_FRAME_DURATIONS
+        frame_durations = tuple(max(1, int(value)) for value in raw_durations)
+        active_frames = sum(frame_durations)
         interval_min = max(active_frames + 1, int(config.get("interval_min_frames", 240)))
         interval_variation = max(0, int(config.get("interval_variation_frames", 240)))
         seed = sum((index + 1) * ord(char) for index, char in enumerate(obj.id))
@@ -2912,16 +2924,14 @@ class Renderer:
         if interval_variation > 0:
             interval += seed % (interval_variation + 1)
         phase = (int(model.world_tick) + seed * 17) % interval
-        if phase < stage_frames:
-            return TREE_FOLIAGE_SWAY_FRAME_IDS[0]
-        if phase < stage_frames * 2:
-            return TREE_FOLIAGE_SWAY_FRAME_IDS[1]
-        if phase < stage_frames * 2 + peak_frames:
-            return TREE_FOLIAGE_SWAY_FRAME_IDS[2]
-        if phase < stage_frames * 3 + peak_frames:
-            return TREE_FOLIAGE_SWAY_FRAME_IDS[1]
-        if phase < active_frames:
-            return TREE_FOLIAGE_SWAY_FRAME_IDS[0]
+        for frame_id, duration in zip(
+            TREE_FOLIAGE_SWAY_FRAME_IDS,
+            frame_durations,
+            strict=True,
+        ):
+            if phase < duration:
+                return frame_id
+            phase -= duration
         return TREE_FOLIAGE_IDLE_FRAME_ID
 
     def draw_reactive_prop_sprite(

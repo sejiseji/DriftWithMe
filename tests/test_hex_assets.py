@@ -165,23 +165,31 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
 }
 TREE_FOLIAGE_SWAY_HASHES = {
     "tree_leafy_a": {
-        "sway_right_01": "40c1ca0de20cdad1fc19f18e49719eb82ad7fe98ca5394bfe409df555e7ca325",
-        "sway_right_02": "03b1fce6392110ee35b53c9c5627b731e13f9ef81495e915b107449124469361",
-        "sway_right_03": "8aa2e3c8d6d24dbbd9bf127088b6b807bf3ac72129f3935c373849cfb48ecc3a",
+        "sway_right_01": "9b26b636f8e70a728fe0e181a0876e8bc35adffeba92cc7fc6fc1fd4c209b9b4",
+        "sway_right_02": "62d5d1080a2cc33fb9e1c5ecd582fc68d3cb83dc15fb124a20827f85bfb63c88",
+        "sway_right_03": "07a6e46e427120a0d6086674e146e1631b7d37bb362a89cf5d8ed3e7ae3878b9",
+        "sway_right_04": "3e429dae274cbdfac28ab1047f725441982d9be29dd058c3d19e4ae3259c2998",
+        "sway_right_05": "a6b005669eaba7771a6349901f0f5a672c6f1bed94adb6954e2d75e9adb3a9bd",
+        "sway_right_06": "5dcf575867442c100581156b312a7be5a08b21f7de54d87d671e3044068637bf",
+        "sway_right_07": "6d8d790b86aad4636fe0bd6b6c3862a4473777798b17de008ac58cd0b4b5866c",
     },
     "tree_thin_b": {
-        "sway_right_01": "ce108e3d0f98c138b41a87b6c5748843e0dc63ca5ff8f064d5a683a5bff48bc2",
-        "sway_right_02": "f638ee17f62386e1f3bf74539297ef2dfe2cc6b1f73fbfd399f12033a81f0acb",
-        "sway_right_03": "71da8a2f9e37e6351a1f06d2a2b6a999c7a586901ced1cac6bb54694e421421f",
+        "sway_right_01": "fcbceace7959786004473030fb20d4104ca01805baf3c98e26e2953ed8ca3d57",
+        "sway_right_02": "e41e16cecc94467efd5713b2d01e9d7b7721206814cef5c05f7df1516f383459",
+        "sway_right_03": "ed386136dd4813a875b727f90073620d5cc45fdb3481cb2ae1a03025296b9535",
+        "sway_right_04": "c2d10b545a0b8651958417632eaa227741dda2fd3405c77f96418e87438666be",
+        "sway_right_05": "62ba37c13b2021f700c7a33cb0fdbdbc90e12f969a1a1e4f35c35d05df979c2b",
+        "sway_right_06": "ddd45d09346602e1cbe935d0d9e75f18bdb0a81da1d10a4a19f5c77094ef88eb",
+        "sway_right_07": "fa6e5a36e079105007ad568c2de89a46bfba4077f523132e72a064161a94df73",
     },
 }
 TREE_FOLIAGE_COMBINED_HASHES = {
-    "tree_leafy_a": "d0869e05afc3e42855540a4db7dbe626609864f01a5aa24d4b5746b53c91c730",
-    "tree_thin_b": "ecaf29eb51c405d851b83d3664f30af45ec29f1f5949089dc85c16e01b0a44cf",
+    "tree_leafy_a": "23679eef66756003d8e411b0cad5fb38312ecf960c91eea60257f17e3e330859",
+    "tree_thin_b": "995cc9b5c7ae4a65e726ed59c7401219974b6dcb9466f179ed9d6591d4b1879e",
 }
 TREE_FOLIAGE_SWAY_CHANGED_COUNTS = {
-    "tree_leafy_a": [72, 138, 202],
-    "tree_thin_b": [38, 82, 124],
+    "tree_leafy_a": [741, 1906, 2280, 2656, 2506, 1991, 0],
+    "tree_thin_b": [777, 1837, 2222, 2549, 2471, 1948, 0],
 }
 TALL_GRASS_REACTIVE_POSE_HASHES = {
     "idle_00": "3e4c7c8d338024e5acb5af09d519dc8a8697feea0c807f9c76489feddbe5be46",
@@ -606,14 +614,13 @@ def test_tree_layers_recompose_to_original_pixels(source_id: str) -> None:
 
 
 @pytest.mark.parametrize("source_id", ("tree_leafy_a", "tree_thin_b"))
-def test_tree_foliage_sway_is_cumulative_sparse_and_preserves_pixel_count(
+def test_tree_foliage_sway_uses_authored_clumps_and_returns_from_peak(
     source_id: str,
 ) -> None:
     asset_dir = ROOT / "src/drift_with_me/assets"
     idle = tuple((asset_dir / f"{source_id}_leaves.hex").read_text().strip().splitlines())
     idle_pixel_count = sum(color != "8" for row in idle for color in row)
     changed_counts = []
-    previous_changed: set[tuple[int, int]] = set()
     for frame_id, expected_hash in TREE_FOLIAGE_SWAY_HASHES[source_id].items():
         stage = tuple(
             (asset_dir / f"{source_id}_leaves_{frame_id}.hex").read_text().strip().splitlines()
@@ -626,12 +633,13 @@ def test_tree_foliage_sway_is_cumulative_sparse_and_preserves_pixel_count(
         }
         changed_counts.append(len(changed))
         assert pixel_hash(stage) == expected_hash
-        assert idle_pixel_count == sum(color != "8" for row in stage for color in row)
+        stage_pixel_count = sum(color != "8" for row in stage for color in row)
+        assert idle_pixel_count * 0.985 <= stage_pixel_count <= idle_pixel_count
         assert set("".join(stage)) <= set("0123456789ABCDEF")
-        assert previous_changed < changed
-        previous_changed = changed
 
     assert changed_counts == TREE_FOLIAGE_SWAY_CHANGED_COUNTS[source_id]
+    assert changed_counts.index(max(changed_counts)) == 3
+    assert changed_counts[-1] < changed_counts[3]
 
 
 @pytest.mark.parametrize("pose_id", tuple(TALL_GRASS_REACTIVE_POSE_HASHES))

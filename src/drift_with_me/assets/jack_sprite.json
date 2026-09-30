@@ -1385,20 +1385,40 @@
         {
           "id": "sway_right_01",
           "path": "tree_leafy_a_leaves_sway_right_01.hex",
-          "source_hash": "40c1ca0de20cdad1fc19f18e49719eb82ad7fe98ca5394bfe409df555e7ca325"
+          "source_hash": "9b26b636f8e70a728fe0e181a0876e8bc35adffeba92cc7fc6fc1fd4c209b9b4"
         },
         {
           "id": "sway_right_02",
           "path": "tree_leafy_a_leaves_sway_right_02.hex",
-          "source_hash": "03b1fce6392110ee35b53c9c5627b731e13f9ef81495e915b107449124469361"
+          "source_hash": "62d5d1080a2cc33fb9e1c5ecd582fc68d3cb83dc15fb124a20827f85bfb63c88"
         },
         {
           "id": "sway_right_03",
           "path": "tree_leafy_a_leaves_sway_right_03.hex",
-          "source_hash": "8aa2e3c8d6d24dbbd9bf127088b6b807bf3ac72129f3935c373849cfb48ecc3a"
+          "source_hash": "07a6e46e427120a0d6086674e146e1631b7d37bb362a89cf5d8ed3e7ae3878b9"
+        },
+        {
+          "id": "sway_right_04",
+          "path": "tree_leafy_a_leaves_sway_right_04.hex",
+          "source_hash": "3e429dae274cbdfac28ab1047f725441982d9be29dd058c3d19e4ae3259c2998"
+        },
+        {
+          "id": "sway_right_05",
+          "path": "tree_leafy_a_leaves_sway_right_05.hex",
+          "source_hash": "a6b005669eaba7771a6349901f0f5a672c6f1bed94adb6954e2d75e9adb3a9bd"
+        },
+        {
+          "id": "sway_right_06",
+          "path": "tree_leafy_a_leaves_sway_right_06.hex",
+          "source_hash": "5dcf575867442c100581156b312a7be5a08b21f7de54d87d671e3044068637bf"
+        },
+        {
+          "id": "sway_right_07",
+          "path": "tree_leafy_a_leaves_sway_right_07.hex",
+          "source_hash": "6d8d790b86aad4636fe0bd6b6c3862a4473777798b17de008ac58cd0b4b5866c"
         }
       ],
-      "source_hash": "d0869e05afc3e42855540a4db7dbe626609864f01a5aa24d4b5746b53c91c730",
+      "source_hash": "23679eef66756003d8e411b0cad5fb38312ecf960c91eea60257f17e3e330859",
       "render_mode": "vertical_billboard",
       "source_policy": "tree_layer_sway_v0_1_hex"
     },
@@ -1458,20 +1478,40 @@
         {
           "id": "sway_right_01",
           "path": "tree_thin_b_leaves_sway_right_01.hex",
-          "source_hash": "ce108e3d0f98c138b41a87b6c5748843e0dc63ca5ff8f064d5a683a5bff48bc2"
+          "source_hash": "fcbceace7959786004473030fb20d4104ca01805baf3c98e26e2953ed8ca3d57"
         },
         {
           "id": "sway_right_02",
           "path": "tree_thin_b_leaves_sway_right_02.hex",
-          "source_hash": "f638ee17f62386e1f3bf74539297ef2dfe2cc6b1f73fbfd399f12033a81f0acb"
+          "source_hash": "e41e16cecc94467efd5713b2d01e9d7b7721206814cef5c05f7df1516f383459"
         },
         {
           "id": "sway_right_03",
           "path": "tree_thin_b_leaves_sway_right_03.hex",
-          "source_hash": "71da8a2f9e37e6351a1f06d2a2b6a999c7a586901ced1cac6bb54694e421421f"
+          "source_hash": "ed386136dd4813a875b727f90073620d5cc45fdb3481cb2ae1a03025296b9535"
+        },
+        {
+          "id": "sway_right_04",
+          "path": "tree_thin_b_leaves_sway_right_04.hex",
+          "source_hash": "c2d10b545a0b8651958417632eaa227741dda2fd3405c77f96418e87438666be"
+        },
+        {
+          "id": "sway_right_05",
+          "path": "tree_thin_b_leaves_sway_right_05.hex",
+          "source_hash": "62ba37c13b2021f700c7a33cb0fdbdbc90e12f969a1a1e4f35c35d05df979c2b"
+        },
+        {
+          "id": "sway_right_06",
+          "path": "tree_thin_b_leaves_sway_right_06.hex",
+          "source_hash": "ddd45d09346602e1cbe935d0d9e75f18bdb0a81da1d10a4a19f5c77094ef88eb"
+        },
+        {
+          "id": "sway_right_07",
+          "path": "tree_thin_b_leaves_sway_right_07.hex",
+          "source_hash": "fa6e5a36e079105007ad568c2de89a46bfba4077f523132e72a064161a94df73"
         }
       ],
-      "source_hash": "ecaf29eb51c405d851b83d3664f30af45ec29f1f5949089dc85c16e01b0a44cf",
+      "source_hash": "995cc9b5c7ae4a65e726ed59c7401219974b6dcb9466f179ed9d6591d4b1879e",
       "render_mode": "vertical_billboard",
       "source_policy": "tree_layer_sway_v0_1_hex"
     },

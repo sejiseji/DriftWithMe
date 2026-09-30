@@ -7,9 +7,22 @@ from pathlib import Path
 COLKEY = "8"
 WOOD_CORE = frozenset("49A")
 WOOD_DETAIL = frozenset("01249AEF")
-LEAF_HIGHLIGHTS = frozenset("BCEF")
-FOLIAGE_SOURCE_SHIFT_PX = 2
-FOLIAGE_SWAY_STAGES = 3
+FOLIAGE_SWAY_FRAME_COUNT = 7
+FOLIAGE_SWAY_RESPONSE_PROFILES = (
+    (1, 2, 3, 4, 3, 2, 0),
+    (0, 1, 3, 4, 3, 1, 0),
+    (0, 1, 2, 3, 4, 2, 0),
+)
+
+
+@dataclass(frozen=True)
+class FoliageSwayPatch:
+    center_x: float
+    center_y: float
+    radius_x: float
+    radius_y: float
+    amplitude_px: int
+    response_profile: int
 
 
 @dataclass(frozen=True)
@@ -17,6 +30,7 @@ class TreeLayerSpec:
     source_name: str
     centerline: tuple[tuple[int, int], ...]
     static_base_y: int
+    sway_patches: tuple[FoliageSwayPatch, ...]
 
 
 TREE_LAYER_SPECS = (
@@ -24,11 +38,27 @@ TREE_LAYER_SPECS = (
         source_name="tree_leafy_a",
         centerline=((51, 42), (49, 65), (48, 95), (48, 112)),
         static_base_y=111,
+        sway_patches=(
+            FoliageSwayPatch(58, 21, 26, 17, 4, 2),
+            FoliageSwayPatch(31, 37, 28, 18, 3, 0),
+            FoliageSwayPatch(72, 42, 25, 19, 4, 0),
+            FoliageSwayPatch(22, 58, 27, 21, 2, 1),
+            FoliageSwayPatch(60, 58, 31, 21, 3, 1),
+            FoliageSwayPatch(51, 78, 40, 20, 2, 2),
+        ),
     ),
     TreeLayerSpec(
         source_name="tree_thin_b",
         centerline=((49, 28), (49, 40), (48, 70), (48, 105), (48, 113)),
         static_base_y=112,
+        sway_patches=(
+            FoliageSwayPatch(49, 18, 24, 18, 4, 2),
+            FoliageSwayPatch(27, 34, 24, 19, 3, 0),
+            FoliageSwayPatch(68, 43, 26, 19, 4, 0),
+            FoliageSwayPatch(24, 62, 26, 20, 3, 1),
+            FoliageSwayPatch(69, 62, 19, 18, 4, 1),
+            FoliageSwayPatch(46, 82, 32, 16, 2, 2),
+        ),
     ),
 )
 
@@ -116,117 +146,49 @@ def split_tree_layers(
     return trunk_rows, leaf_rows
 
 
-def matching_runs(row: str, colors: frozenset[str]) -> tuple[tuple[int, int], ...]:
-    runs: list[tuple[int, int]] = []
-    start: int | None = None
-    for x, color in enumerate(row + COLKEY):
-        matches = color in colors
-        if matches and start is None:
-            start = x
-        elif not matches and start is not None:
-            runs.append((start, x - 1))
-            start = None
-    return tuple(runs)
-
-
-def foliage_candidate_score(
-    source_name: str,
-    kind: str,
+def foliage_patch_offset(
+    patch: FoliageSwayPatch,
+    frame_index: int,
+    x: int,
     y: int,
-    start: int,
-    end: int,
 ) -> int:
-    seed = sum((index + 1) * ord(char) for index, char in enumerate(source_name + kind))
-    value = seed ^ (y * 73856093) ^ (start * 19349663) ^ (end * 83492791)
-    value ^= value >> 13
-    value *= 1274126177
-    return value ^ (value >> 16)
+    normalized_x = (x - patch.center_x) / patch.radius_x
+    normalized_y = (y - patch.center_y) / patch.radius_y
+    distance_sq = normalized_x * normalized_x + normalized_y * normalized_y
+    if distance_sq > 1.0:
+        return 0
+    response = FOLIAGE_SWAY_RESPONSE_PROFILES[patch.response_profile][frame_index]
+    offset = (patch.amplitude_px * response + 2) // 4
+    if distance_sq > 0.72:
+        offset = (offset + 1) // 2
+    return offset
 
 
 def build_foliage_right_sway(
     rows: tuple[str, ...],
-    source_name: str,
+    spec: TreeLayerSpec,
 ) -> tuple[tuple[str, ...], ...]:
-    """Build cumulative local changes for one coherent rightward sway and return."""
+    """Pre-bake one gust across authored foliage clumps with a delayed tip return."""
     height = len(rows)
     width = len(rows[0])
-    leaf_colors = frozenset(char for row in rows for char in row if char != COLKEY)
-    leaf_pixel_count = sum(char != COLKEY for row in rows for char in row)
-    changed: set[tuple[int, int]] = set()
-    operations: list[tuple[int, int, tuple[tuple[int, str], ...]]] = []
-
-    edge_candidates: list[tuple[int, int, int, int]] = []
-    for y, row in enumerate(rows):
-        for start, end in matching_runs(row, leaf_colors):
-            if end - start + 1 < FOLIAGE_SOURCE_SHIFT_PX * 2:
-                continue
-            destinations = range(end + 1, end + FOLIAGE_SOURCE_SHIFT_PX + 1)
-            if end + FOLIAGE_SOURCE_SHIFT_PX >= width:
-                continue
-            if any(row[x] != COLKEY for x in destinations):
-                continue
-            score = foliage_candidate_score(source_name, "contour", y, start, end)
-            edge_candidates.append((score, y, start, end))
-
-    # Move enough connected silhouette rows to read at gameplay scale while
-    # keeping most of each canopy fixed against its trunk.
-    edge_target = max(18, round(leaf_pixel_count / 105))
-    for score, y, start, end in sorted(edge_candidates)[:edge_target]:
-        source_xs = range(start, start + FOLIAGE_SOURCE_SHIFT_PX)
-        destination_xs = range(end + 1, end + FOLIAGE_SOURCE_SHIFT_PX + 1)
-        edge_colors = rows[y][end - FOLIAGE_SOURCE_SHIFT_PX + 1 : end + 1]
-        updates = tuple((x, COLKEY) for x in source_xs) + tuple(
-            zip(destination_xs, edge_colors, strict=True)
-        )
-        operations.append((score, y, updates))
-        changed.update((x, y) for x, _color in updates)
-
-    highlight_candidates: list[tuple[int, int, int, int]] = []
-    for y, row in enumerate(rows):
-        for start, end in matching_runs(row, LEAF_HIGHLIGHTS):
-            previous_x = start - 1
-            next_x = end + 1
-            if previous_x < 0 or next_x >= width:
-                continue
-            if row[previous_x] == COLKEY or row[next_x] == COLKEY:
-                continue
-            if row[next_x] in LEAF_HIGHLIGHTS:
-                continue
-            if (start, y) in changed or (next_x, y) in changed:
-                continue
-            score = foliage_candidate_score(source_name, "highlight", y, start, end)
-            highlight_candidates.append((score, y, start, end))
-
-    highlight_target = max(8, round(leaf_pixel_count / 260))
-    applied_highlights = 0
-    for _score, y, start, end in sorted(highlight_candidates):
-        next_x = end + 1
-        if (start, y) in changed or (next_x, y) in changed:
-            continue
-        updates = ((start, rows[y][start - 1]), (next_x, rows[y][end]))
-        operations.append((_score, y, updates))
-        changed.update((x, y) for x, _color in updates)
-        applied_highlights += 1
-        if applied_highlights >= highlight_target:
-            break
-
-    groups: list[list[tuple[int, tuple[tuple[int, str], ...]]]] = [
-        [] for _ in range(FOLIAGE_SWAY_STAGES)
-    ]
-    for index, (_score, y, updates) in enumerate(sorted(operations)):
-        groups[index % FOLIAGE_SWAY_STAGES].append((y, updates))
-
     variants: list[tuple[str, ...]] = []
-    active_operations: list[tuple[int, tuple[tuple[int, str], ...]]] = []
-    for group in groups:
-        active_operations.extend(group)
-        output = [list(row) for row in rows]
-        for y, updates in active_operations:
-            for x, color in updates:
-                output[y][x] = color
+    for frame_index in range(FOLIAGE_SWAY_FRAME_COUNT):
+        output = [[COLKEY] * width for _ in range(height)]
+        priority = [[-1] * width for _ in range(height)]
+        for y, row in enumerate(rows):
+            for x, color in enumerate(row):
+                if color == COLKEY:
+                    continue
+                offset = max(
+                    foliage_patch_offset(patch, frame_index, x, y) for patch in spec.sway_patches
+                )
+                destination_x = min(width - 1, x + offset)
+                if offset >= priority[y][destination_x]:
+                    output[y][destination_x] = color
+                    priority[y][destination_x] = offset
         result = tuple("".join(row) for row in output)
         if len(result) != height or {len(row) for row in result} != {width}:
-            raise ValueError(f"{source_name}: invalid foliage sway dimensions")
+            raise ValueError(f"{spec.source_name}: invalid foliage sway dimensions")
         variants.append(result)
     return tuple(variants)
 
@@ -252,7 +214,7 @@ def main() -> int:
         if len(rows) != 128 or {len(row) for row in rows} != {96}:
             raise ValueError(f"{source_path}: expected 96x128 source")
         trunk_rows, leaf_rows = split_tree_layers(rows, spec)
-        sway_stages = build_foliage_right_sway(leaf_rows, spec.source_name)
+        sway_stages = build_foliage_right_sway(leaf_rows, spec)
         outputs = [("trunk", trunk_rows), ("leaves", leaf_rows)]
         outputs.extend(
             (f"leaves_sway_right_{index:02d}", stage_rows)
