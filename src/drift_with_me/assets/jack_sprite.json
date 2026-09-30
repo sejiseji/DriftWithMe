@@ -1186,7 +1186,7 @@
     },
     {
       "schema_version": 1,
-      "id": "abnormal_urchin_upper_arm_8dir",
+      "id": "abnormal_urchin_link_8dir",
       "palette_id": "pyxel_default_16",
       "hex_width": 16,
       "hex_height": 16,
@@ -1205,112 +1205,48 @@
       "frames": [
         {
           "id": "dir0",
-          "path": "abnormal_urchin_upper_dir0_00.hex",
-          "source_hash": "d3f149f5a9d18fa349c642e113e16cd895e351d0ac7ef22a767d92f3f1c5d7b5"
+          "path": "abnormal_urchin_link_dir0_00.hex",
+          "source_hash": "a4e6107886e85617aebd1bcb3cbbd8e222d82408dac0bdda8b1688513e8e71d2"
         },
         {
           "id": "dir1",
-          "path": "abnormal_urchin_upper_dir1_00.hex",
-          "source_hash": "996239915f7e23fed9913a7b96a0dbbfd97856161ca227aff48838b32e718733"
+          "path": "abnormal_urchin_link_dir1_00.hex",
+          "source_hash": "db97f406f45b18c2de92f27ff94d49ffd5ca656b88d6923021658ed870f53fc8"
         },
         {
           "id": "dir2",
-          "path": "abnormal_urchin_upper_dir2_00.hex",
-          "source_hash": "37acea7ee992b66244422d3174cf21ec1591b5131e71b69d8161718f56169c5d"
+          "path": "abnormal_urchin_link_dir2_00.hex",
+          "source_hash": "157dd309b23ed43e4b1234c2950f8ceda8ad0197d8a5f1a8fa486b5d8fa012b2"
         },
         {
           "id": "dir3",
-          "path": "abnormal_urchin_upper_dir3_00.hex",
-          "source_hash": "8bbe59fe79e3f307a7f015b99df248fc03bf14ed8224ca179581df180d68a04f"
+          "path": "abnormal_urchin_link_dir3_00.hex",
+          "source_hash": "d2f8b6819dca86f41d1698c46a689b31e4155fa8090003497938fab2600b12c8"
         },
         {
           "id": "dir4",
-          "path": "abnormal_urchin_upper_dir4_00.hex",
-          "source_hash": "7f57504ba43492ae782f2e326182bea4092d199c723e2f88a77ec3756369c6d2"
+          "path": "abnormal_urchin_link_dir4_00.hex",
+          "source_hash": "0e708c15d0b72b87d5fbd1492c9792d2d1373678b7947ecdf60b8692bedb1cfd"
         },
         {
           "id": "dir5",
-          "path": "abnormal_urchin_upper_dir5_00.hex",
-          "source_hash": "202a1bc3212c412c33799e9d00bb9bed0d904ef642ba0937c090a867755b9d4c"
+          "path": "abnormal_urchin_link_dir5_00.hex",
+          "source_hash": "166d4499b5a897146b459966eb4476e3e196491d6cab79fb1373844740868153"
         },
         {
           "id": "dir6",
-          "path": "abnormal_urchin_upper_dir6_00.hex",
-          "source_hash": "919bff72f3ad98d50d6008f52fd4bfc13d09fb6460669bfcb6f708c2a1f43c43"
+          "path": "abnormal_urchin_link_dir6_00.hex",
+          "source_hash": "484c772acf9ce0521ebf9ee9b3732d326a0dd051ddc65b77aba58d537b0a90fb"
         },
         {
           "id": "dir7",
-          "path": "abnormal_urchin_upper_dir7_00.hex",
-          "source_hash": "40df8aebebd5ff4d9b526f190b98195e1c7aa1cc738ba49cdba2ea3a8760a7a5"
+          "path": "abnormal_urchin_link_dir7_00.hex",
+          "source_hash": "c2b7d3bff73b63d98d5eeea9ae82cc0de2e40c1caaa9dc5e962026bd2b886d96"
         }
       ],
-      "source_hash": "5d6db28f39cc043b1f9070368170cf7fe0cdb4907e6f3e102f34920285e7e495",
+      "source_hash": "0bcb0c542ab25875c0f295c7938abf3516f7199e4f8c73c04c0ccd5f56f2d3f9",
       "render_mode": "sprite_local_joint_part",
-      "source_policy": "bat002_a_generated_8dir_parts"
-    },
-    {
-      "schema_version": 1,
-      "id": "abnormal_urchin_lower_arm_8dir",
-      "palette_id": "pyxel_default_16",
-      "hex_width": 16,
-      "hex_height": 16,
-      "colkey": 0,
-      "anchor_px": [
-        8,
-        8
-      ],
-      "world_size": [
-        5.0,
-        5.0
-      ],
-      "projection_mode": "upright_height_billboard_v1",
-      "flip_policy": "none",
-      "animation": "reactive_pose_set",
-      "frames": [
-        {
-          "id": "dir0",
-          "path": "abnormal_urchin_lower_dir0_00.hex",
-          "source_hash": "9cc33ac4a0741f24ff26392e4ba9ee1794cd041459c52e7b5f53b9da1cc8b201"
-        },
-        {
-          "id": "dir1",
-          "path": "abnormal_urchin_lower_dir1_00.hex",
-          "source_hash": "e04d1bafa3c80ee23c7cd100e1b74ffbca73b394e02d1c7afe8bb4484e41725a"
-        },
-        {
-          "id": "dir2",
-          "path": "abnormal_urchin_lower_dir2_00.hex",
-          "source_hash": "b7d1fcd245edfc21768b7118677c42f01cd7bfe9aafbbb546238411654f4cd4e"
-        },
-        {
-          "id": "dir3",
-          "path": "abnormal_urchin_lower_dir3_00.hex",
-          "source_hash": "590156372e546da9429f58f78a463e8ce9a1a88cc6ab2210f2c4ed549bfaf96c"
-        },
-        {
-          "id": "dir4",
-          "path": "abnormal_urchin_lower_dir4_00.hex",
-          "source_hash": "dbcfce203cbda7fbea49c28c921a62b467887e7ca792f57f3d7c484ea49ac400"
-        },
-        {
-          "id": "dir5",
-          "path": "abnormal_urchin_lower_dir5_00.hex",
-          "source_hash": "af0609874d0068f22988d9b800b98c393a1886a15bb8fdfdc17f24e3f94cf1f5"
-        },
-        {
-          "id": "dir6",
-          "path": "abnormal_urchin_lower_dir6_00.hex",
-          "source_hash": "59018e1266ce957ce698f8ff593b2b72ffbb925f3059a296d7b262d46fd88fe3"
-        },
-        {
-          "id": "dir7",
-          "path": "abnormal_urchin_lower_dir7_00.hex",
-          "source_hash": "e49f6871e3f776dcae9763c44eb8565e7a72da3d29902b01c305b43bfb5c4ec8"
-        }
-      ],
-      "source_hash": "90323a7e36af7a3d4c1cc2704eaf2438e9624b77ec97b167e364e3d405876b97",
-      "render_mode": "sprite_local_joint_part",
-      "source_policy": "bat002_a_generated_8dir_parts"
+      "source_policy": "abu_ik8_generated_4_link_chain"
     },
     {
       "schema_version": 1,
@@ -1374,7 +1310,7 @@
       ],
       "source_hash": "f3bfc41b3e5239d5d4cc286af601f698222802f2ced731f427e36f70d7b0ba75",
       "render_mode": "sprite_local_joint_part",
-      "source_policy": "bat002_a_generated_8dir_parts"
+      "source_policy": "abu_ik8_generated_4_link_chain"
     },
     {
       "schema_version": 1,

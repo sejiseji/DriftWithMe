@@ -640,13 +640,14 @@
   "abnormal_urchin_ik": {
     "enabled": true,
     "body_asset": "abnormal_urchin_body_64",
-    "upper_arm_asset": "abnormal_urchin_upper_arm_8dir",
-    "lower_arm_asset": "abnormal_urchin_lower_arm_8dir",
+    "link_asset": "abnormal_urchin_link_8dir",
     "claw_asset": "abnormal_urchin_claw_8dir",
     "fixed_hz": 60,
     "damping": 0.78,
     "stiffness": 0.08,
     "direction_hysteresis": 0.08,
+    "curve_strength": 1.0,
+    "undulation_strength": 1.0,
     "debug_with_f1": true
   },
   "combat_v1": {

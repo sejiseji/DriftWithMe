@@ -3,19 +3,22 @@ from __future__ import annotations
 import json
 import math
 import random
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from drift_with_me.abnormal_urchin_arms import (
+    DEFAULT_ARM_SPECS,
     DIR8,
     AbnormalUrchinArmSystem,
     abnormal_urchin_pose_state,
     arm_goal,
+    curved_chain_points,
     quantize_dir8,
     quantize_dir8_hysteresis,
-    solve_two_bone_ik,
+    quantized_arm_points,
 )
 from drift_with_me.render import Renderer
 
@@ -53,57 +56,57 @@ def test_quantize_dir8_hysteresis_holds_near_boundary_then_switches() -> None:
     )
 
 
-@pytest.mark.parametrize(
-    ("target", "upper", "lower"),
-    (
-        ((10.0, 6.0), 8.0, 9.0),
-        ((100.0, 0.0), 8.0, 9.0),
-        ((0.01, 0.0), 8.0, 9.0),
-        ((0.0, 0.0), 8.0, 8.0),
-    ),
-)
-def test_two_bone_ik_stays_finite_and_preserves_segment_lengths(
-    target: tuple[float, float], upper: float, lower: float
-) -> None:
-    elbow_x, elbow_y, hand_x, hand_y = solve_two_bone_ik(
-        0.0,
-        0.0,
-        target[0],
-        target[1],
-        upper,
-        lower,
-        1,
+def test_curved_chain_adds_three_internal_joints_and_reaches_target() -> None:
+    spec = DEFAULT_ARM_SPECS[0]
+    target = spec.shoulder_x + 14.0, spec.shoulder_y + 2.0
+
+    points = curved_chain_points(spec, *target, "IDLE", 0)
+
+    assert len(points) == 5
+    assert points[0] == (spec.shoulder_x, spec.shoulder_y)
+    assert points[-1] == pytest.approx(target)
+
+
+def test_curved_chain_sign_places_arc_on_opposite_sides() -> None:
+    source = DEFAULT_ARM_SPECS[0]
+    positive = replace(source, curve_sign=1)
+    negative = replace(source, curve_sign=-1)
+    target = source.shoulder_x + 15.0, source.shoulder_y
+
+    positive_points = curved_chain_points(positive, *target, "IDLE", 0, undulation_strength=0.0)
+    negative_points = curved_chain_points(negative, *target, "IDLE", 0, undulation_strength=0.0)
+
+    assert positive_points[2][0] == pytest.approx(negative_points[2][0])
+    assert positive_points[2][1] - source.shoulder_y == pytest.approx(
+        -(negative_points[2][1] - source.shoulder_y)
     )
 
-    assert all(math.isfinite(value) for value in (elbow_x, elbow_y, hand_x, hand_y))
-    assert math.hypot(elbow_x, elbow_y) == pytest.approx(upper, abs=1.0e-6)
-    assert math.hypot(hand_x - elbow_x, hand_y - elbow_y) == pytest.approx(lower, abs=1.0e-6)
-    assert math.hypot(hand_x, hand_y) <= upper + lower
+
+def test_curved_chain_wave_travels_without_moving_endpoints() -> None:
+    spec = DEFAULT_ARM_SPECS[2]
+    target = spec.shoulder_x + 13.0, spec.shoulder_y + 4.0
+    early = curved_chain_points(spec, *target, "IDLE", 0)
+    later = curved_chain_points(spec, *target, "IDLE", 50)
+
+    assert early[0] == later[0]
+    assert early[-1] == pytest.approx(later[-1])
+    assert early[1:-1] != later[1:-1]
 
 
-def test_two_bone_ik_bend_sign_places_elbow_on_opposite_sides() -> None:
-    positive = solve_two_bone_ik(0.0, 0.0, 10.0, 0.0, 8.0, 8.0, 1)
-    negative = solve_two_bone_ik(0.0, 0.0, 10.0, 0.0, 8.0, 8.0, -1)
-
-    assert positive[0] == pytest.approx(negative[0])
-    assert positive[1] == pytest.approx(-negative[1])
-
-
-def test_two_bone_ik_random_stress_never_produces_non_finite_coordinates() -> None:
+def test_curved_chain_random_stress_never_produces_non_finite_coordinates() -> None:
     random_source = random.Random(0xAB002)
     for _ in range(2000):
-        upper = random_source.uniform(0.1, 24.0)
-        lower = random_source.uniform(0.1, 24.0)
-        values = solve_two_bone_ik(
-            random_source.uniform(-20.0, 20.0),
-            random_source.uniform(-20.0, 20.0),
+        spec = random_source.choice(DEFAULT_ARM_SPECS)
+        points = curved_chain_points(
+            spec,
             random_source.uniform(-100.0, 100.0),
             random_source.uniform(-100.0, 100.0),
-            upper,
-            lower,
-            random_source.choice((-1, 1)),
+            random_source.choice(
+                ("IDLE", "PLAYER_FOUND", "CHARGE", "DASH", "STUN", "BUBBLE", "ZAP")
+            ),
+            random_source.randrange(10000),
         )
-        assert all(math.isfinite(value) for value in values)
+        assert all(math.isfinite(value) for point in points for value in point)
 
 
 @pytest.mark.parametrize(
@@ -155,8 +158,19 @@ def test_arm_system_builds_four_layered_arms_and_prunes_missing_enemies() -> Non
     assert len(rig.arms) == 4
     assert [arm.spec.layer for arm in rig.arms].count("back") == 2
     assert [arm.spec.layer for arm in rig.arms].count("front") == 2
-    assert all(0 <= arm.upper_dir8 < 8 for arm in rig.arms)
-    assert all(0 <= arm.lower_dir8 < 8 for arm in rig.arms)
+    assert all(len(arm.joints) == 5 for arm in rig.arms)
+    assert all(len(arm.segment_dirs) == 4 for arm in rig.arms)
+    assert all(0 <= direction < 8 for arm in rig.arms for direction in arm.segment_dirs)
+    for arm in rig.arms:
+        points = quantized_arm_points(arm)
+        assert len(points) == 5
+        for start, end, expected_length in zip(
+            points[:-1],
+            points[1:],
+            arm.spec.segment_lengths,
+            strict=True,
+        ):
+            assert math.dist(start, end) == pytest.approx(expected_length)
 
     system.prune(())
     assert not system.rigs
@@ -182,8 +196,7 @@ def test_runtime_config_and_manifest_enable_ik_assets() -> None:
     assert ik_config["enabled"] is True
     assert {
         ik_config["body_asset"],
-        ik_config["upper_arm_asset"],
-        ik_config["lower_arm_asset"],
+        ik_config["link_asset"],
         ik_config["claw_asset"],
     } <= source_ids
 

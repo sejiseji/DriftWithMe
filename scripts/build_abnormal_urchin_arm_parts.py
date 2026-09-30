@@ -47,15 +47,15 @@ def draw_line(canvas: list[list[int]], x0: int, y0: int, x1: int, y1: int, color
             y0 += sy
 
 
-def segment_pixels(direction_index: int, *, lower: bool) -> tuple[str, ...]:
+def link_pixels(direction_index: int) -> tuple[str, ...]:
     canvas = blank()
     direction_x, direction_y = DIR8[direction_index]
     normal_x, normal_y = -direction_y, direction_x
-    length = 7.5 if lower else 7.0
+    length = 5.0
     samples: list[tuple[int, int]] = []
-    for step in range(9):
-        amount = step / 8.0
-        irregular = math.sin(amount * math.pi) * (0.55 if lower else -0.45)
+    for step in range(7):
+        amount = step / 6.0
+        irregular = math.sin(amount * math.pi) * 0.30
         x = round(8 + direction_x * length * amount + normal_x * irregular)
         y = round(8 + direction_y * length * amount + normal_y * irregular)
         if not samples or samples[-1] != (x, y):
@@ -69,11 +69,11 @@ def segment_pixels(direction_index: int, *, lower: bool) -> tuple[str, ...]:
         set_pixel(canvas, x, y - 1, 1)
     for index, (x, y) in enumerate(samples):
         set_pixel(canvas, x, y, 8)
-        if 1 <= index < len(samples) - 1:
+        if 0 < index < len(samples) - 1:
             shadow_x = round(x + normal_x)
             shadow_y = round(y + normal_y)
             set_pixel(canvas, shadow_x, shadow_y, 2)
-        if index in {2, 5}:
+        if index in {1, 4}:
             highlight_x = round(x - normal_x)
             highlight_y = round(y - normal_y)
             set_pixel(canvas, highlight_x, highlight_y, 14)
@@ -81,7 +81,7 @@ def segment_pixels(direction_index: int, *, lower: bool) -> tuple[str, ...]:
     joint_x, joint_y = samples[0]
     set_pixel(canvas, joint_x, joint_y, 14)
     tip_x, tip_y = samples[-1]
-    set_pixel(canvas, tip_x, tip_y, 15 if lower else 14)
+    set_pixel(canvas, tip_x, tip_y, 15)
     return tuple("".join(format(pixel, "X") for pixel in row) for row in canvas)
 
 
@@ -126,8 +126,7 @@ def expected_assets() -> dict[Path, str]:
     generated: dict[Path, str] = {}
     for direction_index in range(8):
         parts = {
-            "upper": segment_pixels(direction_index, lower=False),
-            "lower": segment_pixels(direction_index, lower=True),
+            "link": link_pixels(direction_index),
             "claw": claw_pixels(direction_index),
         }
         for part, rows in parts.items():
@@ -156,7 +155,7 @@ def main() -> int:
     if args.check:
         print("abnormal urchin arm parts: PASS")
     else:
-        print("abnormal urchin arm parts: generated 24 HEX frames")
+        print("abnormal urchin arm parts: generated 16 HEX frames")
     return 0
 
 

@@ -271,7 +271,9 @@ class Renderer:
         self._visible_forest_light_spots = 0
         self._visible_ambient_motes = 0
         self.abnormal_urchin_arms = AbnormalUrchinArmSystem()
-        self._abnormal_urchin_arm_tuning: tuple[int, float, float, float] | None = None
+        self._abnormal_urchin_arm_tuning: tuple[int, float, float, float, float, float] | None = (
+            None
+        )
         self._debug_enabled = False
         self.last_stats = RenderStats()
 
@@ -3305,6 +3307,8 @@ class Renderer:
             float(config.get("damping", 0.78)),
             float(config.get("stiffness", 0.08)),
             float(config.get("direction_hysteresis", 0.08)),
+            float(config.get("curve_strength", 1.0)),
+            float(config.get("undulation_strength", 1.0)),
         )
         if tuning == self._abnormal_urchin_arm_tuning:
             return
@@ -3313,6 +3317,8 @@ class Renderer:
             damping=tuning[1],
             stiffness=tuning[2],
             direction_hysteresis=tuning[3],
+            curve_strength=tuning[4],
+            undulation_strength=tuning[5],
         )
         self._abnormal_urchin_arm_tuning = tuning
 
@@ -3576,33 +3582,31 @@ class Renderer:
         placement: SpritePlacement,
         layer: str,
     ) -> None:
-        upper_asset = self.abnormal_urchin_ik_asset(model, "upper_arm_asset")
-        lower_asset = self.abnormal_urchin_ik_asset(model, "lower_arm_asset")
+        link_asset = self.abnormal_urchin_ik_asset(model, "link_asset")
         claw_asset = self.abnormal_urchin_ik_asset(model, "claw_asset")
         for arm in rig.arms:
             if arm.spec.layer != layer:
                 continue
-            shoulder, elbow, hand = quantized_arm_points(arm)
-            if upper_asset is None or lower_asset is None or claw_asset is None:
-                self.draw_abnormal_urchin_arm_lines(placement, shoulder, elbow, hand, layer)
+            points = quantized_arm_points(arm)
+            if link_asset is None or claw_asset is None:
+                self.draw_abnormal_urchin_arm_lines(placement, points, layer)
                 continue
-            self.draw_abnormal_urchin_joint_part(
-                upper_asset,
-                f"dir{arm.upper_dir8}",
-                placement,
-                shoulder,
-            )
-            self.draw_abnormal_urchin_joint_part(
-                lower_asset,
-                f"dir{arm.lower_dir8}",
-                placement,
-                elbow,
-            )
+            for point, direction_index in zip(
+                points[:-1],
+                arm.segment_dirs,
+                strict=True,
+            ):
+                self.draw_abnormal_urchin_joint_part(
+                    link_asset,
+                    f"dir{direction_index}",
+                    placement,
+                    point,
+                )
             self.draw_abnormal_urchin_joint_part(
                 claw_asset,
-                f"dir{arm.lower_dir8}",
+                f"dir{arm.segment_dirs[-1]}",
                 placement,
-                hand,
+                points[-1],
             )
 
     def draw_abnormal_urchin_joint_part(
@@ -3635,29 +3639,22 @@ class Renderer:
     def draw_abnormal_urchin_arm_lines(
         self,
         placement: SpritePlacement,
-        shoulder: tuple[float, float],
-        elbow: tuple[float, float],
-        hand: tuple[float, float],
+        points: tuple[tuple[float, float], ...],
         layer: str,
     ) -> None:
-        shoulder_x, shoulder_y = self.abnormal_urchin_local_to_screen(placement, *shoulder)
-        elbow_x, elbow_y = self.abnormal_urchin_local_to_screen(placement, *elbow)
-        hand_x, hand_y = self.abnormal_urchin_local_to_screen(placement, *hand)
         color = 2 if layer == "back" else 14
-        self.pyxel.line(
-            int(round(shoulder_x)),
-            int(round(shoulder_y)),
-            int(round(elbow_x)),
-            int(round(elbow_y)),
-            1,
-        )
-        self.pyxel.line(
-            int(round(elbow_x)),
-            int(round(elbow_y)),
-            int(round(hand_x)),
-            int(round(hand_y)),
-            color,
-        )
+        screen_points = [
+            self.abnormal_urchin_local_to_screen(placement, *point) for point in points
+        ]
+        for index, (start, end) in enumerate(zip(screen_points, screen_points[1:], strict=True)):
+            self.pyxel.line(
+                int(round(start[0])),
+                int(round(start[1])),
+                int(round(end[0])),
+                int(round(end[1])),
+                1 if index == 0 else color,
+            )
+        hand_x, hand_y = screen_points[-1]
         self.pyxel.pset(int(round(hand_x)), int(round(hand_y)), 15)
 
     def abnormal_urchin_local_to_screen(
@@ -3678,18 +3675,27 @@ class Renderer:
     ) -> None:
         pyxel = self.pyxel
         for arm in rig.arms:
-            points = (
-                ((arm.spec.shoulder_x, arm.spec.shoulder_y), 10),
-                ((arm.elbow_x, arm.elbow_y), 9),
-                ((arm.hand_x, arm.hand_y), 7),
-                ((arm.target_x, arm.target_y), 11),
-            )
-            screen_points = [
-                (*self.abnormal_urchin_local_to_screen(placement, *point), color)
-                for point, color in points
+            joint_screen_points = [
+                self.abnormal_urchin_local_to_screen(placement, *point) for point in arm.joints
             ]
-            hand_x, hand_y, _ = screen_points[2]
-            target_x, target_y, _ = screen_points[3]
+            for start, end in zip(
+                joint_screen_points,
+                joint_screen_points[1:],
+                strict=True,
+            ):
+                pyxel.line(
+                    int(round(start[0])),
+                    int(round(start[1])),
+                    int(round(end[0])),
+                    int(round(end[1])),
+                    5,
+                )
+            hand_x, hand_y = joint_screen_points[-1]
+            target_x, target_y = self.abnormal_urchin_local_to_screen(
+                placement,
+                arm.target_x,
+                arm.target_y,
+            )
             pyxel.line(
                 int(round(hand_x)),
                 int(round(hand_y)),
@@ -3697,14 +3703,16 @@ class Renderer:
                 int(round(target_y)),
                 5,
             )
-            for point_x, point_y, color in screen_points:
+            for index, (point_x, point_y) in enumerate(joint_screen_points):
+                color = 10 if index == 0 else 7 if index == len(arm.joints) - 1 else 9
                 pyxel.circb(int(round(point_x)), int(round(point_y)), 1, color)
+            pyxel.circb(int(round(target_x)), int(round(target_y)), 1, 11)
             if hasattr(pyxel, "text"):
-                elbow_x, elbow_y, _ = screen_points[1]
+                label_x, label_y = joint_screen_points[1]
                 pyxel.text(
-                    int(round(elbow_x)) + 2,
-                    int(round(elbow_y)) - 2,
-                    f"{arm.upper_dir8}/{arm.lower_dir8}",
+                    int(round(label_x)) + 2,
+                    int(round(label_y)) - 2,
+                    "/".join(str(direction) for direction in arm.segment_dirs),
                     7,
                 )
         if hasattr(pyxel, "text"):

@@ -22,9 +22,8 @@ class UrchinArmSpec:
     name: str
     shoulder_x: float
     shoulder_y: float
-    upper_len: float
-    lower_len: float
-    bend_sign: int
+    segment_lengths: tuple[float, ...]
+    curve_sign: int
     outward_sign: int
     layer: str
 
@@ -36,12 +35,8 @@ class UrchinArm:
     target_y: float = 0.0
     target_vx: float = 0.0
     target_vy: float = 0.0
-    elbow_x: float = 0.0
-    elbow_y: float = 0.0
-    hand_x: float = 0.0
-    hand_y: float = 0.0
-    upper_dir8: int = 0
-    lower_dir8: int = 0
+    joints: tuple[tuple[float, float], ...] = ()
+    segment_dirs: tuple[int, ...] = ()
 
 
 @dataclass
@@ -53,10 +48,10 @@ class UrchinArmRig:
 
 
 DEFAULT_ARM_SPECS = (
-    UrchinArmSpec("back_left", 27.0, 23.0, 8.0, 9.0, -1, -1, "back"),
-    UrchinArmSpec("back_right", 37.0, 23.0, 8.0, 9.0, 1, 1, "back"),
-    UrchinArmSpec("front_left", 23.0, 36.0, 9.0, 10.0, 1, -1, "front"),
-    UrchinArmSpec("front_right", 41.0, 36.0, 9.0, 10.0, -1, 1, "front"),
+    UrchinArmSpec("back_left", 27.0, 23.0, (5.0, 5.0, 5.0, 5.0), -1, -1, "back"),
+    UrchinArmSpec("back_right", 37.0, 23.0, (5.0, 5.0, 5.0, 5.0), 1, 1, "back"),
+    UrchinArmSpec("front_left", 23.0, 36.0, (5.0, 5.0, 5.0, 5.0), 1, -1, "front"),
+    UrchinArmSpec("front_right", 41.0, 36.0, (5.0, 5.0, 5.0, 5.0), -1, 1, "front"),
 )
 
 
@@ -96,41 +91,70 @@ def quantize_dir8_hysteresis(
     return candidate
 
 
-def solve_two_bone_ik(
-    shoulder_x: float,
-    shoulder_y: float,
+def curved_chain_points(
+    spec: UrchinArmSpec,
     target_x: float,
     target_y: float,
-    upper_len: float,
-    lower_len: float,
-    bend_sign: int,
-) -> tuple[float, float, float, float]:
-    upper = max(abs(upper_len), 1.0e-4)
-    lower = max(abs(lower_len), 1.0e-4)
-    dx = target_x - shoulder_x
-    dy = target_y - shoulder_y
-    original_distance = math.hypot(dx, dy)
-    if original_distance <= 1.0e-8 or not math.isfinite(original_distance):
-        unit_x, unit_y = 1.0, 0.0
-        original_distance = 0.0
-    else:
-        unit_x = dx / original_distance
-        unit_y = dy / original_distance
+    state: str,
+    age_frames: int,
+    *,
+    curve_strength: float = 1.0,
+    undulation_strength: float = 1.0,
+) -> tuple[tuple[float, float], ...]:
+    shoulder_x = spec.shoulder_x
+    shoulder_y = spec.shoulder_y
+    segment_count = max(1, len(spec.segment_lengths))
+    maximum_reach = max(1.0, sum(spec.segment_lengths) * 0.97)
+    direction_x, direction_y = normalized_direction(
+        target_x - shoulder_x,
+        target_y - shoulder_y,
+    )
+    target_distance = math.hypot(target_x - shoulder_x, target_y - shoulder_y)
+    distance = clamp(target_distance, maximum_reach * 0.30, maximum_reach)
+    end_x = shoulder_x + direction_x * distance
+    end_y = shoulder_y + direction_y * distance
+    perpendicular_x = -direction_y
+    perpendicular_y = direction_x
 
-    minimum_distance = abs(upper - lower) + 1.0e-4
-    maximum_distance = max(minimum_distance, upper + lower - 1.0e-4)
-    distance = clamp(original_distance, minimum_distance, maximum_distance)
-    hand_x = shoulder_x + unit_x * distance
-    hand_y = shoulder_y + unit_y * distance
+    curve_profiles = {
+        "IDLE": (4.2, 1.9, 0.035),
+        "PLAYER_FOUND": (4.8, 2.2, 0.045),
+        "CHARGE": (5.3, 2.5, 0.050),
+        "DASH": (2.1, 1.2, 0.065),
+        "STUN": (2.2, 0.8, 0.025),
+        "BUBBLE": (4.7, 2.5, 0.045),
+        "ZAP": (3.2, 3.1, 0.180),
+        "RECOVER": (3.7, 1.7, 0.035),
+    }
+    arc_amount, wave_amount, phase_speed = curve_profiles.get(state, curve_profiles["IDLE"])
+    arc_amount *= max(0.0, curve_strength)
+    wave_amount *= max(0.0, undulation_strength)
+    arm_phase = (
+        age_frames * phase_speed
+        + (0.0 if spec.outward_sign < 0 else 1.8)
+        + (0.7 if spec.layer == "front" else 0.0)
+    )
 
-    along = (upper * upper - lower * lower + distance * distance) / (2.0 * distance)
-    height = math.sqrt(max(0.0, upper * upper - along * along))
-    perpendicular_x = -unit_y
-    perpendicular_y = unit_x
-    sign = 1.0 if bend_sign >= 0 else -1.0
-    elbow_x = shoulder_x + unit_x * along + perpendicular_x * height * sign
-    elbow_y = shoulder_y + unit_y * along + perpendicular_y * height * sign
-    return elbow_x, elbow_y, hand_x, hand_y
+    points: list[tuple[float, float]] = []
+    for index in range(segment_count + 1):
+        progress = index / segment_count
+        envelope = math.sin(math.pi * progress)
+        arc_offset = float(spec.curve_sign) * arc_amount * envelope
+        traveling_wave = math.sin(arm_phase - progress * math.pi * 2.4) * wave_amount * envelope
+        along_wave = math.cos(arm_phase - progress * math.pi * 1.6) * wave_amount * 0.20 * envelope
+        points.append(
+            (
+                shoulder_x
+                + (end_x - shoulder_x) * progress
+                + perpendicular_x * (arc_offset + traveling_wave)
+                + direction_x * along_wave,
+                shoulder_y
+                + (end_y - shoulder_y) * progress
+                + perpendicular_y * (arc_offset + traveling_wave)
+                + direction_y * along_wave,
+            )
+        )
+    return tuple(points)
 
 
 def abnormal_urchin_pose_state(
@@ -227,19 +251,22 @@ def arm_goal(
 
 def quantized_arm_points(
     arm: UrchinArm,
-) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
-    shoulder = arm.spec.shoulder_x, arm.spec.shoulder_y
-    upper_x, upper_y = DIR8[arm.upper_dir8]
-    lower_x, lower_y = DIR8[arm.lower_dir8]
-    elbow = (
-        shoulder[0] + upper_x * arm.spec.upper_len,
-        shoulder[1] + upper_y * arm.spec.upper_len,
-    )
-    hand = (
-        elbow[0] + lower_x * arm.spec.lower_len,
-        elbow[1] + lower_y * arm.spec.lower_len,
-    )
-    return shoulder, elbow, hand
+) -> tuple[tuple[float, float], ...]:
+    points = [(arm.spec.shoulder_x, arm.spec.shoulder_y)]
+    for length, direction_index in zip(
+        arm.spec.segment_lengths,
+        arm.segment_dirs,
+        strict=True,
+    ):
+        direction_x, direction_y = DIR8[direction_index]
+        previous_x, previous_y = points[-1]
+        points.append(
+            (
+                previous_x + direction_x * length,
+                previous_y + direction_y * length,
+            )
+        )
+    return tuple(points)
 
 
 class AbnormalUrchinArmSystem:
@@ -250,11 +277,15 @@ class AbnormalUrchinArmSystem:
         damping: float = 0.78,
         stiffness: float = 0.08,
         direction_hysteresis: float = 0.08,
+        curve_strength: float = 1.0,
+        undulation_strength: float = 1.0,
     ) -> None:
         self.fixed_hz = max(1, int(fixed_hz))
         self.damping = clamp(damping, 0.0, 1.0)
         self.stiffness = max(0.0, stiffness)
         self.direction_hysteresis = max(0.0, direction_hysteresis)
+        self.curve_strength = max(0.0, curve_strength)
+        self.undulation_strength = max(0.0, undulation_strength)
         self.rigs: dict[str, UrchinArmRig] = {}
 
     def ensure_rig(
@@ -271,7 +302,7 @@ class AbnormalUrchinArmSystem:
         rig = UrchinArmRig(enemy_id=enemy_id, state=state, arms=arms)
         for arm in arms:
             arm.target_x, arm.target_y = arm_goal(arm.spec, state, attack_dx, attack_dy, 0)
-            self._solve_arm(arm)
+            self._solve_arm(arm, state, 0)
         self.rigs[enemy_id] = rig
         return rig
 
@@ -304,7 +335,7 @@ class AbnormalUrchinArmSystem:
                 )
                 arm.target_x += arm.target_vx
                 arm.target_y += arm.target_vy
-                self._solve_arm(arm)
+                self._solve_arm(arm, state, rig.age_frames)
         return rig
 
     def prune(self, active_enemy_ids: Iterable[str]) -> None:
@@ -313,25 +344,30 @@ class AbnormalUrchinArmSystem:
             if enemy_id not in active:
                 del self.rigs[enemy_id]
 
-    def _solve_arm(self, arm: UrchinArm) -> None:
-        arm.elbow_x, arm.elbow_y, arm.hand_x, arm.hand_y = solve_two_bone_ik(
-            arm.spec.shoulder_x,
-            arm.spec.shoulder_y,
+    def _solve_arm(self, arm: UrchinArm, state: str, age_frames: int) -> None:
+        arm.joints = curved_chain_points(
+            arm.spec,
             arm.target_x,
             arm.target_y,
-            arm.spec.upper_len,
-            arm.spec.lower_len,
-            arm.spec.bend_sign,
+            state,
+            age_frames,
+            curve_strength=self.curve_strength,
+            undulation_strength=self.undulation_strength,
         )
-        arm.upper_dir8 = quantize_dir8_hysteresis(
-            arm.elbow_x - arm.spec.shoulder_x,
-            arm.elbow_y - arm.spec.shoulder_y,
-            arm.upper_dir8,
-            self.direction_hysteresis,
-        )
-        arm.lower_dir8 = quantize_dir8_hysteresis(
-            arm.hand_x - arm.elbow_x,
-            arm.hand_y - arm.elbow_y,
-            arm.lower_dir8,
-            self.direction_hysteresis,
+        previous_dirs = arm.segment_dirs
+        if len(previous_dirs) != len(arm.spec.segment_lengths):
+            previous_dirs = tuple(0 for _ in arm.spec.segment_lengths)
+        arm.segment_dirs = tuple(
+            quantize_dir8_hysteresis(
+                end[0] - start[0],
+                end[1] - start[1],
+                previous,
+                self.direction_hysteresis,
+            )
+            for start, end, previous in zip(
+                arm.joints[:-1],
+                arm.joints[1:],
+                previous_dirs,
+                strict=True,
+            )
         )
