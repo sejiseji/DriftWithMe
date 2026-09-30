@@ -307,16 +307,6 @@
       }
     ]
   },
-  "tree_wind": {
-    "enabled": true,
-    "combat_hidden": true,
-    "min_scale": 0.35,
-    "active_frames": 84,
-    "cycle_min_frames": 300,
-    "cycle_variation_frames": 180,
-    "band_source_px": 24,
-    "shift_px": 1
-  },
   "ambient_motes": {
     "enabled": true,
     "affine_only": true,
@@ -514,6 +504,10 @@
     "solar_station_active_asset": "solar_station_active_96",
     "tree_leafy_asset": "tree_leafy_a_96",
     "tree_thin_asset": "tree_thin_b_96",
+    "tree_leafy_trunk_asset": "tree_leafy_a_trunk_96",
+    "tree_leafy_leaves_asset": "tree_leafy_a_leaves_96",
+    "tree_thin_trunk_asset": "tree_thin_b_trunk_96",
+    "tree_thin_leaves_asset": "tree_thin_b_leaves_96",
     "reactive_grass_tall_asset": "grass_tall_a_64",
     "reactive_grass_low_asset": "grass_low_a_upright_64",
     "ground_pebbles_asset": "pebbles_a_64",

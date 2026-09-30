@@ -109,6 +109,10 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "solar_station_active": "748b9391dc51f2423ccdcd5424824391aeec83583e9ddcc3b46067b8f5492c3f",
     "tree_leafy_a": "a868d992db8472f81045ada9a39cb6893ad88d2d320aa226264868e3a5d8ffe4",
     "tree_thin_b": "68de99d52511238f5ecbad7314e1cdeaa591dbf56916b17a86d0d00866a88e80",
+    "tree_leafy_a_trunk": "f24c4e575b96171857e63fcfda90464d8d01fe9db55525574d3b2977777f1378",
+    "tree_leafy_a_leaves": "6d8d790b86aad4636fe0bd6b6c3862a4473777798b17de008ac58cd0b4b5866c",
+    "tree_thin_b_trunk": "604f7fa15cb311e3303eb1f869c356e0b756bf47cf10ec1c5235fa878db865f1",
+    "tree_thin_b_leaves": "fa6e5a36e079105007ad568c2de89a46bfba4077f523132e72a064161a94df73",
     "reactive_grass_tall": "4b8d853400e617c486a88468f5203906d3f1f5ef6972c132b7614c3fbdf5c8f7",
     "reactive_grass_low": "5706308cefaf67b84c5ee62d0a742b17d5f60f28113e0272ae7fb8318f10c092",
     "ground_pebbles": "4bbbaed6dbc1a8219523d1bcd734171989693d2205428804302a90f7a5af47be",
@@ -563,6 +567,24 @@ def test_environment_wave1_source_hex_preserves_received_pixels(asset_id: str) -
         assert set("".join(rows)) - {"8"} == ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8[asset_id]
 
 
+@pytest.mark.parametrize("source_id", ("tree_leafy_a", "tree_thin_b"))
+def test_tree_layers_recompose_to_original_pixels(source_id: str) -> None:
+    asset_dir = ROOT / "src/drift_with_me/assets"
+    source = tuple((asset_dir / f"{source_id}.hex").read_text().strip().splitlines())
+    trunk = tuple((asset_dir / f"{source_id}_trunk.hex").read_text().strip().splitlines())
+    leaves = tuple((asset_dir / f"{source_id}_leaves.hex").read_text().strip().splitlines())
+
+    recomposed = tuple(
+        "".join(
+            leaf_color if leaf_color != "8" else trunk_color
+            for trunk_color, leaf_color in zip(trunk_row, leaf_row, strict=True)
+        )
+        for trunk_row, leaf_row in zip(trunk, leaves, strict=True)
+    )
+
+    assert recomposed == source
+
+
 @pytest.mark.parametrize("pose_id", tuple(TALL_GRASS_REACTIVE_POSE_HASHES))
 def test_tall_grass_reactive_pose_hex_preserves_received_pixels(pose_id: str) -> None:
     rows = tuple(
@@ -981,6 +1003,10 @@ environment_asset_ids = {{
     "solar_station_active": "solar_station_active_96",
     "tree_leafy_a": "tree_leafy_a_96",
     "tree_thin_b": "tree_thin_b_96",
+    "tree_leafy_a_trunk": "tree_leafy_a_trunk_96",
+    "tree_leafy_a_leaves": "tree_leafy_a_leaves_96",
+    "tree_thin_b_trunk": "tree_thin_b_trunk_96",
+    "tree_thin_b_leaves": "tree_thin_b_leaves_96",
     "reactive_grass_tall": "reactive_grass_tall_64",
     "reactive_grass_low": "reactive_grass_low_64",
     "ground_pebbles": "ground_pebbles_64",
@@ -1038,6 +1064,10 @@ environment_world_sizes = {{
     "solar_station_active": (36.0, 48.0),
     "tree_leafy_a": (48.0, 64.0),
     "tree_thin_b": (48.0, 64.0),
+    "tree_leafy_a_trunk": (48.0, 64.0),
+    "tree_leafy_a_leaves": (48.0, 64.0),
+    "tree_thin_b_trunk": (48.0, 64.0),
+    "tree_thin_b_leaves": (48.0, 64.0),
     "reactive_grass_tall": (24.0, 24.0),
     "reactive_grass_low": (28.0, 28.0),
     "ground_pebbles": (32.0, 32.0),
@@ -1095,6 +1125,10 @@ environment_colkeys = {{
     "solar_station_active": 8,
     "tree_leafy_a": 8,
     "tree_thin_b": 8,
+    "tree_leafy_a_trunk": 8,
+    "tree_leafy_a_leaves": 8,
+    "tree_thin_b_trunk": 8,
+    "tree_thin_b_leaves": 8,
     "concrete_clean_a": 8,
     "concrete_cracked_a": 8,
     "concrete_spalled_a": 8,
@@ -1146,6 +1180,10 @@ environment_anchors = {{
     "solar_station_active": (48.0, 127.0),
     "tree_leafy_a": (48.0, 127.0),
     "tree_thin_b": (48.0, 127.0),
+    "tree_leafy_a_trunk": (48.0, 127.0),
+    "tree_leafy_a_leaves": (48.0, 127.0),
+    "tree_thin_b_trunk": (48.0, 127.0),
+    "tree_thin_b_leaves": (48.0, 127.0),
     "concrete_clean_a": (32.0, 32.0),
     "concrete_cracked_a": (32.0, 32.0),
     "concrete_spalled_a": (32.0, 32.0),

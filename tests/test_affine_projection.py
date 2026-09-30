@@ -11,7 +11,6 @@ from drift_with_me.hex_assets import (
     LoadedSpriteFrame,
     SpriteDefinition,
     SpriteFrameDefinition,
-    SpritePlacement,
 )
 from drift_with_me.math3d import (
     AffineProjectionProfile,
@@ -101,101 +100,24 @@ def make_affine_camera():
     return runtime, world, perspective, profile, affine
 
 
-def test_tree_wind_moves_one_crown_band_and_keeps_trunk_core_registered() -> None:
+def test_tree_layers_draw_trunk_before_leaves() -> None:
     runtime, world, _perspective, _profile, _affine = make_affine_camera()
     model = GameModel(runtime.raw, world)
     tree = world.object_by_id("tree_01")
     assert tree is not None
-
-    frame = LoadedSpriteFrame(
-        frame_id="idle_00",
-        image="tree-image",
-        source=None,
-        u=0,
-        v=0,
-        width=96,
-        height=128,
-        source_hash="source-hash",
-    )
-    definition = SpriteDefinition(
-        asset_id="tree_leafy_a_96",
-        palette_id="pyxel_default_16",
-        hex_width=96,
-        hex_height=128,
-        colkey=8,
-        anchor_px=(48.0, 127.0),
-        world_size=(48.0, 64.0),
-        projection_mode="upright_height_billboard_v1",
-        flip_policy="none",
-        animation="static",
-        frames=(SpriteFrameDefinition(frame_id="idle_00"),),
-        source_hash="source-hash",
-    )
-    asset = LoadedSpriteAsset(definition=definition, frames={"idle_00": frame})
-    placement = SpritePlacement(
-        anchor_x=0.0,
-        anchor_y=0.0,
-        depth=1.0,
-        scale=0.5,
-        flip_x=False,
-        blt_x=10.0,
-        blt_y=20.0,
-        left=10.0,
-        top=20.0,
-        right=58.0,
-        bottom=84.0,
-    )
-    pyxel = RecordingPyxel()
-    renderer = Renderer(pyxel)
-
-    active_tick = -1
-    for tick in range(1000):
-        model.world_tick = tick
-        if renderer.tree_wind_source_window(model, tree, placement.scale) is not None:
-            active_tick = tick
-            break
-    assert active_tick >= 0
-    model.world_tick = active_tick
-    shift_top, shift_bottom = renderer.tree_wind_source_window(model, tree, placement.scale) or (
-        0,
-        0,
-    )
-
-    assert renderer.draw_tree_wind_sprite(model, tree, asset, placement)
-
-    blits = [call for call in pyxel.calls if call[0] == "blt"]
-    shifted = [call for call in blits if call[1][0] == 11.0]
-    assert len(shifted) == 1
-    assert shifted[0][1][4:7] == (shift_top, 96, shift_bottom - shift_top)
-    assert shifted[0][2] == {"colkey": 8, "scale": 0.5}
-    trunk = blits[-1]
-    assert trunk[1][0] == 31.0
-    assert trunk[1][3:7] == (42, 46, 13, 82)
-
-
-def test_tree_wind_is_intermittent_staggered_and_hidden_during_combat() -> None:
-    runtime, world, _perspective, _profile, _affine = make_affine_camera()
-    model = GameModel(runtime.raw, world)
+    trunk = object()
+    leaves = object()
+    assets = {
+        "tree_leafy_trunk_asset": trunk,
+        "tree_leafy_leaves_asset": leaves,
+    }
+    draws = []
     renderer = Renderer(FakePyxel())
-    first = world.object_by_id("tree_01")
-    second = world.object_by_id("tree_02")
-    assert first is not None and second is not None
+    renderer.configured_sprite_asset = lambda _model, key: assets.get(key)
+    renderer.draw_atmospheric_scaled_sprite = lambda asset, _placement: draws.append(asset)
 
-    windows = []
-    for tick in range(600):
-        model.world_tick = tick
-        windows.append(
-            (
-                renderer.tree_wind_source_window(model, first, 0.5),
-                renderer.tree_wind_source_window(model, second, 0.5),
-            )
-        )
-
-    assert any(first_window is not None for first_window, _second_window in windows)
-    assert any(first_window is None for first_window, _second_window in windows)
-    assert any(first_window != second_window for first_window, second_window in windows)
-    model.combat_session = object()
-    assert renderer.tree_wind_source_window(model, first, 0.5) is None
+    assert renderer.draw_tree_layered_sprite(model, tree, object())
+    assert draws == [trunk, leaves]
 
 
 def test_affine_profile_matches_current_follow_projection_measurement() -> None:

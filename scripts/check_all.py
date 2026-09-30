@@ -19,6 +19,7 @@ def main() -> int:
     steps = [
         ("spec data", [python, "docs/prototype_spec/tools/validate_spec_data.py", "--self-test"]),
         ("office font subset", [python, "scripts/build_office_font_subset.py", "--check"]),
+        ("tree layers", [python, "scripts/build_tree_layers.py", "--check"]),
         ("pytest", [python, "-m", "pytest"]),
         ("ruff check", [python, "-m", "ruff", "check", "."]),
         ("ruff format check", [python, "-m", "ruff", "format", "--check", "."]),
