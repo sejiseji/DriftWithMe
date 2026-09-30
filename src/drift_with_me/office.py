@@ -474,6 +474,42 @@ class OfficePrototype:
         self.active_field_task = task
         return task
 
+    def prepare_debug_field_task(self) -> FieldTask | None:
+        field_case_index = next(
+            (
+                index
+                for index, case in enumerate(self.cases)
+                if case.expected_classification == Classification.FIELD_CHECK
+                and case.field_task is not None
+            ),
+            None,
+        )
+        if field_case_index is None:
+            return None
+
+        self.current_index = field_case_index
+        case = self.current_case
+        if case is None:
+            return None
+
+        session = CaseSession(case.case_id)
+        session.asked_question_ids = {question.question_id for question in case.questions}
+        known_fact_ids: set[str] = set()
+        for question in case.questions:
+            for fact in question.memo_updates:
+                if fact.fact_id in known_fact_ids:
+                    continue
+                known_fact_ids.add(fact.fact_id)
+                session.memo_facts.append(fact)
+        if case.questions:
+            session.selected_question_id = case.questions[-1].question_id
+        session.selected_classification = Classification.FIELD_CHECK
+        session.state = CaseState.FIELD_CHECK_REQUIRED
+        session.feedback = ""
+        self.sessions[case.case_id] = session
+        self.active_field_task = None
+        return self.prepare_field_task()
+
     def complete_field_task(self, result: FieldResult) -> bool:
         session = self.current_session
         case = self.current_case

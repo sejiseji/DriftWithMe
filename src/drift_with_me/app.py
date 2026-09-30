@@ -550,6 +550,9 @@ class DriftWithMeApp:
 
     def update_office_screen(self, elapsed: float) -> None:
         self.clear_world_input_latches()
+        if self.mouse_pressed_in(self.office_field_debug_rect()):
+            self.activate_office_field_debug()
+            return
         session = self.office.current_session
         case = self.office.current_case
         if session is None or case is None:
@@ -918,6 +921,18 @@ class DriftWithMeApp:
             self.office_focus = "questions"
             self.office_question_index = 0
             self.office_classification_index = 0
+
+    def activate_office_field_debug(self) -> bool:
+        if self.office.prepare_debug_field_task() is None:
+            return False
+        self.office_focus = "questions"
+        self.office_question_index = 0
+        self.office_classification_index = 0
+        self.office_dialogue_playback = OfficeDialoguePlayback()
+        self.office_answer_case_id = None
+        self.office_answer_question_id = None
+        self.enter_exploration_from_office()
+        return True
 
     def enter_exploration_from_office(self) -> None:
         self.clear_world_input_latches()
@@ -2149,7 +2164,10 @@ class DriftWithMeApp:
             office = getattr(self, "office", None)
             case = None if office is None else office.current_case
             session = None if office is None else office.current_session
-            rects: list[Rect] = [self.office_dialog_rect()]
+            rects: list[Rect] = [
+                self.office_field_debug_rect(),
+                self.office_dialog_rect(),
+            ]
             if self.office_dialogue_requires_advance():
                 return tuple(rects)
             if case is not None and session is not None:
@@ -2198,6 +2216,9 @@ class DriftWithMeApp:
 
     def office_header_rect(self) -> Rect:
         return self.office_rect(0, 0, 512, 27)
+
+    def office_field_debug_rect(self) -> Rect:
+        return self.office_rect(244, 3, 92, 21)
 
     def office_visitor_rect(self) -> Rect:
         return self.office_rect(6, 31, 124, 173)
@@ -2634,6 +2655,15 @@ class DriftWithMeApp:
         pyxel.rect(0, int(footer.y), self.runtime.screen_width, int(footer.height), 0)
         pyxel.line(0, int(footer.y), self.runtime.screen_width, int(footer.y), 12)
 
+        debug_rect = self.office_field_debug_rect()
+        self.draw_office_button(
+            debug_rect,
+            "現地確認へ",
+            10,
+            text_color=0,
+            horizontal_padding=2,
+        )
+
         office = self.office
         case = office.current_case
         session = office.current_session
@@ -2643,7 +2673,12 @@ class DriftWithMeApp:
             return
 
         self.draw_office_text_in_rect(
-            Rect(header_pad, header.y, self.runtime.screen_width * 0.58, header.height),
+            Rect(
+                header_pad,
+                header.y,
+                max(1.0, debug_rect.x - header_pad * 2),
+                header.height,
+            ),
             "質問または処理区分を選択",
             13,
             preferred_styles=("office_japanese", "office_japanese_button"),
@@ -2651,7 +2686,7 @@ class DriftWithMeApp:
 
         status = self.office_state_label(session.state)
         count_text = f"案件 {office.current_index + 1}/{len(office.cases)}  {status}"
-        status_x = self.runtime.screen_width * 0.61
+        status_x = debug_rect.x + debug_rect.width + header_pad
         self.draw_office_text_in_rect(
             Rect(
                 status_x,

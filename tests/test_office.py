@@ -615,6 +615,7 @@ def test_off001_office_layout_stays_inside_all_profiles() -> None:
         screen = Rect(0, 0, app.runtime.screen_width, app.runtime.screen_height)
         rects = (
             app.office_header_rect(),
+            app.office_field_debug_rect(),
             app.office_visitor_rect(),
             app.office_dialog_rect(),
             app.office_questions_panel_rect(),
@@ -636,6 +637,10 @@ def test_off001_office_layout_stays_inside_all_profiles() -> None:
             app.office_dialog_rect().y + app.office_dialog_rect().height
             < app.office_questions_panel_rect().y
         )
+        debug_rect = app.office_field_debug_rect()
+        header_rect = app.office_header_rect()
+        assert debug_rect.y >= header_rect.y
+        assert debug_rect.y + debug_rect.height <= header_rect.y + header_rect.height
 
         question_rects = [app.office_question_rect(index, 5) for index in range(5)]
         assert all(rect.height >= app.office_rect(0, 0, 0, 14).height for rect in question_rects)
@@ -1328,6 +1333,38 @@ def test_off001_start_game_enters_office_without_advancing_world() -> None:
     assert app.previous_time is None
     assert app.accumulator == 0.0
     assert app.hitstop_remaining == 0.0
+
+
+def test_off001_debug_field_button_prepares_task_and_enters_exploration() -> None:
+    app = DriftWithMeApp.__new__(DriftWithMeApp)
+    app.office = OfficePrototype.load()
+    app.pointer = SimpleNamespace(cancel=lambda: None)
+    app.double_tap_move = SimpleNamespace(cancel=lambda: None)
+    app.pending_action_pressed = True
+    app.pending_interact_pressed = True
+    app.pending_auto_move_goal = (1.0, 2.0)
+    app.pending_cancel_auto_move = True
+    app.accumulator = 1.0
+    app.previous_time = 1.0
+    app.screen = AppScreen.OFFICE
+    app.show_location_label = lambda: None
+
+    assert app.activate_office_field_debug()
+
+    case = app.office.current_case
+    session = app.office.current_session
+    task = app.office.active_field_task
+    assert app.screen == AppScreen.PLAY
+    assert case is not None
+    assert case.expected_classification == Classification.FIELD_CHECK
+    assert session is not None
+    assert session.state == CaseState.FIELD_ACTIVE
+    assert session.asked_question_ids == {question.question_id for question in case.questions}
+    assert task is not None
+    assert task.case_id == case.case_id
+    assert task.memo_lines
+    assert app.pending_action_pressed is False
+    assert app.pending_interact_pressed is False
 
 
 def make_active_office_field_event_app() -> DriftWithMeApp:
