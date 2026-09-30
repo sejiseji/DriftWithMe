@@ -48,10 +48,10 @@ class UrchinArmRig:
 
 
 DEFAULT_ARM_SPECS = (
-    UrchinArmSpec("back_left", 27.0, 23.0, (5.0, 5.0, 5.0, 5.0), -1, -1, "back"),
-    UrchinArmSpec("back_right", 37.0, 23.0, (5.0, 5.0, 5.0, 5.0), 1, 1, "back"),
-    UrchinArmSpec("front_left", 23.0, 36.0, (5.0, 5.0, 5.0, 5.0), 1, -1, "front"),
-    UrchinArmSpec("front_right", 41.0, 36.0, (5.0, 5.0, 5.0, 5.0), -1, 1, "front"),
+    UrchinArmSpec("back_left", 27.0, 23.0, (7.0, 7.0, 7.0, 7.0), -1, -1, "back"),
+    UrchinArmSpec("back_right", 37.0, 23.0, (7.0, 7.0, 7.0, 7.0), 1, 1, "back"),
+    UrchinArmSpec("front_left", 23.0, 36.0, (7.0, 7.0, 7.0, 7.0), 1, -1, "front"),
+    UrchinArmSpec("front_right", 41.0, 36.0, (7.0, 7.0, 7.0, 7.0), -1, 1, "front"),
 )
 
 
@@ -117,14 +117,14 @@ def curved_chain_points(
     perpendicular_y = direction_x
 
     curve_profiles = {
-        "IDLE": (4.2, 1.9, 0.035),
-        "PLAYER_FOUND": (4.8, 2.2, 0.045),
-        "CHARGE": (5.3, 2.5, 0.050),
-        "DASH": (2.1, 1.2, 0.065),
-        "STUN": (2.2, 0.8, 0.025),
-        "BUBBLE": (4.7, 2.5, 0.045),
-        "ZAP": (3.2, 3.1, 0.180),
-        "RECOVER": (3.7, 1.7, 0.035),
+        "IDLE": (6.4, 3.0, 0.042),
+        "PLAYER_FOUND": (7.0, 3.3, 0.052),
+        "CHARGE": (7.8, 3.8, 0.060),
+        "DASH": (3.0, 1.8, 0.075),
+        "STUN": (3.4, 1.3, 0.030),
+        "BUBBLE": (7.2, 3.8, 0.055),
+        "ZAP": (5.0, 4.5, 0.200),
+        "RECOVER": (5.7, 2.6, 0.042),
     }
     arc_amount, wave_amount, phase_speed = curve_profiles.get(state, curve_profiles["IDLE"])
     arc_amount *= max(0.0, curve_strength)
@@ -211,41 +211,47 @@ def arm_goal(
 ) -> tuple[float, float]:
     attack_x, attack_y = normalized_direction(attack_dx, attack_dy)
     outward = float(spec.outward_sign)
-    phase = age_frames * 0.035 + (0.0 if outward < 0.0 else 1.7)
-    idle_x = outward * 12.0
-    idle_y = (-3.0 if spec.layer == "back" else 7.0) + math.sin(phase) * 1.3
+    phase_offset = {
+        "back_left": 0.0,
+        "back_right": 2.1,
+        "front_left": 1.0,
+        "front_right": 3.2,
+    }.get(spec.name, 0.0)
+    phase = age_frames * 0.035 + phase_offset
+    idle_x = outward * 19.0
+    idle_y = (-5.0 if spec.layer == "back" else 10.0) + math.sin(phase) * 2.0
 
     if state == "PLAYER_FOUND":
         return (
-            spec.shoulder_x + attack_x * 10.0 + outward * 5.0,
-            spec.shoulder_y + attack_y * 10.0 + idle_y * 0.3,
+            spec.shoulder_x + attack_x * 14.0 + outward * 8.0,
+            spec.shoulder_y + attack_y * 14.0 + idle_y * 0.3,
         )
     if state == "CHARGE":
         return (
-            spec.shoulder_x - attack_x * 14.0 + outward * 4.0,
-            spec.shoulder_y - attack_y * 14.0 + idle_y * 0.25,
+            spec.shoulder_x - attack_x * 21.0 + outward * 5.0,
+            spec.shoulder_y - attack_y * 21.0 + idle_y * 0.25,
         )
     if state == "DASH":
         return (
-            spec.shoulder_x + attack_x * 18.0 + outward * 3.0,
-            spec.shoulder_y + attack_y * 18.0 + idle_y * 0.2,
+            spec.shoulder_x + attack_x * 26.0 + outward * 3.0,
+            spec.shoulder_y + attack_y * 26.0 + idle_y * 0.2,
         )
     if state == "STUN":
-        return spec.shoulder_x + outward * 5.0, spec.shoulder_y + 16.0
+        return spec.shoulder_x + outward * 7.0, spec.shoulder_y + 25.0
     if state == "BUBBLE":
         return (
-            spec.shoulder_x + outward * 19.0,
-            spec.shoulder_y + (-5.0 if spec.layer == "back" else 9.0),
+            spec.shoulder_x + outward * 27.0,
+            spec.shoulder_y + (-7.0 if spec.layer == "back" else 12.0),
         )
     if state == "ZAP":
         jitter_x = (-2.0, 1.0, 2.0, -1.0)[(age_frames + int(spec.shoulder_x)) % 4]
         jitter_y = (1.0, -2.0, 0.0, 2.0)[(age_frames + int(spec.shoulder_y)) % 4]
         return (
-            spec.shoulder_x + outward * 9.0 + jitter_x,
-            spec.shoulder_y + (2.0 if spec.layer == "back" else 7.0) + jitter_y,
+            spec.shoulder_x + outward * 16.0 + jitter_x,
+            spec.shoulder_y + (3.0 if spec.layer == "back" else 10.0) + jitter_y,
         )
     if state == "RECOVER":
-        return spec.shoulder_x + outward * 11.0, spec.shoulder_y + idle_y * 0.8
+        return spec.shoulder_x + outward * 18.0, spec.shoulder_y + idle_y * 0.8
     return spec.shoulder_x + idle_x, spec.shoulder_y + idle_y
 
 

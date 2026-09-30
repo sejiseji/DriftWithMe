@@ -160,6 +160,7 @@ def test_arm_system_builds_four_layered_arms_and_prunes_missing_enemies() -> Non
     assert [arm.spec.layer for arm in rig.arms].count("front") == 2
     assert all(len(arm.joints) == 5 for arm in rig.arms)
     assert all(len(arm.segment_dirs) == 4 for arm in rig.arms)
+    assert all(sum(arm.spec.segment_lengths) == 28.0 for arm in rig.arms)
     assert all(0 <= direction < 8 for arm in rig.arms for direction in arm.segment_dirs)
     for arm in rig.arms:
         points = quantized_arm_points(arm)

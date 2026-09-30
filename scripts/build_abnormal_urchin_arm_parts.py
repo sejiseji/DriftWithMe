@@ -51,10 +51,10 @@ def link_pixels(direction_index: int) -> tuple[str, ...]:
     canvas = blank()
     direction_x, direction_y = DIR8[direction_index]
     normal_x, normal_y = -direction_y, direction_x
-    length = 5.0
+    length = 7.0
     samples: list[tuple[int, int]] = []
-    for step in range(7):
-        amount = step / 6.0
+    for step in range(9):
+        amount = step / 8.0
         irregular = math.sin(amount * math.pi) * 0.30
         x = round(8 + direction_x * length * amount + normal_x * irregular)
         y = round(8 + direction_y * length * amount + normal_y * irregular)
@@ -73,7 +73,7 @@ def link_pixels(direction_index: int) -> tuple[str, ...]:
             shadow_x = round(x + normal_x)
             shadow_y = round(y + normal_y)
             set_pixel(canvas, shadow_x, shadow_y, 2)
-        if index in {1, 4}:
+        if index in {2, 6}:
             highlight_x = round(x - normal_x)
             highlight_y = round(y - normal_y)
             set_pixel(canvas, highlight_x, highlight_y, 14)
