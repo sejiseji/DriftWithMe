@@ -82,6 +82,12 @@ TREE_LAYER_ASSET_KEYS = {
     "tree_leafy_a": ("tree_leafy_trunk_asset", "tree_leafy_leaves_asset"),
     "tree_thin_b": ("tree_thin_trunk_asset", "tree_thin_leaves_asset"),
 }
+TREE_FOLIAGE_IDLE_FRAME_ID = "idle_00"
+TREE_FOLIAGE_SWAY_FRAME_IDS = (
+    "sway_right_01",
+    "sway_right_02",
+    "sway_right_03",
+)
 ATMOSPHERE_PLAYER_STRENGTH = 0.1
 GRASSLAND_MICRO_CLUMP_PATTERNS = (
     ((0.15, 0.24, 5, 0), (0.58, 0.38, 4, 1), (0.84, 0.78, 6, 0)),
@@ -2877,9 +2883,46 @@ class Renderer:
         leaves = self.configured_sprite_asset(model, asset_keys[1])
         if trunk is None or leaves is None:
             return False
+        leaf_frame_id = self.tree_foliage_frame_id(model, obj, placement.scale)
         self.draw_atmospheric_scaled_sprite(trunk, placement)
-        self.draw_atmospheric_scaled_sprite(leaves, placement)
+        self.draw_atmospheric_scaled_sprite(leaves, placement, leaves.frame(leaf_frame_id))
         return True
+
+    def tree_foliage_frame_id(
+        self,
+        model: GameModel,
+        obj: StaticObject,
+        scale: float,
+    ) -> str:
+        config = model.config.get("tree_foliage_motion", {})
+        if not bool(config.get("enabled", True)):
+            return TREE_FOLIAGE_IDLE_FRAME_ID
+        if bool(config.get("combat_hidden", True)) and model.combat_session is not None:
+            return TREE_FOLIAGE_IDLE_FRAME_ID
+        if scale < max(0.0, float(config.get("min_scale", 0.28))):
+            return TREE_FOLIAGE_IDLE_FRAME_ID
+
+        stage_frames = max(1, int(config.get("sway_stage_frames", 5)))
+        peak_frames = max(1, int(config.get("sway_peak_frames", 6)))
+        active_frames = stage_frames * 4 + peak_frames
+        interval_min = max(active_frames + 1, int(config.get("interval_min_frames", 240)))
+        interval_variation = max(0, int(config.get("interval_variation_frames", 240)))
+        seed = sum((index + 1) * ord(char) for index, char in enumerate(obj.id))
+        interval = interval_min
+        if interval_variation > 0:
+            interval += seed % (interval_variation + 1)
+        phase = (int(model.world_tick) + seed * 17) % interval
+        if phase < stage_frames:
+            return TREE_FOLIAGE_SWAY_FRAME_IDS[0]
+        if phase < stage_frames * 2:
+            return TREE_FOLIAGE_SWAY_FRAME_IDS[1]
+        if phase < stage_frames * 2 + peak_frames:
+            return TREE_FOLIAGE_SWAY_FRAME_IDS[2]
+        if phase < stage_frames * 3 + peak_frames:
+            return TREE_FOLIAGE_SWAY_FRAME_IDS[1]
+        if phase < active_frames:
+            return TREE_FOLIAGE_SWAY_FRAME_IDS[0]
+        return TREE_FOLIAGE_IDLE_FRAME_ID
 
     def draw_reactive_prop_sprite(
         self,

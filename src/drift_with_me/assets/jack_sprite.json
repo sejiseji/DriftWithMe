@@ -1375,17 +1375,32 @@
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
-      "animation": "static",
+      "animation": "foliage_pose_set",
       "frames": [
         {
           "id": "idle_00",
           "path": "tree_leafy_a_leaves.hex",
           "source_hash": "6d8d790b86aad4636fe0bd6b6c3862a4473777798b17de008ac58cd0b4b5866c"
+        },
+        {
+          "id": "sway_right_01",
+          "path": "tree_leafy_a_leaves_sway_right_01.hex",
+          "source_hash": "9f1b73d4a7c42df113a38f99b4a4df39f6ea5a07d336eed06b687e3defe942c0"
+        },
+        {
+          "id": "sway_right_02",
+          "path": "tree_leafy_a_leaves_sway_right_02.hex",
+          "source_hash": "62f0df73ed83714697c847bb6e143bf04d94e19dd9d5cf7a5b04ca3af7ba0a80"
+        },
+        {
+          "id": "sway_right_03",
+          "path": "tree_leafy_a_leaves_sway_right_03.hex",
+          "source_hash": "04b6e367ccb708d1b70b81ce554845658d25737883b0ac6f83deb7ddc70d0233"
         }
       ],
-      "source_hash": "6d8d790b86aad4636fe0bd6b6c3862a4473777798b17de008ac58cd0b4b5866c",
+      "source_hash": "b3be5dcd6de95bf503aca514f54ecf82abb693bc707ca50617f2ba00799ea1d4",
       "render_mode": "vertical_billboard",
-      "source_policy": "tree_layer_split_v0_1_hex"
+      "source_policy": "tree_layer_sway_v0_1_hex"
     },
     {
       "schema_version": 1,
@@ -1433,17 +1448,32 @@
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
-      "animation": "static",
+      "animation": "foliage_pose_set",
       "frames": [
         {
           "id": "idle_00",
           "path": "tree_thin_b_leaves.hex",
           "source_hash": "fa6e5a36e079105007ad568c2de89a46bfba4077f523132e72a064161a94df73"
+        },
+        {
+          "id": "sway_right_01",
+          "path": "tree_thin_b_leaves_sway_right_01.hex",
+          "source_hash": "f826ab0316cb039b62b5e2d39acc8f6d490b5b1530983168dc2ac9acb4e5e5cf"
+        },
+        {
+          "id": "sway_right_02",
+          "path": "tree_thin_b_leaves_sway_right_02.hex",
+          "source_hash": "9d0e2f16f66b0a2c7429d019edc260432701a9c3731662a3560b87c4468cd146"
+        },
+        {
+          "id": "sway_right_03",
+          "path": "tree_thin_b_leaves_sway_right_03.hex",
+          "source_hash": "a60df9d54d934072bcb77d7779c8342fffb5312e3446fcd0cf03c65f2d3a2623"
         }
       ],
-      "source_hash": "fa6e5a36e079105007ad568c2de89a46bfba4077f523132e72a064161a94df73",
+      "source_hash": "d77ae59849464b21ca50b61e114f67b9cc2a34944435df8d9b18b8ae00b0a8b9",
       "render_mode": "vertical_billboard",
-      "source_policy": "tree_layer_split_v0_1_hex"
+      "source_policy": "tree_layer_sway_v0_1_hex"
     },
     {
       "schema_version": 1,

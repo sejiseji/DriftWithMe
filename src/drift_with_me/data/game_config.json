@@ -1057,6 +1057,15 @@
       "corner_se": "shore_corner_outer_nw_64"
     }
   },
+  "tree_foliage_motion": {
+    "enabled": true,
+    "combat_hidden": true,
+    "min_scale": 0.28,
+    "sway_stage_frames": 5,
+    "sway_peak_frames": 6,
+    "interval_min_frames": 240,
+    "interval_variation_frames": 240
+  },
   "reactive_environment": {
     "enabled": true,
     "pose_frames_enabled": true,

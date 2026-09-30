@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import replace
+from types import SimpleNamespace
 
 import pytest
 
@@ -106,7 +107,8 @@ def test_tree_layers_draw_trunk_before_leaves() -> None:
     tree = world.object_by_id("tree_01")
     assert tree is not None
     trunk = object()
-    leaves = object()
+    leaf_frame = object()
+    leaves = SimpleNamespace(frame=lambda _frame_id: leaf_frame)
     assets = {
         "tree_leafy_trunk_asset": trunk,
         "tree_leafy_leaves_asset": leaves,
@@ -114,10 +116,75 @@ def test_tree_layers_draw_trunk_before_leaves() -> None:
     draws = []
     renderer = Renderer(FakePyxel())
     renderer.configured_sprite_asset = lambda _model, key: assets.get(key)
-    renderer.draw_atmospheric_scaled_sprite = lambda asset, _placement: draws.append(asset)
+    renderer.draw_atmospheric_scaled_sprite = lambda asset, _placement, frame=None: draws.append(
+        (asset, frame)
+    )
 
-    assert renderer.draw_tree_layered_sprite(model, tree, object())
-    assert draws == [trunk, leaves]
+    assert renderer.draw_tree_layered_sprite(model, tree, SimpleNamespace(scale=1.0))
+    assert draws == [(trunk, None), (leaves, leaf_frame)]
+
+
+def test_tree_foliage_sways_right_in_stages_then_returns_to_idle() -> None:
+    runtime, world, _perspective, _profile, _affine = make_affine_camera()
+    runtime.raw["tree_foliage_motion"] = {
+        "enabled": True,
+        "combat_hidden": True,
+        "min_scale": 0.28,
+        "sway_stage_frames": 2,
+        "sway_peak_frames": 3,
+        "interval_min_frames": 20,
+        "interval_variation_frames": 0,
+    }
+    model = GameModel(runtime.raw, world)
+    first = world.object_by_id("tree_01")
+    second = world.object_by_id("tree_02")
+    assert first is not None and second is not None
+    renderer = Renderer(FakePyxel())
+
+    first_frames = []
+    second_frames = []
+    for world_tick in range(20):
+        model.world_tick = world_tick
+        first_frames.append(renderer.tree_foliage_frame_id(model, first, 1.0))
+        second_frames.append(renderer.tree_foliage_frame_id(model, second, 1.0))
+
+    assert set(first_frames) == {
+        "idle_00",
+        "sway_right_01",
+        "sway_right_02",
+        "sway_right_03",
+    }
+    assert first_frames.count("sway_right_01") == 4
+    assert first_frames.count("sway_right_02") == 4
+    assert first_frames.count("sway_right_03") == 3
+    assert second_frames.count("sway_right_03") == 3
+    assert first_frames != second_frames
+
+    seed = sum((index + 1) * ord(char) for index, char in enumerate(first.id))
+    cycle_start = (-seed * 17) % 20
+    sequence = []
+    for offset in range(20):
+        model.world_tick = cycle_start + offset
+        sequence.append(renderer.tree_foliage_frame_id(model, first, 1.0))
+    assert sequence == [
+        "sway_right_01",
+        "sway_right_01",
+        "sway_right_02",
+        "sway_right_02",
+        "sway_right_03",
+        "sway_right_03",
+        "sway_right_03",
+        "sway_right_02",
+        "sway_right_02",
+        "sway_right_01",
+        "sway_right_01",
+        *("idle_00" for _ in range(9)),
+    ]
+
+    model.combat_session = object()
+    assert renderer.tree_foliage_frame_id(model, first, 1.0) == "idle_00"
+    model.combat_session = None
+    assert renderer.tree_foliage_frame_id(model, first, 0.1) == "idle_00"
 
 
 def test_affine_profile_matches_current_follow_projection_measurement() -> None:
