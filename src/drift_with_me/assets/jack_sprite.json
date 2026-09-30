@@ -1385,20 +1385,20 @@
         {
           "id": "sway_right_01",
           "path": "tree_leafy_a_leaves_sway_right_01.hex",
-          "source_hash": "9f1b73d4a7c42df113a38f99b4a4df39f6ea5a07d336eed06b687e3defe942c0"
+          "source_hash": "40c1ca0de20cdad1fc19f18e49719eb82ad7fe98ca5394bfe409df555e7ca325"
         },
         {
           "id": "sway_right_02",
           "path": "tree_leafy_a_leaves_sway_right_02.hex",
-          "source_hash": "62f0df73ed83714697c847bb6e143bf04d94e19dd9d5cf7a5b04ca3af7ba0a80"
+          "source_hash": "03b1fce6392110ee35b53c9c5627b731e13f9ef81495e915b107449124469361"
         },
         {
           "id": "sway_right_03",
           "path": "tree_leafy_a_leaves_sway_right_03.hex",
-          "source_hash": "04b6e367ccb708d1b70b81ce554845658d25737883b0ac6f83deb7ddc70d0233"
+          "source_hash": "8aa2e3c8d6d24dbbd9bf127088b6b807bf3ac72129f3935c373849cfb48ecc3a"
         }
       ],
-      "source_hash": "b3be5dcd6de95bf503aca514f54ecf82abb693bc707ca50617f2ba00799ea1d4",
+      "source_hash": "d0869e05afc3e42855540a4db7dbe626609864f01a5aa24d4b5746b53c91c730",
       "render_mode": "vertical_billboard",
       "source_policy": "tree_layer_sway_v0_1_hex"
     },
@@ -1458,20 +1458,20 @@
         {
           "id": "sway_right_01",
           "path": "tree_thin_b_leaves_sway_right_01.hex",
-          "source_hash": "f826ab0316cb039b62b5e2d39acc8f6d490b5b1530983168dc2ac9acb4e5e5cf"
+          "source_hash": "ce108e3d0f98c138b41a87b6c5748843e0dc63ca5ff8f064d5a683a5bff48bc2"
         },
         {
           "id": "sway_right_02",
           "path": "tree_thin_b_leaves_sway_right_02.hex",
-          "source_hash": "9d0e2f16f66b0a2c7429d019edc260432701a9c3731662a3560b87c4468cd146"
+          "source_hash": "f638ee17f62386e1f3bf74539297ef2dfe2cc6b1f73fbfd399f12033a81f0acb"
         },
         {
           "id": "sway_right_03",
           "path": "tree_thin_b_leaves_sway_right_03.hex",
-          "source_hash": "a60df9d54d934072bcb77d7779c8342fffb5312e3446fcd0cf03c65f2d3a2623"
+          "source_hash": "71da8a2f9e37e6351a1f06d2a2b6a999c7a586901ced1cac6bb54694e421421f"
         }
       ],
-      "source_hash": "d77ae59849464b21ca50b61e114f67b9cc2a34944435df8d9b18b8ae00b0a8b9",
+      "source_hash": "ecaf29eb51c405d851b83d3664f30af45ec29f1f5949089dc85c16e01b0a44cf",
       "render_mode": "vertical_billboard",
       "source_policy": "tree_layer_sway_v0_1_hex"
     },

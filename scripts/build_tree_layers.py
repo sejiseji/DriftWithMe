@@ -168,7 +168,9 @@ def build_foliage_right_sway(
             score = foliage_candidate_score(source_name, "contour", y, start, end)
             edge_candidates.append((score, y, start, end))
 
-    edge_target = max(8, round(leaf_pixel_count / 300))
+    # Move enough connected silhouette rows to read at gameplay scale while
+    # keeping most of each canopy fixed against its trunk.
+    edge_target = max(18, round(leaf_pixel_count / 105))
     for score, y, start, end in sorted(edge_candidates)[:edge_target]:
         source_xs = range(start, start + FOLIAGE_SOURCE_SHIFT_PX)
         destination_xs = range(end + 1, end + FOLIAGE_SOURCE_SHIFT_PX + 1)
@@ -195,7 +197,7 @@ def build_foliage_right_sway(
             score = foliage_candidate_score(source_name, "highlight", y, start, end)
             highlight_candidates.append((score, y, start, end))
 
-    highlight_target = max(4, round(leaf_pixel_count / 650))
+    highlight_target = max(8, round(leaf_pixel_count / 260))
     applied_highlights = 0
     for _score, y, start, end in sorted(highlight_candidates):
         next_x = end + 1

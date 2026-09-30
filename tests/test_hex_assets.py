@@ -165,19 +165,23 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
 }
 TREE_FOLIAGE_SWAY_HASHES = {
     "tree_leafy_a": {
-        "sway_right_01": "9f1b73d4a7c42df113a38f99b4a4df39f6ea5a07d336eed06b687e3defe942c0",
-        "sway_right_02": "62f0df73ed83714697c847bb6e143bf04d94e19dd9d5cf7a5b04ca3af7ba0a80",
-        "sway_right_03": "04b6e367ccb708d1b70b81ce554845658d25737883b0ac6f83deb7ddc70d0233",
+        "sway_right_01": "40c1ca0de20cdad1fc19f18e49719eb82ad7fe98ca5394bfe409df555e7ca325",
+        "sway_right_02": "03b1fce6392110ee35b53c9c5627b731e13f9ef81495e915b107449124469361",
+        "sway_right_03": "8aa2e3c8d6d24dbbd9bf127088b6b807bf3ac72129f3935c373849cfb48ecc3a",
     },
     "tree_thin_b": {
-        "sway_right_01": "f826ab0316cb039b62b5e2d39acc8f6d490b5b1530983168dc2ac9acb4e5e5cf",
-        "sway_right_02": "9d0e2f16f66b0a2c7429d019edc260432701a9c3731662a3560b87c4468cd146",
-        "sway_right_03": "a60df9d54d934072bcb77d7779c8342fffb5312e3446fcd0cf03c65f2d3a2623",
+        "sway_right_01": "ce108e3d0f98c138b41a87b6c5748843e0dc63ca5ff8f064d5a683a5bff48bc2",
+        "sway_right_02": "f638ee17f62386e1f3bf74539297ef2dfe2cc6b1f73fbfd399f12033a81f0acb",
+        "sway_right_03": "71da8a2f9e37e6351a1f06d2a2b6a999c7a586901ced1cac6bb54694e421421f",
     },
 }
 TREE_FOLIAGE_COMBINED_HASHES = {
-    "tree_leafy_a": "b3be5dcd6de95bf503aca514f54ecf82abb693bc707ca50617f2ba00799ea1d4",
-    "tree_thin_b": "d77ae59849464b21ca50b61e114f67b9cc2a34944435df8d9b18b8ae00b0a8b9",
+    "tree_leafy_a": "d0869e05afc3e42855540a4db7dbe626609864f01a5aa24d4b5746b53c91c730",
+    "tree_thin_b": "ecaf29eb51c405d851b83d3664f30af45ec29f1f5949089dc85c16e01b0a44cf",
+}
+TREE_FOLIAGE_SWAY_CHANGED_COUNTS = {
+    "tree_leafy_a": [72, 138, 202],
+    "tree_thin_b": [38, 82, 124],
 }
 TALL_GRASS_REACTIVE_POSE_HASHES = {
     "idle_00": "3e4c7c8d338024e5acb5af09d519dc8a8697feea0c807f9c76489feddbe5be46",
@@ -627,8 +631,7 @@ def test_tree_foliage_sway_is_cumulative_sparse_and_preserves_pixel_count(
         assert previous_changed < changed
         previous_changed = changed
 
-    assert changed_counts == sorted(changed_counts)
-    assert 8 <= changed_counts[0] < changed_counts[-1] <= 100
+    assert changed_counts == TREE_FOLIAGE_SWAY_CHANGED_COUNTS[source_id]
 
 
 @pytest.mark.parametrize("pose_id", tuple(TALL_GRASS_REACTIVE_POSE_HASHES))

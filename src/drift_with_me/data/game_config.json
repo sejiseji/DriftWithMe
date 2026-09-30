@@ -1061,10 +1061,10 @@
     "enabled": true,
     "combat_hidden": true,
     "min_scale": 0.28,
-    "sway_stage_frames": 5,
-    "sway_peak_frames": 6,
-    "interval_min_frames": 240,
-    "interval_variation_frames": 240
+    "sway_stage_frames": 8,
+    "sway_peak_frames": 12,
+    "interval_min_frames": 180,
+    "interval_variation_frames": 180
   },
   "reactive_environment": {
     "enabled": true,
