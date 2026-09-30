@@ -289,8 +289,12 @@
       "visual": "giant_tree_root_arch_d",
       "solid": true,
       "half_extents_xz": [
-        52.0,
-        24.0
+        30.0,
+        16.0
+      ],
+      "collision_offset_xz": [
+        -5.0,
+        0.0
       ],
       "height": 32.0,
       "sprite_world_size": [
@@ -310,8 +314,12 @@
       "visual": "giant_tree_root_spire_b",
       "solid": true,
       "half_extents_xz": [
-        51.0,
-        24.0
+        27.0,
+        15.0
+      ],
+      "collision_offset_xz": [
+        0.0,
+        0.0
       ],
       "height": 32.0,
       "sprite_world_size": [
@@ -331,8 +339,12 @@
       "visual": "giant_tree_root_hollow_c",
       "solid": true,
       "half_extents_xz": [
-        51.0,
-        24.0
+        34.0,
+        17.0
+      ],
+      "collision_offset_xz": [
+        -4.0,
+        0.0
       ],
       "height": 24.0,
       "sprite_world_size": [
@@ -352,8 +364,12 @@
       "visual": "giant_tree_root_massive_a",
       "solid": true,
       "half_extents_xz": [
-        52.0,
-        24.0
+        38.0,
+        19.0
+      ],
+      "collision_offset_xz": [
+        3.0,
+        0.0
       ],
       "height": 32.0,
       "sprite_world_size": [

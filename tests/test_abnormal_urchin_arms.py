@@ -202,6 +202,21 @@ def test_runtime_config_and_manifest_enable_ik_assets() -> None:
     } <= source_ids
 
 
+@pytest.mark.parametrize("direction_index", range(8))
+def test_generated_arm_links_keep_a_readable_thick_silhouette(direction_index: int) -> None:
+    path = (
+        ROOT
+        / "src"
+        / "drift_with_me"
+        / "assets"
+        / (f"abnormal_urchin_link_dir{direction_index}_00.hex")
+    )
+    pixels = [char for row in path.read_text(encoding="utf-8").splitlines() for char in row]
+
+    assert sum(pixel != "0" for pixel in pixels) >= 35
+    assert {"1", "2", "8", "E", "F"} <= set(pixels)
+
+
 def test_ik_sprite_draws_back_arms_then_body_then_front_arms(monkeypatch) -> None:
     renderer = Renderer(None)
     placement = SimpleNamespace()

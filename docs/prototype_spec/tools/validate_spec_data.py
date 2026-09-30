@@ -52,6 +52,9 @@ def vector3(value: Any, path: str) -> list[float]:
 
 def overlaps_box(x: float, z: float, hx: float, hz: float, obj: dict[str, Any]) -> bool:
     px, _, pz = obj["position"]
+    offset_x, offset_z = obj.get("collision_offset_xz", [0.0, 0.0])
+    px += offset_x
+    pz += offset_z
     ox, oz = obj["half_extents_xz"]
     # Tangency is permitted, penetration is not.
     return abs(x - px) < hx + ox - 1e-9 and abs(z - pz) < hz + oz - 1e-9
@@ -165,7 +168,24 @@ def validate(
         hx, hz = obj["half_extents_xz"]
         require(hx > 0 and hz > 0, f"{obj['id']}: nonpositive extent")
         x, _, z = obj["position"]
-        require(hx <= x <= width - hx and hz <= z <= depth - hz, f"{obj['id']}: solid outside map")
+        collision_offset = obj.get("collision_offset_xz", [0.0, 0.0])
+        require(
+            isinstance(collision_offset, list)
+            and len(collision_offset) == 2
+            and all(
+                isinstance(value, (int, float))
+                and not isinstance(value, bool)
+                and math.isfinite(value)
+                for value in collision_offset
+            ),
+            f"{obj['id']}: invalid collision offset",
+        )
+        collision_x = x + collision_offset[0]
+        collision_z = z + collision_offset[1]
+        require(
+            hx <= collision_x <= width - hx and hz <= collision_z <= depth - hz,
+            f"{obj['id']}: solid outside map",
+        )
         require(
             0 < obj["height"] <= config["culling"]["static_visual_max_height"],
             f"{obj['id']}: culling height insufficient",

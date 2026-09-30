@@ -2162,7 +2162,16 @@ class Renderer:
         if obj.solid:
             height = obj.height if obj.height > 0 else 24.0
             color = self.solid_box_color(obj)
-            self.draw_box(camera, obj.x, obj.z, obj.half_x, obj.half_z, height, 0.0, color)
+            self.draw_box(
+                camera,
+                obj.collision_x,
+                obj.collision_z,
+                obj.half_x,
+                obj.half_z,
+                height,
+                0.0,
+                color,
+            )
             return
         point = camera.project(Vec3(obj.x, 0.0, obj.z))
         if point is None:
@@ -4915,8 +4924,8 @@ class Renderer:
         height = obj.height if obj.height > 0.0 else 24.0
         projected_faces = self.project_box_faces(
             camera,
-            obj.x,
-            obj.z,
+            obj.collision_x,
+            obj.collision_z,
             obj.half_x,
             obj.half_z,
             height,
@@ -5279,7 +5288,13 @@ class Renderer:
         if obj.solid:
             bounds = obj.height if obj.height > 0.0 else 24.0
             return self.project_box_bounds(
-                camera, obj.x, obj.z, obj.half_x, obj.half_z, bounds, 0.0
+                camera,
+                obj.collision_x,
+                obj.collision_z,
+                obj.half_x,
+                obj.half_z,
+                bounds,
+                0.0,
             )
 
         visual = camera.project(Vec3(obj.x, max(16.0, obj.height + 14.0), obj.z))
@@ -5301,7 +5316,13 @@ class Renderer:
         if obj.solid:
             bounds = obj.height if obj.height > 0.0 else 24.0
             return self.project_box_bounds(
-                camera, obj.x, obj.z, obj.half_x, obj.half_z, bounds, 0.0
+                camera,
+                obj.collision_x,
+                obj.collision_z,
+                obj.half_x,
+                obj.half_z,
+                bounds,
+                0.0,
             )
 
         visual = camera.project(Vec3(obj.x, max(16.0, obj.height + 14.0), obj.z))

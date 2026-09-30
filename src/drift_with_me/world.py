@@ -26,22 +26,32 @@ class StaticObject:
     sprite_world_width: float = 0.0
     sprite_world_height: float = 0.0
     reaction_radius: float = 0.0
+    collision_offset_x: float = 0.0
+    collision_offset_z: float = 0.0
+
+    @property
+    def collision_x(self) -> float:
+        return self.x + self.collision_offset_x
+
+    @property
+    def collision_z(self) -> float:
+        return self.z + self.collision_offset_z
 
     @property
     def min_x(self) -> float:
-        return self.x - self.half_x
+        return self.collision_x - self.half_x
 
     @property
     def max_x(self) -> float:
-        return self.x + self.half_x
+        return self.collision_x + self.half_x
 
     @property
     def min_z(self) -> float:
-        return self.z - self.half_z
+        return self.collision_z - self.half_z
 
     @property
     def max_z(self) -> float:
-        return self.z + self.half_z
+        return self.collision_z + self.half_z
 
 
 @dataclass(frozen=True)
@@ -393,6 +403,7 @@ class WorldData:
     def _load_object(self, item: dict[str, Any]) -> StaticObject:
         position = item["position"]
         half_x, half_z = item.get("half_extents_xz", [0.0, 0.0])
+        collision_offset_x, collision_offset_z = item.get("collision_offset_xz", [0.0, 0.0])
         sprite_width, sprite_height = item.get("sprite_world_size", [0.0, 0.0])
         return StaticObject(
             id=str(item["id"]),
@@ -411,6 +422,8 @@ class WorldData:
             sprite_world_width=float(sprite_width),
             sprite_world_height=float(sprite_height),
             reaction_radius=float(item.get("reaction_radius", 0.0)),
+            collision_offset_x=float(collision_offset_x),
+            collision_offset_z=float(collision_offset_z),
         )
 
     def _load_enemy(self, item: dict[str, Any]) -> EnemySpawn:

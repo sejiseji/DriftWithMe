@@ -51,6 +51,8 @@ def link_pixels(direction_index: int) -> tuple[str, ...]:
     canvas = blank()
     direction_x, direction_y = DIR8[direction_index]
     normal_x, normal_y = -direction_y, direction_x
+    normal_step_x = round(normal_x)
+    normal_step_y = round(normal_y)
     length = 7.0
     samples: list[tuple[int, int]] = []
     for step in range(9):
@@ -62,21 +64,23 @@ def link_pixels(direction_index: int) -> tuple[str, ...]:
             samples.append((x, y))
 
     for x, y in samples:
-        set_pixel(canvas, x, y, 1)
-        set_pixel(canvas, x + 1, y, 1)
-        set_pixel(canvas, x - 1, y, 1)
-        set_pixel(canvas, x, y + 1, 1)
-        set_pixel(canvas, x, y - 1, 1)
+        for offset in range(-2, 3):
+            set_pixel(
+                canvas,
+                x + normal_step_x * offset,
+                y + normal_step_y * offset,
+                1,
+            )
     for index, (x, y) in enumerate(samples):
         set_pixel(canvas, x, y, 8)
-        if 0 < index < len(samples) - 1:
-            shadow_x = round(x + normal_x)
-            shadow_y = round(y + normal_y)
-            set_pixel(canvas, shadow_x, shadow_y, 2)
+        shadow_x = x + normal_step_x
+        shadow_y = y + normal_step_y
+        set_pixel(canvas, shadow_x, shadow_y, 2)
+        light_x = x - normal_step_x
+        light_y = y - normal_step_y
+        set_pixel(canvas, light_x, light_y, 8)
         if index in {2, 6}:
-            highlight_x = round(x - normal_x)
-            highlight_y = round(y - normal_y)
-            set_pixel(canvas, highlight_x, highlight_y, 14)
+            set_pixel(canvas, light_x, light_y, 14)
 
     joint_x, joint_y = samples[0]
     set_pixel(canvas, joint_x, joint_y, 14)

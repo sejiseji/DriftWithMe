@@ -49,8 +49,8 @@ def test_env003_forest_composition_has_density_landmark_and_lanes() -> None:
     giant = by_id["rock_02"]
     gx, _, gz = giant["position"]
     assert giant["visual"] == "giant_tree_root_massive_a"
-    assert giant["half_extents_xz"][0] >= 50.0
-    assert giant["half_extents_xz"][1] >= 20.0
+    assert giant["half_extents_xz"] == [38.0, 19.0]
+    assert giant["collision_offset_xz"] == [3.0, 0.0]
 
     nearby_tree_roots = [
         obj
@@ -74,6 +74,9 @@ def test_env003_forest_composition_has_density_landmark_and_lanes() -> None:
     def collides_waypoint(x: float, z: float) -> bool:
         for obj in solids:
             ox, _, oz = obj["position"]
+            offset_x, offset_z = obj.get("collision_offset_xz", [0.0, 0.0])
+            ox += offset_x
+            oz += offset_z
             obj_half_x, obj_half_z = obj["half_extents_xz"]
             if abs(x - ox) < half_x + obj_half_x and abs(z - oz) < half_z + obj_half_z:
                 return True

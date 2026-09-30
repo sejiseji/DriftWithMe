@@ -1206,47 +1206,47 @@
         {
           "id": "dir0",
           "path": "abnormal_urchin_link_dir0_00.hex",
-          "source_hash": "c71159540d2021dad62254957b4d7a554b83686bf3bbddc8e54ffeb12df32bd7"
+          "source_hash": "7142f79c685f25781e4a4c5e91ca70e372aebf99c82ff5ad2140c980ebe1bf63"
         },
         {
           "id": "dir1",
           "path": "abnormal_urchin_link_dir1_00.hex",
-          "source_hash": "cc24f74730d25a02fa24afbd2fa8cbb2c4f9c6c56c26c13570ad91a8c13b6ab8"
+          "source_hash": "adaef406a08c16313e8abb7600d1efe92e13851d7598dc1fe98bf79e955e651b"
         },
         {
           "id": "dir2",
           "path": "abnormal_urchin_link_dir2_00.hex",
-          "source_hash": "aa2a89f1e0fa1080f0f9f7543778995a78f04006aa37ecea59b854513301b3b5"
+          "source_hash": "38e0e665a14cf59bfcd652322bc7b2a00d1330ffcb8f131ca69b367d53689a1f"
         },
         {
           "id": "dir3",
           "path": "abnormal_urchin_link_dir3_00.hex",
-          "source_hash": "61d8452dcf4fe578e80196233044552e5f2e1d40a0fc188101d1e57348528cd7"
+          "source_hash": "af17ea7bfe2e06cb163a40ab364a8af6d93263a1a07f688b1349f1c52beb221d"
         },
         {
           "id": "dir4",
           "path": "abnormal_urchin_link_dir4_00.hex",
-          "source_hash": "f8ca3987d70012d925d0eceb31a70e27d1ac016fe337d025a5a6ac29dbb1fc1a"
+          "source_hash": "acb4cd645798cd5724da86c39229041a067319761a5dfffb91ad629a5b59238e"
         },
         {
           "id": "dir5",
           "path": "abnormal_urchin_link_dir5_00.hex",
-          "source_hash": "ef72f8f9a70136187eac1a3cb2e416a69814d44e7aa08fd3fe9bef8be52e51e5"
+          "source_hash": "618920c009600af2f2cdcf8e8f5364cecc916a499c2ac6c6d9b2bd9b0c9ad542"
         },
         {
           "id": "dir6",
           "path": "abnormal_urchin_link_dir6_00.hex",
-          "source_hash": "2801d93fce985cb5221ddcafdc23e6b31de5bce372441b82df538505f4f1e692"
+          "source_hash": "a03b629705500c7f4ff5896d6058d328323fe7d7f96f6bde767f239f2787f5e6"
         },
         {
           "id": "dir7",
           "path": "abnormal_urchin_link_dir7_00.hex",
-          "source_hash": "f905591a57e424ddc5334264aaae4b48c8970aee73c8a086ca83da508d7018a9"
+          "source_hash": "f8d449fafd64fbdfbe155eedfaee2edd37ba80a9abd5e81cd9435c31bb263a8d"
         }
       ],
-      "source_hash": "90eb39178e89eddd51effebfff9e6d71533ad572101eedf47c42e9ed90463961",
+      "source_hash": "f823f6b0201e986e971a74332a5f9b95a5950a42c42d6d1da5f41e6ccc156b0f",
       "render_mode": "sprite_local_joint_part",
-      "source_policy": "abu_ik8_generated_4_link_chain"
+      "source_policy": "abu_ik8_generated_4_link_chain_thick"
     },
     {
       "schema_version": 1,

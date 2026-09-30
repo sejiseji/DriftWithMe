@@ -674,31 +674,34 @@ def test_affine_world_commands_split_solid_boxes_but_perspective_keeps_single_bo
     assert {"wall_01:top", "wall_01:north", "wall_01:east"}.issubset(affine_ids)
 
 
-def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
+def test_affine_solid_sprite_visual_binding_keeps_authored_collision_footprints() -> None:
     runtime, world, _perspective, profile, _affine = make_affine_camera()
     model = GameModel(runtime.raw, world)
     renderer = Renderer(None)
+    expected = {
+        "wall_02": ("giant_tree_root_arch_d", 30.0, 16.0, -5.0, 0.0, 120.0),
+        "wall_03": ("giant_tree_root_spire_b", 27.0, 15.0, 0.0, 0.0, 118.0),
+        "rock_01": ("giant_tree_root_hollow_c", 34.0, 17.0, -4.0, 0.0, 118.0),
+        "rock_02": ("giant_tree_root_massive_a", 38.0, 19.0, 3.0, 0.0, 120.0),
+    }
+    for object_id, (visual, half_x, half_z, offset_x, offset_z, sprite_size) in expected.items():
+        obj = world.object_by_id(object_id)
+        assert obj is not None
+        assert obj.solid
+        assert obj.visual == visual
+        assert obj.half_x == pytest.approx(half_x)
+        assert obj.half_z == pytest.approx(half_z)
+        assert obj.collision_offset_x == pytest.approx(offset_x)
+        assert obj.collision_offset_z == pytest.approx(offset_z)
+        assert obj.collision_x == pytest.approx(obj.x + offset_x)
+        assert obj.collision_z == pytest.approx(obj.z + offset_z)
+        assert obj.sprite_world_width == pytest.approx(sprite_size)
+        assert obj.sprite_world_height == pytest.approx(sprite_size)
+        assert obj.occludes_player
+        assert not renderer.object_uses_box_geometry(obj)
+
     root = world.object_by_id("rock_02")
     assert root is not None
-    assert root.solid
-    assert root.visual == "giant_tree_root_massive_a"
-    assert root.half_x == pytest.approx(52.0)
-    assert root.half_z == pytest.approx(24.0)
-    assert root.sprite_world_width == pytest.approx(120.0)
-    assert root.sprite_world_height == pytest.approx(120.0)
-    assert root.occludes_player
-    assert not renderer.object_uses_box_geometry(root)
-
-    stump_root = world.object_by_id("rock_01")
-    assert stump_root is not None
-    assert stump_root.solid
-    assert stump_root.visual == "giant_tree_root_hollow_c"
-    assert stump_root.half_x == pytest.approx(51.0)
-    assert stump_root.half_z == pytest.approx(24.0)
-    assert stump_root.sprite_world_width == pytest.approx(118.0)
-    assert stump_root.sprite_world_height == pytest.approx(118.0)
-    assert stump_root.occludes_player
-    assert not renderer.object_uses_box_geometry(stump_root)
 
     perspective = CameraState.from_config(
         runtime.raw,
@@ -717,32 +720,8 @@ def test_affine_solid_sprite_visual_binding_keeps_collision_box() -> None:
     assert "rock_02:top" not in affine_ids
     assert "rock_02:north" not in affine_ids
 
-    west_root = world.object_by_id("wall_02")
-    assert west_root is not None
-    assert west_root.solid
-    assert west_root.visual == "giant_tree_root_arch_d"
-    assert west_root.x == pytest.approx(124.0)
-    assert west_root.z == pytest.approx(682.0)
-    assert west_root.half_x == pytest.approx(52.0)
-    assert west_root.half_z == pytest.approx(24.0)
-    assert west_root.sprite_world_width == pytest.approx(120.0)
-    assert west_root.sprite_world_height == pytest.approx(120.0)
-    assert not renderer.object_uses_box_geometry(west_root)
 
-    east_tree = world.object_by_id("wall_03")
-    assert east_tree is not None
-    assert east_tree.solid
-    assert east_tree.visual == "giant_tree_root_spire_b"
-    assert east_tree.x == pytest.approx(900.0)
-    assert east_tree.z == pytest.approx(724.0)
-    assert east_tree.half_x == pytest.approx(51.0)
-    assert east_tree.half_z == pytest.approx(24.0)
-    assert east_tree.sprite_world_width == pytest.approx(118.0)
-    assert east_tree.sprite_world_height == pytest.approx(118.0)
-    assert not renderer.object_uses_box_geometry(east_tree)
-
-
-def test_affine_giant_root_collision_edge_tracks_sprite_edge() -> None:
+def test_affine_giant_root_collision_footprints_stay_inside_visuals() -> None:
     runtime, world, _perspective, _profile, affine = make_affine_camera()
     _model = GameModel(runtime.raw, world)
     renderer = Renderer(None)
@@ -753,8 +732,8 @@ def test_affine_giant_root_collision_edge_tracks_sprite_edge() -> None:
         sprite_bounds = renderer.sprite_prop_bounds(obj, affine)
         collision_bounds = renderer.project_box_bounds(
             affine,
-            obj.x,
-            obj.z,
+            obj.collision_x,
+            obj.collision_z,
             obj.half_x,
             obj.half_z,
             max(1.0, obj.height),
@@ -762,7 +741,14 @@ def test_affine_giant_root_collision_edge_tracks_sprite_edge() -> None:
         )
         assert sprite_bounds is not None
         assert collision_bounds is not None
-        assert collision_bounds.width == pytest.approx(sprite_bounds.width, rel=0.06)
+        assert sprite_bounds.width * 0.45 < collision_bounds.width < sprite_bounds.width * 0.8
+        queried = world.query_solids(
+            obj.collision_x - 0.5,
+            obj.collision_z - 0.5,
+            obj.collision_x + 0.5,
+            obj.collision_z + 0.5,
+        )
+        assert obj in queried
 
 
 def test_env003_forest_composition_keeps_clearings_and_outer_density() -> None:
