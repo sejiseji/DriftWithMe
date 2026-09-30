@@ -1765,6 +1765,12 @@ class DriftWithMeApp:
                 else input_camera
             )
             events = self.model.step(step_intent, model_camera, fixed_dt)
+            if self.renderer is not None:
+                self.renderer.update_abnormal_urchin_arms(
+                    self.model,
+                    model_camera,
+                    fixed_dt,
+                )
             if first_step:
                 self.pending_auto_move_goal = None
                 self.pending_cancel_auto_move = False

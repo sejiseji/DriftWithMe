@@ -5,11 +5,18 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
 
+from drift_with_me.abnormal_urchin_arms import (
+    AbnormalUrchinArmSystem,
+    UrchinArmRig,
+    abnormal_urchin_pose_state,
+    quantized_arm_points,
+)
 from drift_with_me.effects import EffectSystem, EnemySnapshot, ReactiveEnvironmentState
 from drift_with_me.hex_assets import (
     LoadedSpriteAsset,
     LoadedSpriteFrame,
     SpriteAssetLibrary,
+    SpritePlacement,
     draw_scaled_sprite,
     placement_for_upright_height_billboard,
 )
@@ -263,6 +270,9 @@ class Renderer:
         self._visible_grassland_micro_areas = 0
         self._visible_forest_light_spots = 0
         self._visible_ambient_motes = 0
+        self.abnormal_urchin_arms = AbnormalUrchinArmSystem()
+        self._abnormal_urchin_arm_tuning: tuple[int, float, float, float] | None = None
+        self._debug_enabled = False
         self.last_stats = RenderStats()
 
     def draw_scene(
@@ -274,6 +284,7 @@ class Renderer:
         effects: EffectSystem | None = None,
     ) -> None:
         pyxel = self.pyxel
+        self._debug_enabled = debug
         self._atmosphere_config = model.config.get("atmosphere", {})
         pyxel.cls(13)
         self.draw_ground(model.world, camera)
@@ -3280,6 +3291,111 @@ class Renderer:
         pyxel.circ(bounds.x + bounds.width * 2 // 3, bounds.y + crown_h // 2, crown_w // 4, 3)
         pyxel.line(bounds.x + 2, bounds.max_y - 1, bounds.max_x - 2, bounds.max_y - 1, 0)
 
+    def abnormal_urchin_ik_config(self, model: GameModel) -> dict:
+        config = model.config.get("abnormal_urchin_ik", {})
+        return config if isinstance(config, dict) else {}
+
+    def abnormal_urchin_ik_enabled(self, model: GameModel) -> bool:
+        return bool(self.abnormal_urchin_ik_config(model).get("enabled", False))
+
+    def configure_abnormal_urchin_arm_system(self, model: GameModel) -> None:
+        config = self.abnormal_urchin_ik_config(model)
+        tuning = (
+            max(1, int(config.get("fixed_hz", 60))),
+            float(config.get("damping", 0.78)),
+            float(config.get("stiffness", 0.08)),
+            float(config.get("direction_hysteresis", 0.08)),
+        )
+        if tuning == self._abnormal_urchin_arm_tuning:
+            return
+        self.abnormal_urchin_arms = AbnormalUrchinArmSystem(
+            fixed_hz=tuning[0],
+            damping=tuning[1],
+            stiffness=tuning[2],
+            direction_hysteresis=tuning[3],
+        )
+        self._abnormal_urchin_arm_tuning = tuning
+
+    def update_abnormal_urchin_arms(
+        self,
+        model: GameModel,
+        camera: CameraState,
+        dt: float,
+    ) -> None:
+        if not self.abnormal_urchin_ik_enabled(model):
+            self.abnormal_urchin_arms.prune(())
+            return
+        self.configure_abnormal_urchin_arm_system(model)
+        active_ids: list[str] = []
+        combat_enemy_id = (
+            model.combat_session.enemy_id if model.combat_session is not None else None
+        )
+        for enemy in model.enemies:
+            if enemy.kind != "abnormal" or enemy.state == "DEFEATED":
+                continue
+            if (
+                model.culling_enabled
+                and enemy.id not in model.active_enemy_ids
+                and enemy.id != combat_enemy_id
+            ):
+                continue
+            active_ids.append(enemy.id)
+            state = self.abnormal_urchin_arm_pose_state(model, enemy)
+            attack_x, attack_y = self.abnormal_urchin_attack_local_direction(model, enemy, camera)
+            self.abnormal_urchin_arms.update_enemy(
+                enemy.id,
+                state,
+                attack_x,
+                attack_y,
+                dt,
+            )
+        self.abnormal_urchin_arms.prune(active_ids)
+
+    def abnormal_urchin_arm_pose_state(self, model: GameModel, enemy) -> str:
+        session = model.combat_session
+        if session is None or session.enemy_id != enemy.id:
+            return abnormal_urchin_pose_state(enemy.state)
+        return abnormal_urchin_pose_state(
+            enemy.state,
+            session.phase,
+            combat_outcome=session.outcome,
+            bubble_used=session.bubble_used,
+            zap_used=session.zap_used,
+        )
+
+    def abnormal_urchin_attack_local_direction(
+        self,
+        model: GameModel,
+        enemy,
+        camera: CameraState,
+    ) -> tuple[float, float]:
+        enemy_presentation = self.enemy_actor_presentation(model, enemy, camera)
+        player_presentation = self.player_actor_presentation(model, camera)
+        enemy_point = camera.project(
+            Vec3(
+                enemy_presentation.x,
+                4.0 + enemy_presentation.jump_y,
+                enemy_presentation.z,
+            )
+        )
+        player_point = camera.project(
+            Vec3(
+                player_presentation.x,
+                4.0 + player_presentation.jump_y,
+                player_presentation.z,
+            )
+        )
+        if enemy_point is not None and player_point is not None:
+            dx = player_point.x - enemy_point.x
+            dy = player_point.y - enemy_point.y
+            length = math.hypot(dx, dy)
+            if length > 1.0e-6:
+                return dx / length, dy / length
+        length = math.hypot(model.player.x - enemy.x, model.player.z - enemy.z)
+        if length <= 1.0e-6:
+            return 1.0, 0.0
+        return (model.player.x - enemy.x) / length, (model.player.z - enemy.z) / length
+
     def draw_enemy(
         self,
         model: GameModel,
@@ -3397,6 +3513,10 @@ class Renderer:
         z: float | None = None,
         y: float = 0.0,
     ):
+        if enemy.kind == "abnormal" and self.abnormal_urchin_ik_enabled(model):
+            placement = self.draw_abnormal_urchin_ik_sprite(model, enemy, camera, x, z, y)
+            if placement is not None:
+                return placement
         placement = self.enemy_sprite_placement(model, enemy, camera, x, z, y)
         if placement is None:
             return None
@@ -3405,6 +3525,190 @@ class Renderer:
             return None
         self.draw_atmospheric_scaled_sprite(asset, placement)
         return placement
+
+    def abnormal_urchin_ik_asset(
+        self, model: GameModel, config_key: str
+    ) -> LoadedSpriteAsset | None:
+        if not self.sprite_assets.enabled:
+            return None
+        asset_id = self.abnormal_urchin_ik_config(model).get(config_key)
+        if not isinstance(asset_id, str) or not asset_id:
+            return None
+        return self.sprite_assets.get(asset_id)
+
+    def draw_abnormal_urchin_ik_sprite(
+        self,
+        model: GameModel,
+        enemy,
+        camera: CameraState,
+        x: float | None = None,
+        z: float | None = None,
+        y: float = 0.0,
+    ):
+        body = self.abnormal_urchin_ik_asset(model, "body_asset")
+        if body is None:
+            return None
+        draw_x = enemy.x if x is None else x
+        draw_z = enemy.z if z is None else z
+        placement = placement_for_upright_height_billboard(
+            camera,
+            body.definition,
+            Vec3(draw_x, y, draw_z),
+        )
+        if placement is None:
+            return None
+
+        state = self.abnormal_urchin_arm_pose_state(model, enemy)
+        attack_x, attack_y = self.abnormal_urchin_attack_local_direction(model, enemy, camera)
+        rig = self.abnormal_urchin_arms.ensure_rig(enemy.id, state, attack_x, attack_y)
+        self.draw_abnormal_urchin_arm_layer(model, rig, placement, "back")
+        self.draw_atmospheric_scaled_sprite(body, placement)
+        self.draw_abnormal_urchin_arm_layer(model, rig, placement, "front")
+        config = self.abnormal_urchin_ik_config(model)
+        if self._debug_enabled and bool(config.get("debug_with_f1", True)):
+            self.draw_abnormal_urchin_arm_debug(rig, placement)
+        return placement
+
+    def draw_abnormal_urchin_arm_layer(
+        self,
+        model: GameModel,
+        rig: UrchinArmRig,
+        placement: SpritePlacement,
+        layer: str,
+    ) -> None:
+        upper_asset = self.abnormal_urchin_ik_asset(model, "upper_arm_asset")
+        lower_asset = self.abnormal_urchin_ik_asset(model, "lower_arm_asset")
+        claw_asset = self.abnormal_urchin_ik_asset(model, "claw_asset")
+        for arm in rig.arms:
+            if arm.spec.layer != layer:
+                continue
+            shoulder, elbow, hand = quantized_arm_points(arm)
+            if upper_asset is None or lower_asset is None or claw_asset is None:
+                self.draw_abnormal_urchin_arm_lines(placement, shoulder, elbow, hand, layer)
+                continue
+            self.draw_abnormal_urchin_joint_part(
+                upper_asset,
+                f"dir{arm.upper_dir8}",
+                placement,
+                shoulder,
+            )
+            self.draw_abnormal_urchin_joint_part(
+                lower_asset,
+                f"dir{arm.lower_dir8}",
+                placement,
+                elbow,
+            )
+            self.draw_abnormal_urchin_joint_part(
+                claw_asset,
+                f"dir{arm.lower_dir8}",
+                placement,
+                hand,
+            )
+
+    def draw_abnormal_urchin_joint_part(
+        self,
+        asset: LoadedSpriteAsset,
+        frame_id: str,
+        body_placement: SpritePlacement,
+        local_anchor: tuple[float, float],
+    ) -> None:
+        frame = asset.frame(frame_id)
+        anchor_x, anchor_y = self.abnormal_urchin_local_to_screen(body_placement, *local_anchor)
+        source_center_x = frame.width / 2.0
+        source_center_y = frame.height / 2.0
+        scale = body_placement.scale
+        part_placement = SpritePlacement(
+            anchor_x=anchor_x,
+            anchor_y=anchor_y,
+            depth=body_placement.depth,
+            scale=scale,
+            flip_x=False,
+            blt_x=anchor_x - source_center_x,
+            blt_y=anchor_y - source_center_y,
+            left=anchor_x - source_center_x * scale,
+            top=anchor_y - source_center_y * scale,
+            right=anchor_x + source_center_x * scale,
+            bottom=anchor_y + source_center_y * scale,
+        )
+        self.draw_atmospheric_scaled_sprite(asset, part_placement, frame)
+
+    def draw_abnormal_urchin_arm_lines(
+        self,
+        placement: SpritePlacement,
+        shoulder: tuple[float, float],
+        elbow: tuple[float, float],
+        hand: tuple[float, float],
+        layer: str,
+    ) -> None:
+        shoulder_x, shoulder_y = self.abnormal_urchin_local_to_screen(placement, *shoulder)
+        elbow_x, elbow_y = self.abnormal_urchin_local_to_screen(placement, *elbow)
+        hand_x, hand_y = self.abnormal_urchin_local_to_screen(placement, *hand)
+        color = 2 if layer == "back" else 14
+        self.pyxel.line(
+            int(round(shoulder_x)),
+            int(round(shoulder_y)),
+            int(round(elbow_x)),
+            int(round(elbow_y)),
+            1,
+        )
+        self.pyxel.line(
+            int(round(elbow_x)),
+            int(round(elbow_y)),
+            int(round(hand_x)),
+            int(round(hand_y)),
+            color,
+        )
+        self.pyxel.pset(int(round(hand_x)), int(round(hand_y)), 15)
+
+    def abnormal_urchin_local_to_screen(
+        self,
+        placement: SpritePlacement,
+        local_x: float,
+        local_y: float,
+    ) -> tuple[float, float]:
+        return (
+            placement.left + local_x * placement.scale,
+            placement.top + local_y * placement.scale,
+        )
+
+    def draw_abnormal_urchin_arm_debug(
+        self,
+        rig: UrchinArmRig,
+        placement: SpritePlacement,
+    ) -> None:
+        pyxel = self.pyxel
+        for arm in rig.arms:
+            points = (
+                ((arm.spec.shoulder_x, arm.spec.shoulder_y), 10),
+                ((arm.elbow_x, arm.elbow_y), 9),
+                ((arm.hand_x, arm.hand_y), 7),
+                ((arm.target_x, arm.target_y), 11),
+            )
+            screen_points = [
+                (*self.abnormal_urchin_local_to_screen(placement, *point), color)
+                for point, color in points
+            ]
+            hand_x, hand_y, _ = screen_points[2]
+            target_x, target_y, _ = screen_points[3]
+            pyxel.line(
+                int(round(hand_x)),
+                int(round(hand_y)),
+                int(round(target_x)),
+                int(round(target_y)),
+                5,
+            )
+            for point_x, point_y, color in screen_points:
+                pyxel.circb(int(round(point_x)), int(round(point_y)), 1, color)
+            if hasattr(pyxel, "text"):
+                elbow_x, elbow_y, _ = screen_points[1]
+                pyxel.text(
+                    int(round(elbow_x)) + 2,
+                    int(round(elbow_y)) - 2,
+                    f"{arm.upper_dir8}/{arm.lower_dir8}",
+                    7,
+                )
+        if hasattr(pyxel, "text"):
+            pyxel.text(int(placement.left), int(placement.top) - 7, rig.state, 7)
 
     def draw_enemy_snapshot(
         self, model: GameModel, snapshot: EnemySnapshot, camera: CameraState
