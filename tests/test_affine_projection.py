@@ -79,6 +79,9 @@ class RecordingPyxel(FakePyxel):
     def pset(self, *args) -> None:
         self.calls.append(("pset", *args))
 
+    def rect(self, *args) -> None:
+        self.calls.append(("rect", *args))
+
     def blt(self, *args, **kwargs) -> None:
         self.calls.append(("blt", args, kwargs))
 
@@ -183,6 +186,47 @@ def test_tree_foliage_sways_right_in_stages_then_returns_to_idle() -> None:
     assert renderer.tree_foliage_frame_id(model, first, 1.0) == "idle_00"
     model.combat_session = None
     assert renderer.tree_foliage_frame_id(model, first, 0.1) == "idle_00"
+
+
+def test_screen_wind_particles_drift_in_view_space_with_bright_small_shapes() -> None:
+    runtime, world, perspective, _profile, _affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+    config = model.config["screen_wind_particles"]
+    config["margin_px"] = 0.0
+    pyxel = RecordingPyxel()
+    renderer = Renderer(pyxel)
+
+    initial = renderer.screen_wind_particle_samples(model, perspective, 0.0)
+    later = renderer.screen_wind_particle_samples(model, perspective, 0.5)
+    shifted_camera = CameraState.from_config(
+        runtime.raw,
+        Vec3(world.spawn_x + 192.0, 0.0, world.spawn_z + 144.0),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    shifted = renderer.screen_wind_particle_samples(model, shifted_camera, 0.0)
+
+    assert len(initial) == config["count"]
+    assert initial == shifted
+    assert {particle.size for particle in initial} == {1, 2}
+    assert {particle.color for particle in initial} <= {7, 10, 12}
+    assert all(0 <= particle.x <= runtime.screen_width - particle.size for particle in initial)
+    assert all(0 <= particle.y <= runtime.screen_height - particle.size for particle in initial)
+    initial_by_index = {particle.index: particle for particle in initial}
+    forward_count = sum(
+        particle.x > initial_by_index[particle.index].x
+        for particle in later
+        if particle.index in initial_by_index
+    )
+    assert forward_count >= len(initial) - 2
+
+    assert renderer.draw_screen_wind_particles(model, perspective, 0.0) == len(initial)
+    assert {call[0] for call in pyxel.calls} == {"pset", "rect"}
+
+    model.combat_session = object()
+    pyxel.calls.clear()
+    assert renderer.draw_screen_wind_particles(model, perspective, 0.5) == 0
+    assert pyxel.calls == []
 
 
 def test_affine_profile_matches_current_follow_projection_measurement() -> None:

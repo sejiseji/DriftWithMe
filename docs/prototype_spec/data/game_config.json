@@ -388,6 +388,27 @@
       }
     ]
   },
+  "screen_wind_particles": {
+    "enabled": true,
+    "combat_hidden": true,
+    "count": 26,
+    "seed": 113,
+    "margin_px": 12.0,
+    "top_margin_px": 10.0,
+    "bottom_margin_px": 8.0,
+    "speed_min_px_sec": 13.0,
+    "speed_max_px_sec": 29.0,
+    "vertical_wobble_px": 2.0,
+    "wobble_frequency_min": 0.18,
+    "wobble_frequency_max": 0.42,
+    "size_2_ratio": 0.18,
+    "colors": [
+      12,
+      12,
+      7,
+      10
+    ]
+  },
   "resources": {
     "water_max": 100.0,
     "water_start": 100.0,

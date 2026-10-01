@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from drift_with_me.abnormal_urchin_arms import (
     AbnormalUrchinArmSystem,
@@ -198,6 +198,7 @@ class RenderStats:
     visible_grassland_micro_areas: int = 0
     visible_forest_light_spots: int = 0
     visible_ambient_motes: int = 0
+    visible_screen_wind_particles: int = 0
     visible_baked_ground_patches: int = 0
     baked_ground_cache_size: int = 0
     draw_commands: int = 0
@@ -217,6 +218,15 @@ class BakedGroundImage:
     bucket_z: float
     reference_center_x: float
     reference_center_y: float
+
+
+@dataclass(frozen=True)
+class ScreenWindParticle:
+    index: int
+    x: int
+    y: int
+    size: int
+    color: int
 
 
 @dataclass(frozen=True)
@@ -270,6 +280,7 @@ class Renderer:
         self._visible_grassland_micro_areas = 0
         self._visible_forest_light_spots = 0
         self._visible_ambient_motes = 0
+        self._visible_screen_wind_particles = 0
         self.abnormal_urchin_arms = AbnormalUrchinArmSystem()
         self._abnormal_urchin_arm_tuning: tuple[int, float, float, float, float, float] | None = (
             None
@@ -324,6 +335,15 @@ class Renderer:
         self.draw_combat_bubble_counter(model, camera)
         self.draw_combat_defeat_special(model, camera)
         self.draw_combat_victory_cue(model, camera)
+        self._visible_screen_wind_particles = self.draw_screen_wind_particles(
+            model,
+            camera,
+            presentation_time,
+        )
+        self.last_stats = replace(
+            self.last_stats,
+            visible_screen_wind_particles=self._visible_screen_wind_particles,
+        )
         if debug:
             self.draw_affine_debug_grid(model, camera)
             self.draw_debug_world(model, camera)
@@ -1602,6 +1622,100 @@ class Renderer:
         value = (x_index * 83492791) ^ (z_index * 2654435761) ^ (phase * 374761393)
         value ^= value >> 16
         value *= 2246822519
+        return value & 0xFFFFFFFF
+
+    def draw_screen_wind_particles(
+        self,
+        model: GameModel,
+        camera: CameraState,
+        presentation_time: float,
+    ) -> int:
+        particles = self.screen_wind_particle_samples(model, camera, presentation_time)
+        for particle in particles:
+            if particle.size == 1:
+                self.pyxel.pset(particle.x, particle.y, particle.color)
+            else:
+                self.pyxel.rect(
+                    particle.x,
+                    particle.y,
+                    particle.size,
+                    particle.size,
+                    particle.color,
+                )
+        return len(particles)
+
+    def screen_wind_particle_samples(
+        self,
+        model: GameModel,
+        camera: CameraState,
+        presentation_time: float,
+    ) -> tuple[ScreenWindParticle, ...]:
+        config = model.config.get("screen_wind_particles", {})
+        if not bool(config.get("enabled", False)):
+            return ()
+        if bool(config.get("combat_hidden", True)) and model.combat_session is not None:
+            return ()
+
+        width = max(1, int(camera.viewport_width))
+        height = max(1, int(camera.viewport_height))
+        count = max(0, min(96, int(config.get("count", 24))))
+        if count <= 0:
+            return ()
+        raw_colors = config.get("colors", (12, 7, 10))
+        if not isinstance(raw_colors, (list, tuple)) or not raw_colors:
+            raw_colors = (12, 7, 10)
+        colors = tuple(self.clamped_palette_color(value) for value in raw_colors)
+        seed_base = int(config.get("seed", 113))
+        margin = max(0.0, float(config.get("margin_px", 12.0)))
+        top_margin = max(0.0, float(config.get("top_margin_px", 10.0)))
+        bottom_margin = max(0.0, float(config.get("bottom_margin_px", 8.0)))
+        speed_min = max(0.0, float(config.get("speed_min_px_sec", 13.0)))
+        speed_max = max(speed_min, float(config.get("speed_max_px_sec", 29.0)))
+        wobble = max(0.0, float(config.get("vertical_wobble_px", 2.0)))
+        frequency_min = max(0.0, float(config.get("wobble_frequency_min", 0.18)))
+        frequency_max = max(
+            frequency_min,
+            float(config.get("wobble_frequency_max", 0.42)),
+        )
+        size_2_ratio = max(0.0, min(1.0, float(config.get("size_2_ratio", 0.18))))
+        travel_width = width + margin * 2.0
+        usable_height = max(1.0, height - top_margin - bottom_margin - 2.0)
+        time_sec = max(0.0, float(presentation_time))
+
+        particles: list[ScreenWindParticle] = []
+        for index in range(count):
+            seed = self._screen_wind_seed(index, seed_base)
+            variation = self._screen_wind_seed(index, seed_base ^ 0x6D2B79F5)
+            position_t = (seed & 0xFFFF) / 0xFFFF
+            height_t = ((seed >> 16) & 0xFFFF) / 0xFFFF
+            speed_t = (variation & 0xFFFF) / 0xFFFF
+            phase_t = ((variation >> 16) & 0xFFFF) / 0xFFFF
+            speed = speed_min + (speed_max - speed_min) * speed_t
+            x_float = (position_t * travel_width + time_sec * speed) % travel_width - margin
+            size = 2 if phase_t < size_2_ratio else 1
+            frequency = frequency_min + (frequency_max - frequency_min) * position_t
+            base_y = top_margin + height_t * usable_height
+            y_float = base_y + math.sin(time_sec * frequency + phase_t * math.tau) * wobble
+            if x_float < -size or x_float >= width:
+                continue
+            x = max(0, min(width - size, int(math.floor(x_float))))
+            y = max(0, min(height - size, int(round(y_float))))
+            particles.append(
+                ScreenWindParticle(
+                    index=index,
+                    x=x,
+                    y=y,
+                    size=size,
+                    color=colors[(variation >> 8) % len(colors)],
+                )
+            )
+        return tuple(particles)
+
+    def _screen_wind_seed(self, index: int, seed_base: int) -> int:
+        value = ((index + 1) * 0x9E3779B1) ^ (seed_base * 0x85EBCA77)
+        value ^= value >> 16
+        value *= 0x7FEB352D
+        value ^= value >> 15
         return value & 0xFFFFFFFF
 
     def draw_ambient_motes_layer(

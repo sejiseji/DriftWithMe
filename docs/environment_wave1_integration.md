@@ -120,6 +120,8 @@ LIGHT001 adds a first static forest-light layer. This is not a dynamic lighting 
 
 LIGHT003 keeps the ambient mote positions fixed in world space but adds deterministic twinkle phases at draw time. The photon / green mote cells do not drift, crawl with camera movement, or use the runtime particle system. Only the drawn shape intensity changes over time, using `ambient_motes.twinkle_enabled` and `ambient_motes.twinkle_period_sec`; the layer remains affine-only and hidden during combat.
 
+LIGHT004 adds a separate screen-space wind particle layer for exploration. It does not replace the fixed world-space photons or green motes. Twenty-six deterministic 1px/2px particles cross the viewport from left to right at `13..29` pixels per second, with only a slow `2px` vertical wobble. The palette is weighted toward light blue `12` with occasional white `7` and yellow `10`. Their positions depend on viewport size and presentation time, not camera or world coordinates, so camera movement cannot pin them to the map. They render above the world scene but below HUD and interaction UI, and are disabled during combat.
+
 ENV005 follow-up keeps the shallow-water sprite/tile paths disabled and aligns water reaction triggers with the visible symbolic water shape. Ripple and wake emission now uses an ellipse inside each authored shallow-water rectangle by default (`reaction_ellipse_enabled`), instead of the full rectangle. This prevents corner-only crossings from producing water effects outside the visible water symbol field while keeping the reaction world-space, lightweight, and hidden during combat.
 
 Ground assets were connected on 2026-09-14 from the extracted ground v0.2 pack:
