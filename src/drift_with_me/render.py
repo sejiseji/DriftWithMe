@@ -26,6 +26,7 @@ from drift_with_me.math3d import (
     Vec3,
     screen_to_ground_affine,
     screen_to_ground_point,
+    screen_to_world_direction,
 )
 from drift_with_me.model import GameModel
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
@@ -198,7 +199,7 @@ class RenderStats:
     visible_grassland_micro_areas: int = 0
     visible_forest_light_spots: int = 0
     visible_ambient_motes: int = 0
-    visible_screen_wind_particles: int = 0
+    visible_wind_particles: int = 0
     visible_baked_ground_patches: int = 0
     baked_ground_cache_size: int = 0
     draw_commands: int = 0
@@ -221,8 +222,11 @@ class BakedGroundImage:
 
 
 @dataclass(frozen=True)
-class ScreenWindParticle:
+class WindFieldParticle:
     index: int
+    world_x: float
+    world_y: float
+    world_z: float
     x: int
     y: int
     size: int
@@ -280,7 +284,7 @@ class Renderer:
         self._visible_grassland_micro_areas = 0
         self._visible_forest_light_spots = 0
         self._visible_ambient_motes = 0
-        self._visible_screen_wind_particles = 0
+        self._visible_wind_particles = 0
         self.abnormal_urchin_arms = AbnormalUrchinArmSystem()
         self._abnormal_urchin_arm_tuning: tuple[int, float, float, float, float, float] | None = (
             None
@@ -335,14 +339,14 @@ class Renderer:
         self.draw_combat_bubble_counter(model, camera)
         self.draw_combat_defeat_special(model, camera)
         self.draw_combat_victory_cue(model, camera)
-        self._visible_screen_wind_particles = self.draw_screen_wind_particles(
+        self._visible_wind_particles = self.draw_wind_particle_field(
             model,
             camera,
             presentation_time,
         )
         self.last_stats = replace(
             self.last_stats,
-            visible_screen_wind_particles=self._visible_screen_wind_particles,
+            visible_wind_particles=self._visible_wind_particles,
         )
         if debug:
             self.draw_affine_debug_grid(model, camera)
@@ -1624,13 +1628,13 @@ class Renderer:
         value *= 2246822519
         return value & 0xFFFFFFFF
 
-    def draw_screen_wind_particles(
+    def draw_wind_particle_field(
         self,
         model: GameModel,
         camera: CameraState,
         presentation_time: float,
     ) -> int:
-        particles = self.screen_wind_particle_samples(model, camera, presentation_time)
+        particles = self.wind_particle_field_samples(model, camera, presentation_time)
         for particle in particles:
             if particle.size == 1:
                 self.pyxel.pset(particle.x, particle.y, particle.color)
@@ -1644,74 +1648,118 @@ class Renderer:
                 )
         return len(particles)
 
-    def screen_wind_particle_samples(
+    def wind_particle_field_samples(
         self,
         model: GameModel,
         camera: CameraState,
         presentation_time: float,
-    ) -> tuple[ScreenWindParticle, ...]:
-        config = model.config.get("screen_wind_particles", {})
+    ) -> tuple[WindFieldParticle, ...]:
+        config = model.config.get("wind_particle_field", {})
         if not bool(config.get("enabled", False)):
+            return ()
+        if bool(config.get("affine_only", True)) and not self.camera_is_affine(camera):
             return ()
         if bool(config.get("combat_hidden", True)) and model.combat_session is not None:
             return ()
 
-        width = max(1, int(camera.viewport_width))
-        height = max(1, int(camera.viewport_height))
-        count = max(0, min(96, int(config.get("count", 24))))
-        if count <= 0:
+        area = self.wind_particle_field_rect(model.world, config)
+        if area is None:
+            return ()
+        cull_margin = max(0.0, float(config.get("cull_margin_px", 12.0)))
+        visible_rect = self.visible_ground_draw_rect(area, camera, cull_margin)
+        if visible_rect is None:
+            return ()
+
+        field_count = max(0, min(512, int(config.get("field_particle_count", 256))))
+        max_visible = max(0, min(96, int(config.get("max_visible_particles", 36))))
+        if field_count <= 0 or max_visible <= 0:
             return ()
         raw_colors = config.get("colors", (12, 7, 10))
         if not isinstance(raw_colors, (list, tuple)) or not raw_colors:
             raw_colors = (12, 7, 10)
         colors = tuple(self.clamped_palette_color(value) for value in raw_colors)
         seed_base = int(config.get("seed", 113))
-        margin = max(0.0, float(config.get("margin_px", 12.0)))
-        top_margin = max(0.0, float(config.get("top_margin_px", 10.0)))
-        bottom_margin = max(0.0, float(config.get("bottom_margin_px", 8.0)))
-        speed_min = max(0.0, float(config.get("speed_min_px_sec", 13.0)))
-        speed_max = max(speed_min, float(config.get("speed_max_px_sec", 29.0)))
-        wobble = max(0.0, float(config.get("vertical_wobble_px", 2.0)))
+        speed_min = max(0.0, float(config.get("speed_min_world_sec", 8.5)))
+        speed_max = max(speed_min, float(config.get("speed_max_world_sec", 19.0)))
+        height_min = max(0.0, float(config.get("height_min_world", 4.0)))
+        height_max = max(height_min, float(config.get("height_max_world", 36.0)))
+        wobble = max(0.0, float(config.get("vertical_wobble_world", 1.3)))
         frequency_min = max(0.0, float(config.get("wobble_frequency_min", 0.18)))
         frequency_max = max(
             frequency_min,
             float(config.get("wobble_frequency_max", 0.42)),
         )
         size_2_ratio = max(0.0, min(1.0, float(config.get("size_2_ratio", 0.18))))
-        travel_width = width + margin * 2.0
-        usable_height = max(1.0, height - top_margin - bottom_margin - 2.0)
         time_sec = max(0.0, float(presentation_time))
+        wind_direction = screen_to_world_direction(
+            camera,
+            camera.target.x,
+            camera.target.z,
+            1.0,
+            0.0,
+        )
+        if abs(wind_direction.x) + abs(wind_direction.y) <= 1e-9:
+            return ()
 
-        particles: list[ScreenWindParticle] = []
-        for index in range(count):
-            seed = self._screen_wind_seed(index, seed_base)
-            variation = self._screen_wind_seed(index, seed_base ^ 0x6D2B79F5)
-            position_t = (seed & 0xFFFF) / 0xFFFF
-            height_t = ((seed >> 16) & 0xFFFF) / 0xFFFF
+        particles: list[WindFieldParticle] = []
+        for index in range(field_count):
+            seed = self._wind_particle_seed(index, seed_base)
+            variation = self._wind_particle_seed(index, seed_base ^ 0x6D2B79F5)
+            base_x_t = (seed & 0xFFFF) / 0xFFFF
+            base_z_t = ((seed >> 16) & 0xFFFF) / 0xFFFF
             speed_t = (variation & 0xFFFF) / 0xFFFF
             phase_t = ((variation >> 16) & 0xFFFF) / 0xFFFF
             speed = speed_min + (speed_max - speed_min) * speed_t
-            x_float = (position_t * travel_width + time_sec * speed) % travel_width - margin
-            size = 2 if phase_t < size_2_ratio else 1
-            frequency = frequency_min + (frequency_max - frequency_min) * position_t
-            base_y = top_margin + height_t * usable_height
-            y_float = base_y + math.sin(time_sec * frequency + phase_t * math.tau) * wobble
-            if x_float < -size or x_float >= width:
+            travel = time_sec * speed
+            world_x = area.min_x + (base_x_t * area.width + wind_direction.x * travel) % area.width
+            world_z = area.min_z + (base_z_t * area.depth + wind_direction.y * travel) % area.depth
+            if not visible_rect.contains_point(world_x, world_z):
                 continue
-            x = max(0, min(width - size, int(math.floor(x_float))))
-            y = max(0, min(height - size, int(round(y_float))))
+
+            height_t = ((variation >> 7) & 0xFF) / 0xFF
+            base_height = height_min + (height_max - height_min) * height_t
+            frequency = frequency_min + (frequency_max - frequency_min) * base_x_t
+            world_y = base_height + math.sin(time_sec * frequency + phase_t * math.tau) * wobble
+            point = camera.project(Vec3(world_x, world_y, world_z))
+            if point is None or not self._screen_point_visible(point, camera, cull_margin):
+                continue
+
+            size = 2 if phase_t < size_2_ratio else 1
             particles.append(
-                ScreenWindParticle(
+                WindFieldParticle(
                     index=index,
-                    x=x,
-                    y=y,
+                    world_x=world_x,
+                    world_y=world_y,
+                    world_z=world_z,
+                    x=int(math.floor(point.x)),
+                    y=int(round(point.y)),
                     size=size,
                     color=colors[(variation >> 8) % len(colors)],
                 )
             )
+            if len(particles) >= max_visible:
+                break
         return tuple(particles)
 
-    def _screen_wind_seed(self, index: int, seed_base: int) -> int:
+    def wind_particle_field_rect(self, world: WorldData, config: dict) -> WorldRect | None:
+        raw_rect = config.get("rect_xz")
+        if isinstance(raw_rect, (list, tuple)) and len(raw_rect) == 4:
+            try:
+                rect = WorldRect(*(float(value) for value in raw_rect))
+            except (TypeError, ValueError):
+                return None
+            if rect.width <= 0.0 or rect.depth <= 0.0:
+                return None
+            return rect
+
+        area_ref = str(config.get("area_ref", "visual_ground"))
+        return {
+            "visual_ground": world.visual_ground_rect,
+            "content": world.content_rect,
+            "walkable": world.walkable_rect,
+        }.get(area_ref, world.visual_ground_rect)
+
+    def _wind_particle_seed(self, index: int, seed_base: int) -> int:
         value = ((index + 1) * 0x9E3779B1) ^ (seed_base * 0x85EBCA77)
         value ^= value >> 16
         value *= 0x7FEB352D

@@ -188,44 +188,64 @@ def test_tree_foliage_sways_right_in_stages_then_returns_to_idle() -> None:
     assert renderer.tree_foliage_frame_id(model, first, 0.1) == "idle_00"
 
 
-def test_screen_wind_particles_drift_in_view_space_with_bright_small_shapes() -> None:
-    runtime, world, perspective, _profile, _affine = make_affine_camera()
+def test_wind_particle_field_is_world_anchored_and_viewport_culled() -> None:
+    runtime, world, _perspective, _profile, affine = make_affine_camera()
     model = GameModel(runtime.raw, world)
-    config = model.config["screen_wind_particles"]
-    config["margin_px"] = 0.0
+    config = model.config["wind_particle_field"]
+    config["cull_margin_px"] = 0.0
     pyxel = RecordingPyxel()
     renderer = Renderer(pyxel)
 
-    initial = renderer.screen_wind_particle_samples(model, perspective, 0.0)
-    later = renderer.screen_wind_particle_samples(model, perspective, 0.5)
-    shifted_camera = CameraState.from_config(
-        runtime.raw,
-        Vec3(world.spawn_x + 192.0, 0.0, world.spawn_z + 144.0),
-        runtime.screen_width,
-        runtime.screen_height,
+    initial = renderer.wind_particle_field_samples(model, affine, 0.0)
+    later = renderer.wind_particle_field_samples(model, affine, 0.5)
+    shifted_camera = replace(
+        affine,
+        target=Vec3(
+            world.spawn_x + 192.0,
+            0.0,
+            world.spawn_z + 144.0,
+        ),
     )
-    shifted = renderer.screen_wind_particle_samples(model, shifted_camera, 0.0)
+    shifted = renderer.wind_particle_field_samples(model, shifted_camera, 0.0)
 
-    assert len(initial) == config["count"]
-    assert initial == shifted
+    assert 8 <= len(initial) <= config["max_visible_particles"]
+    assert len(initial) < config["field_particle_count"]
     assert {particle.size for particle in initial} == {1, 2}
     assert {particle.color for particle in initial} <= {7, 10, 12}
-    assert all(0 <= particle.x <= runtime.screen_width - particle.size for particle in initial)
-    assert all(0 <= particle.y <= runtime.screen_height - particle.size for particle in initial)
-    initial_by_index = {particle.index: particle for particle in initial}
-    forward_count = sum(
-        particle.x > initial_by_index[particle.index].x
-        for particle in later
-        if particle.index in initial_by_index
-    )
-    assert forward_count >= len(initial) - 2
+    assert all(0 <= particle.x < runtime.screen_width for particle in initial)
+    assert all(0 <= particle.y < runtime.screen_height for particle in initial)
 
-    assert renderer.draw_screen_wind_particles(model, perspective, 0.0) == len(initial)
+    initial_by_index = {particle.index: particle for particle in initial}
+    later_by_index = {particle.index: particle for particle in later}
+    moving_indices = initial_by_index.keys() & later_by_index.keys()
+    assert len(moving_indices) >= len(initial) - 3
+    forward_count = sum(
+        later_by_index[index].x > initial_by_index[index].x for index in moving_indices
+    )
+    assert forward_count >= len(moving_indices) - 1
+
+    shifted_by_index = {particle.index: particle for particle in shifted}
+    shared_indices = initial_by_index.keys() & shifted_by_index.keys()
+    assert shared_indices
+    for index in shared_indices:
+        before = initial_by_index[index]
+        after = shifted_by_index[index]
+        assert after.world_x == pytest.approx(before.world_x)
+        assert after.world_y == pytest.approx(before.world_y)
+        assert after.world_z == pytest.approx(before.world_z)
+    assert any(
+        (initial_by_index[index].x, initial_by_index[index].y)
+        != (shifted_by_index[index].x, shifted_by_index[index].y)
+        for index in shared_indices
+    )
+    assert initial_by_index.keys() != shifted_by_index.keys()
+
+    assert renderer.draw_wind_particle_field(model, affine, 0.0) == len(initial)
     assert {call[0] for call in pyxel.calls} == {"pset", "rect"}
 
     model.combat_session = object()
     pyxel.calls.clear()
-    assert renderer.draw_screen_wind_particles(model, perspective, 0.5) == 0
+    assert renderer.draw_wind_particle_field(model, affine, 0.5) == 0
     assert pyxel.calls == []
 
 

@@ -388,17 +388,20 @@
       }
     ]
   },
-  "screen_wind_particles": {
+  "wind_particle_field": {
     "enabled": true,
+    "affine_only": true,
     "combat_hidden": true,
-    "count": 26,
+    "area_ref": "visual_ground",
+    "field_particle_count": 256,
+    "max_visible_particles": 36,
     "seed": 113,
-    "margin_px": 12.0,
-    "top_margin_px": 10.0,
-    "bottom_margin_px": 8.0,
-    "speed_min_px_sec": 13.0,
-    "speed_max_px_sec": 29.0,
-    "vertical_wobble_px": 2.0,
+    "cull_margin_px": 12.0,
+    "height_min_world": 4.0,
+    "height_max_world": 36.0,
+    "speed_min_world_sec": 8.5,
+    "speed_max_world_sec": 19.0,
+    "vertical_wobble_world": 1.3,
     "wobble_frequency_min": 0.18,
     "wobble_frequency_max": 0.42,
     "size_2_ratio": 0.18,

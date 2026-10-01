@@ -1508,12 +1508,15 @@ assert model.config["ambient_motes"]["twinkle_enabled"] is True
 assert model.config["ambient_motes"]["twinkle_period_sec"] == 1.8
 assert model.config["ambient_motes"]["areas"][0]["id"] == "whole_map_green_motes"
 assert model.config["ambient_motes"]["areas"][0]["bounds_ref"] == "visual_ground"
-assert model.config["screen_wind_particles"]["enabled"] is True
-assert model.config["screen_wind_particles"]["combat_hidden"] is True
-assert model.config["screen_wind_particles"]["count"] == 26
-assert model.config["screen_wind_particles"]["speed_min_px_sec"] == 13.0
-assert model.config["screen_wind_particles"]["speed_max_px_sec"] == 29.0
-assert model.config["screen_wind_particles"]["colors"] == [12, 12, 7, 10]
+assert model.config["wind_particle_field"]["enabled"] is True
+assert model.config["wind_particle_field"]["affine_only"] is True
+assert model.config["wind_particle_field"]["combat_hidden"] is True
+assert model.config["wind_particle_field"]["area_ref"] == "visual_ground"
+assert model.config["wind_particle_field"]["field_particle_count"] == 256
+assert model.config["wind_particle_field"]["max_visible_particles"] == 36
+assert model.config["wind_particle_field"]["speed_min_world_sec"] == 8.5
+assert model.config["wind_particle_field"]["speed_max_world_sec"] == 19.0
+assert model.config["wind_particle_field"]["colors"] == [12, 12, 7, 10]
 model.config["forest_light"]["areas"] = [
     {{
         "id": "test_visible_forest_light",
