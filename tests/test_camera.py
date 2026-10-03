@@ -91,6 +91,64 @@ def test_actor_focus_point_frames_target_slightly_below_center() -> None:
     )
 
 
+def test_working_water_source_smoothly_zooms_in_and_back_out() -> None:
+    controller, _model = make_controller()
+    source = controller.world.object_by_id("tap_start")
+    assert source is not None
+    near_target = float(controller.camera_config["water_source_proximity"]["near_zoom_multiplier"])
+
+    first_camera = controller.update(1.0 / 60.0, source.x, source.z)
+    first_zoom = float(controller.camera_config["base_distance"]) / first_camera.distance
+
+    assert 1.0 < first_zoom < near_target
+
+    for _ in range(240):
+        near_camera = controller.update(1.0 / 60.0, source.x, source.z)
+    near_zoom = float(controller.camera_config["base_distance"]) / near_camera.distance
+
+    assert near_zoom == pytest.approx(near_target, abs=0.001)
+
+    far_x, far_z = 600.0, 400.0
+    first_far_camera = controller.update(1.0 / 60.0, far_x, far_z)
+    first_far_zoom = float(controller.camera_config["base_distance"]) / first_far_camera.distance
+
+    assert 1.0 < first_far_zoom < near_zoom
+
+    for _ in range(360):
+        far_camera = controller.update(1.0 / 60.0, far_x, far_z)
+    far_zoom = float(controller.camera_config["base_distance"]) / far_camera.distance
+
+    assert far_zoom == pytest.approx(1.0, abs=0.001)
+
+
+def test_stopped_water_station_also_triggers_proximity_zoom() -> None:
+    controller, _model = make_controller()
+    source = controller.world.object_by_id("tap_stopped")
+    assert source is not None
+    near_target = float(controller.camera_config["water_source_proximity"]["near_zoom_multiplier"])
+
+    for _ in range(240):
+        camera = controller.update(1.0 / 60.0, source.x, source.z)
+
+    zoom = float(controller.camera_config["base_distance"]) / camera.distance
+    assert zoom == pytest.approx(near_target, abs=0.001)
+
+
+def test_water_source_proximity_uses_smooth_distance_falloff() -> None:
+    controller, _model = make_controller()
+    source = controller.world.object_by_id("tap_start")
+    assert source is not None
+    config = controller.camera_config["water_source_proximity"]
+    inner = float(config["inner_radius_world"])
+    outer = float(config["outer_radius_world"])
+    near_multiplier = float(config["near_zoom_multiplier"])
+    midpoint_x = source.x + (inner + outer) * 0.5
+
+    midpoint_multiplier = controller.target_water_source_zoom_multiplier(midpoint_x, source.z)
+
+    assert midpoint_multiplier == pytest.approx(1.0 + (near_multiplier - 1.0) * 0.5)
+
+
 def test_directional_lookahead_uses_affine_screen_distance() -> None:
     controller, _model = make_controller()
     expected = float(controller.camera_config["lookahead_screen_ref_px"])

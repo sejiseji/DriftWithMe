@@ -64,6 +64,8 @@ class CameraController:
         self.affine_profile = AffineProjectionProfile.from_config(raw_config)
         self.follow_target = Vec3(initial_target.x, 0.0, initial_target.z)
         self.lookahead_offset = Vec2(0.0, 0.0)
+        self.water_source_zoom_multiplier = 1.0
+        self.water_source_zoom_targets = self.resolve_water_source_zoom_targets()
         self.active_zone_id: str | None = None
         self.base_blend: CameraBlend | None = None
         self.sequence: SequenceRuntime | None = None
@@ -91,6 +93,7 @@ class CameraController:
     def reset(self, target: Vec3) -> None:
         self.follow_target = Vec3(target.x, 0.0, target.z)
         self.lookahead_offset = Vec2(0.0, 0.0)
+        self.water_source_zoom_multiplier = 1.0
         self.active_zone_id = None
         self.base_blend = None
         self.sequence = None
@@ -106,6 +109,7 @@ class CameraController:
         lookahead_dir_z: float | None = None,
     ) -> CameraState:
         dt = max(0.0, dt)
+        self.update_water_source_zoom(dt, player_x, player_z)
         self.update_follow_target(dt, player_x, player_z, lookahead_dir_x, lookahead_dir_z)
         base = self.resolve_base_shot(player_x, player_z)
 
@@ -157,7 +161,7 @@ class CameraController:
             target=self.follow_target,
             yaw_deg=float(camera["yaw_deg"]),
             pitch_deg=float(camera["pitch_deg"]),
-            zoom=1.0,
+            zoom=self.water_source_zoom_multiplier,
             anchor_x=float(camera["screen_anchor"][0]),
             anchor_y=float(camera["screen_anchor"][1]),
         )
@@ -168,10 +172,55 @@ class CameraController:
             target=zone.target,
             yaw_deg=zone.yaw_deg if zone.yaw_deg is not None else float(camera["yaw_deg"]),
             pitch_deg=zone.pitch_deg if zone.pitch_deg is not None else float(camera["pitch_deg"]),
-            zoom=zone.zoom,
+            zoom=zone.zoom * self.water_source_zoom_multiplier,
             anchor_x=float(camera["screen_anchor"][0]),
             anchor_y=float(camera["screen_anchor"][1]),
         )
+
+    def resolve_water_source_zoom_targets(self) -> tuple[StaticObject, ...]:
+        config = self.camera_config.get("water_source_proximity", {})
+        if not isinstance(config, dict) or not bool(config.get("enabled", False)):
+            return ()
+        object_kind = str(config.get("object_kind", "water_station"))
+        required_supply = config.get("required_supply")
+        return tuple(
+            obj
+            for obj in self.world.objects
+            if obj.kind == object_kind
+            and (required_supply is None or obj.supply == str(required_supply))
+        )
+
+    def target_water_source_zoom_multiplier(self, player_x: float, player_z: float) -> float:
+        config = self.camera_config.get("water_source_proximity", {})
+        if not self.water_source_zoom_targets or not isinstance(config, dict):
+            return 1.0
+        inner_radius = max(0.0, float(config.get("inner_radius_world", 56.0)))
+        outer_radius = max(inner_radius, float(config.get("outer_radius_world", 160.0)))
+        near_multiplier = max(1.0, float(config.get("near_zoom_multiplier", 1.14)))
+        distance = min(
+            math.hypot(player_x - target.x, player_z - target.z)
+            for target in self.water_source_zoom_targets
+        )
+        if outer_radius <= inner_radius + 1e-6:
+            influence = 1.0 if distance <= inner_radius else 0.0
+        else:
+            influence = smoothstep((outer_radius - distance) / (outer_radius - inner_radius))
+        return 1.0 + (near_multiplier - 1.0) * influence
+
+    def update_water_source_zoom(self, dt: float, player_x: float, player_z: float) -> None:
+        target = self.target_water_source_zoom_multiplier(player_x, player_z)
+        config = self.camera_config.get("water_source_proximity", {})
+        if not isinstance(config, dict):
+            self.water_source_zoom_multiplier = target
+            return
+        tau_key = (
+            "approach_tau_sec" if target > self.water_source_zoom_multiplier else "depart_tau_sec"
+        )
+        default_tau = 0.75 if tau_key == "approach_tau_sec" else 1.05
+        alpha = smoothing_alpha(dt, max(0.0, float(config.get(tau_key, default_tau))))
+        self.water_source_zoom_multiplier += (target - self.water_source_zoom_multiplier) * alpha
+        if abs(target - self.water_source_zoom_multiplier) <= 1e-6:
+            self.water_source_zoom_multiplier = target
 
     def resolve_base_shot(self, player_x: float, player_z: float) -> CameraShot:
         previous_zone_id = self.active_zone_id

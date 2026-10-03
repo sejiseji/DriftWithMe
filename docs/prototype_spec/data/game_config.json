@@ -139,6 +139,16 @@
     "far": 1800.0,
     "zoom_min": 0.65,
     "zoom_max": 1.55,
+    "water_source_proximity": {
+      "enabled": true,
+      "object_kind": "water_station",
+      "required_supply": null,
+      "inner_radius_world": 56.0,
+      "outer_radius_world": 160.0,
+      "near_zoom_multiplier": 1.14,
+      "approach_tau_sec": 0.75,
+      "depart_tau_sec": 1.05
+    },
     "screen_anchor": [
       0.5,
       0.58
