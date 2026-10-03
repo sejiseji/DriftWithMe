@@ -38,7 +38,7 @@ from drift_with_me.render import (
     ATMOSPHERE_SHADOW_NEAR_CELLS,
     ATMOSPHERE_SOLID_STRENGTH,
     ATMOSPHERE_WEAK_PALETTE,
-    TREE_FOLIAGE_SWAY_FRAME_IDS,
+    TREE_FOLIAGE_RIPPLE_FRAME_IDS,
     Renderer,
 )
 from drift_with_me.world import load_world_data
@@ -128,14 +128,14 @@ def test_tree_layers_draw_trunk_before_leaves() -> None:
     assert draws == [(trunk, None), (leaves, leaf_frame)]
 
 
-def test_tree_foliage_sways_right_in_stages_then_returns_to_idle() -> None:
+def test_tree_foliage_ripple_moves_left_to_right_then_returns_to_idle() -> None:
     runtime, world, _perspective, _profile, _affine = make_affine_camera()
     runtime.raw["tree_foliage_motion"] = {
         "enabled": True,
         "combat_hidden": True,
         "min_scale": 0.28,
-        "sway_frame_durations": [1, 1, 1, 1, 1, 1, 1],
-        "interval_min_frames": 12,
+        "sequence_frames": 65,
+        "interval_min_frames": 70,
         "interval_variation_frames": 0,
     }
     model = GameModel(runtime.raw, world)
@@ -146,40 +146,32 @@ def test_tree_foliage_sways_right_in_stages_then_returns_to_idle() -> None:
 
     first_frames = []
     second_frames = []
-    for world_tick in range(12):
+    for world_tick in range(70):
         model.world_tick = world_tick
         first_frames.append(renderer.tree_foliage_frame_id(model, first, 1.0))
         second_frames.append(renderer.tree_foliage_frame_id(model, second, 1.0))
 
-    assert set(first_frames) == {
-        "idle_00",
-        "sway_right_01",
-        "sway_right_02",
-        "sway_right_03",
-        "sway_right_04",
-        "sway_right_05",
-        "sway_right_06",
-        "sway_right_07",
-    }
-    assert all(first_frames.count(frame_id) == 1 for frame_id in TREE_FOLIAGE_SWAY_FRAME_IDS)
-    assert all(second_frames.count(frame_id) == 1 for frame_id in TREE_FOLIAGE_SWAY_FRAME_IDS)
+    assert set(first_frames) == {"idle_00", *TREE_FOLIAGE_RIPPLE_FRAME_IDS}
+    assert first_frames.count("ripple_000") == 6
+    assert first_frames.count("ripple_046") == 3
+    assert all(
+        first_frames.count(frame_id) == 1 for frame_id in TREE_FOLIAGE_RIPPLE_FRAME_IDS[1:-1]
+    )
+    assert set(second_frames) == {"idle_00", *TREE_FOLIAGE_RIPPLE_FRAME_IDS}
     assert first_frames != second_frames
 
     seed = sum((index + 1) * ord(char) for index, char in enumerate(first.id))
-    cycle_start = (-seed * 17) % 12
+    cycle_start = (-seed * 17) % 70
     sequence = []
-    for offset in range(12):
+    for offset in range(70):
         model.world_tick = cycle_start + offset
         sequence.append(renderer.tree_foliage_frame_id(model, first, 1.0))
     assert sequence == [
-        "sway_right_01",
-        "sway_right_02",
-        "sway_right_03",
-        "sway_right_04",
-        "sway_right_05",
-        "sway_right_06",
-        "sway_right_07",
-        *("idle_00" for _ in range(5)),
+        *("ripple_000" for _ in range(6)),
+        *(f"ripple_{tick:03d}" for tick in range(6, 47)),
+        "ripple_046",
+        "ripple_046",
+        *("idle_00" for _ in range(21)),
     ]
 
     model.combat_session = object()

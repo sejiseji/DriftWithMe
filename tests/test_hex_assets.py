@@ -213,33 +213,21 @@ ENVIRONMENT_WAVE1_SOURCE_HASHES = {
     "shore_corner_outer_sw_64": "4a3650cc46f93099eedeb5ab3fcf13788e46ab74066e20f0f34ec2c1174378e0",
     "shore_corner_outer_se_64": "86abe59c159f027148ea03488ae14570eb3862bc8a1ba5151ba530e6de4dda53",
 }
-TREE_FOLIAGE_SWAY_HASHES = {
-    "tree_leafy_a": {
-        "sway_right_01": "9b26b636f8e70a728fe0e181a0876e8bc35adffeba92cc7fc6fc1fd4c209b9b4",
-        "sway_right_02": "62d5d1080a2cc33fb9e1c5ecd582fc68d3cb83dc15fb124a20827f85bfb63c88",
-        "sway_right_03": "07a6e46e427120a0d6086674e146e1631b7d37bb362a89cf5d8ed3e7ae3878b9",
-        "sway_right_04": "3e429dae274cbdfac28ab1047f725441982d9be29dd058c3d19e4ae3259c2998",
-        "sway_right_05": "a6b005669eaba7771a6349901f0f5a672c6f1bed94adb6954e2d75e9adb3a9bd",
-        "sway_right_06": "5dcf575867442c100581156b312a7be5a08b21f7de54d87d671e3044068637bf",
-        "sway_right_07": "6d8d790b86aad4636fe0bd6b6c3862a4473777798b17de008ac58cd0b4b5866c",
-    },
-    "tree_thin_b": {
-        "sway_right_01": "fcbceace7959786004473030fb20d4104ca01805baf3c98e26e2953ed8ca3d57",
-        "sway_right_02": "e41e16cecc94467efd5713b2d01e9d7b7721206814cef5c05f7df1516f383459",
-        "sway_right_03": "ed386136dd4813a875b727f90073620d5cc45fdb3481cb2ae1a03025296b9535",
-        "sway_right_04": "c2d10b545a0b8651958417632eaa227741dda2fd3405c77f96418e87438666be",
-        "sway_right_05": "62ba37c13b2021f700c7a33cb0fdbdbc90e12f969a1a1e4f35c35d05df979c2b",
-        "sway_right_06": "ddd45d09346602e1cbe935d0d9e75f18bdb0a81da1d10a4a19f5c77094ef88eb",
-        "sway_right_07": "fa6e5a36e079105007ad568c2de89a46bfba4077f523132e72a064161a94df73",
-    },
+TREE_FOLIAGE_RIPPLE_PROVENANCE = json.loads(
+    (ROOT / "src/drift_with_me/assets/tree_foliage_ripple/manifest.json").read_text(
+        encoding="utf-8"
+    )
+)
+TREE_FOLIAGE_RIPPLE_HASHES = {
+    tree_id: {
+        tree_data["idle_frame"]["id"]: tree_data["idle_frame"]["source_hash"],
+        **{frame["id"]: frame["source_hash"] for frame in tree_data["ripple_frames"]},
+    }
+    for tree_id, tree_data in TREE_FOLIAGE_RIPPLE_PROVENANCE["trees"].items()
 }
-TREE_FOLIAGE_COMBINED_HASHES = {
-    "tree_leafy_a": "23679eef66756003d8e411b0cad5fb38312ecf960c91eea60257f17e3e330859",
-    "tree_thin_b": "995cc9b5c7ae4a65e726ed59c7401219974b6dcb9466f179ed9d6591d4b1879e",
-}
-TREE_FOLIAGE_SWAY_CHANGED_COUNTS = {
-    "tree_leafy_a": [741, 1906, 2280, 2656, 2506, 1991, 0],
-    "tree_thin_b": [777, 1837, 2222, 2549, 2471, 1948, 0],
+TREE_FOLIAGE_RIPPLE_COMBINED_HASHES = {
+    tree_id: tree_data["combined_source_hash"]
+    for tree_id, tree_data in TREE_FOLIAGE_RIPPLE_PROVENANCE["trees"].items()
 }
 TALL_GRASS_REACTIVE_POSE_HASHES = {
     "idle_00": "3e4c7c8d338024e5acb5af09d519dc8a8697feea0c807f9c76489feddbe5be46",
@@ -683,32 +671,45 @@ def test_tree_layers_recompose_to_original_pixels(source_id: str) -> None:
 
 
 @pytest.mark.parametrize("source_id", ("tree_leafy_a", "tree_thin_b"))
-def test_tree_foliage_sway_uses_authored_clumps_and_returns_from_peak(
-    source_id: str,
-) -> None:
+def test_tree_foliage_ripple_preserves_supplied_canonical_frames(source_id: str) -> None:
     asset_dir = ROOT / "src/drift_with_me/assets"
     idle = tuple((asset_dir / f"{source_id}_leaves.hex").read_text().strip().splitlines())
-    idle_pixel_count = sum(color != "8" for row in idle for color in row)
-    changed_counts = []
-    for frame_id, expected_hash in TREE_FOLIAGE_SWAY_HASHES[source_id].items():
-        stage = tuple(
-            (asset_dir / f"{source_id}_leaves_{frame_id}.hex").read_text().strip().splitlines()
-        )
-        changed = {
-            (x, y)
-            for y, (idle_row, stage_row) in enumerate(zip(idle, stage, strict=True))
-            for x, (idle_color, stage_color) in enumerate(zip(idle_row, stage_row, strict=True))
-            if idle_color != stage_color
-        }
-        changed_counts.append(len(changed))
-        assert pixel_hash(stage) == expected_hash
-        stage_pixel_count = sum(color != "8" for row in stage for color in row)
-        assert idle_pixel_count * 0.985 <= stage_pixel_count <= idle_pixel_count
-        assert set("".join(stage)) <= set("0123456789ABCDEF")
+    tree_data = TREE_FOLIAGE_RIPPLE_PROVENANCE["trees"][source_id]
+    assert pixel_hash(idle) == tree_data["idle_frame"]["source_hash"]
+    assert len(tree_data["ripple_frames"]) == 42
+    assert [frame["tick"] for frame in tree_data["ripple_frames"]] == [
+        0,
+        *range(6, 47),
+    ]
 
-    assert changed_counts == TREE_FOLIAGE_SWAY_CHANGED_COUNTS[source_id]
-    assert changed_counts.index(max(changed_counts)) == 3
-    assert changed_counts[-1] < changed_counts[3]
+    frame_pixels = [bytes(int(color, 16) for row in idle for color in row)]
+    for frame in tree_data["ripple_frames"]:
+        rows = tuple((asset_dir / frame["path"]).read_text().strip().splitlines())
+        assert len(rows) == 128
+        assert {len(row) for row in rows} == {96}
+        assert set("".join(rows)) <= set("0123456789ABCDEF")
+        assert pixel_hash(rows) == frame["source_hash"]
+        frame_pixels.append(bytes(int(color, 16) for row in rows for color in row))
+
+    assert source_hash_for_pixels(b"".join(frame_pixels)) == tree_data["combined_source_hash"]
+    assert not list(asset_dir.glob(f"{source_id}_leaves_sway_right_*.hex"))
+
+
+def test_tree_foliage_ripple_timeline_matches_supplied_65_tick_sequence() -> None:
+    assert TREE_FOLIAGE_RIPPLE_PROVENANCE["canonical_period_ticks"] == 65
+    assert TREE_FOLIAGE_RIPPLE_PROVENANCE["stored_start_ticks"] == [
+        0,
+        *range(6, 47),
+        49,
+    ]
+    assert TREE_FOLIAGE_RIPPLE_PROVENANCE["stored_durations_ticks"] == [
+        6,
+        *([1] * 40),
+        3,
+        16,
+    ]
+    assert TREE_FOLIAGE_RIPPLE_PROVENANCE["runtime_randomness"] is False
+    assert TREE_FOLIAGE_RIPPLE_PROVENANCE["direction"] == "left_to_right"
 
 
 @pytest.mark.parametrize("pose_id", tuple(TALL_GRASS_REACTIVE_POSE_HASHES))
@@ -1167,8 +1168,8 @@ fuse_rects = {FUSE_DIRECTION_RECTS!r}
 environment_hashes = {ENVIRONMENT_WAVE1_RUNTIME_HASHES!r}
 tall_grass_pose_hashes = {TALL_GRASS_REACTIVE_POSE_HASHES!r}
 tall_grass_source_hash = {TALL_GRASS_REACTIVE_SOURCE_HASH!r}
-tree_foliage_sway_hashes = {TREE_FOLIAGE_SWAY_HASHES!r}
-tree_foliage_combined_hashes = {TREE_FOLIAGE_COMBINED_HASHES!r}
+tree_foliage_ripple_hashes = {TREE_FOLIAGE_RIPPLE_HASHES!r}
+tree_foliage_ripple_combined_hashes = {TREE_FOLIAGE_RIPPLE_COMBINED_HASHES!r}
 low_grass_expected_colors = {ENVIRONMENT_VISIBLE_COLORS_WITH_COLKEY_8["grass_low_a"]!r}
 environment_asset_ids = {{
     "water_station_active": "water_station_active_96",
@@ -1457,10 +1458,11 @@ for source_id, expected_hash in environment_hashes.items():
     if source_id in {{"tree_leafy_a_leaves", "tree_thin_b_leaves"}}:
         tree_source_id = source_id.removesuffix("_leaves")
         assert env_asset.definition.animation == "foliage_pose_set"
-        assert env_asset.definition.source_hash == tree_foliage_combined_hashes[tree_source_id]
-        expected_sway_hashes = tree_foliage_sway_hashes[tree_source_id]
-        assert tuple(env_asset.frames) == ("idle_00", *expected_sway_hashes)
-        for frame_id, expected_hash in expected_sway_hashes.items():
+        expected_combined_hash = tree_foliage_ripple_combined_hashes[tree_source_id]
+        assert env_asset.definition.source_hash == expected_combined_hash
+        expected_ripple_hashes = tree_foliage_ripple_hashes[tree_source_id]
+        assert tuple(env_asset.frames) == tuple(expected_ripple_hashes)
+        for frame_id, expected_hash in expected_ripple_hashes.items():
             assert env_asset.frame(frame_id).source_hash == expected_hash
     assert env_asset.definition.world_size == environment_world_sizes[source_id]
     if source_id in environment_colkeys:

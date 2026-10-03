@@ -92,16 +92,11 @@ TREE_LAYER_ASSET_KEYS = {
     "tree_thin_b": ("tree_thin_trunk_asset", "tree_thin_leaves_asset"),
 }
 TREE_FOLIAGE_IDLE_FRAME_ID = "idle_00"
-TREE_FOLIAGE_SWAY_FRAME_IDS = (
-    "sway_right_01",
-    "sway_right_02",
-    "sway_right_03",
-    "sway_right_04",
-    "sway_right_05",
-    "sway_right_06",
-    "sway_right_07",
+TREE_FOLIAGE_RIPPLE_FRAME_IDS = (
+    "ripple_000",
+    *(f"ripple_{tick:03d}" for tick in range(6, 47)),
 )
-TREE_FOLIAGE_SWAY_FRAME_DURATIONS = (6, 7, 8, 8, 7, 7, 8)
+TREE_FOLIAGE_RIPPLE_SEQUENCE_FRAMES = 65
 ATMOSPHERE_PLAYER_STRENGTH = 0.1
 GRASSLAND_MICRO_CLUMP_PATTERNS = (
     ((0.15, 0.24, 5, 0), (0.58, 0.38, 4, 1), (0.84, 0.78, 6, 0)),
@@ -3092,31 +3087,23 @@ class Renderer:
         if scale < max(0.0, float(config.get("min_scale", 0.28))):
             return TREE_FOLIAGE_IDLE_FRAME_ID
 
-        raw_durations = config.get(
-            "sway_frame_durations",
-            TREE_FOLIAGE_SWAY_FRAME_DURATIONS,
+        sequence_frames = max(
+            50,
+            int(config.get("sequence_frames", TREE_FOLIAGE_RIPPLE_SEQUENCE_FRAMES)),
         )
-        if not isinstance(raw_durations, (list, tuple)) or len(raw_durations) != len(
-            TREE_FOLIAGE_SWAY_FRAME_IDS
-        ):
-            raw_durations = TREE_FOLIAGE_SWAY_FRAME_DURATIONS
-        frame_durations = tuple(max(1, int(value)) for value in raw_durations)
-        active_frames = sum(frame_durations)
-        interval_min = max(active_frames + 1, int(config.get("interval_min_frames", 240)))
+        interval_min = max(sequence_frames + 1, int(config.get("interval_min_frames", 240)))
         interval_variation = max(0, int(config.get("interval_variation_frames", 240)))
         seed = sum((index + 1) * ord(char) for index, char in enumerate(obj.id))
         interval = interval_min
         if interval_variation > 0:
             interval += seed % (interval_variation + 1)
         phase = (int(model.world_tick) + seed * 17) % interval
-        for frame_id, duration in zip(
-            TREE_FOLIAGE_SWAY_FRAME_IDS,
-            frame_durations,
-            strict=True,
-        ):
-            if phase < duration:
-                return frame_id
-            phase -= duration
+        if phase < 6:
+            return "ripple_000"
+        if phase <= 46:
+            return f"ripple_{phase:03d}"
+        if phase <= 48:
+            return "ripple_046"
         return TREE_FOLIAGE_IDLE_FRAME_ID
 
     def draw_reactive_prop_sprite(
