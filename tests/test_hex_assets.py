@@ -51,6 +51,56 @@ JACK_DIRECTION_RECTS = {
     "back_right": (32, 96, 32, 32),
     "back": (0, 128, 32, 32),
 }
+JACK_WALK_FRAME_HASHES = {
+    "front": (
+        "53679cdcbe512fd0265644ad53022ce4ba5853720c1cdbc8d17751bb78d74ac8",
+        "75e4df29604885455147f62819cefbdcf6cfcfc4a42b27e7bc0348abf6d00e57",
+        "e53561cbb823e49e93a18367ce00c632ebaf940067cba482ab9185088fd9d93c",
+        "72317b469a5c76674d7be9029b885795fa9e278f8907ece5ce2dab8e447e2ada",
+    ),
+    "front_right": (
+        "0e7b1402ac4502afc148ead788a7ff45d143853114c110a2c72b7c46b98dde5a",
+        "2ef3d72aaaa1668c9d50fd91f8e04c30b17b8d91abc147bcfd77c93a33d240ca",
+        "b67ce51d1a2d24377062e41ef3bb58dc25141772a1cdec0f3ef83aee47ff9ada",
+        "8c588b25b94ad73bdc31798505db376b7afbc82dc4f251d28f6dec22890c02ae",
+    ),
+    "right": (
+        "6f99555ac937cd71968104aa660d6f7ca24f8bf68d4f2db69c689ffe9dfd92ff",
+        "ed93f00fdae4cf6fd47d8bb446b7057fb656e27a893e301551e45bae4c89b5c3",
+        "8ce82933564f6f0969c891c53c9ddbee196b2be172a32f60091850f9df92728c",
+        "a14feae7e0a6e9810614a496e106a6111840e818028deb4871ffd0a78abd61e8",
+    ),
+    "back_right": (
+        "378cd65889a46db7c4d69155686c89d0cb1ab8f82e232f680aef75e7f34f9efc",
+        "df96f0bb59b724b8c2b956d0b66884224b3e567cf2f153fc847d514ca63aeaa6",
+        "306311bbcf4429a282f7553dd38f1f6ab165f2ae05e3fa6da2d1de119e3a1cf7",
+        "911e09557bc0ff440cdc277b9cacfd7eb91ced0f2d0c233267811da1cb6fdaf7",
+    ),
+    "back": (
+        "140515bf0a38405a1a59a5b830e4d06e6dab01fa5254fa64902646c3537bac89",
+        "42af194803e499cef02f9bbfe4df94d5d2a90d0dcc671b95f853c8efb7b4d8dc",
+        "dbbef9c541919388959f8a5b4a5f23ff97fb1405ce87b5e2cb52b4f092f36324",
+        "cc57106b96b40be8590989a819c6caef316fb8f80e1b759c37cfa75d6ba98bb3",
+    ),
+    "back_left": (
+        "9a547d6b65fdf99c605536f62518b1133b42b2775fd073bf77c240b678993ef6",
+        "11a12de12dc3c5074bec460c62007cafeab5ca97c9db5b9c3561d2eb8687fc4a",
+        "1aa9d03e2ca8147900e028d0329affe13d97fc2628c4ebd3b782a67a773d909b",
+        "398a8568932636a4d9def6c7625b3b5310256917fc2e8c01e76ef84761f79993",
+    ),
+    "left": (
+        "371db9593f708fe2928716c0d58d44c9f18217cecebd82c4f94a3ba5f0c1b0f3",
+        "1e5e6a2d85c186d3a513947c7ef82e85e5f033cac5c9ee6b0dc287bd4fcc7170",
+        "9a1f2b0e9c96de17712ba064f79ff34f2034228ad27135569f65773afacd550d",
+        "50f5498b2efbcc5df4322704a5364d1a80da694ca9e162452e84305b13604704",
+    ),
+    "front_left": (
+        "87195559bb74bf936d52150b06d669c0358054c9f8d6b442e4132f1a3fa99ee2",
+        "45a6906cb01f68ea96c215fc67c4b7c2ef5e5fcaca189b613e385f4b379b0f47",
+        "291f9ee20c3a29484297a744fa83aa80823e8d537603eda6659a61e7b1d1be02",
+        "8174ae2e18d415819f35e39806c7bec442f5a46e6a78f153c3f2a84eca252a7a",
+    ),
+}
 JACK_BLINK_HASHES = {
     "front": "a880b87eb51101a96b0d5a774657778fb2a4158a6b7884dac8e6182179bcb6db",
     "front_left": "c698e933d1aa19454171aeae0137339d6d4c78a562f42311555d4f42d02cfd4a",
@@ -471,6 +521,25 @@ def test_jack_source_hex_preserves_received_pixels(direction: str) -> None:
     assert pixel_hash(rows) == JACK_DIRECTION_HASHES[direction]
 
 
+@pytest.mark.parametrize("direction", tuple(JACK_WALK_FRAME_HASHES))
+def test_jack_walk_hex_preserves_received_four_frame_loop(direction: str) -> None:
+    expected_hashes = JACK_WALK_FRAME_HASHES[direction]
+    actual_hashes = []
+    for frame_index in range(4):
+        rows = tuple(
+            (ROOT / f"src/drift_with_me/assets/jack_walk/{direction}/swim_{frame_index:03d}.hex")
+            .read_text(encoding="utf-8")
+            .strip()
+            .splitlines()
+        )
+        assert len(rows) == 32
+        assert {len(row) for row in rows} == {32}
+        actual_hashes.append(pixel_hash(rows))
+
+    assert tuple(actual_hashes) == expected_hashes
+    assert len(set(actual_hashes)) == 4
+
+
 @pytest.mark.parametrize("direction", tuple(JACK_BLINK_HASHES))
 def test_jack_blink_hex_is_a_fixed_32px_directional_frame(direction: str) -> None:
     original_rows = tuple(
@@ -754,6 +823,39 @@ def test_reactive_pose_set_manifest_loads_multiple_hex_frames(tmp_path: Path) ->
     assert loaded.frame("bend_left_1").source_hash == pixel_hash(left_rows)
 
 
+def test_frame_loop_manifest_loads_ordered_hex_frames(tmp_path: Path) -> None:
+    import pyxel
+
+    second_rows = ("EEE", "CDE", "678", "345", "012")
+    asset = valid_asset("jack_walk_test", "walk_000.hex")
+    asset["animation"] = "frame_loop"
+    asset["frames"] = [
+        {"id": "walk_000", "path": "walk_000.hex", "source_hash": pixel_hash(ROWS)},
+        {
+            "id": "walk_001",
+            "path": "walk_001.hex",
+            "source_hash": pixel_hash(second_rows),
+        },
+    ]
+    asset["source_hash"] = source_hash_for_pixels(
+        bytes([int(char, 16) for row in ROWS for char in row])
+        + bytes([int(char, 16) for row in second_rows for char in row])
+    )
+    (tmp_path / "walk_000.hex").write_text("\n".join(ROWS) + "\n", encoding="utf-8")
+    (tmp_path / "walk_001.hex").write_text("\n".join(second_rows) + "\n", encoding="utf-8")
+    manifest_path = tmp_path / "sprites.json"
+    manifest_path.write_text(
+        json.dumps({"schema_version": 1, "assets": [asset]}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    loaded = load_sprite_manifest_path(pyxel, manifest_path).get("jack_walk_test")
+
+    assert loaded is not None
+    assert loaded.definition.animation == "frame_loop"
+    assert tuple(loaded.frames) == ("walk_000", "walk_001")
+
+
 def test_parse_hex_rows_accepts_crlf_and_preserves_color_numbers() -> None:
     rows = parse_hex_rows("012\r\nABC\r\n", 3, 2, "test.hex")
 
@@ -994,6 +1096,7 @@ assert (back_frame.u, back_frame.v, back_frame.width, back_frame.height) == (0, 
 assert back_frame.source_hash == {JACK_BACK_SOURCE_HASH!r}
 jack_assets = {JACK_DIRECTION_HASHES!r}
 jack_rects = {JACK_DIRECTION_RECTS!r}
+jack_walk_assets = {JACK_WALK_FRAME_HASHES!r}
 jack_blink_assets = {JACK_BLINK_HASHES!r}
 jack_blink_rects = {JACK_BLINK_RECTS!r}
 urchin_rect = {NORMAL_URCHIN_RECT!r}
@@ -1009,6 +1112,18 @@ for direction, expected_hash in jack_assets.items():
     assert jack.definition.world_size == (16.0, 16.0)
 for direction in jack_assets:
     assert runtime.raw["assets"][f"player_{{direction}}_asset"] == f"jack_{{direction}}_32"
+for direction, expected_hashes in jack_walk_assets.items():
+    walk = library.get(f"jack_{{direction}}_walk_32")
+    assert walk is not None, direction
+    assert walk.definition.animation == "frame_loop"
+    assert tuple(walk.frames) == tuple(f"walk_{{index:03d}}" for index in range(4))
+    assert tuple(frame.source_hash for frame in walk.frames.values()) == expected_hashes
+    assert walk.definition.colkey == 0
+    assert walk.definition.anchor_px == (16.0, 32.0)
+    assert walk.definition.world_size == (16.0, 16.0)
+    assert runtime.raw["assets"][f"player_{{direction}}_walk_asset"] == (
+        f"jack_{{direction}}_walk_32"
+    )
 for direction, expected_hash in jack_blink_assets.items():
     blink = library.get(f"jack_{{direction}}_blink_32")
     assert blink is not None, direction
@@ -1853,6 +1968,87 @@ def test_renderer_selects_player_direction_assets_for_screen_movement(tmp_path: 
         asset = renderer.player_sprite_asset(model, camera)
         assert asset is not None
         assert asset.definition.asset_id == f"jack_{expected}_32"
+
+
+def test_renderer_uses_walk_loop_only_while_exploration_player_moves(tmp_path: Path) -> None:
+    import pyxel
+
+    frame_rows = (
+        ROWS,
+        tuple(reversed(ROWS)),
+        tuple(row[::-1] for row in ROWS),
+        tuple(row[::-1] for row in reversed(ROWS)),
+    )
+    idle_asset = valid_asset("jack_front_32", "front.hex")
+    walk_asset = valid_asset("jack_front_walk_32", "walk_000.hex")
+    walk_asset["animation"] = "frame_loop"
+    walk_asset["frames"] = [
+        {
+            "id": f"walk_{index:03d}",
+            "path": f"walk_{index:03d}.hex",
+            "source_hash": pixel_hash(rows),
+        }
+        for index, rows in enumerate(frame_rows)
+    ]
+    walk_asset["source_hash"] = source_hash_for_pixels(
+        b"".join(bytes(int(char, 16) for row in rows for char in row) for rows in frame_rows)
+    )
+    (tmp_path / "front.hex").write_text("\n".join(ROWS) + "\n", encoding="utf-8")
+    for index, rows in enumerate(frame_rows):
+        (tmp_path / f"walk_{index:03d}.hex").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    manifest_path = tmp_path / "sprites.json"
+    manifest_path.write_text(
+        json.dumps({"schema_version": 1, "assets": [idle_asset, walk_asset]}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    library = load_sprite_manifest_path(pyxel, manifest_path)
+    runtime = load_runtime_config()
+    raw = copy.deepcopy(runtime.raw)
+    raw["assets"]["sprite_rendering_enabled"] = True
+    raw["assets"]["player_front_asset"] = "jack_front_32"
+    raw["assets"]["player_front_walk_asset"] = "jack_front_walk_32"
+    raw["player"]["blink"]["enabled"] = False
+    raw["player"]["walk_animation"] = {
+        "enabled": True,
+        "frame_sec": 0.14,
+        "min_speed_world_sec": 1.0,
+    }
+    model = GameModel(raw, load_world_data())
+    camera = CameraState.from_config(
+        raw,
+        Vec3(model.player.x, 0.0, model.player.z),
+        runtime.screen_width,
+        runtime.screen_height,
+    )
+    renderer = Renderer(RecordingPyxel(), library)
+    model.player.moved_distance = 1.0
+    screen_down = screen_to_world_direction(camera, model.player.x, model.player.z, 0.0, 1.0)
+    model.player.last_move_x = screen_down.x
+    model.player.last_move_z = screen_down.y
+    model.manual_velocity_x = screen_down.x * 20.0
+    model.manual_velocity_z = screen_down.y * 20.0
+
+    moving_asset = renderer.player_sprite_asset(model, camera, presentation_time=0.0)
+
+    assert moving_asset is not None
+    assert moving_asset.definition.asset_id == "jack_front_walk_32"
+    assert [
+        renderer.player_sprite_animation_frame(moving_asset, model, time_sec).frame_id
+        for time_sec in (0.0, 0.14, 0.28, 0.42, 0.56)
+    ] == ["walk_000", "walk_001", "walk_002", "walk_003", "walk_000"]
+
+    model.reset_manual_velocity()
+    stopped_asset = renderer.player_sprite_asset(model, camera, presentation_time=0.7)
+    assert stopped_asset is not None
+    assert stopped_asset.definition.asset_id == "jack_front_32"
+
+    model.auto_move_goal = (model.player.x + 32.0, model.player.z)
+    auto_move_asset = renderer.player_sprite_asset(model, camera, presentation_time=0.7)
+    assert auto_move_asset is not None
+    assert auto_move_asset.definition.asset_id == "jack_front_walk_32"
+
+    model.combat_session = object()
+    assert not renderer.player_walk_animation_active(model)
 
 
 def test_renderer_selects_closed_eye_asset_only_during_blink_window(tmp_path: Path) -> None:

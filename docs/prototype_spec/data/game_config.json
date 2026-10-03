@@ -63,6 +63,11 @@
     "manual_inertia_enabled": true,
     "manual_inertia_accel_tau_sec": 0.09,
     "manual_inertia_reverse_tau_sec": 0.22,
+    "walk_animation": {
+      "enabled": true,
+      "frame_sec": 0.14,
+      "min_speed_world_sec": 1.0
+    },
     "blink": {
       "enabled": true,
       "closed_sec": 0.11,
@@ -505,6 +510,14 @@
     "player_back_left_asset": "jack_back_left_32",
     "player_left_asset": "jack_left_32",
     "player_front_left_asset": "jack_front_left_32",
+    "player_front_walk_asset": "jack_front_walk_32",
+    "player_front_right_walk_asset": "jack_front_right_walk_32",
+    "player_right_walk_asset": "jack_right_walk_32",
+    "player_back_right_walk_asset": "jack_back_right_walk_32",
+    "player_back_walk_asset": "jack_back_walk_32",
+    "player_back_left_walk_asset": "jack_back_left_walk_32",
+    "player_left_walk_asset": "jack_left_walk_32",
+    "player_front_left_walk_asset": "jack_front_left_walk_32",
     "player_idle_blink_asset": "jack_idle_blink_32",
     "player_front_blink_asset": "jack_front_blink_32",
     "player_front_right_blink_asset": "jack_front_right_blink_32",

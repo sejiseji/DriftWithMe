@@ -13,6 +13,7 @@ from drift_with_me.abnormal_urchin_arms import (
 )
 from drift_with_me.effects import EffectSystem, EnemySnapshot, ReactiveEnvironmentState
 from drift_with_me.hex_assets import (
+    FRAME_LOOP_ANIMATION,
     LoadedSpriteAsset,
     LoadedSpriteFrame,
     SpriteAssetLibrary,
@@ -4031,6 +4032,9 @@ class Renderer:
         view_name = self.player_sprite_direction_view(model, camera)
         config_key = f"player_{view_name}_asset" if view_name != "idle" else "player_idle_asset"
         asset = self.configured_sprite_asset(model, config_key)
+        if presentation_time is not None and self.player_walk_animation_active(model):
+            walk_view = "front_left" if view_name == "idle" else view_name
+            asset = self.configured_sprite_asset(model, f"player_{walk_view}_walk_asset") or asset
         if presentation_time is not None and jack_blink_closed(
             model.config.get("player", {}).get("blink", {}), presentation_time
         ):
@@ -4047,6 +4051,32 @@ class Renderer:
         if asset is None:
             return None
         return asset, using_idle_fallback and self.player_sprite_flip_x(model, camera)
+
+    def player_walk_animation_active(self, model: GameModel) -> bool:
+        config = model.config.get("player", {}).get("walk_animation", {})
+        if not bool(config.get("enabled", False)):
+            return False
+        if model.combat_session is not None or model.world_paused:
+            return False
+        min_speed = max(0.0, float(config.get("min_speed_world_sec", 1.0)))
+        manual_speed = math.hypot(model.manual_velocity_x, model.manual_velocity_z)
+        return manual_speed >= min_speed or model.auto_move_goal is not None
+
+    def player_sprite_animation_frame(
+        self,
+        asset: LoadedSpriteAsset,
+        model: GameModel,
+        presentation_time: float,
+    ) -> LoadedSpriteFrame:
+        if asset.definition.animation != FRAME_LOOP_ANIMATION:
+            return asset.frame()
+        frame_sec = max(
+            1.0 / 60.0,
+            float(model.config.get("player", {}).get("walk_animation", {}).get("frame_sec", 0.14)),
+        )
+        frames = asset.definition.frames
+        frame_index = math.floor(max(0.0, presentation_time) / frame_sec + 1e-9) % len(frames)
+        return asset.frame(frames[frame_index].frame_id)
 
     def player_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
         spin_view = self.combat_victory_spin_view_name(model, "player")
@@ -4311,7 +4341,8 @@ class Renderer:
         placement = self.player_sprite_placement(model, camera, presentation_time, x, z, y)
         if placement is None:
             return False
-        self.draw_atmospheric_scaled_sprite(asset, placement)
+        frame = self.player_sprite_animation_frame(asset, model, presentation_time)
+        self.draw_atmospheric_scaled_sprite(asset, placement, frame)
         return True
 
     def draw_buddy(
