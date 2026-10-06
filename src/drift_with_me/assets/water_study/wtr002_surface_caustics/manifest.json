@@ -1,0 +1,1150 @@
+{
+  "version": "0.2.0",
+  "project": "DriftWithMe",
+  "feature": "WTR002_A_Surface_Caustics",
+  "asset_id": "water_surface_caustics_plane_d",
+  "runtime_layer_id": "water_surface_caustics_plane_c",
+  "frame_count": 20,
+  "canonical_frame": "f00",
+  "hold_frames": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "logical_size": [
+    1024,
+    512
+  ],
+  "chunk_size": [
+    256,
+    256
+  ],
+  "chunk_grid": [
+    4,
+    2
+  ],
+  "palette": "Pyxel fixed 0-F",
+  "colkey": 8,
+  "storage": "full_chunk_hex_rows",
+  "animation_method": "prebaked_fine_caustics",
+  "production_tuning": "LOOK03 balance pass: smaller caustic cell scale, subdued coarse-source dominance, local shimmer only",
+  "frames": [
+    {
+      "id": "f00",
+      "hold_frames": 2,
+      "visible_pixels": 19916,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f00_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f00_c00.hex.txt",
+          "sha256": "0437a1889181740b6ba84e878faf95a20f96daabf416d1d55ea92cfd8979f26e"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f00_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f00_c10.hex.txt",
+          "sha256": "fa00d3dd407754bf74231d438ec3df0621469ac67a4445280acad85bfcf12132"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f00_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f00_c20.hex.txt",
+          "sha256": "fdc33aeb63782598e31ca6845d3e1734598822ca40029ef6209a8a2e62065891"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f00_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f00_c30.hex.txt",
+          "sha256": "52e6affad4e1a99fd26293b9667bf04c3bce0be8ccae1723dc988049e506ec71"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f00_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f00_c01.hex.txt",
+          "sha256": "1a48e0ea23bf588ab96613b465c9e7162a67f5bf8a9ecce84dddc1c408bf98f9"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f00_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f00_c11.hex.txt",
+          "sha256": "f53d55ec01aec5689c9f38d4d9f1f4d48cf664c76fea07507a53fb5af8cd98eb"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f00_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f00_c21.hex.txt",
+          "sha256": "8038540227a73ae7abc955ba49f8ad2acfe006dd24d682e2f68205f846f4d3ae"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f00_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f00_c31.hex.txt",
+          "sha256": "1efc75e84895fc5971fb0066a3a2dc15d8aea881836dbfad78bfe74d9f9533f4"
+        }
+      ]
+    },
+    {
+      "id": "f01",
+      "hold_frames": 2,
+      "visible_pixels": 19811,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f01_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f01_c00.hex.txt",
+          "sha256": "c66ded51171b047446b38b96f5090227ff5587fef1058d0f4a9bcdba8a0206e1"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f01_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f01_c10.hex.txt",
+          "sha256": "659282fc1eb653be45cacc5236cf2cb1ab642067f9ffc74eff7bea603e2982af"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f01_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f01_c20.hex.txt",
+          "sha256": "78949185470c343598a0ceca97ac35f60836c9ce9c14519674fb10295d9d0857"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f01_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f01_c30.hex.txt",
+          "sha256": "993d4905732197acfa6c15e4a5390fd3c9691fa7ac895dd6fc0999a836431aaa"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f01_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f01_c01.hex.txt",
+          "sha256": "ead05fadd485814020b7f1ca01271721f541473e89bde7ce56c4dbbbeb155a7e"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f01_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f01_c11.hex.txt",
+          "sha256": "7251eda229de1e13d345fdff25c4be2d7f0851569a5ffcfbc1766b3d55d8d760"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f01_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f01_c21.hex.txt",
+          "sha256": "b13e9dd0f4849b7bfc5b9a1b1005641b7cee32280dc0b4e7988ff7e79dd62390"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f01_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f01_c31.hex.txt",
+          "sha256": "56f42d92c936fa5b7a156003f70f95d83acd8a814e17fb9885fd94f515a84575"
+        }
+      ]
+    },
+    {
+      "id": "f02",
+      "hold_frames": 2,
+      "visible_pixels": 19861,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f02_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f02_c00.hex.txt",
+          "sha256": "1fcd7e511e15278f72d84c73163c331739ce2792cdd0de0126317c4e2279b3cf"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f02_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f02_c10.hex.txt",
+          "sha256": "d6663f52d2673eb171e2a1f705d8dca84024b9bd72d458a6da8958e41a57962a"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f02_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f02_c20.hex.txt",
+          "sha256": "7d9bd5a66e2b1ad48feff4912314e25b9bb1950640e06769e532a96277aa7624"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f02_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f02_c30.hex.txt",
+          "sha256": "4e368dfe4f6ea083d3c6b0ade0d3083defe14ce0bb26c277b99b4fc324195658"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f02_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f02_c01.hex.txt",
+          "sha256": "be14f628ee77e04892b62aa558ef18d2c0ed06911e08865ee0f49a0a32bf04d8"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f02_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f02_c11.hex.txt",
+          "sha256": "b51d1e5a1262276e17af97d5ea4fdacbe67376dd75270b028bbba9d9f8a715b0"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f02_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f02_c21.hex.txt",
+          "sha256": "500d3b4654f0091967cc92a531183783b7c22d21ea78bf458eb90c3f1ecf5a1c"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f02_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f02_c31.hex.txt",
+          "sha256": "21cdf2a83ff7fd00b8361836684bad75ccb84080eee376010ab128e342e88d13"
+        }
+      ]
+    },
+    {
+      "id": "f03",
+      "hold_frames": 2,
+      "visible_pixels": 19978,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f03_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f03_c00.hex.txt",
+          "sha256": "7df92f5b5562cb84d18d92e020916fd20ad3120fe68f85139e00dbc273e79d72"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f03_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f03_c10.hex.txt",
+          "sha256": "b95ac062489ea406d4be95f66e82c27eac2b3556f32d5f22bab3b48861772b66"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f03_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f03_c20.hex.txt",
+          "sha256": "6ab0e3bade43014a2a4d0c8eeea6adfde53a78f2d933da879d11ffe3cd28a706"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f03_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f03_c30.hex.txt",
+          "sha256": "ce4e0af999eaac74b2d352268bc9be8fd25f9b68be94b31a29e00599a0a64b16"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f03_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f03_c01.hex.txt",
+          "sha256": "565167bc7a27dc9dd2f03bd89883efeddc5ae1146b2460d1f61e4a7b6b59c378"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f03_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f03_c11.hex.txt",
+          "sha256": "cd29a4eb9a7920113f7974ab657ee94e518ca6aa4f487b4f016d2b6878490568"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f03_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f03_c21.hex.txt",
+          "sha256": "abff2645a38239c6bcf2cb24f1f8d44493e25c8af45f6bf48ed8b81fe797aa48"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f03_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f03_c31.hex.txt",
+          "sha256": "24696c851b0ca9545ac333ca5afe21ff2bae8452e8289313cbe24b9077d599ab"
+        }
+      ]
+    },
+    {
+      "id": "f04",
+      "hold_frames": 2,
+      "visible_pixels": 19827,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f04_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f04_c00.hex.txt",
+          "sha256": "e1f8acc96efb8be5dbc37ce7b836d2f776d7b07148d464eadd531b6d5d001b4e"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f04_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f04_c10.hex.txt",
+          "sha256": "644107bd49e7dd675616ee214f48c7cf0637c7085f235b4d21c39c4ec82d193a"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f04_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f04_c20.hex.txt",
+          "sha256": "9196162de79d0c664202eca1a9c4406fe157fff8d0245df7e767ebe16f17bdf4"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f04_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f04_c30.hex.txt",
+          "sha256": "c6a81f118661a1d637cb83a8fb302f14dd10cbefca8102cc354e14bb7785fd55"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f04_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f04_c01.hex.txt",
+          "sha256": "ba5713b10826adfdbc938184f98e945d43585bb117461b36713964e8cc9bf59d"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f04_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f04_c11.hex.txt",
+          "sha256": "2bcdd6c89b3247d2953a2cddb3b0e73ceae13c6b1682c31ed542b1a696a7531b"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f04_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f04_c21.hex.txt",
+          "sha256": "1b5a62d42d82f1db4100e5fd4091fcee7047016073f9918ae8c98f26b0cb7d7c"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f04_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f04_c31.hex.txt",
+          "sha256": "d662614bbc770301929579ab1ba7c110397a77271b2884cc54faf7438f5c3089"
+        }
+      ]
+    },
+    {
+      "id": "f05",
+      "hold_frames": 2,
+      "visible_pixels": 19794,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f05_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f05_c00.hex.txt",
+          "sha256": "9363ad662caf8f8c0dbb43289f6932820946eea0324e601025b600a3814bf143"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f05_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f05_c10.hex.txt",
+          "sha256": "4726cee8bae362c6d725b6d02bfb8405f101a06c4f46ab70a4c8bd77dcf8467d"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f05_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f05_c20.hex.txt",
+          "sha256": "18064dd8f80b8303c323d7fb6dd5244328647085d0a08a594b8dd83345691b06"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f05_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f05_c30.hex.txt",
+          "sha256": "f3f09caa66bbf49b8f406282757d20fa89ac9c86fc2e636af5bba8ad38724f88"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f05_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f05_c01.hex.txt",
+          "sha256": "3c89017c0887071f18b4668e1d495581135bd596e67287e9ca93f5734b4c534f"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f05_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f05_c11.hex.txt",
+          "sha256": "9d0c75910ee0c58a214bb21c865ccd2e80da0831b760a877725f3a2890320bc3"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f05_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f05_c21.hex.txt",
+          "sha256": "71733d7ae9d6243a9ad6a5dd2dcefe256829aff681860dd6faccba3519263133"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f05_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f05_c31.hex.txt",
+          "sha256": "a4fbb9616ed0728b450b42b69314b348e3a264427f23f7ace1f1e87f978208da"
+        }
+      ]
+    },
+    {
+      "id": "f06",
+      "hold_frames": 2,
+      "visible_pixels": 19713,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f06_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f06_c00.hex.txt",
+          "sha256": "ae3a1c0f92ec54d0d8ffd694eb26badf9fc5f799b24b4ab6c0efe4ec83be0b54"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f06_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f06_c10.hex.txt",
+          "sha256": "f33c6395b40161822d50cf4f711179e6c65e6735f063a1958d41f13e8de86c02"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f06_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f06_c20.hex.txt",
+          "sha256": "b67fc690d680b861a6205d06292694bd7bbefa20d3d2b17ea1bac029c3666155"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f06_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f06_c30.hex.txt",
+          "sha256": "23de1b7792910115c68bf71d6bf35981a291898364f092150954de7e8bb6e13b"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f06_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f06_c01.hex.txt",
+          "sha256": "1b7241eed49355a34a87afd42fb7637302f61f31c0ab7a24a222aa1665f5b5c7"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f06_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f06_c11.hex.txt",
+          "sha256": "7618e8af44b9ba80c50f4b11ec7fd309e8356fc77685899b2121a6eaa993091f"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f06_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f06_c21.hex.txt",
+          "sha256": "c156640c23b13dc3dce7ef46ac81954242387cb30cdb3206330ae67e3334f5e3"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f06_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f06_c31.hex.txt",
+          "sha256": "a9b1a1660986aa42a0007708115bea7f72e459bfd3fd5fe4dc781e766ac9c086"
+        }
+      ]
+    },
+    {
+      "id": "f07",
+      "hold_frames": 2,
+      "visible_pixels": 19708,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f07_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f07_c00.hex.txt",
+          "sha256": "cf294bf0701b8ccd988ecc71d5f4a45cf02c560c1f3f0a39e872681ec875a320"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f07_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f07_c10.hex.txt",
+          "sha256": "2653d041706ddcc450a630efc213234061d7f593bfdddf42d2f7747260a74b1a"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f07_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f07_c20.hex.txt",
+          "sha256": "bea15040cea6e95e7ff193b89245314f60205a872b075e750138b2af4fe84e87"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f07_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f07_c30.hex.txt",
+          "sha256": "2efba2a7794a68b50dce7bd37e2bb06f71314451580e4af490cdca23fc556f95"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f07_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f07_c01.hex.txt",
+          "sha256": "5bc52b1f8d83db12349e4e5533111f4d8d355fa905c4b9036c3771fe04aa5e21"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f07_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f07_c11.hex.txt",
+          "sha256": "93aa84eb9d41e9dbad0355e2926c773d8028017fa33feadb3fa84812f7b7612a"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f07_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f07_c21.hex.txt",
+          "sha256": "351135278454e50f9d69e0064ea5e02033f022c75538f2db96aa812cbdb48667"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f07_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f07_c31.hex.txt",
+          "sha256": "4b96876ddb80b4defe20953dc3a03c5921e6721820c3911d0b9cc16501fc2f42"
+        }
+      ]
+    },
+    {
+      "id": "f08",
+      "hold_frames": 2,
+      "visible_pixels": 19810,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f08_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f08_c00.hex.txt",
+          "sha256": "abdb72e5272239ed30df29a8a03aeac3b93659c63746a5ca9d42866008523887"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f08_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f08_c10.hex.txt",
+          "sha256": "55d9dcf1201452355d02f43cb831991b7b491a1223189cf318f60eac7c249672"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f08_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f08_c20.hex.txt",
+          "sha256": "8bf85867fb473573c62f5f87fe0e05914871f7a395845f2a76f6ae65e80f23c2"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f08_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f08_c30.hex.txt",
+          "sha256": "04c028945bfdeca5eeb0a40c6d4cb7ae3bad330c8c4f3b57b24ea9fb64dfa6b6"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f08_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f08_c01.hex.txt",
+          "sha256": "dea7bd4c253c33e0e863fe775abad2a20f47af58618501c846653d14317167e5"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f08_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f08_c11.hex.txt",
+          "sha256": "6dd6b5f14cfd3ef84dbd2cf7f1c4c10c8731f1dacfd5b8411c118d154b25325c"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f08_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f08_c21.hex.txt",
+          "sha256": "695ad67f9233962fae422f86fdabbc5e4b6a088af26fb60d70f97eefa4f72566"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f08_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f08_c31.hex.txt",
+          "sha256": "07cf28b6e7417e9e02a0c7334045ac79aca993f33465a2cc8c033c0685bf8d68"
+        }
+      ]
+    },
+    {
+      "id": "f09",
+      "hold_frames": 2,
+      "visible_pixels": 19805,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f09_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f09_c00.hex.txt",
+          "sha256": "3947111208002178744598a759caa01ff387befd75e77c76685ee00112949d3e"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f09_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f09_c10.hex.txt",
+          "sha256": "fd7a23a57b374afc92ebdae08de74385e372c4b4094c2f57969bafdf88ab0ae0"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f09_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f09_c20.hex.txt",
+          "sha256": "9a39a24a48f9cc8e33878245199f26b3d57c1f31ccd10826608ffb3c85e4f8ce"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f09_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f09_c30.hex.txt",
+          "sha256": "c05bc4555063b918922f94bcad80fd052541ef386d927d05b4367b8988b62128"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f09_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f09_c01.hex.txt",
+          "sha256": "182099b7436fb2f2d64ac49ccb58ba9ceb7921d3cb965d34591fac00c4419eb7"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f09_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f09_c11.hex.txt",
+          "sha256": "f910c9cead75e1358bcd48d3b159d69caab2d95bdf422308ff0a48b5a8935706"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f09_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f09_c21.hex.txt",
+          "sha256": "c695c8f23141b437afb15388805ee801c32c812389bfbfb893b80cbc05465b8a"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f09_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f09_c31.hex.txt",
+          "sha256": "fe57304ce0e24f5a8e35a817f2a50b833d7fc772242ca57ecc56be53c3654c57"
+        }
+      ]
+    },
+    {
+      "id": "f10",
+      "hold_frames": 2,
+      "visible_pixels": 19801,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f10_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f10_c00.hex.txt",
+          "sha256": "d977466d0c50dfc1f803baa26f72e72e7929442b46641f2423484b4fb2a010ba"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f10_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f10_c10.hex.txt",
+          "sha256": "b76e0d9fcc21ebe3774102ab9f246f9425f57d25e3bfc2a2b2d7ed83bde1e2cc"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f10_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f10_c20.hex.txt",
+          "sha256": "d454d0fb116f51a7f0ae7d14e33e6a0f1479142cef61c8fb68eac729c7e6df31"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f10_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f10_c30.hex.txt",
+          "sha256": "db29ddfa90a19c220b90497a6e99ae0a26e69acb2dcc9300895632690574c265"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f10_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f10_c01.hex.txt",
+          "sha256": "becd0f5e42b06f19ed9fc6644676dfb611155f1348955701b3319e2f612160ac"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f10_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f10_c11.hex.txt",
+          "sha256": "1f74b90fd3581f77b1b4c6745ea31d30d324b548fb3ed2f58398b319c69b2293"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f10_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f10_c21.hex.txt",
+          "sha256": "cc5fca60d92272bb0180c4e4507233ef1a60fc10597e216af66e6a22a609e854"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f10_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f10_c31.hex.txt",
+          "sha256": "ed317726dd47050c96d68ee32e1ac89c9938dd233636e7b1b8b16b44b4bb0682"
+        }
+      ]
+    },
+    {
+      "id": "f11",
+      "hold_frames": 2,
+      "visible_pixels": 19827,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f11_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f11_c00.hex.txt",
+          "sha256": "6d527956285acb8d57b6dde4e9639e9afc86b27ebe389d5471371c4e58164aa1"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f11_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f11_c10.hex.txt",
+          "sha256": "cbf4903b5222bb5deea805d41894d6670ff37aac3bfcd309563fe422a9a35290"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f11_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f11_c20.hex.txt",
+          "sha256": "cff101c748f616341684cf3caadacd8c65182c94ebf19309ef129ddb74ce3611"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f11_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f11_c30.hex.txt",
+          "sha256": "916f51631bfa16f302ee54139edf4e4eec0303b5b2124fba10f8c90dd224c454"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f11_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f11_c01.hex.txt",
+          "sha256": "cf69eef6567961298f6dca19744f272450601c6074976e53398737e6e2fbaf46"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f11_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f11_c11.hex.txt",
+          "sha256": "ccbdd32cc6ac6f62dad0316d35e5ed4f25148a9b0e8ab9198fd1a5dc19cb4030"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f11_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f11_c21.hex.txt",
+          "sha256": "a26ef627215b49b4f873035dec5b1a6b41fea8d545e949fd87e4b9b5748d5668"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f11_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f11_c31.hex.txt",
+          "sha256": "5a0cc3fec043a92fcfe72caf244ccb3b00a9547ed9442679499c53f62c35e65d"
+        }
+      ]
+    },
+    {
+      "id": "f12",
+      "hold_frames": 2,
+      "visible_pixels": 19886,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f12_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f12_c00.hex.txt",
+          "sha256": "266a5911d87ff102755bdf57247e908b08057a124de9585eab59f795f1df05d0"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f12_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f12_c10.hex.txt",
+          "sha256": "19d6ed63d088ce6dc858f6b28a4a350d0d4673a23a591d0ba420a806ea4c6001"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f12_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f12_c20.hex.txt",
+          "sha256": "214ad7b03edfc99ef3d1604331ccf8824b41305b0f6a2dc3896cca47f3e30107"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f12_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f12_c30.hex.txt",
+          "sha256": "cda277538e4edbfd6ae47fd1e1a6839550555c9f02e8f22e7581f86a5ad069cc"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f12_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f12_c01.hex.txt",
+          "sha256": "573fbc73d2e9888f1d18162221d4e6a0ff749f07a732c89fcafaa8f97ac79698"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f12_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f12_c11.hex.txt",
+          "sha256": "e1f5edd4952462ce7f603b2062581a43b8f3de5a5f15c19b2962f5a547fab6a6"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f12_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f12_c21.hex.txt",
+          "sha256": "1a6eb69d2bde0d9f7b5be456595c6d11b29773b77dd00c1b9507a0a215f45deb"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f12_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f12_c31.hex.txt",
+          "sha256": "a370c97ceb767fa60986c91a4b4e5a9426c4b37d191aa49b1d53169e54518d3b"
+        }
+      ]
+    },
+    {
+      "id": "f13",
+      "hold_frames": 2,
+      "visible_pixels": 19865,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f13_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f13_c00.hex.txt",
+          "sha256": "5cb7233037fe3b3caf6129a9309b21b1f8537fc42c93a8e5facff84c085936ac"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f13_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f13_c10.hex.txt",
+          "sha256": "9774c7875dd33a6524addb80b62f01a3401d20c0d2b9edc7fae99507ad300c33"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f13_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f13_c20.hex.txt",
+          "sha256": "c899328ecb02de1e7647cb71a94dfb8d66b1218d382467c1c8201a753b23db33"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f13_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f13_c30.hex.txt",
+          "sha256": "fa7352b73ea959f44971cc290479aa2ecae1f2011ec7a66efa84cf1cee7ace57"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f13_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f13_c01.hex.txt",
+          "sha256": "9d1925a48615380e42b5fcb15a66417fc1cb74eb742fe683a35957287ff3a6ee"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f13_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f13_c11.hex.txt",
+          "sha256": "e9112dde43cfe9066525c9fceabfffd43e20ec8163a7268a0dc4b359885f4e72"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f13_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f13_c21.hex.txt",
+          "sha256": "66c807858ab82e8cce5cc02c44efd67e6c4d79123dc11439852a148dc66562df"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f13_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f13_c31.hex.txt",
+          "sha256": "7c97934e9605fdb43f709503d0872298dea32640a96498f0fcdcd54c81a0e370"
+        }
+      ]
+    },
+    {
+      "id": "f14",
+      "hold_frames": 2,
+      "visible_pixels": 19839,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f14_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f14_c00.hex.txt",
+          "sha256": "bbd5d946753468716434c56c1bc67e6c7840e4ac49b6c6899ad8eb93bbb07042"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f14_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f14_c10.hex.txt",
+          "sha256": "bd2f08376308374e6966008532bfc80477304f927931e73cc401309381860753"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f14_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f14_c20.hex.txt",
+          "sha256": "03e5b75e9eb2ce7c2347f036000186e79443f77980456cbd7b0526c2db085709"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f14_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f14_c30.hex.txt",
+          "sha256": "b841d47d2efc559a1479b3ec35f36618c66b17dd295a265c0a333620a6c803ca"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f14_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f14_c01.hex.txt",
+          "sha256": "271e594f417edd1e05ea403d756f1b56320cc62a493d7a4407b5840467cc3981"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f14_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f14_c11.hex.txt",
+          "sha256": "a9c32f639871776f25d8d4f95fb6d7beb54ecaa5f05c9bacf12da94d0c50a429"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f14_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f14_c21.hex.txt",
+          "sha256": "02e6b690c70ed3bb17e14c21fdc9854b33302c30884f629957c5ebf85416a22c"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f14_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f14_c31.hex.txt",
+          "sha256": "3897a85e50deca4d542e9fc9c75cc80c194f607a6005dcb5d184ba1be74b2ab4"
+        }
+      ]
+    },
+    {
+      "id": "f15",
+      "hold_frames": 2,
+      "visible_pixels": 19892,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f15_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f15_c00.hex.txt",
+          "sha256": "ba75625a28cf9cf6ddec4bc21f134c2758a40a7d842a08d788cbb55f36d9f5aa"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f15_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f15_c10.hex.txt",
+          "sha256": "05eb837168d38c9f043500182a5248c60d9d06bb836034f0d49a60ec0b84c846"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f15_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f15_c20.hex.txt",
+          "sha256": "5bde25899bc91fc3234722c9d7edaf459e1f55b3500d4232c858cf62775f116e"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f15_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f15_c30.hex.txt",
+          "sha256": "6a8490cb287cb8303f386a5e4be26c969ee45745ae2c8d8c5d767a3da04e9c18"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f15_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f15_c01.hex.txt",
+          "sha256": "7fc2dff40397963a6b000965cbd6b0d8d2025c7bb74d9a7f5af4edaf859e124b"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f15_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f15_c11.hex.txt",
+          "sha256": "7d643c521f338a336c2acffc1a583eb964084d62c4fb7dfb8aa90f09f697c52c"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f15_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f15_c21.hex.txt",
+          "sha256": "1b98db010252e3d9eef316580b5d7e4f202439aabf20a0adb15cbc0753c1d617"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f15_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f15_c31.hex.txt",
+          "sha256": "acc03ef95245be341c1ec1174c43dfa292eae7f1d8a2712e23fc1b842fc32cb5"
+        }
+      ]
+    },
+    {
+      "id": "f16",
+      "hold_frames": 2,
+      "visible_pixels": 19798,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f16_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f16_c00.hex.txt",
+          "sha256": "c831999aad4325d8cf1cf46657f76f2f53e3e4d99d7e6bafa6f179de0b626659"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f16_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f16_c10.hex.txt",
+          "sha256": "1c3c507b2b6fda4851acc56b2c8c9945fc1c3721c32380ace2987469b589d50e"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f16_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f16_c20.hex.txt",
+          "sha256": "4f2a7c29b924ebd3ab06a8f14aee437baa762ec29c18fa185937414c6a0e52d6"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f16_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f16_c30.hex.txt",
+          "sha256": "5b3ed69ebd27065c5dd515cb07627e96c6d53f39c9523153869a7edca8efa5e3"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f16_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f16_c01.hex.txt",
+          "sha256": "93c0a542f65ae9f408424dbea0b724138b6d051f44700d8fdd521c45774c55da"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f16_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f16_c11.hex.txt",
+          "sha256": "2da4530fab23081981e7dec039dc6b64fe257873ff8a6c0e83c33df12b19d22b"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f16_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f16_c21.hex.txt",
+          "sha256": "44082be0b543ea50800600db0c09b6560a76a483975c76bdece12b19e91e64d0"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f16_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f16_c31.hex.txt",
+          "sha256": "07789557435948216ff2a47dc00cef5cfb0f1927d3cbe92782d45e0df873ffed"
+        }
+      ]
+    },
+    {
+      "id": "f17",
+      "hold_frames": 2,
+      "visible_pixels": 19773,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f17_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f17_c00.hex.txt",
+          "sha256": "614d41ac70b3a54c57549cfbcf3bebbe7ea15eccf1e4c12bdee2294f925a15ad"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f17_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f17_c10.hex.txt",
+          "sha256": "f875a88ac5c365548b4841ee4e56a576fd2c0b09b49da1de25dc30b924a24254"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f17_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f17_c20.hex.txt",
+          "sha256": "ce1980163e4a377c99ce4631bfe4b5ccd9672f1dc22d35741321a50ba5c5302e"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f17_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f17_c30.hex.txt",
+          "sha256": "cc8405369118054bb5d9a27781218776fbde68f660ece32352e86130e804c3e2"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f17_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f17_c01.hex.txt",
+          "sha256": "d216f984640f07fc0d24d10d96fb4dee2318a8a2a9b4db6d363757e290bfea3b"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f17_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f17_c11.hex.txt",
+          "sha256": "8e56a2ffc9a538d8ddcea3c02b2891631c8bee5a467f64282233402ad5fcce8c"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f17_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f17_c21.hex.txt",
+          "sha256": "58f74a210a64dd968f2e0bc18002fe31f289b1234c206136a4eaa1ec83bf804a"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f17_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f17_c31.hex.txt",
+          "sha256": "3c3a4c9b811055e7d0536a174c0ce72ed5509ea1b255c6588c53a8bdd5f78dd5"
+        }
+      ]
+    },
+    {
+      "id": "f18",
+      "hold_frames": 2,
+      "visible_pixels": 19805,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f18_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f18_c00.hex.txt",
+          "sha256": "e95e633eec31402e6381d0f0e44b405a73326ab3db8c112c10331d16e585eba5"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f18_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f18_c10.hex.txt",
+          "sha256": "791a9bf592fa27e1db287c01ae4883dbd924e9813728003044b41f424e86bcfb"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f18_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f18_c20.hex.txt",
+          "sha256": "68defaea86845b9bf00e5ac2da2150f70e1d0bcae30ddb123ad5343c549d38c1"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f18_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f18_c30.hex.txt",
+          "sha256": "d34d737710d04cd9d4ad1b6a2103210712edcfedc9ca1885c24b37ad9114f439"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f18_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f18_c01.hex.txt",
+          "sha256": "f1ea6b6d522371c0fcfad8a9a25a63de02be2c0f310c96a95d39d36edc611a94"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f18_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f18_c11.hex.txt",
+          "sha256": "0c0986b3f4e33920329c9eb3a711d1773303c20775d23474d71e3e027e76a0a1"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f18_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f18_c21.hex.txt",
+          "sha256": "4b1d84fe43e92d991c318ecc5808f1fafd00a17053368a0e1dd3fcba2f0f183c"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f18_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f18_c31.hex.txt",
+          "sha256": "e6b0fa879eb2943f94d3c4466a6b7ffd4df62cc61736b14b6144272b55c05a4f"
+        }
+      ]
+    },
+    {
+      "id": "f19",
+      "hold_frames": 2,
+      "visible_pixels": 19756,
+      "chunks": [
+        {
+          "id": "water_surface_caustics_plane_d_f19_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_surface_caustics_plane_d_f19_c00.hex.txt",
+          "sha256": "12e6f38766cbe2b85f4c2b35d3299e514ae135830ae2d8982d7bdacb9ee9c982"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f19_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_surface_caustics_plane_d_f19_c10.hex.txt",
+          "sha256": "ebe1a9af003ca7846dd6af18ce76666069a2eeedc518346fe7d409fd23cabd96"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f19_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_surface_caustics_plane_d_f19_c20.hex.txt",
+          "sha256": "6c77fa8c1db4ce502bff37f143c3005f568d7a72d8c42c63921bd092af6a66a7"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f19_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_surface_caustics_plane_d_f19_c30.hex.txt",
+          "sha256": "af09e8aa33ce22744cdb8844c0ad9420592500b69da79ade90ff13bd08929c6c"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f19_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_surface_caustics_plane_d_f19_c01.hex.txt",
+          "sha256": "df3c3f99dcc8a4068ca6afbafc3ef67f9ae1e058e3e7cdd9b3935bffe809af88"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f19_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_surface_caustics_plane_d_f19_c11.hex.txt",
+          "sha256": "8bcf391b7ee4ea542d53c1c213802cb746487c935adf179f3a3ca06bd1466d2a"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f19_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_surface_caustics_plane_d_f19_c21.hex.txt",
+          "sha256": "5a3ce79b87fe63595ded89778c5610a74eec2fb3d40989bf1ee11a3755278aed"
+        },
+        {
+          "id": "water_surface_caustics_plane_d_f19_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_surface_caustics_plane_d_f19_c31.hex.txt",
+          "sha256": "900e771ad8d67de7fe2d70c04b202a27d73909d408e7f612ebca5f6efffbe63f"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1215 @@
+{
+  "schema_version": 1,
+  "spec_version": "0.1.0",
+  "status": "prototype_tuning_defaults_not_measured",
+  "units": {
+    "position": "world_unit",
+    "duration": "second",
+    "angle": "degree",
+    "ui_reference": "512x236 logical pixels"
+  },
+  "display": {
+    "default_profile": "medium",
+    "profiles": {
+      "low": [
+        426,
+        196
+      ],
+      "medium": [
+        512,
+        236
+      ],
+      "high": [
+        640,
+        294
+      ]
+    },
+    "target_render_fps": 60,
+    "comparison_render_fps": 30,
+    "desktop_scale": 2,
+    "world_viewport": "full_logical_screen",
+    "orientation": "landscape",
+    "reference_ui_height": 236,
+    "minimum_touch_target_css_px": 44
+  },
+  "simulation": {
+    "fixed_hz": 60,
+    "max_elapsed_sec": 0.1,
+    "max_steps_per_callback": 6,
+    "pause_on_hidden": true,
+    "day_phase": "day",
+    "realtime_day_night": false
+  },
+  "world_debug": {
+    "show_walkable_boundary": true,
+    "walkable_boundary_color": 7
+  },
+  "player": {
+    "move_speed": 84.0,
+    "collider_half_x": 8.0,
+    "collider_half_z": 8.0,
+    "solid_collision_margin": 4.0,
+    "cube_size": 16.0,
+    "visual_hover_base": 2.0,
+    "visual_hover_amplitude": 1.5,
+    "visual_hover_period_sec": 1.6,
+    "contact_knockback": 16.0,
+    "contact_stun_sec": 0.2,
+    "invulnerable_sec": 1.0,
+    "has_hp": false,
+    "manual_affine_screen_speed_equalize": true,
+    "manual_affine_screen_speed_blend": 0.35,
+    "manual_affine_screen_speed_max_scale": 1.55,
+    "manual_inertia_enabled": true,
+    "manual_inertia_accel_tau_sec": 0.09,
+    "manual_inertia_reverse_tau_sec": 0.22,
+    "walk_animation": {
+      "enabled": true,
+      "frame_sec": 0.14,
+      "min_speed_world_sec": 1.0
+    },
+    "blink": {
+      "enabled": true,
+      "closed_sec": 0.11,
+      "interval_pattern_sec": [3.1, 4.6, 5.2, 2.9, 6.0, 3.8],
+      "double_blink_indices": [1, 4],
+      "double_gap_sec": 0.15
+    }
+  },
+  "buddy": {
+    "cube_size": 6.0,
+    "offset_screen_right_world": -20.0,
+    "offset_behind_player_world": 12.0,
+    "height": 26.0,
+    "bob_amplitude": 2.0,
+    "bob_period_sec": 2.0,
+    "follow_tau_sec": 0.18,
+    "side_reposition_enabled": true,
+    "side_reposition_screen_right_world": 20.0,
+    "side_reposition_behind_player_world": 12.0,
+    "side_reposition_min_screen_px": 0.25,
+    "side_reposition_follow_tau_sec": 0.08,
+    "hard_follow_limit": 80.0,
+    "physical_collision": false
+  },
+  "input": {
+    "hold_sec": 0.22,
+    "drag_threshold_ref_px": 8.0,
+    "stick_deadzone_ref_px": 8.0,
+    "stick_radius_ref_px": 48.0,
+    "ui_tap_slop_ref_px": 8.0,
+    "one_active_pointer": true,
+    "action_lock_sec": 0.15,
+    "keyboard": {
+      "move": [
+        "ARROWS",
+        "WASD"
+      ],
+      "barrier": "SPACE",
+      "action": "X",
+      "interact": "E",
+      "confirm": "RETURN",
+      "pause": "ESCAPE",
+      "mute": "M",
+      "debug": "F1"
+    }
+  },
+  "auto_move": {
+    "enabled": true,
+    "short_tap_sec": 0.18,
+    "max_interval_sec": 0.3,
+    "max_distance_ref_px": 20.0,
+    "foreground_pick_block_enabled": true,
+    "foreground_pick_margin_ref_px": 2.0,
+    "arrival_radius_world": 2.0,
+    "waypoint_radius_world": 4.0,
+    "stuck_sec": 0.5,
+    "astar_enabled": true,
+    "nav_grid_world": 16.0,
+    "nav_clearance_world": 2.0,
+    "max_astar_nodes": 4096,
+    "max_link_candidates": 32
+  },
+  "camera": {
+    "yaw_deg": 20.0,
+    "pitch_deg": 25.0,
+    "horizontal_fov_deg": 38.0,
+    "base_distance": 480.0,
+    "near": 8.0,
+    "far": 1800.0,
+    "zoom_min": 0.65,
+    "zoom_max": 1.55,
+    "water_source_proximity": {
+      "enabled": true,
+      "object_kind": "water_station",
+      "required_supply": null,
+      "inner_radius_world": 56.0,
+      "outer_radius_world": 160.0,
+      "near_zoom_multiplier": 1.14,
+      "approach_tau_sec": 0.75,
+      "depart_tau_sec": 1.05
+    },
+    "screen_anchor": [
+      0.5,
+      0.58
+    ],
+    "focus_screen_anchor": [
+      0.5,
+      0.4
+    ],
+    "actor_focus_screen_anchor": [
+      0.5,
+      0.56
+    ],
+    "deadzone_size_fraction": [
+      0.18,
+      0.12
+    ],
+    "follow_tau_sec": 0.08,
+    "lookahead_enabled": true,
+    "lookahead_sec": 0.15,
+    "lookahead_screen_ref_px": 68.0,
+    "lookahead_smooth_sec": 0.62,
+    "lookahead_turn_smooth_sec": 0.82,
+    "lookahead_reverse_smooth_sec": 1.15,
+    "lookahead_follow_tau_sec": 0.24,
+    "lookahead_turn_dot_threshold": 0.65,
+    "lookahead_reverse_dot_threshold": -0.45,
+    "lookahead_min_direction": 0.05,
+    "lookahead_limit": 144.0,
+    "zone_exit_margin": 32.0,
+    "default_blend_sec": 0.6,
+    "focus_blend_sec": 0.35,
+    "return_blend_sec": 0.5
+  },
+  "projection": {
+    "mode": "affine",
+    "affine": {
+      "profile_id": "follow_spawn_medium_v1",
+      "calibration_source": "HEAD 531f365 FOLLOW camera at spawn",
+      "reference_viewport": [
+        512,
+        236
+      ],
+      "reference_world": [
+        160.0,
+        0.0,
+        160.0
+      ],
+      "sample_world_step": 32.0,
+      "basis_x": [
+        1.4260326034001523,
+        -0.21935300205457775
+      ],
+      "basis_y": [
+        0.0,
+        -1.4444892674936258
+      ],
+      "basis_z": [
+        -0.5012972526056361,
+        -0.5820733498680366
+      ],
+      "fixed_forward": [
+        0.30997551921944466,
+        -0.42261826174069944,
+        0.8516507396391465
+      ],
+      "reference_depth": 480.0,
+      "debug_grid_world": 32.0,
+      "ground_epsilon": 1e-9
+    }
+  },
+  "atmosphere": {
+    "enabled": true,
+    "affine_only": true,
+    "near_depth_offset": 56.0,
+    "far_depth_offset": 160.0,
+    "dither_enabled": true,
+    "dither_min_strength": 0.5,
+    "mid_dither_cells": 2,
+    "far_dither_cells": 4,
+    "dither_fog_color": 13,
+    "shadow_enabled": true,
+    "shadow_near_cells": 12,
+    "shadow_mid_cells": 8,
+    "shadow_far_cells": 4,
+    "shadow_important_min_cells": 6,
+    "ground_detail_strength": 1.0,
+    "nature_prop_strength": 1.0,
+    "reactive_prop_strength": 1.0,
+    "equipment_strength": 0.7,
+    "solid_strength": 0.8,
+    "default_static_strength": 0.5,
+    "enemy_strength": 0.35,
+    "buddy_strength": 0.15,
+    "player_strength": 0.1
+  },
+  "grassland_micro": {
+    "enabled": true,
+    "affine_only": true,
+    "base_color": 3,
+    "blade_color": 11,
+    "blade_shadow_color": 3,
+    "blade_accent_color": 10,
+    "cell_world": 24.0,
+    "max_visible_clumps": 900,
+    "min_blades_per_cell": 0,
+    "max_blades_per_cell": 6,
+    "min_blade_height_px": 2,
+    "max_blade_height_px": 6,
+    "blade_primary_weight": 0.58,
+    "blade_shadow_weight": 0.34,
+    "blade_accent_weight": 0.08,
+    "base_variation_enabled": false,
+    "base_variation_color": 11,
+    "base_variation_cell_world": 96.0,
+    "max_visible_base_patches": 48,
+    "transition_world": 32.0,
+    "transition_cell_world": 8.0,
+    "transition_pattern": "noise",
+    "transition_soft_color": 11,
+    "edge_irregularity_world": 12.0,
+    "micro_density_inner": 1.0,
+    "micro_density_edge": 0.14,
+    "density_variation_enabled": true,
+    "density_variation_cell_world": 48.0,
+    "density_variation_min": 0.45,
+    "density_variation_max": 1.0,
+    "areas": [
+      {
+        "id": "spawn_grassland_micro",
+        "bounds_ref": "visual_ground",
+        "phase": 0
+      }
+    ]
+  },
+  "forest_light": {
+    "enabled": true,
+    "affine_only": true,
+    "combat_hidden": true,
+    "cell_world": 68.0,
+    "max_visible_spots": 76,
+    "color": 7,
+    "secondary_color": 12,
+    "areas": [
+      {
+        "id": "whole_map_soft_light",
+        "bounds_ref": "visual_ground",
+        "density": 0.14,
+        "phase": 11
+      },
+      {
+        "id": "north_forest_light",
+        "rect_xz": [
+          -96.0,
+          560.0,
+          1180.0,
+          1280.0
+        ],
+        "density": 0.28,
+        "phase": 19
+      },
+      {
+        "id": "west_grove_light",
+        "rect_xz": [
+          -180.0,
+          300.0,
+          340.0,
+          900.0
+        ],
+        "density": 0.18,
+        "phase": 37
+      }
+    ]
+  },
+  "ambient_motes": {
+    "enabled": true,
+    "affine_only": true,
+    "combat_hidden": true,
+    "cell_world": 58.0,
+    "max_visible_motes": 128,
+    "twinkle_enabled": true,
+    "twinkle_period_sec": 1.8,
+    "areas": [
+      {
+        "id": "whole_map_green_motes",
+        "kind": "green_mote",
+        "bounds_ref": "visual_ground",
+        "density": 0.1,
+        "min_y": 8.0,
+        "max_y": 34.0,
+        "color": 11,
+        "secondary_color": 3,
+        "phase": 41
+      },
+      {
+        "id": "whole_map_soft_photons",
+        "kind": "photon",
+        "bounds_ref": "visual_ground",
+        "density": 0.055,
+        "min_y": 18.0,
+        "max_y": 58.0,
+        "color": 7,
+        "secondary_color": 12,
+        "phase": 59
+      },
+      {
+        "id": "north_forest_green_motes",
+        "kind": "green_mote",
+        "rect_xz": [
+          -128.0,
+          560.0,
+          1240.0,
+          1320.0
+        ],
+        "density": 0.2,
+        "min_y": 10.0,
+        "max_y": 44.0,
+        "color": 11,
+        "secondary_color": 3,
+        "phase": 73
+      },
+      {
+        "id": "giant_tree_photons",
+        "kind": "photon",
+        "rect_xz": [
+          -96.0,
+          420.0,
+          1040.0,
+          1100.0
+        ],
+        "density": 0.12,
+        "min_y": 18.0,
+        "max_y": 62.0,
+        "color": 7,
+        "secondary_color": 12,
+        "phase": 101
+      },
+      {
+        "id": "water_edge_soft_motes",
+        "kind": "green_mote",
+        "rect_xz": [
+          280.0,
+          170.0,
+          720.0,
+          500.0
+        ],
+        "density": 0.12,
+        "min_y": 6.0,
+        "max_y": 24.0,
+        "color": 11,
+        "secondary_color": 12,
+        "phase": 149
+      }
+    ]
+  },
+  "wind_particle_field": {
+    "enabled": true,
+    "affine_only": true,
+    "combat_hidden": true,
+    "area_ref": "visual_ground",
+    "field_particle_count": 256,
+    "max_visible_particles": 36,
+    "seed": 113,
+    "cull_margin_px": 12.0,
+    "height_min_world": 4.0,
+    "height_max_world": 36.0,
+    "speed_min_world_sec": 8.5,
+    "speed_max_world_sec": 19.0,
+    "vertical_wobble_world": 1.3,
+    "wobble_frequency_min": 0.18,
+    "wobble_frequency_max": 0.42,
+    "size_2_ratio": 0.18,
+    "colors": [
+      12,
+      12,
+      7,
+      10
+    ]
+  },
+  "resources": {
+    "water_max": 100.0,
+    "water_start": 100.0,
+    "barrier_water_per_sec": 10.0,
+    "bubble_water_cost": 12.0,
+    "energy_max": 60.0,
+    "energy_start": 60.0,
+    "discharge_energy_cost": 20.0,
+    "refill_duration_sec": 0.8,
+    "solar_charge_duration_sec": 1.2,
+    "passive_regeneration": false,
+    "walking_consumes_resources": false
+  },
+  "barrier": {
+    "radius": 30.0,
+    "normal_push_distance": 40.0,
+    "abnormal_push_distance": 24.0,
+    "push_duration_sec": 0.22,
+    "normal_rest_sec": 2.0,
+    "abnormal_rest_sec": 0.8
+  },
+  "bubble": {
+    "speed": 240.0,
+    "radius": 10.0,
+    "max_range": 128.0,
+    "target_select_range": 112.0,
+    "cooldown_sec": 0.35,
+    "capture_duration_sec": 4.0,
+    "max_projectiles": 1,
+    "max_captured_targets": 1,
+    "homing": false,
+    "release_grace_sec": 0.5
+  },
+  "discharge": {
+    "range_from_player": 144.0,
+    "max_buddy_player_distance": 80.0,
+    "visual_duration_sec": 0.16,
+    "instant_gameplay_resolution": true,
+    "enabled_at_night": false
+  },
+  "enemy": {
+    "normal": {
+      "radius": 10.0,
+      "move_speed": 6.0,
+      "aggro_radius": 80.0,
+      "home_leash_radius": 128.0
+    },
+    "abnormal": {
+      "radius": 10.0,
+      "approach_speed": 32.0,
+      "dash_speed": 180.0,
+      "aggro_radius": 128.0,
+      "windup_range": 112.0,
+      "windup_sec": 0.75,
+      "dash_duration_sec": 0.45,
+      "recover_sec": 1.2,
+      "home_leash_radius": 160.0,
+      "dash_homing": false
+    }
+  },
+  "interaction": {
+    "range": 48.0,
+    "danger_block_radius": 96.0,
+    "one_candidate_only": true,
+    "world_pause_during_modal": true,
+    "actor_spin_directions": 8,
+    "actor_jump_height": 12.0,
+    "actor_face_target_sec": 0.75
+  },
+  "culling": {
+    "chunk_size": 128.0,
+    "active_enter_radius": 256.0,
+    "active_exit_radius": 320.0,
+    "screen_margin_ref_px": 24.0,
+    "static_visual_max_height": 192.0,
+    "visual_detail_per_chunk": 0,
+    "stress_extra_counts": [
+      128,
+      512
+    ]
+  },
+  "assets": {
+    "sprite_rendering_enabled": true,
+    "manifest": "assets/jack_sprite.json",
+    "player_idle_asset": "jack_idle_32",
+    "player_front_asset": "jack_front_32",
+    "player_front_right_asset": "jack_front_right_32",
+    "player_right_asset": "jack_right_32",
+    "player_back_right_asset": "jack_back_right_32",
+    "player_back_asset": "jack_back_32",
+    "player_back_left_asset": "jack_back_left_32",
+    "player_left_asset": "jack_left_32",
+    "player_front_left_asset": "jack_front_left_32",
+    "player_front_walk_asset": "jack_front_walk_32",
+    "player_front_right_walk_asset": "jack_front_right_walk_32",
+    "player_right_walk_asset": "jack_right_walk_32",
+    "player_back_right_walk_asset": "jack_back_right_walk_32",
+    "player_back_walk_asset": "jack_back_walk_32",
+    "player_back_left_walk_asset": "jack_back_left_walk_32",
+    "player_left_walk_asset": "jack_left_walk_32",
+    "player_front_left_walk_asset": "jack_front_left_walk_32",
+    "player_idle_blink_asset": "jack_idle_blink_32",
+    "player_front_blink_asset": "jack_front_blink_32",
+    "player_front_right_blink_asset": "jack_front_right_blink_32",
+    "player_right_blink_asset": "jack_right_blink_32",
+    "player_left_blink_asset": "jack_left_blink_32",
+    "player_front_left_blink_asset": "jack_front_left_blink_32",
+    "buddy_idle_asset": "fuse_front_right_neutral_48",
+    "buddy_front_asset": "fuse_front_neutral_48",
+    "buddy_front_right_asset": "fuse_front_right_neutral_48",
+    "buddy_right_asset": "fuse_right_neutral_48",
+    "buddy_back_right_asset": "fuse_back_right_neutral_48",
+    "buddy_back_asset": "fuse_back_neutral_48",
+    "buddy_back_left_asset": "fuse_back_left_neutral_48",
+    "buddy_left_asset": "fuse_left_neutral_48",
+    "buddy_front_left_asset": "fuse_front_left_neutral_48",
+    "normal_urchin_idle_asset": "normal_urchin_idle_64",
+    "abnormal_urchin_idle_asset": "abnormal_urchin_inward_hands_64",
+    "water_station_working_asset": "water_station_active_96",
+    "water_station_stopped_asset": "water_station_stopped_96",
+    "solar_station_idle_asset": "solar_station_idle_96",
+    "solar_station_active_asset": "solar_station_active_96",
+    "tree_leafy_asset": "tree_leafy_a_96",
+    "tree_thin_asset": "tree_thin_b_96",
+    "tree_leafy_trunk_asset": "tree_leafy_a_trunk_96",
+    "tree_leafy_leaves_asset": "tree_leafy_a_leaves_96",
+    "tree_thin_trunk_asset": "tree_thin_b_trunk_96",
+    "tree_thin_leaves_asset": "tree_thin_b_leaves_96",
+    "reactive_grass_tall_asset": "grass_tall_a_64",
+    "reactive_grass_low_asset": "grass_low_a_upright_64",
+    "ground_pebbles_asset": "pebbles_a_64",
+    "ground_fallen_leaves_asset": "fallen_leaves_a_64",
+    "ground_crack_grass_asset": "crack_sprout_a_64",
+    "ground_rubble_asset": "rubble_small_a_64",
+    "fallback_to_primitives": true,
+    "concrete_clean_a_asset": "concrete_clean_a_64",
+    "concrete_cracked_a_asset": "concrete_cracked_a_64",
+    "concrete_spalled_a_asset": "concrete_spalled_a_64",
+    "concrete_joint_grass_a_asset": "concrete_joint_grass_a_64",
+    "decal_stain_a_asset": "decal_stain_a_64",
+    "decal_crack_grass_a_asset": "decal_crack_grass_a_64",
+    "decal_rubble_a_asset": "decal_rubble_a_64",
+    "decal_broken_edge_a_asset": "decal_broken_edge_a_64",
+    "water_base_a_asset": "water_base_a_64",
+    "water_base_b_asset": "water_base_b_64",
+    "water_caustics_a_asset": "water_caustics_a_64",
+    "water_dark_a_asset": "water_dark_a_64",
+    "grass_tall_a_asset": "grass_tall_a_64",
+    "grass_low_a_asset": "grass_low_a_64",
+    "pebbles_a_asset": "pebbles_a_64",
+    "fallen_leaves_a_asset": "fallen_leaves_a_64",
+    "crack_sprout_a_asset": "crack_sprout_a_64",
+    "rubble_small_a_asset": "rubble_small_a_64",
+    "grass_patch_low_a_asset": "grass_patch_low_a_64",
+    "grass_patch_low_b_asset": "grass_patch_low_b_64",
+    "grass_patch_tall_a_asset": "grass_patch_tall_a_64",
+    "grass_patch_tall_b_asset": "grass_patch_tall_b_64",
+    "grass_edge_a_asset": "grass_edge_a_64",
+    "grass_scatter_a_asset": "grass_scatter_a_64",
+    "giant_tree_root_massive_a_asset": "giant_tree_root_massive_a_128",
+    "giant_tree_root_tall_b_asset": "giant_tree_root_tall_b_128",
+    "giant_tree_stump_ruin_a_asset": "giant_tree_stump_ruin_a_128",
+    "giant_tree_root_arch_a_asset": "giant_tree_root_arch_a_128",
+    "giant_tree_02x_a_asset": "giant_tree_02x_a_256",
+    "giant_tree_02x_b_asset": "giant_tree_02x_b_256",
+    "giant_tree_02x_c_asset": "giant_tree_02x_c_256",
+    "giant_tree_02x_d_asset": "giant_tree_02x_d_256",
+    "giant_tree_root_spire_b_asset": "giant_tree_root_spire_b_128",
+    "giant_tree_root_hollow_c_asset": "giant_tree_root_hollow_c_128",
+    "giant_tree_root_arch_d_asset": "giant_tree_root_arch_d_128",
+    "shore_top_64_asset": "shore_top_64",
+    "shore_bottom_64_asset": "shore_bottom_64",
+    "shore_left_64_asset": "shore_left_64",
+    "shore_right_64_asset": "shore_right_64",
+    "shore_corner_outer_nw_64_asset": "shore_corner_outer_nw_64",
+    "shore_corner_outer_ne_64_asset": "shore_corner_outer_ne_64",
+    "shore_corner_outer_sw_64_asset": "shore_corner_outer_sw_64",
+    "shore_corner_outer_se_64_asset": "shore_corner_outer_se_64"
+  },
+  "ui": {
+    "office_portrait_blink_interval_frames": {
+      "succubus_green": [
+        167,
+        251,
+        199,
+        307,
+        223
+      ],
+      "tired_gray_oldman": [
+        167,
+        251,
+        199,
+        307,
+        223
+      ],
+      "nervous_elf_woodsman": [
+        167,
+        251,
+        199,
+        307,
+        223
+      ],
+      "smug_blond_hero": [
+        167,
+        251,
+        199,
+        307,
+        223
+      ]
+    },
+    "locale": "ja",
+    "denied_feedback_sec": 1.2,
+    "location_label_sec": 2.4,
+    "build_label_mode": "always",
+    "font": {
+      "family": "DotGothic16",
+      "path": "assets/fonts/DotGothic16-Regular.ttf",
+      "office_japanese_family": "umplus_j12r",
+      "office_japanese_path": "assets/fonts/umplus_j12r_office.bdf",
+      "label_px": {
+        "low": 16,
+        "medium": 16,
+        "high": 20
+      },
+      "body_px": {
+        "low": 16,
+        "medium": 16,
+        "high": 20
+      },
+      "title_px": {
+        "low": 20,
+        "medium": 20,
+        "high": 25
+      },
+      "hint_px": {
+        "low": 12,
+        "medium": 12,
+        "high": 15
+      },
+      "button_px": {
+        "low": 14,
+        "medium": 14,
+        "high": 18
+      },
+      "resource_px": {
+        "low": 16,
+        "medium": 16,
+        "high": 20
+      },
+      "tooltip_px": {
+        "low": 16,
+        "medium": 16,
+        "high": 20
+      },
+      "numeric_px": {
+        "low": 14,
+        "medium": 14,
+        "high": 18
+      },
+      "auxiliary_px": {
+        "low": 12,
+        "medium": 12,
+        "high": 15
+      },
+      "japanese_px": {
+        "low": 14,
+        "medium": 14,
+        "high": 18
+      },
+      "japanese_button_px": {
+        "low": 13,
+        "medium": 13,
+        "high": 16
+      },
+      "office_japanese_px": {
+        "low": 12,
+        "medium": 12,
+        "high": 12
+      },
+      "office_japanese_button_px": {
+        "low": 12,
+        "medium": 12,
+        "high": 12
+      }
+    }
+  },
+  "combat_v1_enabled": true,
+  "abnormal_urchin_ik": {
+    "enabled": true,
+    "body_asset": "abnormal_urchin_body_64",
+    "link_asset": "abnormal_urchin_link_8dir",
+    "claw_asset": "abnormal_urchin_claw_8dir",
+    "fixed_hz": 60,
+    "damping": 0.78,
+    "stiffness": 0.08,
+    "direction_hysteresis": 0.08,
+    "curve_strength": 1.0,
+    "undulation_strength": 1.0,
+    "debug_with_f1": true
+  },
+  "combat_v1": {
+    "profile_id": "urchin_ram_parry_v1",
+    "feature_flag": {
+      "key": "combat_v1_enabled",
+      "bat001_default": true,
+      "enabled_for_playtest_from": "BAT006"
+    },
+    "entry": {
+      "combat_zoom": 1.45,
+      "camera_transition_sec": 0.5,
+      "isolation_sec": 0.18,
+      "actor_settle_sec": 0.2,
+      "battle_banner_sec": 0.45
+    },
+    "dynamic_camera": {
+      "schema_version": "0.1",
+      "min_multiplier": 0.9,
+      "max_multiplier": 1.85,
+      "screen_anchor_y": 0.53,
+      "multipliers": {
+        "enter_peak": 1.52,
+        "combat_hold": 1.45,
+        "preimpact": 1.6,
+        "failure_pullback": 1.39,
+        "success_pulse": 1.66,
+        "perfect_peak": 1.8,
+        "perfect_hold": 1.62,
+        "counter_hold": 1.56,
+        "zap_pulse": 1.68,
+        "deflect_pullback": 1.32,
+        "victory_hold": 1.36,
+        "restore": 1.0
+      },
+      "durations_sec": {
+        "enter_push": 0.24,
+        "enter_settle": 0.22,
+        "preimpact_push": 0.28,
+        "failure_pullback": 0.28,
+        "failure_recover": 0.34,
+        "success_pulse_up": 0.1,
+        "success_recover": 0.2,
+        "perfect_push": 0.14,
+        "perfect_settle": 0.26,
+        "bubble_settle": 0.32,
+        "zap_pulse_up": 0.18,
+        "zap_pulse_down": 0.46,
+        "deflect_pullback": 0.95,
+        "victory_restore_delay": 0.45,
+        "victory_restore": 0.85
+      }
+    },
+    "presentation_medium_512x236": {
+      "player_anchor_px": [
+        214,
+        142
+      ],
+      "enemy_anchor_px": [
+        318,
+        112
+      ],
+      "fuse_victory_anchor_px": [
+        175,
+        132
+      ],
+      "timing_bar_candidates": [
+        [
+          126,
+          42,
+          260,
+          46
+        ],
+        [
+          126,
+          144,
+          244,
+          46
+        ]
+      ]
+    },
+    "enemy_charge": {
+      "windup_sec": 0.7,
+      "charge_sec": 0.38,
+      "round_gap_sec": 0.55,
+      "preimpact_slow_start_sec": 0.22,
+      "closest_approach_world": 18.0
+    },
+    "ready_sequence": {
+      "ready_sec": 0.5,
+      "count_step_sec": 0.42,
+      "go_sec": 0.24
+    },
+    "parry": {
+      "sweep_sec": 1.75,
+      "track_padding_px": 16,
+      "marker_count": 3,
+      "hit_radius_px": 14,
+      "gate_radius_px": 20,
+      "input_debounce_sec": 0.08,
+      "patterns_normalized": [
+        [
+          0.34,
+          0.58,
+          0.82
+        ],
+        [
+          0.38,
+          0.62,
+          0.86
+        ],
+        [
+          0.32,
+          0.56,
+          0.8
+        ],
+        [
+          0.36,
+          0.6,
+          0.84
+        ],
+        [
+          0.4,
+          0.64,
+          0.88
+        ]
+      ],
+      "enemy_profiles": {
+        "abnormal": {
+          "timing_bar_px": [
+            96,
+            42,
+            320,
+            46
+          ],
+          "marker_count": 4,
+          "success_min_hits": 2,
+          "perfect_hits": 4,
+          "patterns_normalized": [
+            [
+              0.28,
+              0.48,
+              0.68,
+              0.88
+            ],
+            [
+              0.26,
+              0.46,
+              0.66,
+              0.86
+            ],
+            [
+              0.3,
+              0.5,
+              0.7,
+              0.9
+            ]
+          ]
+        }
+      }
+    },
+    "time_scale": {
+      "exploration": 1.0,
+      "preimpact_world": 0.3,
+      "perfect_world": 0.12,
+      "perfect_hold_sec": 0.38,
+      "combat_ui": 1.0
+    },
+    "defense": {
+      "successful_rounds_to_deflect": 2,
+      "normal_success_min_hits": 2,
+      "perfect_hits": 3,
+      "failed_rounds_to_knockback": 3,
+      "water_cost": 1.0,
+      "failure_hitstop_sec": 0.09,
+      "failure_recovery_sec": 0.45
+    },
+    "counter": {
+      "bubble_window_sec": 1.65,
+      "zap_window_sec": 1.35,
+      "bubble_requires_existing_water_cost": true,
+      "zap_requires_existing_energy_cost": true
+    },
+    "victory": {
+      "cue_sec": 1.35
+    },
+    "exit": {
+      "knockback_visual_sec": 0.95,
+      "enemy_knockback_world": 34.0,
+      "player_knockback_visual_sec": 0.9,
+      "player_knockback_world": 108.0,
+      "player_restore_jump_sec": 0.9,
+      "player_restore_jump_height_world": 16.0,
+      "camera_restore_sec": 0.95,
+      "buddy_follow_snap_grace_sec": 0.6,
+      "enemy_stun_sec": 1.5,
+      "player_invulnerability_sec": 0.5,
+      "combat_reentry_cooldown_sec": 2.0,
+      "min_safe_separation_world": 18.0
+    }
+  },
+  "effects": {
+    "max_particles": 64,
+    "max_emotes": 8,
+    "max_screen_effects": 1,
+    "max_particles_per_event": 8,
+    "concentration_line_count": 12,
+    "defeated_enemy_snapshot_ms": 100.0,
+    "onomatopoeia_enabled": false,
+    "hitstop_enabled": true,
+    "hitstop_hard_cap_ms": 66.6666666667,
+    "hitstop_event_ms": {
+      "barrier_repelled": 16.6666666667,
+      "enemy_captured": 33.3333333333,
+      "discharge_succeeded": 50.0,
+      "combat_marker_hit": 10.0,
+      "combat_guard_success": 30.0,
+      "combat_guard_failed": 66.0,
+      "combat_perfect_started": 45.0,
+      "combat_deflect_started": 25.0
+    },
+    "combat_camera_pulse_enabled": false,
+    "camera_offset_cap_px": 2.0,
+    "camera_reactions": {
+      "DWF_GUARD_REPEL": {
+        "shake_amplitude_px": 1.0,
+        "shake_duration_ms": 90.0
+      },
+      "DWF_ZAP_HIT": {
+        "shake_amplitude_px": 1.5,
+        "shake_duration_ms": 100.0,
+        "zoom_peak": 0.04,
+        "zoom_attack_ms": 40.0,
+        "zoom_hold_ms": 30.0,
+        "zoom_return_ms": 170.0
+      },
+      "DWF_COMBAT_GUARD_SUCCESS": {
+        "shake_amplitude_px": 0.5,
+        "shake_duration_ms": 50.0
+      },
+      "DWF_COMBAT_GUARD_FAILED": {
+        "shake_amplitude_px": 2.8,
+        "shake_duration_ms": 140.0
+      },
+      "DWF_COMBAT_PERFECT": {
+        "shake_amplitude_px": 1.0,
+        "shake_duration_ms": 90.0,
+        "zoom_peak": 0.035,
+        "zoom_attack_ms": 35.0,
+        "zoom_hold_ms": 45.0,
+        "zoom_return_ms": 180.0
+      },
+      "DWF_COMBAT_DEFLECT": {
+        "shake_amplitude_px": 1.2,
+        "shake_duration_ms": 90.0
+      },
+      "DWF_COMBAT_VICTORY_DEFEAT": {
+        "shake_amplitude_px": 1.0,
+        "shake_duration_ms": 80.0,
+        "zoom_peak": 0.025,
+        "zoom_attack_ms": 30.0,
+        "zoom_hold_ms": 35.0,
+        "zoom_return_ms": 150.0
+      }
+    },
+    "flash_enabled": false,
+    "shake_enabled": true
+  },
+  "water_study": {
+    "jack_immersion_float_enabled": true,
+    "legacy_wave_lift_enabled": false,
+    "jack_immersion_float": {
+      "horizontal": {
+        "max_speed_px_per_frame": 0.2,
+        "accel_min": 0.002,
+        "accel_max": 0.006,
+        "velocity_drag": 0.995,
+        "force_follow": 0.025,
+        "force_change_frames_min": 45,
+        "force_change_frames_max": 120,
+        "soft_bounds": {
+          "x_ratio": [
+            0.15,
+            0.85
+          ],
+          "y_ratio": [
+            0.18,
+            0.82
+          ]
+        }
+      },
+      "wave_energy_profile": [
+        0.05,
+        0.08,
+        0.12,
+        0.2,
+        0.36,
+        0.58,
+        0.82,
+        1.0,
+        0.78,
+        0.52,
+        0.3,
+        0.16,
+        0.08,
+        0.06,
+        0.1,
+        0.18,
+        0.34,
+        0.62,
+        0.88,
+        0.72,
+        0.46,
+        0.25,
+        0.12,
+        0.07
+      ],
+      "immersion": {
+        "base_submerge_px": 3.5,
+        "min_submerge_px": 0.0,
+        "max_submerge_px": 7.0,
+        "spring": 0.045,
+        "damping": 0.9,
+        "sink_threshold": 0.65,
+        "sink_probability": 0.32,
+        "sink_impulse": 0.5,
+        "sink_cooldown_frames_min": 45,
+        "sink_cooldown_frames_max": 120
+      },
+      "rotation": {
+        "torque_gain": 1.8,
+        "max_angular_speed_deg_per_sec": 30.0,
+        "angular_drag": 0.991,
+        "sink_spin_deg_per_sec_max": 18.0,
+        "direction_hysteresis_deg": 7.0
+      },
+      "visual": {
+        "body_bob_px_max": 1.0,
+        "front_water_pass": [
+          "surface",
+          "surface_caustics"
+        ],
+        "front_highlights_enabled": false,
+        "rest_eye_close_enabled": true,
+        "rest_eye_close_interval_pattern_sec": [
+          11.0,
+          16.5,
+          13.2,
+          19.0
+        ],
+        "rest_eye_close_duration_pattern_sec": [
+          0.9,
+          1.25,
+          1.6,
+          1.05
+        ]
+      },
+      "debug": {
+        "fixed_seed_supported": true
+      }
+    }
+  },
+  "shallow_water": {
+    "enabled": true,
+    "surface_tiles_enabled": false,
+    "surface_tile_world_size": 64.0,
+    "surface_tile_pattern": [
+      [
+        "water_base_a",
+        "water_base_b",
+        "water_caustics_a"
+      ],
+      [
+        "water_dark_a",
+        "water_base_a",
+        "water_base_b"
+      ],
+      [
+        "water_caustics_a",
+        "water_base_b",
+        "water_base_a"
+      ]
+    ],
+    "min_move_world": 2.0,
+    "ripple_spacing_world": 20.0,
+    "ripple_start_radius": 4.0,
+    "ripple_end_radius": 18.0,
+    "ripple_lifetime_sec": 0.48,
+    "ripple_color": 7,
+    "ripple_thickness_px": 2,
+    "wake_color": 7,
+    "wake_length_world": 10.0,
+    "max_ripples_per_update": 2,
+    "entry_ripple_enabled": true,
+    "reaction_ellipse_enabled": true,
+    "reaction_ellipse_inset_world": 6.0,
+    "symbol_layer_enabled": true,
+    "symbol_combat_hidden": true,
+    "symbol_grid_world": 30.0,
+    "symbol_edge_grid_world": 26.0,
+    "symbol_inner_margin_world": 14.0,
+    "symbol_color": 7,
+    "symbol_secondary_color": 12,
+    "symbol_edge_color": 7,
+    "symbol_edge_secondary_color": 12,
+    "symbol_edge_max_per_area": 18,
+    "symbol_max_per_area": 54,
+    "shoreline_tiles_enabled": false,
+    "shoreline_tile_world_size": 64.0,
+    "shoreline_corner_tiles_enabled": false,
+    "shoreline_corner_inset_world": 16.0,
+    "shoreline_tiles": {
+      "top": "shore_right_64",
+      "bottom": "shore_top_64",
+      "left": "shore_left_64",
+      "right": "shore_bottom_64",
+      "corner_nw": "shore_corner_outer_se_64",
+      "corner_ne": "shore_corner_outer_sw_64",
+      "corner_sw": "shore_corner_outer_ne_64",
+      "corner_se": "shore_corner_outer_nw_64"
+    }
+  },
+  "tree_foliage_motion": {
+    "enabled": true,
+    "combat_hidden": true,
+    "min_scale": 0.28,
+    "sequence_frames": 65,
+    "interval_min_frames": 180,
+    "interval_variation_frames": 180
+  },
+  "reactive_environment": {
+    "enabled": true,
+    "pose_frames_enabled": true,
+    "max_active": 32,
+    "search_radius_world": 0.0,
+    "player_radius_world": 12.0,
+    "min_real_move_speed_world_per_sec": 1.2,
+    "horizontal_deadzone_ratio": 0.2,
+    "recovery_sec": 1.05,
+    "retrigger_sec": 0.45,
+    "min_strength": 0.35,
+    "upright_deform_enabled": false,
+    "upright_bend_px": 13.0,
+    "upright_part_px": 5.0,
+    "overlay_line_px": 10.0,
+    "profiles": {
+      "tall_grass": {
+        "visuals": [
+          "reactive_grass_tall",
+          "grass_patch_tall_a"
+        ],
+        "enter_radius_factor": 1.6,
+        "exit_radius_extra_factor": 0.3,
+        "push_sec": 0.10,
+        "release_hold_sec": 0.08,
+        "recover_bend1_sec": 0.12,
+        "recover_near_idle_sec": 0.24,
+        "redirect_step_sec": 0.04
+      }
+    }
+  },
+  "audio": {
+    "enabled_by_default": true,
+    "bgm_enabled": false,
+    "loop_sfx_enabled": false,
+    "denied_min_interval_sec": 0.25,
+    "repel_min_interval_sec": 0.1,
+    "max_simultaneous_channels": 3,
+    "channel_roles": {
+      "0": "launch",
+      "1": "success_and_hit",
+      "2": "denied",
+      "3": "reserved_unused"
+    },
+    "event_priority": {
+      "bubble_fired": 10,
+      "barrier_repelled": 30,
+      "enemy_captured": 60,
+      "discharge_succeeded": 80,
+      "action_denied": 5,
+      "combat_marker_hit": 20,
+      "combat_marker_miss": 15,
+      "combat_perfect_started": 70,
+      "combat_deflect_started": 65,
+      "combat_victory_cue_started": 75
+    }
+  }
+}

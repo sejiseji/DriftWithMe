@@ -1,0 +1,22 @@
+{
+  "states": [
+    "normal",
+    "half",
+    "closed"
+  ],
+  "sequence": [
+    0,
+    1,
+    2,
+    1,
+    0
+  ],
+  "durations_ms": [
+    4000,
+    40,
+    60,
+    40,
+    100
+  ],
+  "library_file_id": "libfile_a1aee7c876cc81919e586f1bd7136e91"
+}

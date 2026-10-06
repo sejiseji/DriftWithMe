@@ -1,0 +1,166 @@
+{
+  "version": "0.1.0",
+  "cases": [
+    {
+      "case_id": "OFF-PROT-001",
+      "title": "住民証明書の発行",
+      "visitor": {
+        "id": "resident_a",
+        "name": "ミナ",
+        "kind": "魔族",
+        "portrait_id": "succubus_green"
+      },
+      "initial_purpose": "住民証明書を発行してほしい",
+      "document_status": "本人確認書類あり",
+      "questions": [
+        {
+          "id": "identity",
+          "label": "本人確認",
+          "jack": "写真付きの身分証を拝見できますか？",
+          "reply": "こちらで大丈夫でしょうか？",
+          "memo": [
+            "本人確認: 済"
+          ],
+          "answer_summary": "本人請求で本人確認書類を提示済み"
+        },
+        {
+          "id": "changes",
+          "label": "登録内容",
+          "jack": "登録してある住所や世帯に、変更はありませんか？",
+          "reply": "はい、住所も世帯も変わっていません。",
+          "memo": [
+            "登録変更: なし"
+          ],
+          "answer_summary": "住所や世帯の登録内容に変更なし"
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-PROT-002",
+      "title": "減免申請",
+      "visitor": {
+        "id": "resident_b",
+        "name": "グロウ",
+        "kind": "魔族",
+        "portrait_id": "tired_gray_oldman"
+      },
+      "initial_purpose": "減免申請をしたい",
+      "document_status": "不明",
+      "questions": [
+        {
+          "id": "attachment",
+          "label": "添付書類",
+          "jack": "では、お持ちの書類を拝見できますか？",
+          "reply": "これだ。足りるか見てくれ。",
+          "memo": [
+            "添付書類: 不足"
+          ],
+          "answer_summary": "申請書は持参、収入確認の添付資料が不足"
+        }
+      ],
+      "expected_classification": "MISSING_DOCUMENTS",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-PROT-003",
+      "title": "北側浅瀬の異常音",
+      "visitor": {
+        "id": "lamel",
+        "name": "ラメル",
+        "kind": "魔族（海棲型）",
+        "portrait_id": "nervous_elf_woodsman"
+      },
+      "initial_purpose": "夜になると水辺から異常音がする",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "when",
+          "label": "発生時期",
+          "jack": "音が気になり始めたのは、いつ頃でしょうか？",
+          "reply": "三日くらい前です。仕事から戻った夜に、初めて気づきました。",
+          "memo": [
+            "発生: 約3日前から"
+          ],
+          "answer_summary": "異常音に気づいたのは約三日前"
+        },
+        {
+          "id": "frequency",
+          "label": "発生頻度",
+          "jack": "音がする頻度と、気になる時間帯を教えていただけますか？",
+          "reply": "ほぼ毎晩です。寝ようとすると聞こえて。寝不足で、昼間の作業にも集中できなくて。",
+          "memo": [
+            "頻度: ほぼ毎晩"
+          ],
+          "answer_summary": "異常音はほぼ毎晩、夜間に発生"
+        },
+        {
+          "id": "place",
+          "label": "発生場所",
+          "jack": "音が聞こえるのはどの辺りですか。地図を見ながら教えてください。",
+          "reply": "北側の浅瀬の近くです。ここに印を付けます。私の作業小屋はその手前です。",
+          "memo": [
+            "場所: 北側浅瀬付近"
+          ],
+          "answer_summary": "音が聞こえる方向は北側浅瀬付近"
+        },
+        {
+          "id": "sound",
+          "label": "音の特徴",
+          "jack": "作業で使う道具の音と比べると、どのような音に聞こえますか？",
+          "reply": "木を切る音とは違います。水の下で何かを引きずるような、低い音です。",
+          "memo": [
+            "内容: 水中で何かが動く音"
+          ],
+          "answer_summary": "水中で何かが動くような低い異音"
+        },
+        {
+          "id": "damage",
+          "label": "被害状況",
+          "jack": "けがや設備の破損など、確認できた被害はありますか？",
+          "reply": "そこまでは分かりません。暗くて近寄っていないので、壊れた物も見ていません。",
+          "memo": [
+            "実害: 不明"
+          ],
+          "answer_summary": "被害の有無は未確認"
+        }
+      ],
+      "expected_classification": "FIELD_CHECK",
+      "field_task": {
+        "task_id": "FIELD-PROT-003",
+        "location_id": "north_shallow",
+        "title": "北側浅瀬の異常音確認",
+        "objective": "異常音の発生源を確認する",
+        "completion_condition_id": "inspect_anomaly_source"
+      }
+    },
+    {
+      "case_id": "OFF-PROT-004",
+      "title": "出張所をダンジョンと思って来た勇者",
+      "visitor": {
+        "id": "hero_a",
+        "name": "旅の勇者",
+        "kind": "勇者",
+        "portrait_id": "smug_blond_hero"
+      },
+      "initial_purpose": "魔王軍施設の攻略",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "purpose",
+          "label": "来訪目的",
+          "jack": "ここでは、どのようなお手続きをお考えですか？",
+          "reply": "魔王軍の拠点を攻略しに来た。そう、討伐の用だ。",
+          "memo": [
+            "行政手続目的: なし",
+            "来訪目的: 討伐"
+          ],
+          "answer_summary": "行政手続ではなく討伐目的の来訪"
+        }
+      ],
+      "expected_classification": "REFER_OTHER",
+      "field_task": null
+    }
+  ]
+}

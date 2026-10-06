@@ -1,0 +1,1382 @@
+{
+  "version": "0.1.1",
+  "project": "DriftWithMe",
+  "feature": "WTR_LOOK03_Production_Assetization",
+  "source_pack": "WTR_LOOK03_Production_Assetization_v0.1",
+  "asset_id": "water_highlights_plane_d",
+  "runtime_layer_id": "water_highlights_plane_c",
+  "frame_count": 24,
+  "hold_frames": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "logical_size": [
+    1024,
+    512
+  ],
+  "chunk_size": [
+    256,
+    256
+  ],
+  "chunk_grid": [
+    4,
+    2
+  ],
+  "palette": "Pyxel fixed 0-F",
+  "colkey": 8,
+  "storage": "full_chunk_hex_rows",
+  "animation_method": "prebaked_sparkle_overlay",
+  "approved_visual_basis": {
+    "density": {
+      "small": 12,
+      "medium": 4,
+      "large": 1
+    }
+  },
+  "production_tuning": "medium and rare large sparkle silhouettes strengthened for readability after LOOK03 composition; runtime generation remains disabled",
+  "runtime_role": "topmost water sparkle overlay",
+  "frames": [
+    {
+      "id": "f00",
+      "hold_frames": 2,
+      "visible_pixels": 194,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f00_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f00_c00.hex.txt",
+          "sha256": "3a34bce086c749f7ebe0dc78124aa117bcd324c417313c1fe01d684249ee5b70"
+        },
+        {
+          "id": "water_highlights_plane_d_f00_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f00_c10.hex.txt",
+          "sha256": "295af9aeef4d68f899aa247a46c11b7cf1417caf3734fe7c6ea6afdb1ebd9953"
+        },
+        {
+          "id": "water_highlights_plane_d_f00_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f00_c20.hex.txt",
+          "sha256": "df46c77056aa11dc110f1e1a11f9fa48fa70de6d3e384daf32a997a50fa4206c"
+        },
+        {
+          "id": "water_highlights_plane_d_f00_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f00_c30.hex.txt",
+          "sha256": "395a2224c29e7f464741359a781b8d4f9a0845a8bc5418de89b5148fb9d0d92e"
+        },
+        {
+          "id": "water_highlights_plane_d_f00_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f00_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f00_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f00_c11.hex.txt",
+          "sha256": "6cc26144321c1ce1bd3d70a7628de12d47480480ace09535df830292cb7bb810"
+        },
+        {
+          "id": "water_highlights_plane_d_f00_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f00_c21.hex.txt",
+          "sha256": "d030bd346dbc99033ef1127def6aff3b5c37e50350ad0aed49f8623ea738bcc5"
+        },
+        {
+          "id": "water_highlights_plane_d_f00_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f00_c31.hex.txt",
+          "sha256": "0bfa9439b27235d517a33c73e150e3e6af80a069bee41bbd1ea9fb07f5d75e4a"
+        }
+      ]
+    },
+    {
+      "id": "f01",
+      "hold_frames": 2,
+      "visible_pixels": 173,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f01_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f01_c00.hex.txt",
+          "sha256": "f14bc028abc542dc0fa625085bb05e7df761f5a6ba8dfb6598c3cea65f610a55"
+        },
+        {
+          "id": "water_highlights_plane_d_f01_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f01_c10.hex.txt",
+          "sha256": "98be78a359cd4e2f1e9708907b048f6df74413161d2adc959d8da5c5080f6a68"
+        },
+        {
+          "id": "water_highlights_plane_d_f01_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f01_c20.hex.txt",
+          "sha256": "ebdbe6a2f45ada509db91ed062809ed87fa5192e1dfd315fc8639b486b3a1e6b"
+        },
+        {
+          "id": "water_highlights_plane_d_f01_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f01_c30.hex.txt",
+          "sha256": "576edac6704269ba0401655f8ad87b4cc20fe98fa5cc5e8fbc2487c3dda3cf35"
+        },
+        {
+          "id": "water_highlights_plane_d_f01_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f01_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f01_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f01_c11.hex.txt",
+          "sha256": "01d7b006dd5faaf9e0f6e625b33e95748372a1391afe17634602042714afe9a2"
+        },
+        {
+          "id": "water_highlights_plane_d_f01_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f01_c21.hex.txt",
+          "sha256": "8fec307a1340d1c2c129c9338f2c11d2b57fa794f6d9ca5d5605bff41f08d833"
+        },
+        {
+          "id": "water_highlights_plane_d_f01_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f01_c31.hex.txt",
+          "sha256": "7a6755def0894acbdc545ce11b3b9bc60cd61299914657a9f6b1aa8c88942593"
+        }
+      ]
+    },
+    {
+      "id": "f02",
+      "hold_frames": 2,
+      "visible_pixels": 160,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f02_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f02_c00.hex.txt",
+          "sha256": "75b75bff5f7efb1ec06cb25fe63ef74cc4e7b315cd9fc17f30ec584032b8023c"
+        },
+        {
+          "id": "water_highlights_plane_d_f02_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f02_c10.hex.txt",
+          "sha256": "1e930397c6233fb9b8106324311183fe9f24ec028494e0088c2530cae5bd5dce"
+        },
+        {
+          "id": "water_highlights_plane_d_f02_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f02_c20.hex.txt",
+          "sha256": "d1de026a59d39019e85ca11be71e87d5c86c6175b59e2f293cdc560583f8e5e3"
+        },
+        {
+          "id": "water_highlights_plane_d_f02_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f02_c30.hex.txt",
+          "sha256": "cec64c7682975aa9825a3acb88eaab8546e46322618f7499fe86c46d73feaaf3"
+        },
+        {
+          "id": "water_highlights_plane_d_f02_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f02_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f02_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f02_c11.hex.txt",
+          "sha256": "724ce7ff59381abb0b340fe5f1426b6bf3297e7aad7b60c22d29b2b31261d9af"
+        },
+        {
+          "id": "water_highlights_plane_d_f02_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f02_c21.hex.txt",
+          "sha256": "6eed4bd4d844827761fd88a7f868398cfb94832b67cf675cfd49320941121564"
+        },
+        {
+          "id": "water_highlights_plane_d_f02_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f02_c31.hex.txt",
+          "sha256": "6be3835332b83cfae5ef03387a32255ad9b88251755d1cf3d7e8c299be43487a"
+        }
+      ]
+    },
+    {
+      "id": "f03",
+      "hold_frames": 2,
+      "visible_pixels": 157,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f03_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f03_c00.hex.txt",
+          "sha256": "0d74018035a12061c46924636cb9de1a01281b036a97a5f62da643f4b65f059c"
+        },
+        {
+          "id": "water_highlights_plane_d_f03_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f03_c10.hex.txt",
+          "sha256": "7e76257bfe38343c085b91a7c52bf0f35689601c4137a63c1e357c39edb52e49"
+        },
+        {
+          "id": "water_highlights_plane_d_f03_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f03_c20.hex.txt",
+          "sha256": "4d708abb2ddd1550164a30d8ffa28cbde23fbab163205326a212bd17b4eee668"
+        },
+        {
+          "id": "water_highlights_plane_d_f03_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f03_c30.hex.txt",
+          "sha256": "eff4b70c11a660e07f3849ff7d5ca17021302969c723260c73c5ee2b77f4a9bc"
+        },
+        {
+          "id": "water_highlights_plane_d_f03_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f03_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f03_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f03_c11.hex.txt",
+          "sha256": "824f25ee96d5bc7c853e186eafb9846f01abb14e629528942e0b056822bf3061"
+        },
+        {
+          "id": "water_highlights_plane_d_f03_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f03_c21.hex.txt",
+          "sha256": "d12e497db4c3068ddaef258ae94a16374f7896bb0178a11c0eb67d9ae4b41ee3"
+        },
+        {
+          "id": "water_highlights_plane_d_f03_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f03_c31.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        }
+      ]
+    },
+    {
+      "id": "f04",
+      "hold_frames": 2,
+      "visible_pixels": 116,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f04_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f04_c00.hex.txt",
+          "sha256": "7c27c42f96895eb3da41cfcf74e78906686fc9ce3905b1b0443638b820c14725"
+        },
+        {
+          "id": "water_highlights_plane_d_f04_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f04_c10.hex.txt",
+          "sha256": "e73f3747691927539fa15a6ff34a1ab17e92712bf6202e53c5cc11cb8566ff5f"
+        },
+        {
+          "id": "water_highlights_plane_d_f04_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f04_c20.hex.txt",
+          "sha256": "311e103ede4a8a1780e8d1d1d51eb741f1e2fefe7beadfabf432816412f80089"
+        },
+        {
+          "id": "water_highlights_plane_d_f04_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f04_c30.hex.txt",
+          "sha256": "ce310e10808488a3fe73e62bceb98a0e098bdb962083d73bb8a8f39b13df23d5"
+        },
+        {
+          "id": "water_highlights_plane_d_f04_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f04_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f04_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f04_c11.hex.txt",
+          "sha256": "cc5cd8e427c0df8379d9e18636f92f4aa05eeeea3212ca21479fddebead32fe8"
+        },
+        {
+          "id": "water_highlights_plane_d_f04_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f04_c21.hex.txt",
+          "sha256": "0c0f0736c3d725706bdd89188b7c795d64adb882f46ccc54db377ae0601b296a"
+        },
+        {
+          "id": "water_highlights_plane_d_f04_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f04_c31.hex.txt",
+          "sha256": "eb1b56a558d12788cdd12d25a9b65b741e2f0e693835d576b542779b05c9832e"
+        }
+      ]
+    },
+    {
+      "id": "f05",
+      "hold_frames": 2,
+      "visible_pixels": 153,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f05_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f05_c00.hex.txt",
+          "sha256": "900dbd8850ce3212b987f8e7e3a4ce58f20a939d19348215f1e6979b89fa78ad"
+        },
+        {
+          "id": "water_highlights_plane_d_f05_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f05_c10.hex.txt",
+          "sha256": "dd1250ca5b5f85fb704a9084730cffb24e57b6b01a29f0e8d2f7f74b39697503"
+        },
+        {
+          "id": "water_highlights_plane_d_f05_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f05_c20.hex.txt",
+          "sha256": "9f240eb7f7b40a3566784523fc1573a105580e97a0e13c4b43830c1fa377537b"
+        },
+        {
+          "id": "water_highlights_plane_d_f05_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f05_c30.hex.txt",
+          "sha256": "aba1f248983c352eff963b456daf51a6b15fbce5b8de18b7020433654bc4e491"
+        },
+        {
+          "id": "water_highlights_plane_d_f05_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f05_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f05_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f05_c11.hex.txt",
+          "sha256": "4ce2ae2c2e0b650ecdc0c5dbf71a373fc042fa9e9704365ab82538157875a8a7"
+        },
+        {
+          "id": "water_highlights_plane_d_f05_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f05_c21.hex.txt",
+          "sha256": "d3650eddb32076edc96321ca2d7a05f8e97bb56a65ffeee33bef4a70a303435f"
+        },
+        {
+          "id": "water_highlights_plane_d_f05_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f05_c31.hex.txt",
+          "sha256": "696b753c299f1056504260dc17449e8f36e512f43198931e955d10641dabd153"
+        }
+      ]
+    },
+    {
+      "id": "f06",
+      "hold_frames": 2,
+      "visible_pixels": 153,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f06_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f06_c00.hex.txt",
+          "sha256": "3ac47013a2032804ddccccc49f64002941ff4612e2f3e7e342ee7bec8197524f"
+        },
+        {
+          "id": "water_highlights_plane_d_f06_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f06_c10.hex.txt",
+          "sha256": "7634eb918a3316ff8b5a2abb16135b41bcabf2f3d335c44004969e42181eab62"
+        },
+        {
+          "id": "water_highlights_plane_d_f06_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f06_c20.hex.txt",
+          "sha256": "792c309609c740fd03084948513dcc32f3407c359cf1a7e8bb5d6f5eea4731e9"
+        },
+        {
+          "id": "water_highlights_plane_d_f06_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f06_c30.hex.txt",
+          "sha256": "f4e0a9a63a6e0203391419b1a551ace3bd6244d76744f0bed5a5c8cab83c9221"
+        },
+        {
+          "id": "water_highlights_plane_d_f06_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f06_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f06_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f06_c11.hex.txt",
+          "sha256": "c750b4d0b372dfc242d9ef8dc5b788c115ef749d139d55956c5903ff15686343"
+        },
+        {
+          "id": "water_highlights_plane_d_f06_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f06_c21.hex.txt",
+          "sha256": "9a19603744ceac15e028ba6425755bbb225da276bb4b9a70e6f45d5395b0e23c"
+        },
+        {
+          "id": "water_highlights_plane_d_f06_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f06_c31.hex.txt",
+          "sha256": "fad15b0868027dba8f35c050fb23271a9efb35ed3badd0f240ff79e4db53045f"
+        }
+      ]
+    },
+    {
+      "id": "f07",
+      "hold_frames": 2,
+      "visible_pixels": 160,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f07_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f07_c00.hex.txt",
+          "sha256": "e9f8a60cdca2344bcac4b9b668d32adf004160289cab55d2b36bd2670296aba5"
+        },
+        {
+          "id": "water_highlights_plane_d_f07_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f07_c10.hex.txt",
+          "sha256": "0a05ac0e5ab8787fc60e85f0e594e4dc66d32ffc781551549107730feae1b2a4"
+        },
+        {
+          "id": "water_highlights_plane_d_f07_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f07_c20.hex.txt",
+          "sha256": "925140b1e9114907b7e9b5db642c6cbc7c0b5a2318c4f79b68dd204d9aff2900"
+        },
+        {
+          "id": "water_highlights_plane_d_f07_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f07_c30.hex.txt",
+          "sha256": "2ab46368eb9b5d0011372abe7ab268e9806d56f29a7c7036ca78aad1afc48d7b"
+        },
+        {
+          "id": "water_highlights_plane_d_f07_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f07_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f07_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f07_c11.hex.txt",
+          "sha256": "d7c68c9553aa50a577a597f643b8f6a153795cca00d4683337fd982be6e616c9"
+        },
+        {
+          "id": "water_highlights_plane_d_f07_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f07_c21.hex.txt",
+          "sha256": "8f077a2d2aa600c46c532ee1ea27a031517ed3b2a369e3d2e88eeed70b73ff89"
+        },
+        {
+          "id": "water_highlights_plane_d_f07_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f07_c31.hex.txt",
+          "sha256": "1327bd5a790b34a0aa776ffdc56fe699be02428d46afec1fead7404232a92809"
+        }
+      ]
+    },
+    {
+      "id": "f08",
+      "hold_frames": 2,
+      "visible_pixels": 214,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f08_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f08_c00.hex.txt",
+          "sha256": "e6f2b9f06612af936d6f48d251e57e21fe82dedf8e3902aa8e8ab50dea29fec1"
+        },
+        {
+          "id": "water_highlights_plane_d_f08_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f08_c10.hex.txt",
+          "sha256": "7713717e46a66d7504f35d7f4581714e3a8b57eba4084638cee2d7a896610585"
+        },
+        {
+          "id": "water_highlights_plane_d_f08_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f08_c20.hex.txt",
+          "sha256": "34824a58d588d1ae948efe1ad5cd73cf64bc129d3018cebea4e3896b46dfdb5c"
+        },
+        {
+          "id": "water_highlights_plane_d_f08_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f08_c30.hex.txt",
+          "sha256": "924670d2508b9fffec154d1f73983cbcaf7173f6f30b9cff9ba4cdefd5521d03"
+        },
+        {
+          "id": "water_highlights_plane_d_f08_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f08_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f08_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f08_c11.hex.txt",
+          "sha256": "9791117fffe45ef81781ad6e39b7b876c22df51c8cfb9d8cfa8a7a196a42ba58"
+        },
+        {
+          "id": "water_highlights_plane_d_f08_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f08_c21.hex.txt",
+          "sha256": "0a2e6d9e6b80273d6234a344b583993ac5aa5bd1910f1f0ccb7a6629105ce296"
+        },
+        {
+          "id": "water_highlights_plane_d_f08_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f08_c31.hex.txt",
+          "sha256": "ab992614c15e028c7303ce65d66dc18936dd7c8283a892a357b2e2e54584ee50"
+        }
+      ]
+    },
+    {
+      "id": "f09",
+      "hold_frames": 2,
+      "visible_pixels": 153,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f09_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f09_c00.hex.txt",
+          "sha256": "aa2db12b7712378a2b01fcdecdb33ead54519216a5715b3757b4a77821c0e8a2"
+        },
+        {
+          "id": "water_highlights_plane_d_f09_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f09_c10.hex.txt",
+          "sha256": "b19638da5658a85d761889ade64f6cbd2b46d2b7c60749963c6870b621c32e33"
+        },
+        {
+          "id": "water_highlights_plane_d_f09_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f09_c20.hex.txt",
+          "sha256": "4d708abb2ddd1550164a30d8ffa28cbde23fbab163205326a212bd17b4eee668"
+        },
+        {
+          "id": "water_highlights_plane_d_f09_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f09_c30.hex.txt",
+          "sha256": "90d2b044c2fc221eeca6f53d265a08bc552fb0807814f641facbf0c3a0c6cbab"
+        },
+        {
+          "id": "water_highlights_plane_d_f09_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f09_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f09_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f09_c11.hex.txt",
+          "sha256": "bb2edeeb0a5a18d271dbbbed9153fd3ff3c0921854f615c12d6db976fd63bb2e"
+        },
+        {
+          "id": "water_highlights_plane_d_f09_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f09_c21.hex.txt",
+          "sha256": "8f975fb3ef1d3f31aafd28a36beb3391eccf86c1f3441d42c9aa64ac92115d62"
+        },
+        {
+          "id": "water_highlights_plane_d_f09_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f09_c31.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        }
+      ]
+    },
+    {
+      "id": "f10",
+      "hold_frames": 2,
+      "visible_pixels": 157,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f10_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f10_c00.hex.txt",
+          "sha256": "3b09f15cea18619fae835210d9c4a26164e40500c366527634b0e29090a817fc"
+        },
+        {
+          "id": "water_highlights_plane_d_f10_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f10_c10.hex.txt",
+          "sha256": "8f0326466e179b31f5b0f0afce48c9fb317b4e299b92167b095361ada9e53620"
+        },
+        {
+          "id": "water_highlights_plane_d_f10_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f10_c20.hex.txt",
+          "sha256": "311e103ede4a8a1780e8d1d1d51eb741f1e2fefe7beadfabf432816412f80089"
+        },
+        {
+          "id": "water_highlights_plane_d_f10_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f10_c30.hex.txt",
+          "sha256": "f227874ee697d82a3cd8161666fa5f023e7710f8eeda577b41a474415f8cf20a"
+        },
+        {
+          "id": "water_highlights_plane_d_f10_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f10_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f10_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f10_c11.hex.txt",
+          "sha256": "33ea63c44ba96076c897eb6b230e9d40a261e4da8f58336ae9da3f11fe26f221"
+        },
+        {
+          "id": "water_highlights_plane_d_f10_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f10_c21.hex.txt",
+          "sha256": "a1535c68aa18fb7dbd89ce788cf80bf89dc2bb450d388c49fd82b6b3ed1a6702"
+        },
+        {
+          "id": "water_highlights_plane_d_f10_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f10_c31.hex.txt",
+          "sha256": "a7ea74ce81445e45113dab50924afff807cde929ecda730b86484d799b94787e"
+        }
+      ]
+    },
+    {
+      "id": "f11",
+      "hold_frames": 2,
+      "visible_pixels": 157,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f11_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f11_c00.hex.txt",
+          "sha256": "9aefafdd6389d442864b3e6d0f38726df02a4a53635e7d9030126be21bb226c9"
+        },
+        {
+          "id": "water_highlights_plane_d_f11_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f11_c10.hex.txt",
+          "sha256": "44a56b2b46a59f7a2e6ae6ccec7717bed6f9dc6d3f6476b029424562350049ec"
+        },
+        {
+          "id": "water_highlights_plane_d_f11_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f11_c20.hex.txt",
+          "sha256": "925140b1e9114907b7e9b5db642c6cbc7c0b5a2318c4f79b68dd204d9aff2900"
+        },
+        {
+          "id": "water_highlights_plane_d_f11_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f11_c30.hex.txt",
+          "sha256": "d0303820a12d4e2f4203929beb0ca310db8746ad115cbef7b3453da58b8660cb"
+        },
+        {
+          "id": "water_highlights_plane_d_f11_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f11_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f11_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f11_c11.hex.txt",
+          "sha256": "61309b076e7ce2da53ed8aa5b6bba5da42ea507500ef979be50cdb5a0b5ff53d"
+        },
+        {
+          "id": "water_highlights_plane_d_f11_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f11_c21.hex.txt",
+          "sha256": "d182e74c9aca521d0d86b0f1132513961eb0e217d85f8e66affd7abd52f00f5d"
+        },
+        {
+          "id": "water_highlights_plane_d_f11_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f11_c31.hex.txt",
+          "sha256": "7a6755def0894acbdc545ce11b3b9bc60cd61299914657a9f6b1aa8c88942593"
+        }
+      ]
+    },
+    {
+      "id": "f12",
+      "hold_frames": 2,
+      "visible_pixels": 116,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f12_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f12_c00.hex.txt",
+          "sha256": "da185c98bd6318f3d248c7bc840f3aae1ef810a3ae632810e943f5d23574a5e3"
+        },
+        {
+          "id": "water_highlights_plane_d_f12_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f12_c10.hex.txt",
+          "sha256": "4ef2455a2bef933d6946bc07cf47a8bd1c9de494dd830fea92f70c8e473dd70d"
+        },
+        {
+          "id": "water_highlights_plane_d_f12_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f12_c20.hex.txt",
+          "sha256": "792c309609c740fd03084948513dcc32f3407c359cf1a7e8bb5d6f5eea4731e9"
+        },
+        {
+          "id": "water_highlights_plane_d_f12_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f12_c30.hex.txt",
+          "sha256": "9bb59b3a7e5849dde0b82a759dcf2d7300674f5278430f0056c21ead17a21e75"
+        },
+        {
+          "id": "water_highlights_plane_d_f12_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f12_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f12_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f12_c11.hex.txt",
+          "sha256": "4bbaf69bf5e31805a617784ab30894dbc1855a318b0dfcd6bb77a2e390f6ae61"
+        },
+        {
+          "id": "water_highlights_plane_d_f12_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f12_c21.hex.txt",
+          "sha256": "d8ac48fa25f7bf45187854cef85bc57d6d584fb4d82d0cd535e406e6800415b4"
+        },
+        {
+          "id": "water_highlights_plane_d_f12_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f12_c31.hex.txt",
+          "sha256": "bc0ec8d153807b13a625c3a46581b62bc44ca64871b3c6c5fb9e0e39a76ac7a7"
+        }
+      ]
+    },
+    {
+      "id": "f13",
+      "hold_frames": 2,
+      "visible_pixels": 156,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f13_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f13_c00.hex.txt",
+          "sha256": "211025e708c223f202a1039d1b2a08345cc33ca3cba6b61592dd2965d4248bcb"
+        },
+        {
+          "id": "water_highlights_plane_d_f13_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f13_c10.hex.txt",
+          "sha256": "dffd0739a1f8e32d53ab95e2803bcb90e11c31ee5a2cd3846af55238bf1975ef"
+        },
+        {
+          "id": "water_highlights_plane_d_f13_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f13_c20.hex.txt",
+          "sha256": "925140b1e9114907b7e9b5db642c6cbc7c0b5a2318c4f79b68dd204d9aff2900"
+        },
+        {
+          "id": "water_highlights_plane_d_f13_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f13_c30.hex.txt",
+          "sha256": "ec93670d46276aec9b467b8d8f874f124789517af3f481c67cb616c3260f1c98"
+        },
+        {
+          "id": "water_highlights_plane_d_f13_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f13_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f13_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f13_c11.hex.txt",
+          "sha256": "00ed203893cfd801b97a3d9c9d0d7f1f00e17e35f2a7a9fa5549f4a3c1a8d812"
+        },
+        {
+          "id": "water_highlights_plane_d_f13_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f13_c21.hex.txt",
+          "sha256": "16df3f834ff6b16b01e7595cc8498f3d8a5db186829b8be7d0130b16cb40322f"
+        },
+        {
+          "id": "water_highlights_plane_d_f13_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f13_c31.hex.txt",
+          "sha256": "58ccc0f49d5440a9ac1c3aeb5a12ed77209bd96bb61fd82e7f847baa55ed2814"
+        }
+      ]
+    },
+    {
+      "id": "f14",
+      "hold_frames": 2,
+      "visible_pixels": 156,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f14_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f14_c00.hex.txt",
+          "sha256": "ef4f408022a9ac71ea6165d9a07a81efa5c34311b81ad1798bb3d1da2276e511"
+        },
+        {
+          "id": "water_highlights_plane_d_f14_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f14_c10.hex.txt",
+          "sha256": "e04e2dc95fb338ab65f7c51f736f362163cad6912435d991e40f3f471524add8"
+        },
+        {
+          "id": "water_highlights_plane_d_f14_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f14_c20.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f14_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f14_c30.hex.txt",
+          "sha256": "11617cfb256d21b8c9c5f6130a2274544bc773fd3883df548fd7b7ec286cf57f"
+        },
+        {
+          "id": "water_highlights_plane_d_f14_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f14_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f14_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f14_c11.hex.txt",
+          "sha256": "aadf19e6beec7db328930785e02af9e98740a50465bf7f1a23997f2c58ab41d9"
+        },
+        {
+          "id": "water_highlights_plane_d_f14_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f14_c21.hex.txt",
+          "sha256": "00d5f2da7e5fdcbbcb1b2283f8cc55cf48b2fb597609357b9ce72d043b15b773"
+        },
+        {
+          "id": "water_highlights_plane_d_f14_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f14_c31.hex.txt",
+          "sha256": "eb1b56a558d12788cdd12d25a9b65b741e2f0e693835d576b542779b05c9832e"
+        }
+      ]
+    },
+    {
+      "id": "f15",
+      "hold_frames": 2,
+      "visible_pixels": 174,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f15_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f15_c00.hex.txt",
+          "sha256": "4285fa9e0aeb0952d0682cb2f601a5a5c06c4c59ace7aaebce131717d78c59b4"
+        },
+        {
+          "id": "water_highlights_plane_d_f15_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f15_c10.hex.txt",
+          "sha256": "720e46b5369760c7d3904fba46b4c5e5a689d79b90f76acffc9b7f8bf3378a35"
+        },
+        {
+          "id": "water_highlights_plane_d_f15_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f15_c20.hex.txt",
+          "sha256": "4d708abb2ddd1550164a30d8ffa28cbde23fbab163205326a212bd17b4eee668"
+        },
+        {
+          "id": "water_highlights_plane_d_f15_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f15_c30.hex.txt",
+          "sha256": "33500f04a6e3b346785710e4457f3e3c4e8c60e9eed1c616ff7f063f4c14bc85"
+        },
+        {
+          "id": "water_highlights_plane_d_f15_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f15_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f15_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f15_c11.hex.txt",
+          "sha256": "15c755269b94fc5df3ca9ad02b5959b774b17082d1677e6bef8a4b5d22c8d589"
+        },
+        {
+          "id": "water_highlights_plane_d_f15_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f15_c21.hex.txt",
+          "sha256": "8e14c52ae39096e32a31af8c0fb2babb2e513fead41bad7ed21d9592124b3f29"
+        },
+        {
+          "id": "water_highlights_plane_d_f15_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f15_c31.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        }
+      ]
+    },
+    {
+      "id": "f16",
+      "hold_frames": 2,
+      "visible_pixels": 194,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f16_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f16_c00.hex.txt",
+          "sha256": "e3f9cf4b0f24d033e3ec6fb1a15a6c30a7791ae56b645e6d685fcf8afc27c884"
+        },
+        {
+          "id": "water_highlights_plane_d_f16_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f16_c10.hex.txt",
+          "sha256": "e391ca9365ff40e23adb10324c1e750c33154aa900805f36aa6b3a38354d68c6"
+        },
+        {
+          "id": "water_highlights_plane_d_f16_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f16_c20.hex.txt",
+          "sha256": "311e103ede4a8a1780e8d1d1d51eb741f1e2fefe7beadfabf432816412f80089"
+        },
+        {
+          "id": "water_highlights_plane_d_f16_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f16_c30.hex.txt",
+          "sha256": "b01e6036911a0a5c14385bc888f508008bfc5f514ccd0b611cd77f0c2baf077b"
+        },
+        {
+          "id": "water_highlights_plane_d_f16_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f16_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f16_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f16_c11.hex.txt",
+          "sha256": "89b101ff5b46f0a3797c97358c5917b119851efa5302923e19129bd2bd9d5842"
+        },
+        {
+          "id": "water_highlights_plane_d_f16_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f16_c21.hex.txt",
+          "sha256": "72c629ab5c50cc6bc8af47bce25936f49799bd7b6e321a5a97f662a63d37c577"
+        },
+        {
+          "id": "water_highlights_plane_d_f16_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f16_c31.hex.txt",
+          "sha256": "89c0bd5ef91b023f25f6666e3f44ff5da5ef27e1cc9b2497d2521594e0fc68bb"
+        }
+      ]
+    },
+    {
+      "id": "f17",
+      "hold_frames": 2,
+      "visible_pixels": 153,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f17_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f17_c00.hex.txt",
+          "sha256": "ef2c99429a1f37539789bd50811d1b9303487dbd88fb1df86ef9e0b130eb551e"
+        },
+        {
+          "id": "water_highlights_plane_d_f17_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f17_c10.hex.txt",
+          "sha256": "99feca953729ea4c5fc8d17d380dfb1531995351f584299a6b389c23c32e689c"
+        },
+        {
+          "id": "water_highlights_plane_d_f17_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f17_c20.hex.txt",
+          "sha256": "925140b1e9114907b7e9b5db642c6cbc7c0b5a2318c4f79b68dd204d9aff2900"
+        },
+        {
+          "id": "water_highlights_plane_d_f17_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f17_c30.hex.txt",
+          "sha256": "b242e9e9373274150b36b8d237d58244f4de9213f3c81ae2e28b80a29f2436da"
+        },
+        {
+          "id": "water_highlights_plane_d_f17_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f17_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f17_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f17_c11.hex.txt",
+          "sha256": "f98cca50c80d175c920f319504a653bc810b5529c351d24d417620ede2a9fb85"
+        },
+        {
+          "id": "water_highlights_plane_d_f17_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f17_c21.hex.txt",
+          "sha256": "2ccf338e9dcb3c0028b1ef95f3221a3e98422ef16401d6a83c98be5aae24978b"
+        },
+        {
+          "id": "water_highlights_plane_d_f17_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f17_c31.hex.txt",
+          "sha256": "1327bd5a790b34a0aa776ffdc56fe699be02428d46afec1fead7404232a92809"
+        }
+      ]
+    },
+    {
+      "id": "f18",
+      "hold_frames": 2,
+      "visible_pixels": 157,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f18_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f18_c00.hex.txt",
+          "sha256": "5e20f017c249a8e63feb1d1e3e6c0a19572126b236bf2d01b764f41250891952"
+        },
+        {
+          "id": "water_highlights_plane_d_f18_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f18_c10.hex.txt",
+          "sha256": "93bfe09776cfa353823dc5431845a673dbdf962712c9de0217ebe641f4e2adbd"
+        },
+        {
+          "id": "water_highlights_plane_d_f18_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f18_c20.hex.txt",
+          "sha256": "a30ac989bfd15cfe828b66d57249d32161d1e55adb3f0a7f302073015497b1e6"
+        },
+        {
+          "id": "water_highlights_plane_d_f18_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f18_c30.hex.txt",
+          "sha256": "355f5c0fc60f93f19b1c479ef1b4ce0030d0f1239e8528d8b0e1bfd79e5df627"
+        },
+        {
+          "id": "water_highlights_plane_d_f18_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f18_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f18_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f18_c11.hex.txt",
+          "sha256": "1433fa9dcbef2cc93ae042c624f72b126c5305aad1e59bad1ecdbd67bd43297f"
+        },
+        {
+          "id": "water_highlights_plane_d_f18_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f18_c21.hex.txt",
+          "sha256": "dd2d8c258038067c70c830af718025c28023e9cdaed81df7f004bcb24862d738"
+        },
+        {
+          "id": "water_highlights_plane_d_f18_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f18_c31.hex.txt",
+          "sha256": "b6de7b17bd00232f6358942586fa7ad9ada7af02c2e3a3856d98fc016965df69"
+        }
+      ]
+    },
+    {
+      "id": "f19",
+      "hold_frames": 2,
+      "visible_pixels": 160,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f19_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f19_c00.hex.txt",
+          "sha256": "4d048fa998454079e118be88454704460882758cbfa012d7ab3c54b51d6589f6"
+        },
+        {
+          "id": "water_highlights_plane_d_f19_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f19_c10.hex.txt",
+          "sha256": "0abb47fdc51bbbab058882ab5d1e628d2d5049bee5e26d33a8e55964975ff4ab"
+        },
+        {
+          "id": "water_highlights_plane_d_f19_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f19_c20.hex.txt",
+          "sha256": "925140b1e9114907b7e9b5db642c6cbc7c0b5a2318c4f79b68dd204d9aff2900"
+        },
+        {
+          "id": "water_highlights_plane_d_f19_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f19_c30.hex.txt",
+          "sha256": "2d0343acea9c11ad1226b6c2444520d7f249818558b4dbba48b2a597714c8460"
+        },
+        {
+          "id": "water_highlights_plane_d_f19_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f19_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f19_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f19_c11.hex.txt",
+          "sha256": "d4fde0b2375eadb9ab6da3394008b5f37bea124fc8ebd5323db677b876052a93"
+        },
+        {
+          "id": "water_highlights_plane_d_f19_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f19_c21.hex.txt",
+          "sha256": "6544b7cf6fc2d56d24098847d8bf21491e3bf39db0c66fa4712a2497982b43a0"
+        },
+        {
+          "id": "water_highlights_plane_d_f19_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f19_c31.hex.txt",
+          "sha256": "db7179fb6450937c65d61940ba9751e04a4c6146c841bcbad8c31ee1b127c893"
+        }
+      ]
+    },
+    {
+      "id": "f20",
+      "hold_frames": 2,
+      "visible_pixels": 119,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f20_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f20_c00.hex.txt",
+          "sha256": "f0e7f8888082259f9ab3818795cee1c462e405b45899604a811a78982f72053c"
+        },
+        {
+          "id": "water_highlights_plane_d_f20_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f20_c10.hex.txt",
+          "sha256": "d5a017addc1398ba9d69f2bbcc2521d7a54316f3607f7a2600d9a4f4843ebf98"
+        },
+        {
+          "id": "water_highlights_plane_d_f20_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f20_c20.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f20_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f20_c30.hex.txt",
+          "sha256": "98f27247bd6560cbc4000f2be8195540f3f8ee3dcb7a50c4eaaf1c73f6fd3147"
+        },
+        {
+          "id": "water_highlights_plane_d_f20_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f20_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f20_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f20_c11.hex.txt",
+          "sha256": "89bd511e05cd27bd647db64439d816022192735a8090d0bae3c7bd63dfb33420"
+        },
+        {
+          "id": "water_highlights_plane_d_f20_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f20_c21.hex.txt",
+          "sha256": "3b278f1527c1750f2a62df79d4e3a6dd8a93f01734b7d7ebec8ceb027db66e58"
+        },
+        {
+          "id": "water_highlights_plane_d_f20_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f20_c31.hex.txt",
+          "sha256": "a7ea74ce81445e45113dab50924afff807cde929ecda730b86484d799b94787e"
+        }
+      ]
+    },
+    {
+      "id": "f21",
+      "hold_frames": 2,
+      "visible_pixels": 153,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f21_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f21_c00.hex.txt",
+          "sha256": "7eff6d23bd4a27623eaa7915fb25f17b4baa705d11313f1a4b03d62f4a2debdf"
+        },
+        {
+          "id": "water_highlights_plane_d_f21_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f21_c10.hex.txt",
+          "sha256": "fb0155c59fa07c12b2cd4b6509537814ebe365d4e8fbc983bb68015469cce427"
+        },
+        {
+          "id": "water_highlights_plane_d_f21_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f21_c20.hex.txt",
+          "sha256": "9831584d64f183f69c0505ec23ec0c715c59f62ad83483428c721ce1a7167445"
+        },
+        {
+          "id": "water_highlights_plane_d_f21_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f21_c30.hex.txt",
+          "sha256": "c25d1249f9db8e65e7ee1b39ee5c28ae1856a264250a2586ba689a999cdea0c4"
+        },
+        {
+          "id": "water_highlights_plane_d_f21_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f21_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f21_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f21_c11.hex.txt",
+          "sha256": "f7bd0fca9f7097e96d453c92caf04c98fd9eeed34e23d484bd6f7a39bcac866a"
+        },
+        {
+          "id": "water_highlights_plane_d_f21_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f21_c21.hex.txt",
+          "sha256": "25e7853753d1c2ac7122b425c411a64fe82cf6848d15e949279c3065321c5740"
+        },
+        {
+          "id": "water_highlights_plane_d_f21_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f21_c31.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        }
+      ]
+    },
+    {
+      "id": "f22",
+      "hold_frames": 2,
+      "visible_pixels": 170,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f22_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f22_c00.hex.txt",
+          "sha256": "75627cf26f8a3989a4681b6f5d6d48f531bf73d703b9b48ee49874d271112920"
+        },
+        {
+          "id": "water_highlights_plane_d_f22_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f22_c10.hex.txt",
+          "sha256": "fe9001a4b82257113fe925636b19ac52a0b35e1bece7fdccdfe46b96b011a4de"
+        },
+        {
+          "id": "water_highlights_plane_d_f22_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f22_c20.hex.txt",
+          "sha256": "311e103ede4a8a1780e8d1d1d51eb741f1e2fefe7beadfabf432816412f80089"
+        },
+        {
+          "id": "water_highlights_plane_d_f22_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f22_c30.hex.txt",
+          "sha256": "89127f690558c99b031e017c035590f15aad2d2a222ad3021b368d8936b34444"
+        },
+        {
+          "id": "water_highlights_plane_d_f22_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f22_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f22_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f22_c11.hex.txt",
+          "sha256": "b2636f8fb230bc6e543ae76e2e95288b38eabe8d1f0ae37195de5a58a7e138d5"
+        },
+        {
+          "id": "water_highlights_plane_d_f22_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f22_c21.hex.txt",
+          "sha256": "838cce6164836ed742f5c028eb0f725971acdd97a3b34b677a6b17c6650565e1"
+        },
+        {
+          "id": "water_highlights_plane_d_f22_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f22_c31.hex.txt",
+          "sha256": "6be3835332b83cfae5ef03387a32255ad9b88251755d1cf3d7e8c299be43487a"
+        }
+      ]
+    },
+    {
+      "id": "f23",
+      "hold_frames": 2,
+      "visible_pixels": 157,
+      "chunks": [
+        {
+          "id": "water_highlights_plane_d_f23_c00",
+          "chunk": "c00",
+          "file": "hex_rows/water_highlights_plane_d_f23_c00.hex.txt",
+          "sha256": "fdb3058b19651d75aac9df123784e385b8a8c6fa93b17104e59a5941622e1434"
+        },
+        {
+          "id": "water_highlights_plane_d_f23_c10",
+          "chunk": "c10",
+          "file": "hex_rows/water_highlights_plane_d_f23_c10.hex.txt",
+          "sha256": "a0a06e8bb0132bff3e267825fb4de6a7add3514112ca7113122bd8c587f96afe"
+        },
+        {
+          "id": "water_highlights_plane_d_f23_c20",
+          "chunk": "c20",
+          "file": "hex_rows/water_highlights_plane_d_f23_c20.hex.txt",
+          "sha256": "925140b1e9114907b7e9b5db642c6cbc7c0b5a2318c4f79b68dd204d9aff2900"
+        },
+        {
+          "id": "water_highlights_plane_d_f23_c30",
+          "chunk": "c30",
+          "file": "hex_rows/water_highlights_plane_d_f23_c30.hex.txt",
+          "sha256": "553d2790c5867b883d470e18c6a002f3201515d702962b5e6af19b4ddcd8ad8b"
+        },
+        {
+          "id": "water_highlights_plane_d_f23_c01",
+          "chunk": "c01",
+          "file": "hex_rows/water_highlights_plane_d_f23_c01.hex.txt",
+          "sha256": "fc995d7b703bd00a14947436d20bf17448cacac4df992dac6b30b936c0b50828"
+        },
+        {
+          "id": "water_highlights_plane_d_f23_c11",
+          "chunk": "c11",
+          "file": "hex_rows/water_highlights_plane_d_f23_c11.hex.txt",
+          "sha256": "c7b46c75cfb3fb18bb92282b1d68492b51e0ac103a06a3ac3a0cfba4f3a968d0"
+        },
+        {
+          "id": "water_highlights_plane_d_f23_c21",
+          "chunk": "c21",
+          "file": "hex_rows/water_highlights_plane_d_f23_c21.hex.txt",
+          "sha256": "e4417ee54ce4a32deb3b8d5764a5336ce2182ff2b335d0f5b9a45f8ffbd87315"
+        },
+        {
+          "id": "water_highlights_plane_d_f23_c31",
+          "chunk": "c31",
+          "file": "hex_rows/water_highlights_plane_d_f23_c31.hex.txt",
+          "sha256": "58ccc0f49d5440a9ac1c3aeb5a12ed77209bd96bb61fd82e7f847baa55ed2814"
+        }
+      ]
+    }
+  ]
+}

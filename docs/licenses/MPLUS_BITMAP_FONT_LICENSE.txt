@@ -1,0 +1,14 @@
+M+ BITMAP FONTS
+Copyright 2002-2005 COZ <coz@users.sourceforge.jp>
+
+LICENSE
+
+These fonts are free software.
+
+Unlimited permission is granted to use, copy, and distribute them, with or
+without modification, either commercially or noncommercially.
+
+THESE FONTS ARE PROVIDED "AS IS" WITHOUT WARRANTY.
+
+The bundled umplus_j12r_office.bdf is a character subset generated from the
+umplus_j12r.bdf file distributed with Pyxel 2.9.9 examples.

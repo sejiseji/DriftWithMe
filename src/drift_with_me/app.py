@@ -1,0 +1,5124 @@
+from __future__ import annotations
+
+import math
+import time
+from dataclasses import dataclass, replace
+from enum import Enum, auto
+
+from drift_with_me import config
+from drift_with_me.audio import AudioEngine
+from drift_with_me.build_info import BUILD_LABEL
+from drift_with_me.camera import CameraController
+from drift_with_me.effects import EffectSystem
+from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
+from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput, Rect
+from drift_with_me.math3d import (
+    AffineCameraState,
+    AffineProjectionProfile,
+    CameraState,
+    Vec3,
+    affine_camera_from_perspective,
+    normalize2,
+    screen_to_ground_affine,
+    screen_to_ground_point,
+)
+from drift_with_me.model import GameModel, InputIntent, merge_intents
+from drift_with_me.office import (
+    CLASSIFICATION_ORDER,
+    CaseDefinition,
+    CaseState,
+    Classification,
+    FieldResult,
+    OfficePrototype,
+    QuestionDefinition,
+)
+from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
+from drift_with_me.render import Renderer, jack_blink_closed, jack_idle_hover
+from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
+from drift_with_me.water_study_assets import (
+    APPROVED_LOOK04_PLUS_SPARKLE_FPS,
+    APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT,
+    APPROVED_WATER_IDENTITY_LAYER_IDS,
+    WATER_STUDY_PHASE_INITIAL_INDICES,
+    WATER_STUDY_PHASE_STEP_FRAMES,
+    WATER_STUDY_RUNTIME_LAYER_IDS,
+    WaterStudyAssetCache,
+    WaterStudyPlane,
+    preload_water_study_cache,
+)
+from drift_with_me.world import load_world_data
+
+
+class AppScreen(Enum):
+    START = auto()
+    OFFICE = auto()
+    PLAY = auto()
+    PAUSE = auto()
+    WATER_STUDY = auto()
+
+
+@dataclass(frozen=True)
+class PointerSnapshot:
+    down: bool
+    pressed: bool
+    x: float
+    y: float
+
+
+@dataclass
+class CombatCameraRestore:
+    from_camera: CameraState
+    elapsed_sec: float
+    duration_sec: float
+
+
+@dataclass(frozen=True)
+class WaterStudyProfile:
+    name: str
+    layer_ids: tuple[str, ...]
+
+
+@dataclass
+class WaterMicroGlintFX:
+    active: bool = False
+    x: int = 0
+    y: int = 0
+    age_frames: int = 0
+    life_frames: int = 0
+    color: int = 5
+    length_px: int = 1
+
+
+@dataclass
+class WaterSpecularFlashFX:
+    active: bool = False
+    x: int = 0
+    y: int = 0
+    age_frames: int = 0
+    life_frames: int = 0
+    style: str = "spark"
+    size_px: int = 3
+
+
+@dataclass
+class WaterStudyJackFloat:
+    x: float
+    y: float
+    vx: float = 0.0
+    vy: float = 0.0
+    ax: float = 0.0
+    ay: float = 0.0
+    target_ax: float = 0.0
+    target_ay: float = 0.0
+    force_remaining_sec: float = 0.0
+    accumulator_sec: float = 0.0
+    rng_state: int = 0x4A41434B
+    simulation_time_sec: float = 0.0
+    submerge_px: float = 2.5
+    submerge_v: float = 0.0
+    bob_px: float = 0.0
+    bob_v: float = 0.0
+    sink_cooldown_frames: int = 0
+    sink_peak_px: float = 2.5
+    sink_count: int = 0
+    last_sink_phase_checked: int = -1
+    angle_deg: float = 0.0
+    omega_deg_per_frame: float = 0.0
+    direction_index: int = 0
+    visual_angle_deg: float = 0.0
+    wave_phase: int = 0
+    wave_energy: float = 0.0
+
+
+@dataclass
+class OfficeDialoguePlayback:
+    signature: tuple[str, tuple[tuple[str, str], ...]] | None = None
+    pages: tuple[tuple[OfficeDialogueLine, ...], ...] = ()
+    page_index: int = 0
+    revealed_chars: float = 0.0
+
+
+@dataclass(frozen=True)
+class OfficeDialogueLine:
+    text: str
+    visitor: bool
+    indent_px: int = 0
+    speaker: str = ""
+
+
+@dataclass(frozen=True)
+class OfficeWrappedTextLine:
+    text: str
+    indent_px: int = 0
+
+
+WATER_STUDY_PROFILES: tuple[WaterStudyProfile, ...] = (
+    WaterStudyProfile(
+        "LOOK04_MICRO_GLINT",
+        layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
+    ),
+    WaterStudyProfile(
+        "LOOK04_MICRO_GLINT",
+        layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
+    ),
+    WaterStudyProfile(
+        "LOOK04_MICRO_GLINT",
+        layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
+    ),
+    WaterStudyProfile(
+        "LOOK04_MICRO_GLINT",
+        layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
+    ),
+)
+
+WATER_STUDY_LOGICAL_SIZE = (1024, 512)
+WATER_STUDY_CHUNK_SIZE = 256
+WATER_STUDY_LAYER_MOTION: dict[str, tuple[float, float, float, float, float, float]] = {
+    "water_deep_plane_c": (0.28, 0.16, 0.35, 0.55, 0.38, 0.1),
+    "water_mid_plane_c": (0.72, 0.48, 1.4, 1.35, 1.05, 1.0),
+    "water_surface_plane_c": (0.94, 0.58, 1.2, 1.1, 0.9, 1.8),
+    "water_surface_caustics_plane_c": (0.22, 0.14, 0.4, 0.34, 0.28, 2.6),
+    "water_upper_lightnet_plane_c": (1.08, 1.85, 2.05, 1.55, 2.35, 3.4),
+    "water_highlights_plane_c": (0.18, 0.1, 0.28, 0.24, 0.2, 4.1),
+    "water_deep_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_mid_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_surface_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_surface_caustics_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_highlights_plane_d": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_deep_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_mid_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_surface_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_surface_caustics_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    "water_highlights_plane_e": (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+}
+WATER_MICRO_GLINT_POOL_SIZE = 16
+WATER_MICRO_GLINT_MIN_ACTIVE = 8
+WATER_MICRO_GLINT_MAX_ACTIVE = 16
+WATER_MICRO_GLINT_MIN_LIFE_FRAMES = 6
+WATER_MICRO_GLINT_MAX_LIFE_FRAMES = 18
+WATER_MICRO_GLINT_MIN_DISTANCE_PX = 12
+WATER_SPECULAR_FLASH_INTERVAL_MIN_FRAMES = 96
+WATER_SPECULAR_FLASH_INTERVAL_MAX_FRAMES = 210
+WATER_SPECULAR_FLASH_MIN_LIFE_FRAMES = 10
+WATER_SPECULAR_FLASH_MAX_LIFE_FRAMES = 22
+WATER_STUDY_JACK_FIXED_DT = 1.0 / 60.0
+WATER_STUDY_JACK_MAX_SPEED_PX_SEC = 12.0
+WATER_STUDY_JACK_DAMPING_PER_FRAME = 0.994
+WATER_STUDY_JACK_ACCEL_BLEND_PER_FRAME = 0.025
+WATER_STUDY_JACK_EDGE_FORCE_PX_SEC2 = 22.0
+WATER_STUDY_JACK_WAVE_ENERGY_PROFILE: tuple[float, ...] = (
+    0.05,
+    0.08,
+    0.12,
+    0.20,
+    0.36,
+    0.58,
+    0.82,
+    1.00,
+    0.78,
+    0.52,
+    0.30,
+    0.16,
+    0.08,
+    0.06,
+    0.10,
+    0.18,
+    0.34,
+    0.62,
+    0.88,
+    0.72,
+    0.46,
+    0.25,
+    0.12,
+    0.07,
+)
+WATER_STUDY_JACK_BASE_SUBMERGE_PX = 3.5
+WATER_STUDY_JACK_MIN_SUBMERGE_PX = 0.0
+WATER_STUDY_JACK_MAX_SUBMERGE_PX = 7.0
+WATER_STUDY_JACK_SUBMERGE_SPRING = 0.045
+WATER_STUDY_JACK_SUBMERGE_DAMPING = 0.90
+WATER_STUDY_JACK_SINK_THRESHOLD = 0.65
+WATER_STUDY_JACK_SINK_PROBABILITY = 0.32
+WATER_STUDY_JACK_SINK_IMPULSE = 0.50
+WATER_STUDY_JACK_MIN_SINK_COOLDOWN_FRAMES = 45
+WATER_STUDY_JACK_MAX_SINK_COOLDOWN_FRAMES = 120
+WATER_STUDY_JACK_TORQUE_GAIN = 1.8
+WATER_STUDY_JACK_ANGULAR_DRAG = 0.991
+WATER_STUDY_JACK_MAX_OMEGA_DEG_PER_FRAME = 0.50
+WATER_STUDY_JACK_SINK_SPIN_DEG_PER_FRAME = 0.30
+WATER_STUDY_JACK_DIRECTION_HYSTERESIS_DEG = 7.0
+WATER_STUDY_JACK_DIRECTION_VIEWS = (
+    "front",
+    "front_right",
+    "right",
+    "back_right",
+    "back",
+    "back_left",
+    "left",
+    "front_left",
+)
+OFFICE_DIALOGUE_CHARS_PER_SEC = 72.0
+OFFICE_DIALOGUE_LINES_PER_PAGE = 5
+OFFICE_LINE_START_PROHIBITED = "、。！？）"
+OFFICE_QUESTION_NUMBERS = "①②③④⑤"
+OFFICE_PORTRAIT_BLINK_HALF_FRAMES = 2
+OFFICE_PORTRAIT_BLINK_CLOSED_FRAMES = 3
+OFFICE_PORTRAIT_BLINK_DURATION_FRAMES = (
+    OFFICE_PORTRAIT_BLINK_HALF_FRAMES * 2 + OFFICE_PORTRAIT_BLINK_CLOSED_FRAMES
+)
+OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES = (167, 251, 199, 307, 223)
+OFFICE_PORTRAIT_BLINK_OVERLAY_IDS = {
+    "succubus_green": {
+        "half": "succubus_green_blink_half_overlay",
+        "closed": "succubus_green_blink_overlay",
+    },
+    "tired_gray_oldman": {
+        "half": "tired_gray_oldman_blink_half_overlay",
+        "closed": "tired_gray_oldman_blink_overlay",
+    },
+    "nervous_elf_woodsman": {
+        "half": "nervous_elf_woodsman_blink_half_overlay",
+        "closed": "nervous_elf_woodsman_blink_overlay",
+    },
+    "smug_blond_hero": {
+        "half": "smug_blond_hero_blink_half_overlay",
+        "closed": "smug_blond_hero_blink_overlay",
+    },
+}
+# Smile bases are closed-eyed; open/half overlays belong only to their smile expression.
+OFFICE_PORTRAIT_SMILE_BLINK_OVERLAY_IDS = {
+    "succubus_green": {
+        "open": "succubus_green_smile_blink_open_overlay",
+        "half": "succubus_green_smile_blink_half_overlay",
+    },
+    "tired_gray_oldman": {
+        "open": "tired_gray_oldman_smile_blink_open_overlay",
+        "half": "tired_gray_oldman_smile_blink_half_overlay",
+    },
+    "smug_blond_hero": {
+        "open": "smug_blond_hero_smile_blink_open_overlay",
+        "half": "smug_blond_hero_smile_blink_half_overlay",
+    },
+    "nervous_elf_woodsman": {
+        "open": "nervous_elf_woodsman_smile_blink_open_overlay",
+        "half": "nervous_elf_woodsman_smile_blink_half_overlay",
+    },
+}
+OFFICE_PORTRAIT_SMILE_IDS = {
+    "succubus_green": "succubus_green_smile",
+    "tired_gray_oldman": "tired_gray_oldman_smile",
+    "nervous_elf_woodsman": "nervous_elf_woodsman_smile",
+    "smug_blond_hero": "smug_blond_hero_smile",
+}
+OFFICE_PORTRAIT_SMILE_STATES = frozenset(
+    {
+        CaseState.CLOSED_COUNTER,
+        CaseState.REFERRED,
+        CaseState.WAITING_DOCUMENTS,
+        CaseState.FIELD_RETURNED,
+        CaseState.RESOLVED,
+    }
+)
+WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
+    # LOOK03 highlights should sit on top of fine water motion. The source planes
+    # remain unchanged, but their broad bright cells are tempered at draw time.
+    "water_surface_plane_c": ((6, 12), (12, 5)),
+    "water_surface_caustics_plane_c": ((7, 12), (6, 12)),
+    "water_upper_lightnet_plane_c": ((7, 12),),
+}
+
+
+class DriftWithMeApp:
+    def __init__(
+        self,
+        profile: str | None = None,
+        headless: bool = False,
+        smoke_frames: int | None = None,
+    ) -> None:
+        import pyxel
+
+        self.pyxel = pyxel
+        self.runtime = config.load_runtime_config(profile)
+        self.world = load_world_data()
+        self.model = GameModel(self.runtime.raw, self.world)
+        self.office = OfficePrototype.load()
+        self.office_focus = "questions"
+        self.office_question_index = 0
+        self.office_classification_index = 0
+        self.office_dialogue_playback = OfficeDialoguePlayback()
+        self.office_consultation: OfficeDialoguePlayback | None = None
+        self.office_answer_case_id: str | None = None
+        self.office_answer_question_id: str | None = None
+        self.audio = AudioEngine(self.runtime.raw)
+        self.effects = EffectSystem(self.runtime.raw)
+        self.camera_controller = CameraController(
+            self.runtime.raw,
+            self.world,
+            self.runtime.screen_width,
+            self.runtime.screen_height,
+            Vec3(self.model.player.x, 0.0, self.model.player.z),
+        )
+        self.model.snap_buddy(self.camera_controller.current)
+        self.renderer: Renderer | None = None
+        self.sprite_assets: SpriteAssetLibrary | None = None
+        self.screen = AppScreen.START
+        self.debug_enabled = False
+        self.projection_mode = self.initial_projection_mode()
+        self.affine_projection_profile = AffineProjectionProfile.from_config(self.runtime.raw)
+        self.presentation_time = 0.0
+        self.accumulator = 0.0
+        self.hitstop_remaining = 0.0
+        self._processed_hitstop_event_ids: set[int] = set()
+        self.previous_time: float | None = None
+        self.frame = 0
+        self.smoke_frames = smoke_frames
+        input_config = self.runtime.raw["input"]
+        auto_move_config = self.runtime.raw.get("auto_move", {})
+        ui_scale = self.runtime.screen_height / float(
+            self.runtime.raw["display"]["reference_ui_height"]
+        )
+        drag_threshold_px = float(input_config["drag_threshold_ref_px"]) * ui_scale
+        self.pointer = PointerInput(
+            hold_sec=float(input_config["hold_sec"]),
+            drag_threshold_px=drag_threshold_px,
+            deadzone_px=float(input_config["stick_deadzone_ref_px"]) * ui_scale,
+            radius_px=float(input_config["stick_radius_ref_px"]) * ui_scale,
+        )
+        self.double_tap_move = DoubleTapMoveRecognizer(
+            short_tap_sec=float(auto_move_config.get("short_tap_sec", 0.18)),
+            max_interval_sec=float(auto_move_config.get("max_interval_sec", 0.3)),
+            max_distance_px=float(auto_move_config.get("max_distance_ref_px", 20.0)) * ui_scale,
+            drag_threshold_px=drag_threshold_px,
+        )
+        self.pending_action_pressed = False
+        self.pending_interact_pressed = False
+        self.pending_auto_move_goal: tuple[float, float] | None = None
+        self.pending_cancel_auto_move = False
+        self.last_denied_reason = ""
+        self.last_denied_remaining = 0.0
+        self.location_label_remaining = 0.0
+        self.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
+        self.browser_pointer_sequence_seen = 0
+        self.last_combat_scene_camera: CameraState | None = None
+        self.combat_camera_restore: CombatCameraRestore | None = None
+        self.combat_camera_snapshot_zoom: float | None = None
+        self.water_study_clock = 0.0
+        self.water_study_profile_index = 0
+        self.water_study_last_draw_ms = 0.0
+        self.water_study_last_layer_count = 0
+        self.water_study_last_wrap_calls = 0
+        self.water_study_open_latency_ms = 0.0
+        self.water_study_asset_cache: WaterStudyAssetCache | None = None
+        self.water_study_planes: dict[str, WaterStudyPlane] = {}
+        self.water_study_phase_planes: dict[str, tuple[WaterStudyPlane, ...]] = {}
+        self.water_micro_glint_frame = 0
+        self.water_micro_glint_spawn_cursor = 0
+        self.water_micro_glint_last_spawn: tuple[int, int] | None = None
+        self.water_micro_glints = [WaterMicroGlintFX() for _ in range(WATER_MICRO_GLINT_POOL_SIZE)]
+        self.water_specular_flash = WaterSpecularFlashFX()
+        self.water_specular_flash_frame = 0
+        self.water_specular_flash_next_spawn_frame = 90
+        self.water_specular_flash_rng_state = 0x4C454E53
+        self.water_study_jack_float = self.new_water_study_jack_float()
+
+        pyxel.init(
+            self.runtime.screen_width,
+            self.runtime.screen_height,
+            title=config.APP_TITLE,
+            fps=self.runtime.target_fps,
+            quit_key=None,
+            display_scale=self.runtime.desktop_scale,
+            headless=headless,
+        )
+        pyxel.mouse(True)
+        self.ui_text = load_ui_text_renderer(pyxel, self.runtime)
+        self.sprite_assets = load_runtime_sprite_library(pyxel, self.runtime.raw)
+        for error in self.sprite_assets.errors:
+            print(f"asset_error: {error}")
+        self.audio.setup(pyxel)
+        self.renderer = Renderer(pyxel, self.sprite_assets)
+        pyxel.run(self.update, self.draw)
+
+    def camera(self) -> CameraState:
+        return self.camera_controller.current
+
+    def update_camera_controller(self, elapsed: float) -> CameraState:
+        lookahead_x, lookahead_z = self.camera_lookahead_direction()
+        return self.camera_controller.update(
+            elapsed,
+            self.model.player.x,
+            self.model.player.z,
+            lookahead_x,
+            lookahead_z,
+        )
+
+    def camera_lookahead_direction(self) -> tuple[float | None, float | None]:
+        if (
+            self.camera_controller.focus is not None
+            or self.camera_controller.sequence is not None
+            or self.camera_controller.active_zone_id is not None
+        ):
+            return None, None
+
+        min_length = float(self.runtime.raw["camera"].get("lookahead_min_direction", 0.05))
+        for target_x, target_z in self.model.auto_move_path:
+            dx = target_x - self.model.player.x
+            dz = target_z - self.model.player.z
+            if math.hypot(dx, dz) > min_length:
+                return dx, dz
+
+        dx = self.model.player.last_move_x
+        dz = self.model.player.last_move_z
+        if math.hypot(dx, dz) > min_length:
+            return dx, dz
+        return None, None
+
+    def initial_projection_mode(self) -> str:
+        mode = str(self.runtime.raw.get("projection", {}).get("mode", "perspective"))
+        return mode if mode in {"perspective", "affine"} else "perspective"
+
+    def handle_projection_mode_shortcut(self) -> None:
+        toggle_key = getattr(self.pyxel, "KEY_V", None)
+        if toggle_key is None or not self.pyxel.btnp(toggle_key):
+            return
+        self.projection_mode = "affine" if self.projection_mode == "perspective" else "perspective"
+
+    def update(self) -> None:
+        pyxel = self.pyxel
+        elapsed = self.consume_elapsed()
+        self.presentation_time += elapsed
+        self.frame += 1
+        self.pointer_snapshot = self.read_pointer_snapshot()
+        self.update_denied_feedback(elapsed)
+        self.update_location_label(elapsed)
+        if self.screen == AppScreen.PLAY:
+            self.update_combat_camera_restore(elapsed)
+
+        f1_key = getattr(pyxel, "KEY_F1", None)
+        if f1_key is not None and pyxel.btnp(f1_key):
+            self.debug_enabled = not self.debug_enabled
+        self.handle_projection_mode_shortcut()
+        if self.handle_water_study_shortcut():
+            if self.smoke_frames is not None and self.frame >= self.smoke_frames:
+                pyxel.quit()
+            return
+        if pyxel.btnp(pyxel.KEY_M):
+            self.audio.toggle_mute()
+
+        if self.screen == AppScreen.START:
+            self.update_start_screen()
+        elif self.screen == AppScreen.OFFICE:
+            self.update_office_screen(elapsed)
+        elif self.screen == AppScreen.PAUSE:
+            self.update_pause_screen()
+        elif self.screen == AppScreen.WATER_STUDY:
+            self.update_water_study_screen(elapsed)
+        else:
+            self.update_play_screen(elapsed)
+
+        if self.smoke_frames is not None and self.frame >= self.smoke_frames:
+            pyxel.quit()
+
+    def consume_elapsed(self) -> float:
+        now = time.monotonic()
+        if self.previous_time is None:
+            self.previous_time = now
+            return self.runtime.fixed_dt
+        elapsed = now - self.previous_time
+        self.previous_time = now
+        max_elapsed = float(self.runtime.raw["simulation"]["max_elapsed_sec"])
+        if elapsed > max_elapsed:
+            self.model.debug.discarded_elapsed_count += 1
+            return max_elapsed
+        return max(0.0, elapsed)
+
+    def update_start_screen(self) -> None:
+        pyxel = self.pyxel
+        if pyxel.btnp(pyxel.KEY_RETURN):
+            self.start_game()
+            return
+        if pyxel.btnp(pyxel.KEY_1):
+            self.audio.play_preview("bubble_fired")
+        if pyxel.btnp(pyxel.KEY_2):
+            self.audio.play_preview("enemy_captured")
+        if pyxel.btnp(pyxel.KEY_3):
+            self.audio.play_preview("barrier_repelled")
+        if pyxel.btnp(pyxel.KEY_4):
+            self.audio.play_preview("discharge_succeeded")
+        if pyxel.btnp(pyxel.KEY_5):
+            self.audio.play_preview("action_denied")
+
+        if self.mouse_pressed_in(self.start_button_rect()):
+            self.start_game()
+        if self.mouse_pressed_in(self.sound_button_rect()):
+            self.audio.toggle_mute()
+        for event_name, rect in self.preview_button_rects():
+            if self.mouse_pressed_in(rect):
+                self.audio.play_preview(event_name)
+
+    def start_game(self) -> None:
+        self.end_office_consultation()
+        self.pointer.cancel()
+        self.cancel_double_tap_move_gesture()
+        self.model.cancel_auto_move()
+        self.previous_time = None
+        self.accumulator = 0.0
+        self.hitstop_remaining = 0.0
+        self.pending_auto_move_goal = None
+        self.pending_cancel_auto_move = False
+        self.last_combat_scene_camera = None
+        self.combat_camera_restore = None
+        self.screen = AppScreen.OFFICE
+
+    def update_office_screen(self, elapsed: float) -> None:
+        self.clear_world_input_latches()
+        if getattr(self, "office_consultation", None) is not None:
+            self.update_office_dialogue_playback(elapsed)
+            if self.key_pressed("KEY_ESCAPE", "KEY_X") or self.mouse_pressed_in(
+                self.office_consultation_button_rect()
+            ):
+                self.end_office_consultation()
+            elif self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
+                self.office_dialog_rect()
+            ):
+                self.advance_office_dialogue_page()
+            return
+        if self.mouse_pressed_in(self.office_consultation_button_rect()):
+            self.begin_office_consultation()
+            return
+        if self.mouse_pressed_in(self.office_field_debug_rect()):
+            self.activate_office_field_debug()
+            return
+        session = self.office.current_session
+        case = self.office.current_case
+        if session is None or case is None:
+            if self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
+                self.office_footer_action_rect()
+            ):
+                self.enter_exploration_from_office()
+            return
+
+        self.update_office_dialogue_playback(elapsed)
+        confirm_pressed = self.key_pressed("KEY_RETURN", "KEY_Z")
+        if self.mouse_pressed_in(self.office_dialog_rect()):
+            self.advance_office_dialogue_page()
+            return
+        if confirm_pressed and self.office_dialogue_requires_advance():
+            self.advance_office_dialogue_page()
+            return
+        if self.office_dialogue_requires_advance():
+            return
+
+        if (
+            self.mouse_pressed_in(self.office_answer_footer_rect())
+            and self.cycle_office_answer_reference()
+        ):
+            return
+
+        if session.state in {
+            CaseState.CLOSED_COUNTER,
+            CaseState.REFERRED,
+            CaseState.WAITING_DOCUMENTS,
+            CaseState.FIELD_CHECK_REQUIRED,
+            CaseState.FIELD_RETURNED,
+        }:
+            if confirm_pressed or self.mouse_pressed_in(self.office_footer_action_rect()):
+                self.activate_office_footer_action()
+            return
+
+        if self.key_pressed("KEY_LEFT", "KEY_A"):
+            self.office_focus = "questions"
+        elif self.key_pressed("KEY_RIGHT", "KEY_D"):
+            self.office_focus = "classifications"
+
+        visible_question_count = self.office_visible_question_count()
+        direction = int(self.key_pressed("KEY_DOWN", "KEY_S")) - int(
+            self.key_pressed("KEY_UP", "KEY_W")
+        )
+        if direction:
+            if self.office_focus == "questions":
+                if visible_question_count:
+                    self.office_question_index = (
+                        self.office_question_index + direction
+                    ) % visible_question_count
+            else:
+                count = len(CLASSIFICATION_ORDER)
+                self.office_classification_index = (
+                    self.office_classification_index + direction
+                ) % count
+
+        if self.key_pressed("KEY_ESCAPE", "KEY_X"):
+            self.office_focus = "questions"
+
+        if confirm_pressed:
+            if self.office_focus == "questions":
+                if visible_question_count:
+                    question = case.questions[self.office_question_index % visible_question_count]
+                    self.ask_or_select_office_question(question)
+            else:
+                classification = CLASSIFICATION_ORDER[
+                    self.office_classification_index % len(CLASSIFICATION_ORDER)
+                ]
+                self.office.classify(classification)
+            return
+
+        for index, question in enumerate(case.questions[:visible_question_count]):
+            if self.mouse_pressed_in(self.office_question_rect(index, len(case.questions))):
+                self.office_focus = "questions"
+                self.office_question_index = index
+                self.ask_or_select_office_question(question)
+                return
+        for index, classification in enumerate(CLASSIFICATION_ORDER):
+            if self.mouse_pressed_in(self.office_classification_rect(index)):
+                self.office_focus = "classifications"
+                self.office_classification_index = index
+                self.office.classify(classification)
+                return
+
+    def office_visible_question_count(self) -> int:
+        if getattr(self, "office_consultation", None) is not None:
+            return self.office_consultation_visible_questions
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None:
+            return 0
+        visible_count = len(session.asked_question_ids)
+        if session.pending_question_id is not None or not self.office_dialogue_requires_advance():
+            visible_count += 1
+        return min(len(case.questions), visible_count)
+
+    def ask_or_select_office_question(self, question: QuestionDefinition) -> bool:
+        session = self.office.current_session
+        if session is None:
+            return False
+        if question.question_id in session.asked_question_ids:
+            return self.select_office_answer_reference(question.question_id)
+        return self.office.ask_question(question.question_id)
+
+    def sync_office_answer_reference(self) -> str | None:
+        if getattr(self, "office_consultation", None) is not None:
+            return getattr(self, "office_answer_question_id", None)
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None:
+            self.office_answer_case_id = None
+            self.office_answer_question_id = None
+            return None
+        if getattr(self, "office_answer_case_id", None) != case.case_id:
+            self.office_answer_case_id = case.case_id
+            self.office_answer_question_id = None
+        selected = getattr(self, "office_answer_question_id", None)
+        if selected not in session.asked_question_ids:
+            self.office_answer_question_id = None
+        return self.office_answer_question_id
+
+    def select_office_answer_reference(self, question_id: str) -> bool:
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None or question_id not in session.asked_question_ids:
+            return False
+        if not any(question.question_id == question_id for question in case.questions):
+            return False
+        self.office_answer_case_id = case.case_id
+        self.office_answer_question_id = question_id
+        return True
+
+    def cycle_office_answer_reference(self) -> bool:
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None:
+            return False
+        answered = tuple(
+            question.question_id
+            for question in case.questions
+            if question.question_id in session.asked_question_ids
+        )
+        if not answered:
+            return False
+        selected = self.sync_office_answer_reference()
+        next_index = (
+            0 if selected not in answered else (answered.index(selected) + 1) % len(answered)
+        )
+        return self.select_office_answer_reference(answered[next_index])
+
+    def selected_office_answer(self) -> tuple[int, QuestionDefinition] | None:
+        case = self.office.current_case
+        selected = self.sync_office_answer_reference()
+        if case is None or selected is None or self.office_dialogue_requires_advance():
+            return None
+        for index, question in enumerate(case.questions):
+            if question.question_id == selected:
+                return (index, question)
+        return None
+
+    def current_office_dialogue_playback(self) -> OfficeDialoguePlayback:
+        playback = getattr(self, "office_dialogue_playback", None)
+        if playback is None:
+            playback = OfficeDialoguePlayback()
+            self.office_dialogue_playback = playback
+        return playback
+
+    def sync_office_dialogue_playback(self) -> OfficeDialoguePlayback:
+        consultation = getattr(self, "office_consultation", None)
+        if consultation is not None:
+            return consultation
+        playback = self.current_office_dialogue_playback()
+        case = self.office.current_case
+        session = self.office.current_session
+        if case is None or session is None:
+            playback.signature = None
+            playback.pages = ()
+            playback.page_index = 0
+            playback.revealed_chars = 0.0
+            return playback
+
+        active_lines = self.office.active_dialogue_lines()
+        recent = tuple((line.speaker, line.text) for line in active_lines)
+        signature = (case.case_id, recent)
+        if playback.signature == signature:
+            return playback
+
+        content_rect = self.office_dialogue_content_rect()
+        style_name = "office_japanese"
+        pages: list[tuple[OfficeDialogueLine, ...]] = []
+        for speaker, text in recent:
+            wrapped_lines = tuple(
+                OfficeDialogueLine(
+                    text=line.text,
+                    visitor=speaker == case.visitor.name,
+                    indent_px=line.indent_px,
+                    speaker=speaker,
+                )
+                for line in self.wrap_office_hanging_text(
+                    f"{speaker}: {text}", max(1, int(content_rect.width)), style_name
+                )
+            )
+            pages.extend(
+                tuple(wrapped_lines[index : index + OFFICE_DIALOGUE_LINES_PER_PAGE])
+                for index in range(0, len(wrapped_lines), OFFICE_DIALOGUE_LINES_PER_PAGE)
+            )
+        playback.signature = signature
+        playback.pages = tuple(pages)
+        playback.page_index = 0
+        playback.revealed_chars = 0.0
+        return playback
+
+    def begin_office_consultation(self) -> bool:
+        if getattr(self, "office_consultation", None) is not None:
+            return False
+        if self.office_dialogue_requires_advance():
+            return False
+        advice = self.office.supervisor_advice()
+        if advice is None:
+            return False
+        self.office_consultation_visible_questions = self.office_visible_question_count()
+        content = self.office_dialogue_content_rect()
+        lines = tuple(
+            OfficeDialogueLine(line.text, False, line.indent_px, speaker="上司")
+            for line in self.wrap_office_hanging_text(
+                f"上司: {advice}", int(content.width), "office_japanese"
+            )
+        )
+        self.office_consultation_started_at = float(getattr(self, "presentation_time", 0.0))
+        self.office_consultation = OfficeDialoguePlayback(
+            pages=tuple(
+                lines[i : i + OFFICE_DIALOGUE_LINES_PER_PAGE]
+                for i in range(0, len(lines), OFFICE_DIALOGUE_LINES_PER_PAGE)
+            )
+        )
+        return True
+
+    def office_supervisor_blink_frame(self) -> str:
+        if getattr(self, "office_consultation", None) is None:
+            return "normal"
+        timing = getattr(self, "_office_supervisor_blink", None)
+        if timing is None:
+            timing = config.load_data_json("office_supervisor_blink.json")
+            self._office_supervisor_blink = timing
+        elapsed = max(
+            0.0,
+            float(getattr(self, "presentation_time", 0.0)) - self.office_consultation_started_at,
+        )
+        phase_ms = (round(elapsed * 1_000_000) / 1000) % sum(timing["durations_ms"])
+        for state_index, duration in zip(timing["sequence"], timing["durations_ms"], strict=True):
+            if phase_ms < duration:
+                return str(timing["states"][state_index])
+            phase_ms -= duration
+        return "normal"
+
+    def end_office_consultation(self) -> None:
+        self.office_consultation = None
+
+    def wrap_office_dialogue_text(
+        self,
+        text: str,
+        max_width: int,
+        style_name: str = "office_japanese",
+    ) -> tuple[str, ...]:
+        if not text:
+            return ("",)
+        lines: list[str] = []
+        current = ""
+        for char in text:
+            candidate = current + char
+            if current and self.ui_renderer.text_width(candidate, style_name) > max_width:
+                if char in OFFICE_LINE_START_PROHIBITED and len(current) > 1:
+                    lines.append(current[:-1])
+                    current = current[-1] + char
+                else:
+                    lines.append(current)
+                    current = char
+            else:
+                current = candidate
+        if current:
+            lines.append(current)
+        return tuple(lines)
+
+    def wrap_office_hanging_text(
+        self,
+        text: str,
+        max_width: int,
+        style_name: str = "office_japanese",
+    ) -> tuple[OfficeWrappedTextLine, ...]:
+        if not text:
+            return (OfficeWrappedTextLine(""),)
+
+        separator_end = -1
+        for separator in (": ", "："):
+            separator_index = text.find(separator)
+            if separator_index >= 0:
+                separator_end = separator_index + len(separator)
+                break
+        indent_px = (
+            self.ui_renderer.text_width(text[:separator_end], style_name)
+            if separator_end > 0
+            else 0
+        )
+        if indent_px >= max_width:
+            indent_px = 0
+
+        lines: list[str] = []
+        current = ""
+        for char in text:
+            continuation_indent = indent_px if lines else 0
+            line_width = max(1, max_width - continuation_indent)
+            candidate = current + char
+            if current and self.ui_renderer.text_width(candidate, style_name) > line_width:
+                if char in OFFICE_LINE_START_PROHIBITED and len(current) > 1:
+                    lines.append(current[:-1])
+                    current = current[-1] + char
+                else:
+                    lines.append(current)
+                    current = char
+            else:
+                current = candidate
+        if current:
+            lines.append(current)
+        return tuple(
+            OfficeWrappedTextLine(line, 0 if index == 0 else indent_px)
+            for index, line in enumerate(lines)
+        )
+
+    def update_office_dialogue_playback(self, elapsed: float) -> None:
+        playback = self.sync_office_dialogue_playback()
+        page = self.office_dialogue_current_page(playback)
+        if not page:
+            return
+        character_count = sum(len(line.text) for line in page)
+        playback.revealed_chars = min(
+            float(character_count),
+            playback.revealed_chars + max(0.0, elapsed) * OFFICE_DIALOGUE_CHARS_PER_SEC,
+        )
+        if getattr(self, "office_consultation", None) is not None:
+            return
+        if (
+            int(playback.revealed_chars) >= character_count
+            and playback.page_index + 1 >= len(playback.pages)
+            and not self.office.has_pending_dialogue_step()
+        ):
+            completed_question_id = self.office.complete_pending_question()
+            if completed_question_id is not None:
+                self.select_office_answer_reference(completed_question_id)
+                case = self.office.current_case
+                if case is not None:
+                    completed_index = next(
+                        (
+                            index
+                            for index, question in enumerate(case.questions)
+                            if question.question_id == completed_question_id
+                        ),
+                        0,
+                    )
+                    self.office_question_index = min(
+                        completed_index + 1,
+                        len(case.questions) - 1,
+                    )
+
+    def advance_office_dialogue_page(self) -> bool:
+        playback = self.sync_office_dialogue_playback()
+        page = self.office_dialogue_current_page(playback)
+        if not page:
+            return False
+        character_count = sum(len(line.text) for line in page)
+        if int(playback.revealed_chars) < character_count:
+            playback.revealed_chars = float(character_count)
+            return True
+        if playback.page_index + 1 >= len(playback.pages):
+            if getattr(self, "office_consultation", None) is not None:
+                self.end_office_consultation()
+                return True
+            if not self.office.advance_dialogue_step():
+                return False
+            self.sync_office_dialogue_playback()
+            return True
+        playback.page_index += 1
+        playback.revealed_chars = 0.0
+        return True
+
+    def office_dialogue_requires_advance(self) -> bool:
+        playback = self.sync_office_dialogue_playback()
+        page = self.office_dialogue_current_page(playback)
+        if not page:
+            return False
+        character_count = sum(len(line.text) for line in page)
+        return (
+            int(playback.revealed_chars) < character_count
+            or playback.page_index + 1 < len(playback.pages)
+            or (
+                getattr(self, "office_consultation", None) is None
+                and self.office.has_pending_dialogue_step()
+            )
+        )
+
+    @staticmethod
+    def office_dialogue_current_page(
+        playback: OfficeDialoguePlayback,
+    ) -> tuple[OfficeDialogueLine, ...]:
+        if not playback.pages:
+            return ()
+        index = min(max(0, playback.page_index), len(playback.pages) - 1)
+        return playback.pages[index]
+
+    def key_pressed(self, *names: str) -> bool:
+        for name in names:
+            key = getattr(self.pyxel, name, None)
+            if key is not None and self.pyxel.btnp(key):
+                return True
+        return False
+
+    def activate_office_footer_action(self) -> None:
+        session = self.office.current_session
+        if session is None:
+            self.enter_exploration_from_office()
+            return
+        if session.state == CaseState.FIELD_CHECK_REQUIRED:
+            if self.office.prepare_field_task() is not None:
+                self.enter_exploration_from_office()
+            return
+        if self.office.advance_case():
+            self.office_focus = "questions"
+            self.office_question_index = 0
+            self.office_classification_index = 0
+
+    def activate_office_field_debug(self) -> bool:
+        if self.office.prepare_debug_field_task() is None:
+            return False
+        self.office_focus = "questions"
+        self.office_question_index = 0
+        self.office_classification_index = 0
+        self.office_dialogue_playback = OfficeDialoguePlayback()
+        self.office_answer_case_id = None
+        self.office_answer_question_id = None
+        self.enter_exploration_from_office()
+        return True
+
+    def enter_exploration_from_office(self) -> None:
+        self.end_office_consultation()
+        self.clear_world_input_latches()
+        self.previous_time = None
+        self.screen = AppScreen.PLAY
+        self.show_location_label()
+
+    def complete_office_field_task(self) -> bool:
+        task = self.office.active_field_task
+        if task is None:
+            return False
+        result = FieldResult(
+            task_id=task.task_id,
+            case_id=task.case_id,
+            result_code="ANOMALOUS_URCHIN_FOUND",
+            discovered_fact_ids=("abnormal_urchin_present", "no_facility_damage"),
+            report_lines=("通常個体3", "異常個体1", "設備被害なし"),
+        )
+        if not self.office.complete_field_task(result):
+            return False
+        self.clear_world_input_latches()
+        self.model.cancel_auto_move()
+        self.camera_controller.cancel_focus()
+        self.previous_time = None
+        self.screen = AppScreen.OFFICE
+        return True
+
+    def update_pause_screen(self) -> None:
+        pyxel = self.pyxel
+        self.pointer.cancel()
+        self.cancel_double_tap_move_gesture()
+        self.model.cancel_auto_move()
+        self.pending_auto_move_goal = None
+        self.pending_cancel_auto_move = False
+        if pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_RETURN):
+            self.resume_from_pause()
+            return
+        if pyxel.btnp(pyxel.KEY_R):
+            self.reset_scene_for_debug()
+        if pyxel.btnp(pyxel.KEY_F):
+            self.fill_resources_for_debug()
+        if pyxel.btnp(pyxel.KEY_Z):
+            self.zero_resources_for_debug()
+        if pyxel.btnp(pyxel.KEY_C):
+            self.toggle_culling_for_debug()
+        if pyxel.btnp(pyxel.KEY_D):
+            self.debug_enabled = not self.debug_enabled
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+        if self.handle_pause_pointer_controls():
+            return
+        if self.pointer_snapshot.pressed:
+            return
+
+    def resume_from_pause(self) -> None:
+        self.screen = AppScreen.PLAY
+        self.cancel_double_tap_move_gesture()
+        self.previous_time = None
+
+    def can_open_water_study(self) -> bool:
+        return (
+            self.screen == AppScreen.PLAY
+            and self.model.combat_session is None
+            and not self.model.world_paused
+            and not self.camera_controller.freezes_world
+        )
+
+    def clear_world_input_latches(self) -> None:
+        self.pointer.cancel()
+        self.cancel_double_tap_move_gesture()
+        self.pending_action_pressed = False
+        self.pending_interact_pressed = False
+        self.pending_auto_move_goal = None
+        self.pending_cancel_auto_move = False
+        self.accumulator = 0.0
+
+    def enter_water_study(self) -> bool:
+        if not self.can_open_water_study():
+            return False
+        started_at = time.perf_counter()
+        self.ensure_water_study_planes()
+        self.clear_world_input_latches()
+        self.water_study_clock = 0.0
+        self.reset_water_specular_flash()
+        self.reset_water_study_jack_float()
+        self.screen = AppScreen.WATER_STUDY
+        self.water_study_open_latency_ms = (time.perf_counter() - started_at) * 1000.0
+        return True
+
+    def ensure_water_study_planes(self) -> None:
+        cache = getattr(self, "water_study_asset_cache", None)
+        if cache is not None and cache.ready:
+            self.water_study_planes = cache.static_layers
+            self.water_study_phase_planes = cache.phase_layers
+            return
+        cache = preload_water_study_cache(self.pyxel)
+        self.water_study_asset_cache = cache
+        self.water_study_planes = cache.static_layers
+        self.water_study_phase_planes = cache.phase_layers
+
+    def exit_water_study(self) -> bool:
+        if self.screen != AppScreen.WATER_STUDY:
+            return False
+        self.clear_world_input_latches()
+        self.previous_time = None
+        self.screen = AppScreen.PLAY
+        return True
+
+    def enter_pause_from_play(self) -> None:
+        if self.can_open_water_study():
+            self.enter_water_study()
+            return
+        if self.model.world_paused:
+            self.process_events(self.model.cancel_interaction())
+            self.camera_controller.cancel_focus()
+        self.screen = AppScreen.PAUSE
+        self.clear_world_input_latches()
+        self.model.cancel_auto_move()
+
+    def handle_water_study_shortcut(self) -> bool:
+        pyxel = self.pyxel
+        menu_key = getattr(pyxel, "KEY_M", None)
+        if menu_key is None or not pyxel.btnp(menu_key):
+            return False
+        if self.screen == AppScreen.WATER_STUDY:
+            self.exit_water_study()
+            return True
+        if self.can_open_water_study():
+            self.enter_water_study()
+            return True
+        return False
+
+    def update_water_study_screen(self, elapsed: float) -> None:
+        self.water_study_clock += max(0.0, elapsed)
+        self.clear_world_input_latches()
+        self.handle_water_study_profile_shortcuts()
+        self.update_water_micro_glints(elapsed)
+        self.update_water_specular_flash(elapsed)
+        self.update_water_study_jack_float(elapsed)
+        if self.mouse_pressed_in(self.water_study_close_rect()):
+            self.exit_water_study()
+
+    def new_water_study_jack_float(self) -> WaterStudyJackFloat:
+        immersion = self.water_study_jack_config().get("immersion", {})
+        base_submerge = float(immersion.get("base_submerge_px", WATER_STUDY_JACK_BASE_SUBMERGE_PX))
+        return WaterStudyJackFloat(
+            x=float(self.runtime.screen_width) * 0.5,
+            y=float(self.runtime.screen_height) * 0.66,
+            submerge_px=base_submerge,
+            sink_peak_px=base_submerge,
+        )
+
+    def reset_water_study_jack_float(self) -> None:
+        self.water_study_jack_float = self.new_water_study_jack_float()
+
+    def ensure_water_study_jack_float(self) -> WaterStudyJackFloat:
+        state = getattr(self, "water_study_jack_float", None)
+        if state is None:
+            state = self.new_water_study_jack_float()
+            self.water_study_jack_float = state
+        return state
+
+    def water_study_jack_config(self) -> dict:
+        water_study = self.runtime.raw.get("water_study", {})
+        raw = water_study.get("jack_immersion_float", {}) if isinstance(water_study, dict) else {}
+        return raw if isinstance(raw, dict) else {}
+
+    def water_study_jack_immersion_enabled(self) -> bool:
+        water_study = self.runtime.raw.get("water_study", {})
+        return bool(
+            isinstance(water_study, dict) and water_study.get("jack_immersion_float_enabled", True)
+        )
+
+    def water_study_jack_rest_eyes_closed(
+        self,
+        state: WaterStudyJackFloat | None = None,
+    ) -> bool:
+        visual = self.water_study_jack_config().get("visual", {})
+        if not isinstance(visual, dict) or not bool(visual.get("rest_eye_close_enabled", True)):
+            return False
+        raw_intervals = visual.get("rest_eye_close_interval_pattern_sec", ())
+        raw_durations = visual.get("rest_eye_close_duration_pattern_sec", ())
+        if not isinstance(raw_intervals, (list, tuple)) or not raw_intervals:
+            return False
+        if not isinstance(raw_durations, (list, tuple)) or not raw_durations:
+            return False
+        intervals = tuple(max(0.0, float(value)) for value in raw_intervals)
+        durations = tuple(max(0.0, float(value)) for value in raw_durations)
+        cycle_sec = sum(intervals)
+        if cycle_sec <= 0.0:
+            return False
+
+        elapsed = max(
+            0.0,
+            float((state or self.ensure_water_study_jack_float()).simulation_time_sec),
+        )
+        phase = elapsed % cycle_sec
+        interval_end = 0.0
+        for index, interval_sec in enumerate(intervals):
+            interval_end += interval_sec
+            duration_sec = min(interval_sec, durations[index % len(durations)])
+            if interval_end - duration_sec <= phase < interval_end:
+                return True
+        return False
+
+    @staticmethod
+    def water_study_jack_random(state: WaterStudyJackFloat) -> float:
+        state.rng_state = (1664525 * state.rng_state + 1013904223) & 0xFFFFFFFF
+        return state.rng_state / 4294967296.0
+
+    def choose_water_study_jack_force(self, state: WaterStudyJackFloat) -> None:
+        horizontal = self.water_study_jack_config().get("horizontal", {})
+        accel_min = float(horizontal.get("accel_min", 0.002)) * 3600.0
+        accel_max = float(horizontal.get("accel_max", 0.006)) * 3600.0
+        force_magnitude = accel_min + self.water_study_jack_random(state) * (accel_max - accel_min)
+        random_x = (self.water_study_jack_random(state) * 2.0 - 1.0) * force_magnitude
+        random_y = (self.water_study_jack_random(state) * 2.0 - 1.0) * force_magnitude
+        state.target_ax = state.target_ax * 0.65 + random_x * 0.35
+        state.target_ay = state.target_ay * 0.65 + random_y * 0.35
+        minimum_frames = int(horizontal.get("force_change_frames_min", 45))
+        maximum_frames = int(horizontal.get("force_change_frames_max", 120))
+        interval_frames = minimum_frames + int(
+            self.water_study_jack_random(state) * (maximum_frames - minimum_frames + 1)
+        )
+        state.force_remaining_sec = interval_frames / 60.0
+
+    def water_study_jack_bounds(self) -> tuple[float, float, float, float]:
+        width = float(self.runtime.screen_width)
+        height = float(self.runtime.screen_height)
+        horizontal = self.water_study_jack_config().get("horizontal", {})
+        soft_bounds = horizontal.get("soft_bounds", {})
+        x_ratio = soft_bounds.get("x_ratio", (0.15, 0.85))
+        y_ratio = soft_bounds.get("y_ratio", (0.2, 0.8))
+        return (
+            width * float(x_ratio[0]),
+            width * float(x_ratio[1]),
+            height * float(y_ratio[0]),
+            height * float(y_ratio[1]),
+        )
+
+    @staticmethod
+    def water_study_jack_edge_force(
+        position: float,
+        lower: float,
+        upper: float,
+        soft_range: float,
+    ) -> float:
+        if position < lower + soft_range:
+            proximity = (lower + soft_range - position) / max(soft_range, 1.0)
+            return WATER_STUDY_JACK_EDGE_FORCE_PX_SEC2 * min(2.5, proximity)
+        if position > upper - soft_range:
+            proximity = (position - (upper - soft_range)) / max(soft_range, 1.0)
+            return -WATER_STUDY_JACK_EDGE_FORCE_PX_SEC2 * min(2.5, proximity)
+        return 0.0
+
+    def step_water_study_jack_float(self, state: WaterStudyJackFloat, dt: float) -> None:
+        config = self.water_study_jack_config()
+        horizontal = config.get("horizontal", {})
+        state.force_remaining_sec -= dt
+        if state.force_remaining_sec <= 0.0:
+            self.choose_water_study_jack_force(state)
+
+        frame_amount = dt * 60.0
+        force_follow = float(horizontal.get("force_follow", WATER_STUDY_JACK_ACCEL_BLEND_PER_FRAME))
+        accel_blend = 1.0 - (1.0 - force_follow) ** frame_amount
+        state.ax += (state.target_ax - state.ax) * accel_blend
+        state.ay += (state.target_ay - state.ay) * accel_blend
+
+        lower_x, upper_x, lower_y, upper_y = self.water_study_jack_bounds()
+        edge_x = self.water_study_jack_edge_force(state.x, lower_x, upper_x, 38.0)
+        edge_y = self.water_study_jack_edge_force(state.y, lower_y, upper_y, 28.0)
+        total_ax = state.ax + edge_x
+        total_ay = state.ay + edge_y
+        state.vx += total_ax * dt
+        state.vy += total_ay * dt
+
+        linear_drag = float(horizontal.get("velocity_drag", WATER_STUDY_JACK_DAMPING_PER_FRAME))
+        damping = linear_drag**frame_amount
+        state.vx *= damping
+        state.vy *= damping
+        speed = math.hypot(state.vx, state.vy)
+        max_speed = float(horizontal.get("max_speed_px_per_frame", 0.2)) * 60.0
+        if speed > max_speed:
+            speed_scale = max_speed / speed
+            state.vx *= speed_scale
+            state.vy *= speed_scale
+        state.x += state.vx * dt
+        state.y += state.vy * dt
+        state.simulation_time_sec += dt
+        state.wave_phase = self.water_study_jack_wave_phase(state.simulation_time_sec)
+        state.wave_energy = self.water_study_jack_wave_energy(state.wave_phase)
+        self.step_water_study_jack_immersion(state, frame_amount)
+        self.step_water_study_jack_rotation(state, total_ax, total_ay, frame_amount)
+
+    @staticmethod
+    def water_study_jack_wave_phase(elapsed_sec: float) -> int:
+        frame = int(max(0.0, elapsed_sec) * APPROVED_LOOK04_PLUS_SPARKLE_FPS)
+        return frame % APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT
+
+    def water_study_jack_wave_energy(self, phase: int) -> float:
+        profile = self.water_study_jack_config().get(
+            "wave_energy_profile", WATER_STUDY_JACK_WAVE_ENERGY_PROFILE
+        )
+        if len(profile) != APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT:
+            profile = WATER_STUDY_JACK_WAVE_ENERGY_PROFILE
+        return float(profile[phase % len(profile)])
+
+    def try_water_study_jack_sink(self, state: WaterStudyJackFloat) -> bool:
+        if state.wave_phase == state.last_sink_phase_checked:
+            return False
+        state.last_sink_phase_checked = state.wave_phase
+        immersion = self.water_study_jack_config().get("immersion", {})
+        threshold = float(immersion.get("sink_threshold", WATER_STUDY_JACK_SINK_THRESHOLD))
+        if state.sink_cooldown_frames > 0 or state.wave_energy < threshold:
+            return False
+        probability = float(immersion.get("sink_probability", WATER_STUDY_JACK_SINK_PROBABILITY))
+        if self.water_study_jack_random(state) >= probability * state.wave_energy:
+            return False
+
+        impulse = float(immersion.get("sink_impulse", WATER_STUDY_JACK_SINK_IMPULSE))
+        state.submerge_v += impulse * state.wave_energy
+        minimum = int(
+            immersion.get("sink_cooldown_frames_min", WATER_STUDY_JACK_MIN_SINK_COOLDOWN_FRAMES)
+        )
+        maximum = int(
+            immersion.get("sink_cooldown_frames_max", WATER_STUDY_JACK_MAX_SINK_COOLDOWN_FRAMES)
+        )
+        state.sink_cooldown_frames = minimum + int(
+            self.water_study_jack_random(state) * (maximum - minimum + 1)
+        )
+        rotation = self.water_study_jack_config().get("rotation", {})
+        sink_spin = (
+            float(
+                rotation.get(
+                    "sink_spin_deg_per_sec_max",
+                    WATER_STUDY_JACK_SINK_SPIN_DEG_PER_FRAME * 60.0,
+                )
+            )
+            / 60.0
+        )
+        state.omega_deg_per_frame += (
+            (self.water_study_jack_random(state) * 2.0 - 1.0) * sink_spin * state.wave_energy
+        )
+        state.sink_count += 1
+        return True
+
+    def step_water_study_jack_immersion(
+        self,
+        state: WaterStudyJackFloat,
+        frame_amount: float,
+    ) -> None:
+        immersion = self.water_study_jack_config().get("immersion", {})
+        if state.sink_cooldown_frames > 0:
+            state.sink_cooldown_frames = max(
+                0, state.sink_cooldown_frames - max(1, round(frame_amount))
+            )
+        self.try_water_study_jack_sink(state)
+
+        base = float(immersion.get("base_submerge_px", WATER_STUDY_JACK_BASE_SUBMERGE_PX))
+        minimum = float(immersion.get("min_submerge_px", WATER_STUDY_JACK_MIN_SUBMERGE_PX))
+        maximum = float(immersion.get("max_submerge_px", WATER_STUDY_JACK_MAX_SUBMERGE_PX))
+        spring = float(immersion.get("spring", WATER_STUDY_JACK_SUBMERGE_SPRING))
+        damping = float(immersion.get("damping", WATER_STUDY_JACK_SUBMERGE_DAMPING))
+        previous_submerge = state.submerge_px
+        state.submerge_v += (base - state.submerge_px) * spring * frame_amount
+        state.submerge_v *= damping**frame_amount
+        state.submerge_px += state.submerge_v * frame_amount
+        state.submerge_px = max(minimum, min(maximum, state.submerge_px))
+        if state.submerge_px >= maximum and state.submerge_v > 0.0:
+            state.submerge_v = 0.0
+        if previous_submerge >= base and state.submerge_px < base:
+            state.submerge_px = base
+            state.submerge_v = 0.0
+            state.sink_peak_px = base
+        else:
+            state.sink_peak_px = max(state.sink_peak_px, state.submerge_px)
+
+    def step_water_study_jack_rotation(
+        self,
+        state: WaterStudyJackFloat,
+        total_ax: float,
+        total_ay: float,
+        frame_amount: float,
+    ) -> None:
+        rotation = self.water_study_jack_config().get("rotation", {})
+        vx_per_frame = state.vx / 60.0
+        vy_per_frame = state.vy / 60.0
+        fx_per_frame2 = total_ax / 3600.0
+        fy_per_frame2 = total_ay / 3600.0
+        torque = vx_per_frame * fy_per_frame2 - vy_per_frame * fx_per_frame2
+        torque_gain = float(rotation.get("torque_gain", WATER_STUDY_JACK_TORQUE_GAIN))
+        state.omega_deg_per_frame += torque * torque_gain * frame_amount
+        angular_drag = float(rotation.get("angular_drag", WATER_STUDY_JACK_ANGULAR_DRAG))
+        state.omega_deg_per_frame *= angular_drag**frame_amount
+        max_omega = float(rotation.get("max_angular_speed_deg_per_sec", 30.0)) / 60.0
+        state.omega_deg_per_frame = max(-max_omega, min(max_omega, state.omega_deg_per_frame))
+        state.angle_deg = (state.angle_deg + state.omega_deg_per_frame * frame_amount) % 360.0
+        self.update_water_study_jack_direction(state)
+
+    def update_water_study_jack_direction(self, state: WaterStudyJackFloat) -> None:
+        rotation = self.water_study_jack_config().get("rotation", {})
+        hysteresis = float(
+            rotation.get("direction_hysteresis_deg", WATER_STUDY_JACK_DIRECTION_HYSTERESIS_DEG)
+        )
+        current_center = state.direction_index * 45.0
+        delta = (state.angle_deg - current_center + 180.0) % 360.0 - 180.0
+        if abs(delta) > 22.5 + hysteresis:
+            state.direction_index = round(state.angle_deg / 45.0) % 8
+        state.visual_angle_deg = state.direction_index * 45.0
+
+    def update_water_study_jack_float(self, elapsed: float) -> None:
+        state = self.ensure_water_study_jack_float()
+        if not self.water_study_jack_immersion_enabled():
+            return
+        state.accumulator_sec += min(0.25, max(0.0, elapsed))
+        steps = 0
+        while state.accumulator_sec >= WATER_STUDY_JACK_FIXED_DT and steps < 15:
+            self.step_water_study_jack_float(state, WATER_STUDY_JACK_FIXED_DT)
+            state.accumulator_sec -= WATER_STUDY_JACK_FIXED_DT
+            steps += 1
+
+    def handle_water_study_profile_shortcuts(self) -> None:
+        pyxel = self.pyxel
+        for index, key_name in enumerate(("KEY_1", "KEY_2", "KEY_3", "KEY_4")):
+            key = getattr(pyxel, key_name, None)
+            if key is not None and pyxel.btnp(key):
+                self.water_study_profile_index = index
+                return
+
+    def water_study_profile(self) -> WaterStudyProfile:
+        index = int(getattr(self, "water_study_profile_index", 1))
+        return WATER_STUDY_PROFILES[index % len(WATER_STUDY_PROFILES)]
+
+    def water_study_motion_weights(self, elapsed_sec: float) -> tuple[float, float, float]:
+        phase_length = 8.0
+        blend_length = 2.0
+        phase = max(0.0, elapsed_sec) % (phase_length * 3.0)
+        mode = int(phase // phase_length)
+        local = phase - mode * phase_length
+        weights = [0.0, 0.0, 0.0]
+        if local < phase_length - blend_length:
+            weights[mode] = 1.0
+            return weights[0], weights[1], weights[2]
+        blend_t = (local - (phase_length - blend_length)) / blend_length
+        smooth = blend_t * blend_t * (3.0 - 2.0 * blend_t)
+        weights[mode] = 1.0 - smooth
+        weights[(mode + 1) % 3] = smooth
+        return weights[0], weights[1], weights[2]
+
+    def water_study_layer_offset(
+        self,
+        elapsed_sec: float,
+        *,
+        speed_x: float,
+        speed_y: float,
+        sine_amp: float,
+        orbit_x: float,
+        orbit_y: float,
+        phase: float,
+    ) -> tuple[float, float]:
+        calm, wide, circular = self.water_study_motion_weights(elapsed_sec)
+        amp = sine_amp * (0.35 * calm + 1.0 * wide + 0.7 * circular)
+        orbit_scale = 0.2 * calm + 0.45 * wide + 1.0 * circular
+        x = elapsed_sec * speed_x
+        x += amp * math.sin(elapsed_sec * 0.55 + phase)
+        x += orbit_x * orbit_scale * math.cos(elapsed_sec * 0.42 + phase * 1.7)
+        y = elapsed_sec * speed_y
+        y += amp * 0.65 * math.sin(elapsed_sec * 0.38 + phase * 0.7)
+        y += orbit_y * orbit_scale * math.sin(elapsed_sec * 0.46 + phase * 1.3)
+        return x, y
+
+    def ensure_water_micro_glint_state(self) -> None:
+        if not hasattr(self, "water_micro_glints"):
+            self.water_micro_glints = [
+                WaterMicroGlintFX() for _ in range(WATER_MICRO_GLINT_POOL_SIZE)
+            ]
+        if not hasattr(self, "water_micro_glint_frame"):
+            self.water_micro_glint_frame = 0
+        if not hasattr(self, "water_micro_glint_spawn_cursor"):
+            self.water_micro_glint_spawn_cursor = 0
+        if not hasattr(self, "water_micro_glint_last_spawn"):
+            self.water_micro_glint_last_spawn = None
+
+    def water_micro_glint_hash(self, salt: int) -> int:
+        self.ensure_water_micro_glint_state()
+        value = (
+            int(self.water_micro_glint_frame) * 1103515245
+            + int(self.water_micro_glint_spawn_cursor) * 12345
+            + int(salt) * 2654435761
+        )
+        return value & 0x7FFFFFFF
+
+    def active_water_micro_glint_count(self) -> int:
+        self.ensure_water_micro_glint_state()
+        return sum(1 for glint in self.water_micro_glints if glint.active)
+
+    def water_micro_glint_can_place(self, x: int, y: int) -> bool:
+        min_distance_sq = WATER_MICRO_GLINT_MIN_DISTANCE_PX**2
+        last_spawn = self.water_micro_glint_last_spawn
+        if last_spawn is not None and (
+            (x - last_spawn[0]) ** 2 + (y - last_spawn[1]) ** 2 < min_distance_sq
+        ):
+            return False
+        return all(
+            not glint.active or (x - glint.x) ** 2 + (y - glint.y) ** 2 >= min_distance_sq
+            for glint in self.water_micro_glints
+        )
+
+    def try_spawn_water_micro_glint(self) -> bool:
+        self.ensure_water_micro_glint_state()
+        free_slot = next((glint for glint in self.water_micro_glints if not glint.active), None)
+        if free_slot is None:
+            return False
+        margin = 4
+        x_span = max(1, self.runtime.screen_width - margin * 2)
+        y_span = max(1, self.runtime.screen_height - margin * 2)
+        for attempt in range(24):
+            x = margin + self.water_micro_glint_hash(37 + attempt * 2) % x_span
+            y = margin + self.water_micro_glint_hash(71 + attempt * 2) % y_span
+            if not self.water_micro_glint_can_place(x, y):
+                continue
+            life_span = WATER_MICRO_GLINT_MAX_LIFE_FRAMES - WATER_MICRO_GLINT_MIN_LIFE_FRAMES + 1
+            colors = (12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 5, 5, 5, 7)
+            free_slot.active = True
+            free_slot.x = x
+            free_slot.y = y
+            free_slot.age_frames = 0
+            free_slot.life_frames = (
+                WATER_MICRO_GLINT_MIN_LIFE_FRAMES
+                + self.water_micro_glint_hash(113 + attempt) % life_span
+            )
+            free_slot.color = colors[self.water_micro_glint_hash(149 + attempt) % len(colors)]
+            free_slot.length_px = 2 if self.water_micro_glint_hash(181 + attempt) % 5 == 0 else 1
+            self.water_micro_glint_last_spawn = (x, y)
+            self.water_micro_glint_spawn_cursor += attempt + 1
+            return True
+        self.water_micro_glint_spawn_cursor += 1
+        return False
+
+    def update_water_micro_glints(self, elapsed: float) -> None:
+        self.ensure_water_micro_glint_state()
+        steps = max(1, int(round(max(0.0, elapsed) * float(self.runtime.target_fps))))
+        for _ in range(min(4, steps)):
+            self.water_micro_glint_frame += 1
+            for glint in self.water_micro_glints:
+                if not glint.active:
+                    continue
+                glint.age_frames += 1
+                if glint.age_frames >= glint.life_frames:
+                    glint.active = False
+            target = WATER_MICRO_GLINT_MIN_ACTIVE + (
+                (self.water_micro_glint_frame // 30) * 7 + 3
+            ) % (WATER_MICRO_GLINT_MAX_ACTIVE - WATER_MICRO_GLINT_MIN_ACTIVE + 1)
+            while self.active_water_micro_glint_count() < target:
+                if not self.try_spawn_water_micro_glint():
+                    break
+
+    def ensure_water_specular_flash_state(self) -> WaterSpecularFlashFX:
+        state = getattr(self, "water_specular_flash", None)
+        if state is None:
+            state = WaterSpecularFlashFX()
+            self.water_specular_flash = state
+        if not hasattr(self, "water_specular_flash_frame"):
+            self.water_specular_flash_frame = 0
+        if not hasattr(self, "water_specular_flash_next_spawn_frame"):
+            self.water_specular_flash_next_spawn_frame = 90
+        if not hasattr(self, "water_specular_flash_rng_state"):
+            self.water_specular_flash_rng_state = 0x4C454E53
+        return state
+
+    def reset_water_specular_flash(self) -> None:
+        self.water_specular_flash = WaterSpecularFlashFX()
+        self.water_specular_flash_frame = 0
+        self.water_specular_flash_next_spawn_frame = 90
+        self.water_specular_flash_rng_state = 0x4C454E53
+
+    def water_specular_flash_random(self) -> float:
+        self.ensure_water_specular_flash_state()
+        self.water_specular_flash_rng_state = (
+            1664525 * self.water_specular_flash_rng_state + 1013904223
+        ) & 0xFFFFFFFF
+        return self.water_specular_flash_rng_state / 4294967296.0
+
+    def water_specular_flash_can_place(self, x: int, y: int) -> bool:
+        center_x = self.runtime.screen_width // 2
+        center_y = self.runtime.screen_height // 2
+        if abs(x - center_x) < 70 and abs(y - center_y) < 18:
+            return False
+        close = self.water_study_close_rect()
+        if x >= close.x - 12 and y <= close.y + close.height + 10:
+            return False
+        jack = self.ensure_water_study_jack_float()
+        return (x - jack.x) ** 2 + (y - jack.y) ** 2 >= 36**2
+
+    def try_spawn_water_specular_flash(self) -> bool:
+        state = self.ensure_water_specular_flash_state()
+        if state.active:
+            return False
+        margin_x = 18
+        margin_y = 14
+        x_span = max(1, self.runtime.screen_width - margin_x * 2)
+        y_span = max(1, self.runtime.screen_height - margin_y * 2)
+        for _ in range(20):
+            x = margin_x + int(self.water_specular_flash_random() * x_span)
+            y = margin_y + int(self.water_specular_flash_random() * y_span)
+            if not self.water_specular_flash_can_place(x, y):
+                continue
+            life_span = (
+                WATER_SPECULAR_FLASH_MAX_LIFE_FRAMES - WATER_SPECULAR_FLASH_MIN_LIFE_FRAMES + 1
+            )
+            state.active = True
+            state.x = x
+            state.y = y
+            state.age_frames = 0
+            state.life_frames = WATER_SPECULAR_FLASH_MIN_LIFE_FRAMES + int(
+                self.water_specular_flash_random() * life_span
+            )
+            state.style = "lens" if self.water_specular_flash_random() < 0.34 else "spark"
+            state.size_px = 4 if self.water_specular_flash_random() < 0.25 else 3
+            return True
+        return False
+
+    def schedule_next_water_specular_flash(self) -> None:
+        span = (
+            WATER_SPECULAR_FLASH_INTERVAL_MAX_FRAMES - WATER_SPECULAR_FLASH_INTERVAL_MIN_FRAMES + 1
+        )
+        self.water_specular_flash_next_spawn_frame = (
+            self.water_specular_flash_frame
+            + WATER_SPECULAR_FLASH_INTERVAL_MIN_FRAMES
+            + int(self.water_specular_flash_random() * span)
+        )
+
+    def update_water_specular_flash(self, elapsed: float) -> None:
+        state = self.ensure_water_specular_flash_state()
+        steps = max(1, int(round(max(0.0, elapsed) * float(self.runtime.target_fps))))
+        for _ in range(min(4, steps)):
+            self.water_specular_flash_frame += 1
+            if state.active:
+                state.age_frames += 1
+                if state.age_frames >= state.life_frames:
+                    state.active = False
+                continue
+            if self.water_specular_flash_frame < self.water_specular_flash_next_spawn_frame:
+                continue
+            if self.try_spawn_water_specular_flash():
+                self.schedule_next_water_specular_flash()
+
+    def reset_scene_for_debug(self) -> None:
+        self.model.reset_scene()
+        self.audio.reset_event_history()
+        self.effects.reset()
+        self.camera_controller.reset(Vec3(self.model.player.x, 0.0, self.model.player.z))
+        self.model.snap_buddy(self.camera())
+        self.pointer.cancel()
+        self.cancel_double_tap_move_gesture()
+        self.pending_action_pressed = False
+        self.pending_interact_pressed = False
+        self.pending_auto_move_goal = None
+        self.pending_cancel_auto_move = False
+        self.last_denied_reason = ""
+        self.last_denied_remaining = 0.0
+        self.show_location_label()
+        self.previous_time = None
+        self.accumulator = 0.0
+        self.hitstop_remaining = 0.0
+        self._processed_hitstop_event_ids.clear()
+        self.last_combat_scene_camera = None
+        self.combat_camera_restore = None
+
+    def fill_resources_for_debug(self) -> None:
+        self.model.water = self.model.water_max
+        self.model.energy = self.model.energy_max
+        self.last_denied_reason = ""
+        self.last_denied_remaining = 0.0
+
+    def zero_resources_for_debug(self) -> None:
+        self.model.water = 0.0
+        self.model.energy = 0.0
+        self.model.player.barrier_active = False
+        self.last_denied_reason = ""
+        self.last_denied_remaining = 0.0
+
+    def toggle_culling_for_debug(self) -> None:
+        self.model.culling_enabled = not self.model.culling_enabled
+        self.model.refresh_active_enemies()
+
+    def handle_pause_pointer_controls(self) -> bool:
+        if self.mouse_pressed_in(self.resume_button_rect()):
+            self.resume_from_pause()
+            return True
+        if self.mouse_pressed_in(self.pause_reset_button_rect()):
+            self.reset_scene_for_debug()
+            return True
+        if self.mouse_pressed_in(self.pause_audio_button_rect()):
+            self.audio.toggle_mute()
+            return True
+        if self.mouse_pressed_in(self.pause_dev_entry_button_rect()):
+            self.debug_enabled = not self.debug_enabled
+            return True
+        return False
+
+    def cancel_double_tap_move_gesture(self) -> None:
+        recognizer = getattr(self, "double_tap_move", None)
+        if recognizer is not None:
+            recognizer.cancel()
+
+    def update_play_screen(self, elapsed: float) -> None:
+        pyxel = self.pyxel
+        if pyxel.btnp(pyxel.KEY_ESCAPE):
+            if self.model.world_paused:
+                self.process_events(self.model.cancel_interaction())
+                self.camera_controller.cancel_focus()
+            self.screen = AppScreen.PAUSE
+            self.pointer.cancel()
+            self.cancel_double_tap_move_gesture()
+            self.pending_auto_move_goal = None
+            self.pending_cancel_auto_move = False
+            self.model.cancel_auto_move()
+            return
+        if self.mouse_pressed_in(self.pause_button_rect()):
+            self.enter_pause_from_play()
+            return
+        if self.mouse_pressed_in(self.sound_button_rect()):
+            self.audio.toggle_mute()
+            return
+
+        self.handle_debug_camera_shortcuts()
+        if self.model.world_paused:
+            self.pointer.cancel()
+            self.cancel_double_tap_move_gesture()
+            self.pending_auto_move_goal = None
+            self.pending_cancel_auto_move = False
+            interaction = self.model.interaction
+            if interaction is not None and interaction.kind in {"water_refill", "energy_refill"}:
+                if self.mouse_pressed_in(self.interact_button_rect()):
+                    self.process_events(self.model.cancel_interaction())
+                    self.camera_controller.cancel_focus()
+                    self.update_camera_controller(elapsed)
+                    return
+                if pyxel.btnp(pyxel.KEY_RETURN):
+                    self.process_events(self.model.complete_interaction())
+                    self.update_camera_controller(elapsed)
+                    return
+            elif interaction is not None and interaction.kind == "inspect":
+                if not self.inspect_completion_requested():
+                    paused_events = self.model.update_paused(elapsed)
+                    self.update_camera_controller(elapsed)
+                    self.process_events(paused_events)
+                    self.effects.update(elapsed, self.model)
+                    return
+                self.process_events(self.model.complete_interaction())
+                self.camera_controller.cancel_focus()
+                self.update_camera_controller(elapsed)
+                return
+            paused_events = self.model.update_paused(elapsed)
+            self.update_camera_controller(elapsed)
+            self.process_events(paused_events)
+            self.effects.update(elapsed, self.model)
+            return
+
+        input_camera = self.camera()
+        if self.camera_controller.freezes_world:
+            self.pointer.cancel()
+            self.cancel_double_tap_move_gesture()
+            self.pending_auto_move_goal = None
+            self.pending_cancel_auto_move = False
+            self.model.cancel_auto_move()
+            self.update_camera_controller(elapsed)
+            self.effects.update(elapsed, self.model)
+            return
+
+        keyboard_intent = self.keyboard_intent()
+        pointer_intent = self.pointer_intent(elapsed)
+        ui_button_intent = self.ui_button_intent()
+        ground_pointer_cancel_intent = self.ground_pointer_cancel_intent()
+        double_tap_intent = self.double_tap_move_intent(elapsed, self.scene_camera(input_camera))
+        if keyboard_intent.action_pressed or ui_button_intent.action_pressed:
+            self.pending_action_pressed = True
+        if keyboard_intent.interact_pressed or ui_button_intent.interact_pressed:
+            self.pending_interact_pressed = True
+        base_intent = merge_intents(
+            keyboard_intent,
+            pointer_intent,
+            ui_button_intent,
+            ground_pointer_cancel_intent,
+            double_tap_intent,
+        )
+        if base_intent.auto_move_goal_x is not None and base_intent.auto_move_goal_z is not None:
+            self.pending_auto_move_goal = (
+                base_intent.auto_move_goal_x,
+                base_intent.auto_move_goal_z,
+            )
+            self.pending_cancel_auto_move = False
+        elif base_intent.cancel_auto_move:
+            self.pending_cancel_auto_move = True
+        if self.update_hitstop(elapsed, base_intent):
+            return
+
+        self.accumulator += elapsed
+        fixed_dt = self.runtime.fixed_dt
+        max_steps = int(self.runtime.raw["simulation"]["max_steps_per_callback"])
+        steps = 0
+        all_events = []
+        while self.accumulator >= fixed_dt and steps < max_steps:
+            first_step = steps == 0
+            pending_auto_move_goal = self.pending_auto_move_goal if first_step else None
+            one_shot_auto_goal_x = (
+                pending_auto_move_goal[0] if pending_auto_move_goal is not None else None
+            )
+            one_shot_auto_goal_z = (
+                pending_auto_move_goal[1] if pending_auto_move_goal is not None else None
+            )
+            one_shot_cancel_auto_move = self.pending_cancel_auto_move if first_step else False
+            step_intent = InputIntent(
+                screen_x=base_intent.screen_x,
+                screen_y=base_intent.screen_y,
+                strength=base_intent.strength,
+                barrier=base_intent.barrier,
+                action_pressed=self.pending_action_pressed,
+                interact_pressed=self.pending_interact_pressed,
+                auto_move_goal_x=one_shot_auto_goal_x,
+                auto_move_goal_z=one_shot_auto_goal_z,
+                cancel_auto_move=one_shot_cancel_auto_move,
+            )
+            self.pending_action_pressed = False
+            self.pending_interact_pressed = False
+            model_camera = (
+                self.scene_camera(input_camera)
+                if self.model.combat_session is not None
+                else input_camera
+            )
+            events = self.model.step(step_intent, model_camera, fixed_dt)
+            if self.renderer is not None:
+                self.renderer.update_abnormal_urchin_arms(
+                    self.model,
+                    model_camera,
+                    fixed_dt,
+                )
+            if first_step:
+                self.pending_auto_move_goal = None
+                self.pending_cancel_auto_move = False
+            all_events.extend(events)
+            self.accumulator -= fixed_dt
+            steps += 1
+            if self.model.world_paused:
+                self.accumulator = 0.0
+                break
+
+        self.update_camera_controller(elapsed)
+
+        if steps >= max_steps and self.accumulator >= fixed_dt:
+            self.accumulator = 0.0
+            self.model.debug.discarded_elapsed_count += 1
+        self.model.debug.fixed_steps_last_callback = steps
+        self.process_events(all_events)
+        self.effects.update(elapsed, self.model)
+
+    def process_events(self, events) -> None:
+        if not events:
+            return
+        for event in events:
+            if event.kind == "combat_started":
+                self.combat_camera_restore = None
+                self.combat_camera_snapshot_zoom = self.camera_zoom(self.camera())
+            elif event.kind == "combat_restored":
+                self.start_combat_camera_restore()
+                if self.office_field_event_matches(event.actor_id):
+                    self.complete_office_field_task()
+            elif event.kind == "discharge_succeeded":
+                if not bool(
+                    event.payload.get("combat_counter")
+                ) and self.office_field_event_matches(event.target_id):
+                    self.complete_office_field_task()
+            elif event.kind == "action_denied":
+                self.set_denied_reason(str(event.payload.get("reason", "denied")))
+            elif event.kind == "inspection_completed":
+                self.show_location_label()
+                if self.office_field_event_matches(event.target_id):
+                    self.complete_office_field_task()
+            elif event.kind == "interaction_started" and event.target_id is not None:
+                target = self.world.object_by_id(event.target_id)
+                interaction_kind = str(event.payload.get("interaction_kind", ""))
+                hold_sec = (
+                    math.inf
+                    if interaction_kind == "inspect"
+                    else float(event.payload.get("duration_sec", 0.8)) + 0.15
+                )
+                if interaction_kind == "water_refill":
+                    self.camera_controller.start_focus_point(
+                        self.player_focus_point(), hold_sec=hold_sec
+                    )
+                elif interaction_kind == "energy_refill":
+                    self.camera_controller.start_focus_point(
+                        self.buddy_focus_point(), hold_sec=hold_sec
+                    )
+                elif target is not None:
+                    self.camera_controller.start_focus_demo(target, hold_sec=hold_sec)
+                else:
+                    enemy = self.model.enemy_by_id(event.target_id)
+                    if enemy is not None:
+                        self.camera_controller.start_focus_point(
+                            self.enemy_focus_point(enemy), hold_sec=hold_sec
+                        )
+        camera_reaction_delay = self.request_hitstop_from_events(events)
+        self.effects.process_events(
+            events,
+            self.model,
+            camera_reaction_delay=camera_reaction_delay,
+            camera_reactions_allowed=self.combat_camera_reactions_allowed(),
+        )
+        self.audio.play_events(events)
+
+    def office_field_event_matches(self, target_id: str | None) -> bool:
+        office = getattr(self, "office", None)
+        task = None if office is None else office.active_field_task
+        return (
+            task is not None
+            and task.completion_condition_id == "inspect_anomaly_source"
+            and target_id == "urchin_abnormal_04"
+        )
+
+    def update_hitstop(self, elapsed: float, intent: InputIntent) -> bool:
+        if self.hitstop_remaining <= 0.0:
+            return False
+        if not intent.barrier:
+            self.model.player.barrier_active = False
+        self.hitstop_remaining = max(0.0, self.hitstop_remaining - max(0.0, elapsed))
+        self.accumulator = 0.0
+        self.model.debug.fixed_steps_last_callback = 0
+        self.effects.update(elapsed, self.model)
+        return True
+
+    def request_hitstop_from_events(self, events) -> float:
+        effects_config = self.runtime.raw["effects"]
+        if not bool(effects_config.get("hitstop_enabled", False)):
+            return 0.0
+        event_durations = effects_config.get("hitstop_event_ms", {})
+        cap_sec = float(effects_config.get("hitstop_hard_cap_ms", 66.6666666667)) / 1000.0
+        requested = 0.0
+        for event in events:
+            if event.event_id in self._processed_hitstop_event_ids:
+                continue
+            duration_ms = float(event_durations.get(event.kind, 0.0))
+            if duration_ms <= 0.0:
+                continue
+            self._processed_hitstop_event_ids.add(event.event_id)
+            requested = max(requested, min(duration_ms / 1000.0, cap_sec))
+        if requested > 0.0:
+            self.hitstop_remaining = max(self.hitstop_remaining, requested)
+            self.accumulator = 0.0
+            return self.hitstop_remaining
+        return 0.0
+
+    def player_focus_point(self) -> Vec3:
+        return Vec3(
+            self.model.player.x,
+            self.model.player_cube_size * 0.5,
+            self.model.player.z,
+        )
+
+    def buddy_focus_point(self) -> Vec3:
+        return Vec3(
+            self.model.buddy.x,
+            max(0.0, self.model.buddy.y - self.model.buddy_cube_size),
+            self.model.buddy.z,
+        )
+
+    def enemy_focus_point(self, enemy) -> Vec3:
+        return Vec3(enemy.x, max(6.0, self.model.enemy_radius(enemy)), enemy.z)
+
+    def combat_camera_reactions_allowed(self) -> bool:
+        return (
+            self.camera_controller.mode_name in {"FOLLOW", "OVERVIEW"}
+            and self.camera_controller.base_blend is None
+        )
+
+    def handle_debug_camera_shortcuts(self) -> None:
+        pyxel = self.pyxel
+        focus_key = getattr(pyxel, "KEY_F", None)
+        pan_key = getattr(pyxel, "KEY_P", None)
+        if focus_key is not None and pyxel.btnp(focus_key):
+            focus_target = self.nearest_focus_object()
+            if focus_target is not None:
+                self.camera_controller.start_focus_demo(focus_target)
+        if pan_key is not None and pyxel.btnp(pan_key):
+            self.camera_controller.start_pan_demo()
+
+    def nearest_focus_object(self):
+        inspectables = [obj for obj in self.world.objects if obj.inspectable]
+        if not inspectables:
+            return None
+        return min(
+            inspectables,
+            key=lambda obj: (
+                (obj.x - self.model.player.x) ** 2 + (obj.z - self.model.player.z) ** 2,
+                obj.id,
+            ),
+        )
+
+    def keyboard_intent(self) -> InputIntent:
+        pyxel = self.pyxel
+        action_mode = self.action_button_mode()
+        screen_x = float(pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.KEY_D))
+        screen_x -= float(pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.KEY_A))
+        screen_y = float(pyxel.btn(pyxel.KEY_DOWN) or pyxel.btn(pyxel.KEY_S))
+        screen_y -= float(pyxel.btn(pyxel.KEY_UP) or pyxel.btn(pyxel.KEY_W))
+        direction = normalize2(screen_x, screen_y)
+        strength = 1.0 if abs(screen_x) > 0.0 or abs(screen_y) > 0.0 else 0.0
+        action_down = pyxel.btn(pyxel.KEY_X)
+        return InputIntent(
+            screen_x=direction.x,
+            screen_y=direction.y,
+            strength=strength,
+            barrier=pyxel.btn(pyxel.KEY_SPACE) or (action_mode == "GUARD" and action_down),
+            action_pressed=False if action_mode == "GUARD" else pyxel.btnp(pyxel.KEY_X),
+            interact_pressed=pyxel.btnp(pyxel.KEY_E),
+        )
+
+    def read_pointer_snapshot(self) -> PointerSnapshot:
+        browser_pointer = self.read_browser_pointer_snapshot()
+        if browser_pointer is not None:
+            return browser_pointer
+
+        pyxel = self.pyxel
+        mouse_button = getattr(pyxel, "MOUSE_BUTTON_LEFT", 0)
+        x, y = self.clamp_pointer_position(float(pyxel.mouse_x), float(pyxel.mouse_y))
+        return PointerSnapshot(
+            down=pyxel.btn(mouse_button),
+            pressed=pyxel.btnp(mouse_button),
+            x=x,
+            y=y,
+        )
+
+    def read_browser_pointer_snapshot(self) -> PointerSnapshot | None:
+        try:
+            import js  # type: ignore[import-not-found]
+        except ImportError:
+            return None
+
+        try:
+            bridge = getattr(js.window, "__driftWithMePointer", None)
+        except Exception:
+            return None
+        if bridge is None:
+            return None
+
+        try:
+            down = bool(bridge.down)
+            pressed_flag = bool(bridge.pressed)
+            sequence = int(bridge.sequence)
+            x = float(bridge.x)
+            y = float(bridge.y)
+        except Exception:
+            return None
+        if not math.isfinite(x) or not math.isfinite(y):
+            return None
+
+        pressed = pressed_flag and sequence != self.browser_pointer_sequence_seen
+        if pressed:
+            self.browser_pointer_sequence_seen = sequence
+        x, y = self.clamp_pointer_position(x, y)
+        return PointerSnapshot(down=down, pressed=pressed, x=x, y=y)
+
+    def clamp_pointer_position(self, x: float, y: float) -> tuple[float, float]:
+        max_x = float(self.runtime.screen_width - 1)
+        max_y = float(self.runtime.screen_height - 1)
+        return max(0.0, min(max_x, x)), max(0.0, min(max_y, y))
+
+    def pointer_intent(self, elapsed: float) -> InputIntent:
+        pointer = self.pointer_snapshot
+        return self.pointer.update(
+            down=pointer.down,
+            x=pointer.x,
+            y=pointer.y,
+            dt=elapsed,
+            ui_rects=self.active_ui_rects(),
+        )
+
+    def ground_pointer_cancel_intent(self) -> InputIntent:
+        pointer = self.pointer_snapshot
+        if not pointer.pressed:
+            return InputIntent()
+        if any(rect.contains(pointer.x, pointer.y) for rect in self.active_ui_rects()):
+            return InputIntent()
+        return InputIntent(cancel_auto_move=True)
+
+    def double_tap_move_intent(
+        self, elapsed: float, camera: CameraState | AffineCameraState
+    ) -> InputIntent:
+        if not bool(self.runtime.raw.get("auto_move", {}).get("enabled", False)):
+            return InputIntent()
+        pointer = self.pointer_snapshot
+        request = self.double_tap_move.update(
+            down=pointer.down,
+            x=pointer.x,
+            y=pointer.y,
+            dt=elapsed,
+            ui_rects=self.active_ui_rects(),
+            camera=camera,
+            accepting_world_input=self.hitstop_remaining <= 0.0,
+        )
+        if request is None:
+            return InputIntent()
+
+        point = self.screen_to_ground(request.camera, request.screen_x, request.screen_y)
+        if point is None or not self.world.walkable_rect.contains_point(point.x, point.y):
+            self.reject_auto_move_goal("auto_move_blocked")
+            return InputIntent()
+        if self.foreground_object_blocks_ground_pick(
+            request.camera, request.screen_x, request.screen_y, point.x, point.y
+        ):
+            self.reject_auto_move_goal("auto_move_blocked")
+            return InputIntent()
+        return InputIntent(auto_move_goal_x=point.x, auto_move_goal_z=point.y)
+
+    def screen_to_ground(
+        self, camera: CameraState | AffineCameraState, screen_x: float, screen_y: float
+    ):
+        if isinstance(camera, AffineCameraState):
+            return screen_to_ground_affine(camera, screen_x, screen_y)
+        return screen_to_ground_point(camera, screen_x, screen_y)
+
+    def foreground_object_blocks_ground_pick(
+        self,
+        camera: CameraState | AffineCameraState,
+        screen_x: float,
+        screen_y: float,
+        ground_x: float,
+        ground_z: float,
+    ) -> bool:
+        auto_move = self.runtime.raw.get("auto_move", {})
+        if not bool(auto_move.get("foreground_pick_block_enabled", True)):
+            return False
+        renderer = self.renderer
+        if renderer is None:
+            return False
+        ground_projection = camera.project(Vec3(ground_x, 0.0, ground_z))
+        if ground_projection is None:
+            return False
+        margin = self.foreground_pick_margin_px()
+        for obj in self.world.objects:
+            if not (obj.solid or obj.occludes_player or obj.inspectable):
+                continue
+            obj_depth = renderer.object_occlusion_depth(obj, camera)
+            if obj_depth is None or obj_depth > ground_projection.depth + 1e-6:
+                continue
+            bounds = renderer.object_ground_pick_block_bounds(obj, camera)
+            if bounds is not None and bounds.contains(screen_x, screen_y, margin):
+                return True
+        return False
+
+    def foreground_pick_margin_px(self) -> float:
+        auto_move = self.runtime.raw.get("auto_move", {})
+        ui_scale = self.runtime.screen_height / float(
+            self.runtime.raw["display"]["reference_ui_height"]
+        )
+        return float(auto_move.get("foreground_pick_margin_ref_px", 2.0)) * ui_scale
+
+    def reject_auto_move_goal(self, reason: str) -> None:
+        self.set_denied_reason(reason)
+        self.audio.play_preview("action_denied")
+
+    def set_denied_reason(self, reason: str) -> None:
+        self.last_denied_reason = reason
+        self.last_denied_remaining = self.denied_feedback_duration()
+
+    def update_denied_feedback(self, elapsed: float) -> None:
+        if not self.last_denied_reason:
+            self.last_denied_remaining = 0.0
+            return
+        remaining = getattr(self, "last_denied_remaining", 0.0)
+        if remaining <= 0.0:
+            self.last_denied_reason = ""
+            self.last_denied_remaining = 0.0
+            return
+        self.last_denied_remaining = max(0.0, remaining - max(0.0, elapsed))
+        if self.last_denied_remaining <= 0.0:
+            self.last_denied_reason = ""
+
+    def denied_feedback_duration(self) -> float:
+        return max(0.0, float(self.runtime.raw.get("ui", {}).get("denied_feedback_sec", 1.2)))
+
+    def location_label_duration(self) -> float:
+        return max(0.0, float(self.runtime.raw.get("ui", {}).get("location_label_sec", 2.4)))
+
+    def show_location_label(self) -> None:
+        self.location_label_remaining = self.location_label_duration()
+
+    def update_location_label(self, elapsed: float) -> None:
+        remaining = getattr(self, "location_label_remaining", 0.0)
+        if remaining <= 0.0:
+            self.location_label_remaining = 0.0
+            return
+        self.location_label_remaining = max(0.0, remaining - max(0.0, elapsed))
+
+    def location_label_visible(self) -> bool:
+        return (
+            bool(getattr(self, "debug_enabled", False))
+            or getattr(self, "location_label_remaining", 0.0) > 0.0
+        )
+
+    def ui_button_intent(self) -> InputIntent:
+        action_mode = self.action_button_mode()
+        if action_mode == "GUARD":
+            return InputIntent(barrier=self.mouse_down_in(self.action_button_rect()))
+        return InputIntent(
+            action_pressed=self.mouse_pressed_in(self.action_button_rect()),
+            interact_pressed=self.mouse_pressed_in(self.interact_button_rect()),
+        )
+
+    def mouse_pressed_in(self, rect: Rect) -> bool:
+        pointer = self.pointer_snapshot
+        return pointer.pressed and rect.contains(pointer.x, pointer.y)
+
+    def mouse_down_in(self, rect: Rect) -> bool:
+        pointer = self.pointer_snapshot
+        return pointer.down and rect.contains(pointer.x, pointer.y)
+
+    def inspect_completion_requested(self) -> bool:
+        pyxel = self.pyxel
+        if pyxel.btnp(pyxel.KEY_RETURN):
+            return True
+        pointer = self.pointer_snapshot
+        if not pointer.pressed:
+            return False
+        if self.interaction_done_button_rect().contains(pointer.x, pointer.y):
+            return True
+        return not self.inspect_panel_rect().contains(pointer.x, pointer.y)
+
+    def active_ui_rects(self) -> tuple[Rect, ...]:
+        screen = getattr(self, "screen", AppScreen.PLAY)
+        if screen == AppScreen.WATER_STUDY:
+            return (self.water_study_close_rect(),)
+        if screen == AppScreen.OFFICE:
+            if getattr(self, "office_consultation", None) is not None:
+                return (self.office_consultation_button_rect(), self.office_dialog_rect())
+            office = getattr(self, "office", None)
+            case = None if office is None else office.current_case
+            session = None if office is None else office.current_session
+            rects: list[Rect] = [
+                self.office_consultation_button_rect(),
+                self.office_field_debug_rect(),
+                self.office_dialog_rect(),
+            ]
+            if self.office_dialogue_requires_advance():
+                return tuple(rects)
+            if case is not None and session is not None:
+                if session.asked_question_ids:
+                    rects.append(self.office_answer_footer_rect())
+                if session.state in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
+                    visible_question_count = self.office_visible_question_count()
+                    rects.extend(
+                        self.office_question_rect(index, len(case.questions))
+                        for index in range(visible_question_count)
+                    )
+                    rects.extend(
+                        self.office_classification_rect(index)
+                        for index in range(len(CLASSIFICATION_ORDER))
+                    )
+                else:
+                    rects.append(self.office_footer_action_rect())
+            else:
+                rects.append(self.office_footer_action_rect())
+            return tuple(rects)
+        interaction = self.model.interaction
+        if interaction is not None and interaction.kind == "inspect":
+            return (
+                self.pause_button_rect(),
+                self.sound_button_rect(),
+                self.inspect_panel_rect(),
+                self.interaction_done_button_rect(),
+            )
+        rects = [
+            self.action_button_rect(),
+            self.interact_button_rect(),
+            self.pause_button_rect(),
+            self.sound_button_rect(),
+            self.minimap_rect(),
+        ]
+        if interaction is not None and interaction.kind in {"water_refill", "energy_refill"}:
+            rects.append(self.interaction_chip_rect())
+        elif self.last_denied_reason:
+            rects.append(self.tooltip_rect(two_lines=False))
+        return tuple(rects)
+
+    def office_rect(self, x: float, y: float, width: float, height: float) -> Rect:
+        scale_x = self.runtime.screen_width / 512.0
+        scale_y = self.runtime.screen_height / 236.0
+        return Rect(x * scale_x, y * scale_y, width * scale_x, height * scale_y)
+
+    def office_header_rect(self) -> Rect:
+        return self.office_rect(0, 0, 512, 27)
+
+    def office_field_debug_rect(self) -> Rect:
+        return self.office_rect(244, 3, 92, 21)
+
+    def office_consultation_button_rect(self) -> Rect:
+        return self.office_rect(140, 3, 96, 21)
+
+    def office_supervisor_portrait_rect(self) -> Rect:
+        panel = self.office_visitor_rect()
+        title_height = self.office_rect(0, 0, 0, 20).height
+        _, font_height = self.ui_renderer.visual_vertical_metrics("office_japanese")
+        title_bottom = round(panel.y + 2 + max(0, (title_height - font_height) / 2)) + font_height
+        inset = 4 if self.runtime.profile.name == "high" else 3
+        x = int(panel.x) + inset + 1
+        y = max(int(panel.y + self.office_rect(0, 19, 0, 0).y), title_bottom + 2)
+        right = int(panel.x) + int(panel.width) - inset - 1
+        bottom = int(panel.y) + int(panel.height) - inset - 1
+        return Rect(x, y, right - x, bottom - y)
+
+    def office_visitor_rect(self) -> Rect:
+        return self.office_rect(6, 31, 124, 173)
+
+    def office_visitor_info_rect(self) -> Rect:
+        area = self.office_supervisor_portrait_rect()
+        _, height = self.ui_renderer.visual_vertical_metrics("office_japanese")
+        return Rect(area.x, area.y + area.height - height, area.width, height)
+
+    def office_visitor_portrait_rect(self) -> Rect:
+        area = self.office_supervisor_portrait_rect()
+        name = self.office_visitor_info_rect()
+        return Rect(area.x, area.y, area.width, name.y - area.y - 4)
+
+    @staticmethod
+    def office_visitor_portrait_scale(width: int, height: int, rect: Rect) -> float:
+        available = min(int(rect.width) / width, int(rect.height) / height)
+        return float(math.floor(available)) if available >= 2.0 else available
+
+    def office_dialog_rect(self) -> Rect:
+        return self.office_rect(132, 31, 240, 96)
+
+    def office_dialogue_content_rect(self) -> Rect:
+        panel = self.office_dialog_rect()
+        left_inset = self.office_rect(4, 0, 0, 0).x
+        right_inset = self.office_rect(12, 0, 0, 0).x
+        top_inset = self.office_rect(0, 18, 0, 0).y
+        bottom_inset = self.office_rect(0, 0, 0, 3).height
+        return Rect(
+            panel.x + left_inset,
+            panel.y + top_inset,
+            panel.width - left_inset - right_inset,
+            panel.height - top_inset - bottom_inset,
+        )
+
+    def office_questions_panel_rect(self) -> Rect:
+        return self.office_rect(132, 131, 240, 73)
+
+    def office_classification_panel_rect(self) -> Rect:
+        return self.office_rect(376, 31, 130, 173)
+
+    def office_footer_rect(self) -> Rect:
+        return self.office_rect(0, 208, 512, 28)
+
+    def office_answer_footer_rect(self) -> Rect:
+        return self.office_rect(8, 210, 356, 23)
+
+    def office_question_rect(self, index: int, count: int) -> Rect:
+        panel = self.office_questions_panel_rect()
+        heading_height = self.office_rect(0, 0, 0, 20).height
+        inset_x = self.office_rect(3, 0, 0, 0).x
+        gap_x = self.office_rect(3, 0, 0, 0).x
+        gap_y = self.office_rect(0, 0, 0, 1).height
+        columns = 2
+        rows = max(1, (count + columns - 1) // columns)
+        column_width = (panel.width - inset_x * 2 - gap_x) / columns
+        available_height = max(1.0, panel.height - heading_height - gap_y * (rows - 1))
+        row_height = available_height / rows
+        column = index % columns
+        row = index // columns
+        return Rect(
+            panel.x + inset_x + column * (column_width + gap_x),
+            panel.y + heading_height + row * (row_height + gap_y),
+            column_width,
+            row_height,
+        )
+
+    def office_classification_rect(self, index: int) -> Rect:
+        panel = self.office_classification_panel_rect()
+        inset_x = self.office_rect(4, 0, 0, 0).x
+        gap_x = self.office_rect(3, 0, 0, 0).x
+        gap_y = self.office_rect(0, 0, 0, 3).height
+        columns = 2
+        column_width = (panel.width - inset_x * 2 - gap_x) / columns
+        column = index % columns
+        row = index // columns
+        return Rect(
+            panel.x + inset_x + column * (column_width + gap_x),
+            panel.y
+            + self.office_rect(0, 24, 0, 0).y
+            + row * (self.office_rect(0, 0, 0, 27).height + gap_y),
+            column_width,
+            self.office_rect(0, 0, 0, 27).height,
+        )
+
+    def office_classification_feedback_rect(self) -> Rect:
+        panel = self.office_classification_panel_rect()
+        inset_x = self.office_rect(4, 0, 0, 0).x
+        top_inset = self.office_rect(0, 88, 0, 0).y
+        bottom_inset = self.office_rect(0, 0, 0, 4).height
+        return Rect(
+            panel.x + inset_x,
+            panel.y + top_inset,
+            panel.width - inset_x * 2,
+            panel.height - top_inset - bottom_inset,
+        )
+
+    def office_footer_action_rect(self) -> Rect:
+        return self.office_rect(376, 210, 130, 23)
+
+    def ui_numeric_layout(self) -> dict:
+        layout = getattr(self, "_ui_numeric_layout", None)
+        if layout is None:
+            layout = config.load_data_json("ui_numeric_layout.json")
+            self._ui_numeric_layout = layout
+        return layout
+
+    def ui_profile_layout(self) -> dict:
+        profiles = self.ui_numeric_layout()["profiles"]
+        return profiles.get(self.runtime.profile.name, profiles["medium"])
+
+    def ui_theme(self) -> dict:
+        return self.ui_numeric_layout()["theme"]
+
+    def ui_rect(self, name: str) -> Rect:
+        rect = self.ui_profile_layout()["rects"][name]
+        return Rect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+
+    def optional_ui_rect(self, name: str, fallback: str) -> Rect:
+        rects = self.ui_profile_layout()["rects"]
+        rect = rects.get(name, rects[fallback])
+        return Rect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+
+    def action_button_rect(self) -> Rect:
+        return self.ui_rect("primary_action")
+
+    def action_button_visual_rect(self) -> Rect:
+        return self.optional_ui_rect("primary_action_visual", "primary_action")
+
+    def interact_button_rect(self) -> Rect:
+        return self.ui_rect("context_action")
+
+    def interact_button_visual_rect(self) -> Rect:
+        return self.optional_ui_rect("context_action_visual", "context_action")
+
+    def pause_button_rect(self) -> Rect:
+        return self.ui_rect("pause_hit")
+
+    def sound_button_rect(self) -> Rect:
+        return self.ui_rect("sound_hit")
+
+    def pause_visual_rect(self) -> Rect:
+        return self.ui_rect("pause_visual")
+
+    def sound_visual_rect(self) -> Rect:
+        return self.ui_rect("sound_visual")
+
+    def resource_panel_rect(self) -> Rect:
+        return self.ui_rect("resource")
+
+    def minimap_rect(self) -> Rect:
+        return self.ui_rect("minimap")
+
+    def minimap_visual_rect(self) -> Rect:
+        return self.optional_ui_rect("minimap_visual", "minimap")
+
+    def location_rect(self) -> Rect:
+        return self.ui_rect("location")
+
+    def wordmark_rect(self) -> Rect:
+        return self.ui_rect("wordmark")
+
+    def tooltip_rect(self, two_lines: bool) -> Rect:
+        return self.ui_rect("tooltip_two" if two_lines else "tooltip_one")
+
+    def start_button_rect(self) -> Rect:
+        return Rect(self.runtime.screen_width / 2 - 70, 88, 140, 46)
+
+    def pause_panel_rect(self) -> Rect:
+        return self.ui_rect("pause_panel")
+
+    def pause_control_rect(self, column: int, row: int) -> Rect:
+        ids = (("resume", "reset"), ("pause_audio", "dev_entry"))
+        return self.ui_rect(ids[row][column])
+
+    def resume_button_rect(self) -> Rect:
+        return self.ui_rect("resume")
+
+    def pause_reset_button_rect(self) -> Rect:
+        return self.ui_rect("reset")
+
+    def pause_audio_button_rect(self) -> Rect:
+        return self.ui_rect("pause_audio")
+
+    def pause_dev_entry_button_rect(self) -> Rect:
+        return self.ui_rect("dev_entry")
+
+    def pause_fill_button_rect(self) -> Rect:
+        return self.pause_audio_button_rect()
+
+    def pause_zero_button_rect(self) -> Rect:
+        return self.pause_dev_entry_button_rect()
+
+    def pause_culling_button_rect(self) -> Rect:
+        return self.pause_audio_button_rect()
+
+    def pause_debug_button_rect(self) -> Rect:
+        return self.pause_dev_entry_button_rect()
+
+    def interaction_done_button_rect(self) -> Rect:
+        return self.ui_rect("inspect_done")
+
+    def inspect_panel_rect(self) -> Rect:
+        return self.ui_rect("inspect_panel")
+
+    def inspect_title_rect(self) -> Rect:
+        return self.ui_rect("inspect_title")
+
+    def inspect_text_rect(self) -> Rect:
+        return self.ui_rect("inspect_text")
+
+    def inspect_page_rect(self) -> Rect:
+        return self.ui_rect("inspect_page")
+
+    def interaction_chip_rect(self) -> Rect:
+        profile = self.ui_profile_layout()
+        rects = profile.get("rects", {})
+        if "progress_chip" in rects:
+            return self.ui_rect("progress_chip")
+        progress_w, progress_h = profile.get("progress", [160, 64])
+        width = float(progress_w)
+        height = float(progress_h)
+        interaction = getattr(self.model, "interaction", None)
+        if interaction is None:
+            return self.fallback_progress_rect(width, height)
+        target_rect = self.progress_target_screen_rect(interaction)
+        if target_rect is None:
+            return self.fallback_progress_rect(width, height)
+
+        gap = 12.0 if self.runtime.profile.name != "high" else 15.0
+        center_x = target_rect.x + target_rect.width / 2
+        center_y = target_rect.y + target_rect.height / 2
+        candidates = (
+            Rect(center_x - width / 2, target_rect.y - height - gap, width, height),
+            Rect(target_rect.x + target_rect.width + gap, center_y - height / 2, width, height),
+            Rect(target_rect.x - width - gap, center_y - height / 2, width, height),
+            Rect(center_x - width / 2, target_rect.y + target_rect.height + gap, width, height),
+        )
+        blockers = self.progress_popup_blockers(target_rect)
+        for candidate in candidates:
+            rect = self.clamp_ui_rect(candidate, margin=4.0)
+            if not any(self.rects_overlap(rect, blocker) for blocker in blockers):
+                return rect
+        return self.fallback_progress_rect(width, height)
+
+    def fallback_progress_rect(self, width: float, height: float) -> Rect:
+        x = self.runtime.screen_width / 2 - width / 2
+        y = self.runtime.screen_height - height - 8.0
+        return self.clamp_ui_rect(Rect(x, y, width, height), margin=4.0)
+
+    def water_study_close_rect(self) -> Rect:
+        width = 64.0 if self.runtime.profile.name != "high" else 78.0
+        height = 24.0 if self.runtime.profile.name != "high" else 28.0
+        return Rect(float(self.runtime.screen_width) - width - 8.0, 10.0, width, height)
+
+    def progress_target_screen_rect(self, interaction) -> Rect | None:
+        camera = self.scene_camera(self.camera())
+        if interaction.kind == "energy_refill":
+            point = camera.project(self.buddy_focus_point())
+            half_w = 14.0
+            half_h = 18.0
+        else:
+            point = camera.project(self.player_focus_point())
+            half_w = 16.0
+            half_h = 18.0
+        if point is None:
+            return None
+        return Rect(point.x - half_w, point.y - half_h, half_w * 2.0, half_h * 2.0)
+
+    def progress_popup_blockers(self, target_rect: Rect) -> tuple[Rect, ...]:
+        return (
+            self.expand_rect(target_rect, 6.0),
+            self.resource_panel_rect(),
+            self.pause_button_rect(),
+            self.sound_button_rect(),
+            self.interact_button_rect(),
+            self.action_button_rect(),
+            self.minimap_rect(),
+            self.location_rect(),
+        )
+
+    def clamp_ui_rect(self, rect: Rect, margin: float) -> Rect:
+        x = max(margin, min(float(self.runtime.screen_width) - rect.width - margin, rect.x))
+        y = max(margin, min(float(self.runtime.screen_height) - rect.height - margin, rect.y))
+        return Rect(x, y, rect.width, rect.height)
+
+    def expand_rect(self, rect: Rect, amount: float) -> Rect:
+        return Rect(
+            rect.x - amount,
+            rect.y - amount,
+            rect.width + amount * 2.0,
+            rect.height + amount * 2.0,
+        )
+
+    def rects_overlap(self, a: Rect, b: Rect) -> bool:
+        return (
+            a.x < b.x + b.width
+            and a.x + a.width > b.x
+            and a.y < b.y + b.height
+            and a.y + a.height > b.y
+        )
+
+    def preview_button_rects(self) -> tuple[tuple[str, Rect], ...]:
+        names = self.audio.preview_events
+        start_x = self.runtime.screen_width / 2 - 132
+        y = 150
+        return tuple(
+            (name, Rect(start_x + index * 54, y, 48, 36)) for index, name in enumerate(names)
+        )
+
+    def draw(self) -> None:
+        if self.screen == AppScreen.START:
+            self.draw_start()
+        elif self.screen == AppScreen.OFFICE:
+            self.draw_office()
+        elif self.screen == AppScreen.PAUSE:
+            self.draw_play()
+            self.draw_pause()
+        elif self.screen == AppScreen.WATER_STUDY:
+            self.draw_water_study()
+        else:
+            self.draw_play()
+        if self.build_label_visible():
+            self.draw_build_label()
+
+    def build_label_visible(self) -> bool:
+        if getattr(self, "screen", AppScreen.PLAY) == AppScreen.OFFICE:
+            return False
+        mode = str(self.runtime.raw.get("ui", {}).get("build_label_mode", "always"))
+        if mode == "hidden":
+            return False
+        if mode == "debug":
+            return bool(getattr(self, "debug_enabled", False))
+        return True
+
+    def build_label_rect(self) -> Rect:
+        text = BUILD_LABEL.upper()
+        scale = 1
+        text_width, text_height = pixel_text_size(text, scale)
+        box_width = text_width + 6
+        box_height = text_height + 5
+        x = self.runtime.screen_width - box_width - 4
+        y = 42
+        return Rect(float(x), float(y), float(box_width), float(box_height))
+
+    def draw_build_label(self) -> None:
+        text = BUILD_LABEL.upper()
+        scale = 1
+        rect = self.build_label_rect()
+        x = int(rect.x)
+        y = int(rect.y)
+        box_width = int(rect.width)
+        box_height = int(rect.height)
+        self.pyxel.rect(x, y, box_width, box_height, 0)
+        self.pyxel.rectb(x, y, box_width, box_height, 13)
+        draw_pixel_text(self.pyxel, x + 3, y + 2, text, 7, scale=scale)
+
+    def draw_combat_chance_cues(self) -> None:
+        active_cues = [
+            cue
+            for cue in self.effects.screen_cues
+            if cue.kind in {"combat_bubble_chance", "combat_zap_chance"}
+        ]
+        if not active_cues:
+            return
+        cue = active_cues[-1]
+        if cue.kind == "combat_bubble_chance":
+            text = "捕縛チャンス！"
+            color = 12
+        else:
+            text = "電撃チャンス！"
+            color = 10
+        progress = cue.progress
+        style_name = self.ui_text_style_name(text, "tooltip")
+        text_width = self.ui_renderer.text_width(text, style_name)
+        text_height = self.ui_renderer.text_height(style_name)
+        width = max(116, min(178, text_width + 24))
+        height = max(26, text_height + 12)
+        x = int((self.runtime.screen_width - width) / 2)
+        y = int(self.runtime.screen_height * 0.52 - height / 2 - (1.0 - progress) * 5)
+        rect = Rect(float(x), float(y), float(width), float(height))
+        self.draw_panel_frame(rect, fill=0, inner=color)
+        if progress < 0.18:
+            pulse_w = int(width * (1.0 - progress / 0.18))
+            self.pyxel.line(x - pulse_w // 3, y + height // 2, x - 4, y + height // 2, color)
+            self.pyxel.line(
+                x + width + 4,
+                y + height // 2,
+                x + width + pulse_w // 3,
+                y + height // 2,
+                color,
+            )
+        self.draw_ui_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y + rect.height / 2 - text_height / 2 + 4),
+            text,
+            color,
+            style_name,
+        )
+
+    def draw_start(self) -> None:
+        pyxel = self.pyxel
+        pyxel.cls(1)
+        self.draw_text_center(self.runtime.screen_width // 2, 28, "DriftWithMe", 7, scale=3)
+        self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 JWP007", 10)
+        self.draw_button(self.start_button_rect(), self.ui("ui.start"), 11)
+        self.draw_system_button(self.sound_button_rect(), self.sound_visual_rect(), "sound")
+        self.draw_ui_text_center(
+            self.runtime.screen_width // 2, 124, self.ui("ui.se_preview"), 7, "label"
+        )
+        for index, (event_name, rect) in enumerate(self.preview_button_rects(), start=1):
+            self.draw_button(rect, str(index), 5)
+            label = event_name.split("_", maxsplit=1)[0][:6]
+            self.draw_text_center(
+                int(rect.x + rect.width / 2),
+                int(rect.y + rect.height + 5),
+                label,
+                7,
+                scale=1,
+            )
+        self.draw_ui_text_center(
+            self.runtime.screen_width // 2,
+            self.runtime.screen_height - 18,
+            self.ui("ui.start_hint"),
+            13,
+            "hint",
+        )
+
+    def draw_office(self) -> None:
+        pyxel = self.pyxel
+        pyxel.cls(1)
+        header = self.office_header_rect()
+        footer = self.office_footer_rect()
+        pyxel.rect(0, 0, self.runtime.screen_width, int(header.height), 5)
+        header_bottom = int(header.y + header.height)
+        pyxel.line(0, header_bottom, self.runtime.screen_width, header_bottom, 12)
+        pyxel.rect(0, int(footer.y), self.runtime.screen_width, int(footer.height), 0)
+        pyxel.line(0, int(footer.y), self.runtime.screen_width, int(footer.y), 12)
+
+        debug_rect = self.office_field_debug_rect()
+        self.draw_office_button(
+            debug_rect,
+            "現地確認へ",
+            10,
+            text_color=0,
+            horizontal_padding=2,
+        )
+
+        office = self.office
+        case = office.current_case
+        session = office.current_session
+        header_pad = self.office_rect(8, 0, 0, 0).x
+        if case is None or session is None:
+            self.draw_office_complete()
+            return
+
+        self.draw_office_text_in_rect(
+            Rect(
+                header_pad,
+                header.y,
+                max(1.0, self.office_consultation_button_rect().x - header_pad * 2),
+                header.height,
+            ),
+            "相談中"
+            if getattr(self, "office_consultation", None) is not None
+            else "質問・処理区分",
+            13,
+            preferred_styles=("office_japanese", "office_japanese_button"),
+        )
+
+        consulting = getattr(self, "office_consultation", None) is not None
+        available = consulting or not self.office_dialogue_requires_advance()
+        self.draw_office_button(
+            self.office_consultation_button_rect(),
+            "戻る" if consulting else "上司に相談",
+            11 if available else 1,
+            text_color=0 if available else 13,
+            horizontal_padding=2,
+        )
+        status = self.office_state_label(session.state)
+        count_text = f"案件 {office.current_index + 1}/{len(office.cases)}  {status}"
+        status_x = debug_rect.x + debug_rect.width + header_pad
+        self.draw_office_text_in_rect(
+            Rect(
+                status_x,
+                header.y,
+                self.runtime.screen_width - status_x - header_pad,
+                header.height,
+            ),
+            count_text,
+            7,
+            preferred_styles=("office_japanese_button", "office_japanese"),
+            align="right",
+        )
+
+        visitor_rect = self.office_visitor_rect()
+        dialog_rect = self.office_dialog_rect()
+        questions_rect = self.office_questions_panel_rect()
+        classification_rect = self.office_classification_panel_rect()
+        visible_question_count = self.office_visible_question_count()
+        for rect in (visitor_rect, questions_rect, dialog_rect, classification_rect):
+            self.draw_panel_frame(rect, fill=0, inner=5)
+
+        if consulting:
+            self.draw_office_section_title(visitor_rect, "上司")
+            self.draw_office_portrait(self.office_supervisor_portrait_rect(), "office_supervisor")
+        else:
+            self.draw_office_section_title(visitor_rect, "来訪者")
+            portrait = self.office_visitor_portrait_rect()
+            self.draw_office_portrait(
+                portrait,
+                case.visitor.portrait_id,
+                smile=session.state in OFFICE_PORTRAIT_SMILE_STATES,
+            )
+            visitor_lines = self.office_visitor_info_lines(case)
+            self.draw_office_wrapped_lines(
+                self.office_visitor_info_rect(),
+                visitor_lines,
+                color=10,
+                align="center",
+            )
+
+        self.draw_office_section_title(dialog_rect, "上司に相談" if consulting else case.title)
+        self.draw_office_dialogue(dialog_rect)
+
+        self.draw_office_section_title(questions_rect, "質問")
+        selected_answer = self.selected_office_answer()
+        selected_answer_id = None if selected_answer is None else selected_answer[1].question_id
+        for index, question in enumerate(case.questions[:visible_question_count]):
+            rect = self.office_question_rect(index, len(case.questions))
+            asked = question.question_id in session.asked_question_ids
+            selected = self.office_focus == "questions" and index == self.office_question_index
+            fill = 1 if asked else (5 if selected else 0)
+            border = 13 if selected else (6 if asked else 7)
+            pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), fill)
+            pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), border)
+            self.draw_office_question_label(
+                rect,
+                index,
+                question.button_label,
+                asked,
+                question.question_id == selected_answer_id,
+            )
+
+        self.draw_office_section_title(classification_rect, "処理区分")
+        for index, classification in enumerate(CLASSIFICATION_ORDER):
+            rect = self.office_classification_rect(index)
+            selected = (
+                self.office_focus == "classifications" and index == self.office_classification_index
+            )
+            chosen = session.selected_classification == classification
+            classified = session.state not in {
+                CaseState.HEARING,
+                CaseState.READY_TO_CLASSIFY,
+            }
+            fill = 11 if chosen and classified else (5 if selected else 1)
+            text_color = 0 if fill == 11 else 7
+            self.draw_office_button(
+                rect,
+                self.office_classification_label(classification),
+                fill,
+                text_color=text_color,
+                horizontal_padding=0,
+            )
+        if session.feedback:
+            self.draw_office_wrapped_lines(
+                self.office_classification_feedback_rect(),
+                (session.feedback,),
+                color=10,
+                align="center",
+            )
+
+        self.draw_office_answer_reference()
+        if session.state not in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
+            self.draw_office_button(
+                self.office_footer_action_rect(),
+                self.office_footer_action_label(session.state),
+                11,
+                text_color=0,
+            )
+
+    @staticmethod
+    def office_question_number(index: int) -> str:
+        if 0 <= index < len(OFFICE_QUESTION_NUMBERS):
+            return OFFICE_QUESTION_NUMBERS[index]
+        return f"{index + 1}."
+
+    def draw_office_question_label(
+        self,
+        rect: Rect,
+        index: int,
+        label: str,
+        asked: bool,
+        answer_selected: bool,
+    ) -> None:
+        base_color = 13 if asked else 7
+        self.draw_office_colored_text_in_rect(
+            Rect(rect.x + 3, rect.y, rect.width - 6, rect.height),
+            (
+                (self.office_question_number(index), 10 if answer_selected else base_color),
+                (f" {'済 ' if asked else ''}{label}", base_color),
+            ),
+            preferred_styles=("office_japanese", "office_japanese_button"),
+            align="center",
+        )
+
+    def draw_office_answer_reference(self) -> None:
+        selected = self.selected_office_answer()
+        if selected is None:
+            return
+        index, question = selected
+        self.draw_office_colored_text_in_rect(
+            self.office_answer_footer_rect(),
+            (
+                ("回答", 13),
+                (self.office_question_number(index), 10),
+                (f"：{question.answer_summary}", 13),
+            ),
+            preferred_styles=("office_japanese", "office_japanese_button"),
+        )
+
+    @staticmethod
+    def office_visitor_info_lines(case: CaseDefinition) -> tuple[str, ...]:
+        return (case.visitor.name,)
+
+    def draw_office_complete(self) -> None:
+        panel = self.office_rect(106, 68, 300, 96)
+        self.draw_panel_frame(panel, fill=0, inner=11)
+        self.draw_office_text_in_rect(
+            self.office_rect(116, 78, 280, 34),
+            "本日の試行案件は完了しました",
+            7,
+            preferred_styles=("office_japanese", "office_japanese_button"),
+            align="center",
+        )
+        self.draw_office_text_in_rect(
+            self.office_rect(116, 116, 280, 24),
+            "4件の処理結果を記録しました",
+            13,
+            preferred_styles=("office_japanese_button", "office_japanese"),
+            align="center",
+        )
+        self.draw_office_button(
+            self.office_footer_action_rect(),
+            "探索へ",
+            11,
+            text_color=0,
+        )
+
+    def draw_office_dialogue(self, rect: Rect) -> None:
+        playback = self.sync_office_dialogue_playback()
+        page = self.office_dialogue_current_page(playback)
+        if not page:
+            return
+
+        self.draw_office_jack(page)
+        remaining = max(0, int(playback.revealed_chars))
+        content_rect = self.office_dialogue_content_rect()
+        line_height = content_rect.height / OFFICE_DIALOGUE_LINES_PER_PAGE
+        for index, line in enumerate(page):
+            visible_count = min(len(line.text), remaining)
+            remaining -= visible_count
+            if visible_count <= 0:
+                continue
+            self.draw_office_text_in_rect(
+                Rect(
+                    content_rect.x + line.indent_px,
+                    content_rect.y + index * line_height,
+                    content_rect.width - line.indent_px,
+                    line_height,
+                ),
+                line.text[:visible_count],
+                10 if line.visitor else 7,
+                preferred_styles=("office_japanese", "office_japanese_button"),
+            )
+
+        character_count = sum(len(line.text) for line in page)
+        has_next_page = (
+            playback.page_index + 1 < len(playback.pages)
+            or self.office.has_pending_dialogue_step()
+            or getattr(self, "office_consultation", None) is not None
+        )
+        if (
+            int(playback.revealed_chars) >= character_count
+            and has_next_page
+            and getattr(self, "frame", 0) % 48 < 36
+        ):
+            self.draw_office_dialogue_advance_prompt(rect)
+
+    def office_jack_portrait_rect(self) -> Rect | None:
+        content = self.office_dialogue_content_rect()
+        line_height = content.height / OFFICE_DIALOGUE_LINES_PER_PAGE
+        style = self.office_text_style(
+            Rect(content.x, content.y, content.width, line_height),
+            ("office_japanese", "office_japanese_button"),
+        )
+        _, label_height = self.ui_renderer.visual_vertical_metrics(style)
+        label_y = round(content.y + max(0.0, (line_height - label_height) / 2.0))
+        min_top = label_y + label_height + 2
+        max_top = math.floor(content.y + content.height) - 32
+        if max_top < min_top:
+            return None
+        player = self.runtime.raw["player"]
+        world_amplitude = abs(float(player["visual_hover_amplitude"])) / 2.0
+        amplitude = min(world_amplitude, 1.0, max(0.0, (max_top - min_top - 1) / 2.0))
+        hover = jack_idle_hover(player, float(getattr(self, "presentation_time", 0.0)))
+        mean_hover = (
+            float(player["visual_hover_base"]) * float(player["visual_hover_amplitude"]) / 2.0
+        )
+        offset = -(hover - mean_hover) * amplitude / world_amplitude if world_amplitude else 0.0
+        return Rect(int(content.x), min_top + math.ceil(amplitude) + offset, 32, 32)
+
+    def draw_office_jack(self, page: tuple[OfficeDialogueLine, ...]) -> None:
+        if not page or page[0].speaker != "Jack":
+            return
+        assets = getattr(self, "sprite_assets", None)
+        if assets is None:
+            return
+        configured_assets = self.runtime.raw["assets"]
+        asset = assets.get(str(configured_assets["player_front_asset"]))
+        if jack_blink_closed(
+            self.runtime.raw["player"].get("blink", {}),
+            float(getattr(self, "presentation_time", 0.0)),
+        ):
+            asset = assets.get(str(configured_assets["player_front_blink_asset"])) or asset
+        if asset is None:
+            return
+        rect = self.office_jack_portrait_rect()
+        if rect is None:
+            return
+        frame = asset.frame()
+        self.pyxel.blt(
+            int(rect.x),
+            round(rect.y),
+            frame.image,
+            frame.u,
+            frame.v,
+            frame.width,
+            frame.height,
+            colkey=asset.definition.colkey,
+        )
+
+    def draw_office_dialogue_advance_prompt(self, rect: Rect) -> None:
+        pattern = (
+            ".......77...",
+            "......7AA7..",
+            "777777AAAA7.",
+            "7AAAAAAAAAA7",
+            "77777AAAAAA7",
+            ".....7AAAA7.",
+            ".....7AAA7..",
+            "......777...",
+        )
+        scale_x = self.runtime.screen_width / 512.0
+        scale_y = self.runtime.screen_height / 236.0
+        pixel_size = max(1, int(round(min(scale_x, scale_y))))
+        icon_width = len(pattern[0]) * pixel_size
+        icon_height = len(pattern) * pixel_size
+        inset_x = max(1, int(round(3 * scale_x)))
+        inset_y = max(1, int(round(3 * scale_y)))
+        x = int(rect.x + rect.width - icon_width - inset_x)
+        y = int(rect.y + rect.height - icon_height - inset_y)
+        for row, pixels in enumerate(pattern):
+            for column, value in enumerate(pixels):
+                if value == ".":
+                    continue
+                self.pyxel.rect(
+                    x + column * pixel_size,
+                    y + row * pixel_size,
+                    pixel_size,
+                    pixel_size,
+                    int(value, 16),
+                )
+
+    def draw_office_section_title(self, rect: Rect, title: str) -> None:
+        title_height = self.office_rect(0, 0, 0, 20).height
+        title_rect = Rect(rect.x + 5, rect.y + 2, rect.width - 10, title_height)
+        self.draw_office_text_in_rect(
+            title_rect,
+            title,
+            12,
+            preferred_styles=("office_japanese", "office_japanese_button"),
+        )
+
+    def office_text_style(
+        self,
+        rect: Rect,
+        preferred_styles: tuple[str, ...] = ("office_japanese", "office_japanese_button"),
+    ) -> str:
+        available_height = max(1, int(rect.height))
+        for style_name in preferred_styles:
+            _, visible_height = self.ui_renderer.visual_vertical_metrics(style_name)
+            if visible_height + 2 <= available_height:
+                return style_name
+        return preferred_styles[-1]
+
+    def draw_office_text_in_rect(
+        self,
+        rect: Rect,
+        text: str,
+        color: int,
+        preferred_styles: tuple[str, ...] = ("office_japanese", "office_japanese_button"),
+        align: str = "left",
+    ) -> None:
+        style_name = self.office_text_style(rect, preferred_styles)
+        fitted = self.ui_renderer.fit_text(text, max(1, int(rect.width)), style_name)
+        text_width = self.ui_renderer.text_width(fitted, style_name)
+        top_offset, visible_height = self.ui_renderer.visual_vertical_metrics(style_name)
+        if align == "right":
+            x = int(rect.x + rect.width - text_width)
+        elif align == "center":
+            x = int(rect.x + rect.width / 2 - text_width / 2)
+        else:
+            x = int(rect.x)
+        visible_y = rect.y + max(0.0, (rect.height - visible_height) / 2.0)
+        y = round(visible_y - top_offset)
+        self.ui_renderer.draw(self.pyxel, x, y, fitted, color, style_name)
+
+    def draw_office_colored_text_in_rect(
+        self,
+        rect: Rect,
+        segments: tuple[tuple[str, int], ...],
+        preferred_styles: tuple[str, ...] = ("office_japanese", "office_japanese_button"),
+        align: str = "left",
+    ) -> None:
+        style_name = self.office_text_style(rect, preferred_styles)
+        total_width = sum(
+            self.ui_renderer.text_width(text, style_name) for text, _color in segments
+        )
+        top_offset, visible_height = self.ui_renderer.visual_vertical_metrics(style_name)
+        if align == "right":
+            x = int(rect.x + rect.width - total_width)
+        elif align == "center":
+            x = int(rect.x + rect.width / 2 - total_width / 2)
+        else:
+            x = int(rect.x)
+        visible_y = rect.y + max(0.0, (rect.height - visible_height) / 2.0)
+        y = round(visible_y - top_offset)
+        for text, color in segments:
+            self.ui_renderer.draw(self.pyxel, x, y, text, color, style_name)
+            x += self.ui_renderer.text_width(text, style_name)
+
+    def draw_office_button(
+        self,
+        rect: Rect,
+        label: str,
+        color: int,
+        text_color: int = 0,
+        horizontal_padding: float = 4,
+    ) -> None:
+        self.pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), color)
+        self.pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
+        self.draw_office_text_in_rect(
+            Rect(
+                rect.x + horizontal_padding,
+                rect.y,
+                max(1.0, rect.width - horizontal_padding * 2),
+                rect.height,
+            ),
+            label,
+            text_color,
+            preferred_styles=("office_japanese_button", "office_japanese"),
+            align="center",
+        )
+
+    def draw_office_wrapped_lines(
+        self,
+        rect: Rect,
+        lines: tuple[str, ...],
+        color: int,
+        align: str = "left",
+        hanging_indent: bool = False,
+    ) -> None:
+        style_name = self.office_text_style(rect)
+        wrapped = tuple(
+            wrapped_line
+            for line in lines
+            for wrapped_line in (
+                self.wrap_office_hanging_text(
+                    line,
+                    max(1, int(rect.width)),
+                    style_name,
+                )
+                if hanging_indent
+                else tuple(
+                    OfficeWrappedTextLine(text)
+                    for text in self.wrap_office_dialogue_text(
+                        line,
+                        max(1, int(rect.width)),
+                        style_name,
+                    )
+                )
+            )
+        )
+        if not wrapped:
+            return
+        _, visible_height = self.ui_renderer.visual_vertical_metrics(style_name)
+        line_height = float(visible_height)
+        for index, line in enumerate(wrapped):
+            self.draw_office_text_in_rect(
+                Rect(
+                    rect.x + line.indent_px,
+                    rect.y + index * line_height,
+                    rect.width - line.indent_px,
+                    line_height,
+                ),
+                line.text,
+                color,
+                preferred_styles=(style_name,),
+                align=align,
+            )
+
+    def draw_office_portrait(self, rect: Rect, portrait_id: str, *, smile: bool = False) -> None:
+        pyxel = self.pyxel
+        x = int(rect.x)
+        y = int(rect.y)
+        width = max(16, int(rect.width))
+        height = max(18, int(rect.height))
+        pyxel.rect(x, y, width, height, 1)
+
+        sprite_assets = getattr(self, "sprite_assets", None)
+        smile_asset_id = OFFICE_PORTRAIT_SMILE_IDS.get(portrait_id)
+        using_smile = smile and smile_asset_id is not None
+        asset_id = smile_asset_id if using_smile else portrait_id
+        asset = sprite_assets.get(asset_id) if sprite_assets is not None else None
+        if asset is None and using_smile and sprite_assets is not None:
+            asset = sprite_assets.get(portrait_id)
+            using_smile = False
+        if asset is not None:
+            if (
+                portrait_id == "office_supervisor"
+                and getattr(self, "office_consultation", None) is not None
+            ):
+                frame = asset.frame(self.office_supervisor_blink_frame())
+            else:
+                frame = asset.frame()
+            scale = min(width / frame.width, height / frame.height)
+            if portrait_id in OFFICE_PORTRAIT_SMILE_IDS:
+                scale = self.office_visitor_portrait_scale(frame.width, frame.height, rect)
+            draw_width = frame.width * scale
+            draw_height = frame.height * scale
+            draw_x = round(x + (width - draw_width) / 2)
+            draw_y = round(y + (height - draw_height) / 2)
+            if portrait_id == "office_supervisor" or portrait_id in OFFICE_PORTRAIT_SMILE_IDS:
+                # Pyxel scales around the unscaled source center.
+                draw_x = round(x + (width - frame.width) / 2)
+                draw_y = round(y + (height - frame.height) / 2)
+                if portrait_id in OFFICE_PORTRAIT_SMILE_IDS:
+                    draw_x = math.floor(x + (width - frame.width) / 2)
+                    draw_y = math.floor(y + (height - frame.height) / 2)
+            pyxel.blt(
+                draw_x,
+                draw_y,
+                frame.image,
+                frame.u,
+                frame.v,
+                frame.width,
+                frame.height,
+                colkey=asset.definition.colkey,
+                scale=scale,
+            )
+            runtime = getattr(self, "runtime", None)
+            raw_config = getattr(runtime, "raw", {})
+            configured_intervals = raw_config.get("ui", {}).get(
+                "office_portrait_blink_interval_frames", {}
+            )
+            intervals = configured_intervals.get(portrait_id, OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES)
+            blink_pose = self.office_portrait_blink_pose(
+                getattr(self, "frame", 0), portrait_id, intervals=tuple(intervals)
+            )
+            if using_smile:
+                blink_overlays = OFFICE_PORTRAIT_SMILE_BLINK_OVERLAY_IDS.get(portrait_id, {})
+                overlay_id = blink_overlays.get(blink_pose or "open")
+            else:
+                blink_overlays = OFFICE_PORTRAIT_BLINK_OVERLAY_IDS.get(portrait_id, {})
+                overlay_id = blink_overlays.get(blink_pose)
+            if overlay_id is not None:
+                overlay = sprite_assets.get(overlay_id)
+                if overlay is not None:
+                    overlay_frame = overlay.frame()
+                    pyxel.blt(
+                        draw_x,
+                        draw_y,
+                        overlay_frame.image,
+                        overlay_frame.u,
+                        overlay_frame.v,
+                        overlay_frame.width,
+                        overlay_frame.height,
+                        colkey=overlay.definition.colkey,
+                        scale=scale,
+                    )
+            pyxel.rectb(x, y, width, height, 5)
+            return
+
+        accent = 13
+        cx = x + width // 2
+        head_y = y + max(7, height // 3)
+        pyxel.circ(cx, head_y, max(4, width // 8), accent)
+        pyxel.rect(cx - width // 6, head_y + 4, max(7, width // 3), max(7, height // 3), accent)
+        pyxel.pset(cx - 2, head_y, 7)
+        pyxel.pset(cx + 2, head_y, 7)
+        pyxel.rectb(x, y, width, height, 5)
+
+    @staticmethod
+    def office_portrait_blink_pose(
+        frame: int,
+        portrait_id: str,
+        *,
+        intervals: tuple[int, ...] = OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES,
+    ) -> str | None:
+        if portrait_id not in OFFICE_PORTRAIT_BLINK_OVERLAY_IDS:
+            return None
+        if not intervals or any(type(value) is not int or value <= 0 for value in intervals):
+            intervals = OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES
+        duration = OFFICE_PORTRAIT_BLINK_DURATION_FRAMES
+        period = sum(intervals) + duration * len(intervals)
+        seed = sum((index + 1) * ord(char) for index, char in enumerate(portrait_id))
+        phase = (max(0, int(frame)) + seed) % period
+        for interval in intervals:
+            if phase < interval:
+                return None
+            phase -= interval
+            if phase < duration:
+                if phase < OFFICE_PORTRAIT_BLINK_HALF_FRAMES:
+                    return "half"
+                if phase < OFFICE_PORTRAIT_BLINK_HALF_FRAMES + OFFICE_PORTRAIT_BLINK_CLOSED_FRAMES:
+                    return "closed"
+                return "half"
+            phase -= duration
+        return None
+
+    @staticmethod
+    def office_classification_label(classification: Classification) -> str:
+        return {
+            Classification.COUNTER_COMPLETE: "窓口完結",
+            Classification.REFER_OTHER: "他部署へ",
+            Classification.MISSING_DOCUMENTS: "書類不足",
+            Classification.FIELD_CHECK: "現地確認",
+        }[classification]
+
+    @staticmethod
+    def office_state_label(state: CaseState) -> str:
+        return {
+            CaseState.NEW: "受付",
+            CaseState.HEARING: "聞き取り中",
+            CaseState.READY_TO_CLASSIFY: "処理判断",
+            CaseState.CLASSIFIED: "処理判断",
+            CaseState.CLOSED_COUNTER: "窓口完了",
+            CaseState.REFERRED: "案内済み",
+            CaseState.WAITING_DOCUMENTS: "書類待ち",
+            CaseState.FIELD_CHECK_REQUIRED: "現地確認",
+            CaseState.FIELD_ACTIVE: "外勤中",
+            CaseState.FIELD_RETURNED: "確認済み",
+            CaseState.RESOLVED: "完了",
+        }[state]
+
+    @staticmethod
+    def office_footer_action_label(state: CaseState) -> str:
+        if state == CaseState.FIELD_CHECK_REQUIRED:
+            return "現地へ"
+        if state == CaseState.FIELD_RETURNED:
+            return "案件完了"
+        return "次の案件"
+
+    def draw_water_study(self) -> None:
+        pyxel = self.pyxel
+        started_at = time.perf_counter()
+        t = self.water_study_clock
+        profile = self.water_study_profile()
+        layer_count = 0
+        wrap_calls = 0
+        for layer_id in profile.layer_ids:
+            calls = self.draw_water_study_plane(layer_id, t)
+            if calls > 0:
+                layer_count += 1
+                wrap_calls += calls
+        if profile.name == "FULL_SIX_OBSERVE":
+            self.draw_water_study_simple_bubbles(t, 10)
+            layer_count += 1
+        self.draw_water_specular_flash()
+        self.draw_water_study_jack(profile)
+        self.draw_water_micro_glints()
+        self.water_study_last_draw_ms = (time.perf_counter() - started_at) * 1000.0
+        self.water_study_last_layer_count = layer_count
+        self.water_study_last_wrap_calls = wrap_calls
+
+        title = "PAUSE"
+        title_scale = 3
+        width, height = pixel_text_size(title, title_scale)
+        draw_pixel_text(
+            pyxel,
+            int(self.runtime.screen_width / 2 - width / 2),
+            int(self.runtime.screen_height / 2 - height / 2),
+            title,
+            7,
+            scale=title_scale,
+        )
+        if self.debug_enabled:
+            self.draw_water_study_debug_overlay(profile)
+        self.draw_button(
+            self.water_study_close_rect(),
+            "CLOSE",
+            5,
+            text_color=7,
+            style_name="label",
+            text_offset_y=-2,
+        )
+
+    def draw_water_study_jack(self, profile: WaterStudyProfile | None = None) -> bool:
+        sprite_assets = getattr(self, "sprite_assets", None)
+        if sprite_assets is None:
+            return False
+        state = self.ensure_water_study_jack_float()
+        view = WATER_STUDY_JACK_DIRECTION_VIEWS[state.direction_index % 8]
+        asset_config = self.model.config.get("assets", {})
+        asset_id = str(asset_config.get(f"player_{view}_asset", ""))
+        asset = sprite_assets.get(asset_id)
+        if jack_blink_closed(
+            self.model.config.get("player", {}).get("blink", {}),
+            float(getattr(self, "presentation_time", 0.0)),
+        ) or self.water_study_jack_rest_eyes_closed(state):
+            blink_asset_id = str(asset_config.get(f"player_{view}_blink_asset", ""))
+            asset = sprite_assets.get(blink_asset_id) or asset
+        if asset is None:
+            asset_id = str(asset_config.get("player_idle_asset", ""))
+            asset = sprite_assets.get(asset_id)
+        if asset is None:
+            return False
+        frame = asset.frame()
+        anchor_x, anchor_y = asset.definition.anchor_px
+        lag_x = max(-1.5, min(1.5, -state.vx * 0.09))
+        lag_y = max(-1.0, min(1.0, -state.vy * 0.07))
+        draw_x = round(state.x - anchor_x + lag_x)
+        draw_y = round(state.y + state.submerge_px + state.bob_px - anchor_y + lag_y)
+        self.pyxel.blt(
+            draw_x,
+            draw_y,
+            frame.image,
+            frame.u,
+            frame.v,
+            frame.width,
+            frame.height,
+            colkey=asset.definition.colkey,
+        )
+        self.draw_water_study_jack_front_water(
+            state,
+            profile or self.water_study_profile(),
+            draw_x,
+            draw_y,
+            frame.width,
+            frame.height,
+        )
+        return True
+
+    def draw_water_study_jack_front_water(
+        self,
+        state: WaterStudyJackFloat,
+        profile: WaterStudyProfile,
+        draw_x: int,
+        draw_y: int,
+        sprite_width: int,
+        sprite_height: int,
+    ) -> int:
+        mask_height = max(
+            0,
+            min(sprite_height, int(math.floor(state.submerge_px + 0.5))),
+        )
+        if mask_height <= 0:
+            return 0
+        visual = self.water_study_jack_config().get("visual", {})
+        requested_roles = visual.get(
+            "front_water_pass",
+            ("surface", "surface_caustics"),
+        )
+        role_prefixes = {
+            "surface": "water_surface_plane_",
+            "surface_caustics": "water_surface_caustics_plane_",
+            "highlights": "water_highlights_plane_",
+        }
+        if not bool(visual.get("front_highlights_enabled", False)):
+            requested_roles = tuple(role for role in requested_roles if role != "highlights")
+        layer_ids: list[str] = []
+        for role in requested_roles:
+            prefix = role_prefixes.get(str(role))
+            if prefix is None:
+                continue
+            layer_id = next(
+                (candidate for candidate in profile.layer_ids if candidate.startswith(prefix)),
+                None,
+            )
+            if layer_id is not None:
+                layer_ids.append(layer_id)
+        if not layer_ids:
+            return 0
+
+        mask_y = draw_y + sprite_height - mask_height
+        cull_rect = (draw_x, mask_y, sprite_width, mask_height)
+        self.pyxel.clip(*cull_rect)
+        try:
+            return sum(
+                self.draw_water_study_plane(layer_id, self.water_study_clock, cull_rect)
+                for layer_id in layer_ids
+            )
+        finally:
+            self.pyxel.clip()
+
+    def draw_water_study_plane(
+        self,
+        layer_id: str,
+        t: float,
+        cull_rect: tuple[int, int, int, int] | None = None,
+    ) -> int:
+        pyxel = self.pyxel
+        plane = self.water_study_plane_for_frame(layer_id, t)
+        if plane is None:
+            return 0
+        is_approved_production_layer = layer_id in APPROVED_WATER_IDENTITY_LAYER_IDS
+        if is_approved_production_layer:
+            offset_x, offset_y = 0.0, 0.0
+        else:
+            speed_x, speed_y, sine_amp, orbit_x, orbit_y, phase = WATER_STUDY_LAYER_MOTION[layer_id]
+            offset_x, offset_y = self.water_study_layer_offset(
+                t,
+                speed_x=speed_x,
+                speed_y=speed_y,
+                sine_amp=sine_amp,
+                orbit_x=orbit_x,
+                orbit_y=orbit_y,
+                phase=phase,
+            )
+        start_x = -int(offset_x) % plane.logical_width - plane.logical_width
+        start_y = -int(offset_y) % plane.logical_height - plane.logical_height
+        if is_approved_production_layer:
+            palette_remaps = ()
+        else:
+            palette_remaps = WATER_STUDY_LAYER_PALETTE_REMAPS.get(layer_id, ())
+        if is_approved_production_layer:
+            pyxel.pal()
+        if palette_remaps:
+            for source_color, target_color in palette_remaps:
+                pyxel.pal(source_color, target_color)
+        try:
+            calls = 0
+            for plane_y in range(
+                start_y, self.runtime.screen_height + plane.logical_height, plane.logical_height
+            ):
+                for plane_x in range(
+                    start_x, self.runtime.screen_width + plane.logical_width, plane.logical_width
+                ):
+                    for chunk in plane.chunks:
+                        x = plane_x + chunk.origin_x
+                        y = plane_y + chunk.origin_y
+                        if (
+                            x >= self.runtime.screen_width
+                            or y >= self.runtime.screen_height
+                            or x + chunk.width <= 0
+                            or y + chunk.height <= 0
+                        ):
+                            continue
+                        if cull_rect is not None:
+                            cull_x, cull_y, cull_width, cull_height = cull_rect
+                            if (
+                                x >= cull_x + cull_width
+                                or y >= cull_y + cull_height
+                                or x + chunk.width <= cull_x
+                                or y + chunk.height <= cull_y
+                            ):
+                                continue
+                        if plane.colkey is None:
+                            pyxel.blt(x, y, chunk.image, 0, 0, chunk.width, chunk.height)
+                        else:
+                            pyxel.blt(
+                                x,
+                                y,
+                                chunk.image,
+                                0,
+                                0,
+                                chunk.width,
+                                chunk.height,
+                                colkey=plane.colkey,
+                            )
+                        calls += 1
+            return calls
+        finally:
+            if is_approved_production_layer or palette_remaps:
+                pyxel.pal()
+
+    def water_study_plane_for_frame(self, layer_id: str, t: float) -> WaterStudyPlane | None:
+        cache = getattr(self, "water_study_asset_cache", None)
+        if cache is not None and cache.ready:
+            return cache.plane_for_frame(layer_id, t, self.runtime.target_fps)
+        phases = self.water_study_phase_planes.get(layer_id)
+        if not phases:
+            return self.water_study_planes.get(layer_id)
+        step_frames = WATER_STUDY_PHASE_STEP_FRAMES[layer_id]
+        initial_phase = WATER_STUDY_PHASE_INITIAL_INDICES[layer_id]
+        elapsed_frames = int(max(0.0, t) * float(self.runtime.target_fps))
+        phase_index = (initial_phase + elapsed_frames // step_frames) % len(phases)
+        return phases[phase_index]
+
+    def draw_water_study_simple_bubbles(self, t: float, bubble_count: int) -> None:
+        pyxel = self.pyxel
+        width = self.runtime.screen_width
+        height = self.runtime.screen_height
+        for index in range(bubble_count):
+            lifetime = 5.0 + (index % 5) * 0.75
+            u = ((t + index * 0.47) % lifetime) / lifetime
+            base_x = (index * 41 + (index % 4) * 19) % max(1, width)
+            x = int(base_x + math.sin(t * 0.9 + index) * (1.0 + u * 4.0))
+            y = int(height + 8 - u * (height + 24))
+            radius = 1 + int(u * 2.0)
+            color = 5 if u < 0.35 else (12 if u < 0.78 else 6)
+            pyxel.circb(x, y, radius, color)
+
+    def draw_water_micro_glints(self) -> int:
+        pyxel = self.pyxel
+        self.ensure_water_micro_glint_state()
+        calls = 0
+        for glint in self.water_micro_glints:
+            if not glint.active:
+                continue
+            if glint.length_px == 1 or not hasattr(pyxel, "line"):
+                pyxel.pset(glint.x, glint.y, glint.color)
+            else:
+                pyxel.line(glint.x, glint.y, glint.x + 1, glint.y, glint.color)
+            calls += 1
+        return calls
+
+    def draw_water_specular_flash(self) -> int:
+        pyxel = self.pyxel
+        state = self.ensure_water_specular_flash_state()
+        if not state.active or state.life_frames <= 0:
+            return 0
+        progress = state.age_frames / max(1, state.life_frames - 1)
+        strength = min(1.0, progress / 0.18, (1.0 - progress) / 0.42)
+        if strength <= 0.0:
+            return 0
+        x = state.x
+        y = state.y
+        calls = 0
+        if strength < 0.36:
+            pyxel.pset(x, y, 12)
+            return 1
+
+        arm = max(2, state.size_px - (1 if strength < 0.72 else 0))
+        pyxel.line(x - arm, y, x + arm, y, 6)
+        pyxel.line(x, y - arm + 1, x, y + arm - 1, 12)
+        pyxel.pset(x, y, 7)
+        calls += 3
+        if strength >= 0.72:
+            pyxel.pset(x - 1, y, 7)
+            pyxel.pset(x + 1, y, 7)
+            calls += 2
+            if state.style == "lens":
+                flare_arm = arm + 3
+                pyxel.line(x - flare_arm, y, x + flare_arm, y, 12)
+                pyxel.pset(x - flare_arm - 3, y, 5)
+                pyxel.pset(x + flare_arm + 3, y, 5)
+                pyxel.pset(x, y, 7)
+                calls += 4
+        return calls
+
+    def draw_water_study_debug_overlay(self, profile: WaterStudyProfile) -> None:
+        pyxel = self.pyxel
+        lines = (
+            f"WTR PROFILE: {profile.name}",
+            f"DRAW: {self.water_study_last_draw_ms:.2f} ms",
+            f"WRAP BLT: {self.water_study_last_wrap_calls}",
+            f"LAYERS: {self.water_study_last_layer_count}/{len(profile.layer_ids)}",
+            f"OPEN: {self.water_study_open_latency_ms:.2f} ms",
+            f"PLANE: {WATER_STUDY_LOGICAL_SIZE[0]}x{WATER_STUDY_LOGICAL_SIZE[1]}",
+            f"CHUNK: {WATER_STUDY_CHUNK_SIZE}x{WATER_STUDY_CHUNK_SIZE}",
+            "1/2/3/4 PROFILE",
+        )
+        x = 8
+        y = self.runtime.screen_height - 55
+        pyxel.rect(x - 3, y - 3, 126, 53, 0)
+        pyxel.rectb(x - 3, y - 3, 126, 53, 13)
+        for index, line in enumerate(lines):
+            pyxel.text(x, y + index * 8, line, 7)
+
+    def draw_play(self) -> None:
+        assert self.renderer is not None
+        scene_camera = self.scene_camera(self.camera())
+        self.renderer.draw_scene(
+            self.model, scene_camera, self.presentation_time, self.debug_enabled, self.effects
+        )
+        self.draw_hud()
+        if self.model.interaction is not None:
+            self.draw_interaction_chip()
+        self.draw_combat_chance_cues()
+
+    def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
+        camera = self.combat_scene_camera(camera)
+        camera = self.combat_restore_scene_camera(camera)
+        if self.projection_mode != "affine":
+            return self.presentation_camera(camera)
+        return self.affine_scene_camera(camera)
+
+    def combat_scene_camera(self, camera: CameraState) -> CameraState:
+        session = self.model.combat_session
+        if session is None:
+            return camera
+        combat = self.runtime.raw.get("combat_v1", {})
+        entry = combat.get("entry", {}) if isinstance(combat, dict) else {}
+        multiplier = self.combat_camera_zoom_multiplier(session)
+        if multiplier <= 0.0:
+            return camera
+        transition = max(
+            1e-6,
+            float(
+                entry.get(
+                    "camera_transition_sec",
+                    self.combat_dynamic_camera_duration("enter_push", 0.14)
+                    + self.combat_dynamic_camera_duration("enter_settle", 0.12),
+                )
+            ),
+        )
+        progress = _smoothstep(min(1.0, max(session.elapsed_sec, 1.0 / 60.0) / transition))
+        enemy = self.model.enemy_by_id(session.enemy_id)
+        if enemy is None:
+            enemy_x = session.snapshot.enemy.x
+            enemy_z = session.snapshot.enemy.z
+        else:
+            enemy_x, enemy_z = self.model.enemy_presentation_position(enemy)
+        combat_target = Vec3(
+            (self.model.player.x + enemy_x) * 0.5,
+            0.0,
+            (self.model.player.z + enemy_z) * 0.5,
+        )
+        camera_config = self.runtime.raw["camera"]
+        base_distance = float(camera_config["base_distance"])
+        snapshot_zoom = self.combat_snapshot_zoom(camera)
+        target_zoom = snapshot_zoom * multiplier
+        next_zoom = self.clamp_combat_zoom(target_zoom, snapshot_zoom)
+        combat_camera = CameraState(
+            target=_lerp_vec3(camera.target, combat_target, progress),
+            yaw_deg=camera.yaw_deg,
+            pitch_deg=camera.pitch_deg,
+            horizontal_fov_deg=camera.horizontal_fov_deg,
+            distance=base_distance / next_zoom,
+            near=camera.near,
+            far=camera.far,
+            anchor_x=camera.anchor_x,
+            anchor_y=self.combat_camera_anchor_y(camera.anchor_y),
+            viewport_width=camera.viewport_width,
+            viewport_height=camera.viewport_height,
+        )
+        self.last_combat_scene_camera = combat_camera
+        return combat_camera
+
+    def camera_zoom(self, camera: CameraState) -> float:
+        base_distance = float(self.runtime.raw["camera"]["base_distance"])
+        return base_distance / camera.distance
+
+    def combat_snapshot_zoom(self, camera: CameraState) -> float:
+        if self.combat_camera_snapshot_zoom is None:
+            self.combat_camera_snapshot_zoom = self.camera_zoom(camera)
+        return self.combat_camera_snapshot_zoom
+
+    def combat_dynamic_camera_config(self) -> dict:
+        combat = self.runtime.raw.get("combat_v1", {})
+        if not isinstance(combat, dict):
+            return {}
+        dynamic = combat.get("dynamic_camera", {})
+        return dynamic if isinstance(dynamic, dict) else {}
+
+    def combat_dynamic_camera_multipliers(self) -> dict:
+        dynamic = self.combat_dynamic_camera_config()
+        values = dynamic.get("multipliers", {})
+        return values if isinstance(values, dict) else {}
+
+    def combat_dynamic_camera_durations(self) -> dict:
+        dynamic = self.combat_dynamic_camera_config()
+        values = dynamic.get("durations_sec", {})
+        return values if isinstance(values, dict) else {}
+
+    def combat_dynamic_camera_multiplier(self, key: str, default: float) -> float:
+        return float(self.combat_dynamic_camera_multipliers().get(key, default))
+
+    def combat_dynamic_camera_duration(self, key: str, default: float) -> float:
+        return max(0.0, float(self.combat_dynamic_camera_durations().get(key, default)))
+
+    def clamp_combat_zoom(self, zoom: float, snapshot_zoom: float) -> float:
+        dynamic = self.combat_dynamic_camera_config()
+        min_multiplier = float(dynamic.get("min_multiplier", 0.9))
+        max_multiplier = float(dynamic.get("max_multiplier", 1.85))
+        return max(snapshot_zoom * min_multiplier, min(snapshot_zoom * max_multiplier, zoom))
+
+    def combat_camera_anchor_y(self, fallback: float) -> float:
+        dynamic = self.combat_dynamic_camera_config()
+        try:
+            value = float(dynamic.get("screen_anchor_y", fallback))
+        except (TypeError, ValueError):
+            value = fallback
+        if not math.isfinite(value):
+            value = fallback
+        return max(0.0, min(1.0, value))
+
+    def combat_camera_zoom_multiplier(self, session) -> float:
+        hold = self.combat_dynamic_camera_multiplier("combat_hold", 1.45)
+        preimpact = self.combat_dynamic_camera_multiplier("preimpact", 1.6)
+        phase = session.phase
+        elapsed = max(0.0, session.phase_elapsed_sec)
+        if phase == "COMBAT_ENTRY":
+            return self.combat_entry_zoom_multiplier(elapsed)
+        if phase in {"COMBAT_READY", "ENEMY_WINDUP", "ENEMY_CHARGE"}:
+            return hold
+        if phase == "PREIMPACT_SLOW":
+            duration = self.combat_dynamic_camera_duration("preimpact_push", 0.18)
+            return _smooth_lerp(hold, preimpact, elapsed / max(1e-6, duration))
+        if phase == "PARRY_TIMING":
+            return preimpact
+        if phase == "PARRY_RESOLVE":
+            return self.combat_result_zoom_multiplier(session, elapsed)
+        if phase in {"PERFECT_FREEZE", "PERFECT_BUBBLE_WINDOW"}:
+            return self.combat_dynamic_camera_multiplier("perfect_hold", 1.62)
+        if phase == "PERFECT_ZAP_WINDOW":
+            return self.combat_bubble_settle_zoom_multiplier(elapsed)
+        if phase == "COMBAT_EXIT_COUNTER":
+            return self.combat_counter_exit_zoom_multiplier(session, elapsed)
+        if phase == "COMBAT_EXIT_DEFLECT":
+            duration = self.combat_dynamic_camera_duration("deflect_pullback", 0.22)
+            target = self.combat_dynamic_camera_multiplier("deflect_pullback", 1.32)
+            return _smooth_lerp(hold, target, elapsed / max(1e-6, duration))
+        if phase == "COMBAT_EXIT_PLAYER_KNOCKBACK":
+            duration = self.combat_dynamic_camera_duration("failure_recover", 0.13)
+            target = self.combat_dynamic_camera_multiplier("failure_pullback", 1.39)
+            return _smooth_lerp(hold, target, elapsed / max(1e-6, duration))
+        if phase == "VICTORY_CUE":
+            return self.combat_victory_zoom_multiplier(elapsed)
+        if phase == "COMBAT_RESTORE_JUMP":
+            return self.combat_dynamic_camera_multiplier("restore", 1.0)
+        return hold
+
+    def combat_entry_zoom_multiplier(self, elapsed: float) -> float:
+        peak = self.combat_dynamic_camera_multiplier("enter_peak", 1.52)
+        hold = self.combat_dynamic_camera_multiplier("combat_hold", 1.45)
+        push = self.combat_dynamic_camera_duration("enter_push", 0.14)
+        settle = self.combat_dynamic_camera_duration("enter_settle", 0.12)
+        if elapsed < push:
+            return _smooth_lerp(1.0, peak, elapsed / max(1e-6, push))
+        if elapsed < push + settle:
+            return _smooth_lerp(peak, hold, (elapsed - push) / max(1e-6, settle))
+        return hold
+
+    def combat_result_zoom_multiplier(self, session, elapsed: float) -> float:
+        preimpact = self.combat_dynamic_camera_multiplier("preimpact", 1.6)
+        hold = self.combat_dynamic_camera_multiplier("combat_hold", 1.45)
+        result = session.result
+        if result == "failure":
+            pullback = self.combat_dynamic_camera_multiplier("failure_pullback", 1.39)
+            down = self.combat_dynamic_camera_duration("failure_pullback", 0.07)
+            recover = self.combat_dynamic_camera_duration("failure_recover", 0.13)
+            return _two_segment_smooth_lerp(preimpact, pullback, hold, down, recover, elapsed)
+        if result == "perfect":
+            peak = self.combat_dynamic_camera_multiplier("perfect_peak", 1.8)
+            settle = self.combat_dynamic_camera_multiplier("perfect_hold", 1.62)
+            up = self.combat_dynamic_camera_duration("perfect_push", 0.08)
+            down = self.combat_dynamic_camera_duration("perfect_settle", 0.18)
+            return _two_segment_smooth_lerp(preimpact, peak, settle, up, down, elapsed)
+        pulse = self.combat_dynamic_camera_multiplier("success_pulse", 1.66)
+        up = self.combat_dynamic_camera_duration("success_pulse_up", 0.05)
+        down = self.combat_dynamic_camera_duration("success_recover", 0.12)
+        return _two_segment_smooth_lerp(preimpact, pulse, hold, up, down, elapsed)
+
+    def combat_bubble_settle_zoom_multiplier(self, elapsed: float) -> float:
+        start = self.combat_dynamic_camera_multiplier("perfect_hold", 1.62)
+        target = self.combat_dynamic_camera_multiplier("counter_hold", 1.56)
+        duration = self.combat_dynamic_camera_duration("bubble_settle", 0.1)
+        return _smooth_lerp(start, target, elapsed / max(1e-6, duration))
+
+    def combat_counter_exit_zoom_multiplier(self, session, elapsed: float) -> float:
+        hold = self.combat_dynamic_camera_multiplier("counter_hold", 1.56)
+        if session.outcome != "defeat":
+            return hold
+        peak = self.combat_dynamic_camera_multiplier("zap_pulse", 1.68)
+        up = self.combat_dynamic_camera_duration("zap_pulse_up", 0.04)
+        down = self.combat_dynamic_camera_duration("zap_pulse_down", 0.1)
+        return _two_segment_smooth_lerp(hold, peak, hold, up, down, elapsed)
+
+    def combat_victory_zoom_multiplier(self, elapsed: float) -> float:
+        hold = self.combat_dynamic_camera_multiplier("victory_hold", 1.36)
+        restore = self.combat_dynamic_camera_multiplier("restore", 1.0)
+        delay = self.combat_dynamic_camera_duration("victory_restore_delay", 0.4)
+        duration = self.combat_dynamic_camera_duration("victory_restore", 0.32)
+        if elapsed < delay:
+            return hold
+        return _smooth_lerp(hold, restore, (elapsed - delay) / max(1e-6, duration))
+
+    def start_combat_camera_restore(self) -> None:
+        from_camera = self.last_combat_scene_camera
+        if from_camera is None:
+            return
+        combat = self.runtime.raw.get("combat_v1", {})
+        exit_config = combat.get("exit", {}) if isinstance(combat, dict) else {}
+        duration = max(0.0, float(exit_config.get("camera_restore_sec", 0.35)))
+        if duration <= 0.0:
+            self.combat_camera_restore = None
+            self.last_combat_scene_camera = None
+            self.combat_camera_snapshot_zoom = None
+            return
+        self.combat_camera_restore = CombatCameraRestore(
+            from_camera=from_camera,
+            elapsed_sec=0.0,
+            duration_sec=duration,
+        )
+
+    def update_combat_camera_restore(self, elapsed: float) -> None:
+        restore = self.combat_camera_restore
+        if restore is None:
+            return
+        restore.elapsed_sec += max(0.0, elapsed)
+        if restore.elapsed_sec >= restore.duration_sec:
+            self.combat_camera_restore = None
+            self.last_combat_scene_camera = None
+            self.combat_camera_snapshot_zoom = None
+
+    def combat_restore_scene_camera(self, camera: CameraState) -> CameraState:
+        restore = self.combat_camera_restore
+        if restore is None:
+            return camera
+        progress = _smoothstep(restore.elapsed_sec / max(1e-6, restore.duration_sec))
+        from_camera = restore.from_camera
+        distance = from_camera.distance + (camera.distance - from_camera.distance) * progress
+        return CameraState(
+            target=_lerp_vec3(from_camera.target, camera.target, progress),
+            yaw_deg=camera.yaw_deg,
+            pitch_deg=camera.pitch_deg,
+            horizontal_fov_deg=camera.horizontal_fov_deg,
+            distance=distance,
+            near=camera.near,
+            far=camera.far,
+            anchor_x=camera.anchor_x,
+            anchor_y=from_camera.anchor_y + (camera.anchor_y - from_camera.anchor_y) * progress,
+            viewport_width=camera.viewport_width,
+            viewport_height=camera.viewport_height,
+        )
+
+    def affine_scene_camera(self, camera: CameraState) -> AffineCameraState:
+        transform = self.effects.camera_transform(camera.viewport_width, camera.viewport_height)
+        if not self.combat_camera_reactions_allowed():
+            transform = type(transform)()
+        camera_config = self.runtime.raw["camera"]
+        base_distance = float(camera_config["base_distance"])
+        current_zoom = base_distance / camera.distance
+        target_zoom = current_zoom * transform.zoom_multiplier
+        if self.model.combat_session is not None or self.combat_camera_restore is not None:
+            target_zoom = self.clamp_combat_zoom(
+                target_zoom, self.combat_camera_snapshot_zoom or current_zoom
+            )
+        else:
+            target_zoom = min(
+                float(camera_config["zoom_max"]),
+                max(float(camera_config["zoom_min"]), target_zoom),
+            )
+        affine_camera = affine_camera_from_perspective(
+            camera,
+            self.affine_projection_profile,
+            base_distance=base_distance,
+            fx_offset_x=transform.offset_x,
+            fx_offset_y=transform.offset_y,
+        )
+        return replace(
+            affine_camera,
+            zoom=target_zoom,
+            distance=base_distance / target_zoom,
+        )
+
+    def presentation_camera(self, camera: CameraState) -> CameraState:
+        if not self.combat_camera_reactions_allowed():
+            return camera
+        transform = self.effects.camera_transform(camera.viewport_width, camera.viewport_height)
+        if (
+            abs(transform.offset_x) <= 1e-6
+            and abs(transform.offset_y) <= 1e-6
+            and abs(transform.zoom_multiplier - 1.0) <= 1e-6
+        ):
+            return camera
+        camera_config = self.runtime.raw["camera"]
+        base_distance = float(camera_config["base_distance"])
+        current_zoom = base_distance / camera.distance
+        target_zoom = current_zoom * transform.zoom_multiplier
+        if self.model.combat_session is not None or self.combat_camera_restore is not None:
+            target_zoom = self.clamp_combat_zoom(
+                target_zoom, self.combat_camera_snapshot_zoom or current_zoom
+            )
+        else:
+            target_zoom = min(
+                float(camera_config["zoom_max"]),
+                max(float(camera_config["zoom_min"]), target_zoom),
+            )
+        return CameraState(
+            target=camera.target,
+            yaw_deg=camera.yaw_deg,
+            pitch_deg=camera.pitch_deg,
+            horizontal_fov_deg=camera.horizontal_fov_deg,
+            distance=base_distance / target_zoom,
+            near=camera.near,
+            far=camera.far,
+            anchor_x=camera.anchor_x + transform.offset_x / camera.viewport_width,
+            anchor_y=camera.anchor_y + transform.offset_y / camera.viewport_height,
+            viewport_width=camera.viewport_width,
+            viewport_height=camera.viewport_height,
+        )
+
+    def draw_pause(self) -> None:
+        pyxel = self.pyxel
+        panel = self.pause_panel_rect()
+        pyxel.dither(0.5)
+        pyxel.rect(0, 0, self.runtime.screen_width, self.runtime.screen_height, 0)
+        pyxel.dither(1.0)
+        self.draw_panel_frame(panel, fill=0, inner=5)
+        title_rect = self.ui_rect("pause_title")
+        self.draw_ui_text_center(
+            int(title_rect.x + title_rect.width / 2),
+            int(title_rect.y),
+            self.ui("ui.pause"),
+            7,
+            "title",
+        )
+        culling_status = "ON" if self.model.culling_enabled else "OFF"
+        status = f"{self.runtime.profile.name.upper()} CULL {culling_status}"
+        self.draw_button(
+            self.resume_button_rect(),
+            self.ui("ui.resume"),
+            10,
+            text_color=0,
+            style_name="button",
+        )
+        self.draw_button(
+            self.pause_reset_button_rect(), self.ui("ui.reset"), 8, style_name="button"
+        )
+        self.draw_button(
+            self.pause_audio_button_rect(),
+            self.ui("ui.sound_off") if self.audio.muted else self.ui("ui.sound_on"),
+            5,
+            style_name="button",
+        )
+        self.draw_button(
+            self.pause_dev_entry_button_rect(),
+            self.ui("ui.debug"),
+            1,
+            text_color=13 if self.debug_enabled else 7,
+            style_name="button",
+        )
+        self.draw_ui_text_center(
+            int(panel.x + panel.width / 2),
+            int(panel.y + panel.height - 16),
+            status,
+            13,
+            "auxiliary",
+        )
+
+    def draw_hud(self) -> None:
+        pyxel = self.pyxel
+        self.draw_resource_panel()
+        self.draw_system_button(self.sound_button_rect(), self.sound_visual_rect(), "sound")
+        self.draw_system_button(self.pause_button_rect(), self.pause_visual_rect(), "pause")
+
+        interaction = self.model.interaction
+        inspect_modal = interaction is not None and interaction.kind == "inspect"
+        resource_modal = interaction is not None and interaction.kind in {
+            "water_refill",
+            "energy_refill",
+        }
+        if not inspect_modal:
+            office = getattr(self, "office", None)
+            field_task = None if office is None else office.active_field_task
+            if field_task is not None and self.model.combat_session is None:
+                self.draw_field_task_hud()
+            else:
+                self.draw_wordmark()
+            self.draw_minimap()
+            if self.location_label_visible():
+                self.draw_location_label()
+            self.draw_action_button(
+                self.interact_button_visual_rect(),
+                self.interact_button_token(),
+                slot="context",
+                enabled=True,
+            )
+            primary_enabled = not resource_modal and self.action_button_mode() != "NONE"
+            self.draw_action_button(
+                self.action_button_visual_rect(),
+                self.action_button_mode(),
+                slot="primary",
+                enabled=primary_enabled,
+            )
+            self.draw_tooltip()
+            self.draw_combat_timing_bar()
+        if self.debug_enabled:
+            render_stats = self.renderer.last_stats if self.renderer is not None else None
+            pyxel.text(8, 48, f"pos={self.model.player.x:.1f},{self.model.player.z:.1f}", 7)
+            pyxel.text(8, 58, f"steps={self.model.debug.fixed_steps_last_callback}", 7)
+            pyxel.text(8, 68, f"input={self.pointer.state.name}", 7)
+            pyxel.text(8, 78, f"discard={self.model.debug.discarded_elapsed_count}", 7)
+            pyxel.text(8, 88, f"camera={self.camera_controller.mode_name}", 7)
+            pyxel.text(8, 98, f"repel={self.model.debug.barrier_repels}", 7)
+            pyxel.text(8, 108, f"contact={self.model.debug.player_contacts}", 7)
+            pyxel.text(
+                8,
+                118,
+                f"bubble={self.model.debug.bubbles_fired}/{self.model.debug.enemies_captured}",
+                7,
+            )
+            pyxel.text(8, 128, f"zap={self.model.debug.discharges}", 7)
+            pyxel.text(8, 138, f"inspect={self.model.debug.inspected_count}", 7)
+            pyxel.text(
+                8,
+                148,
+                f"fx={len(self.effects.particles)}/{len(self.effects.emotes)}",
+                7,
+            )
+            if render_stats is not None:
+                chunks_text = (
+                    f"chunks={render_stats.candidate_chunks}/64 "
+                    f"detail={render_stats.visible_ground_details} "
+                    f"baked={render_stats.visible_baked_ground_patches}"
+                )
+                pyxel.text(
+                    184,
+                    48,
+                    "vis="
+                    f"{render_stats.visible_static_objects}/"
+                    f"{render_stats.candidate_static_objects}/"
+                    f"{render_stats.total_static_objects}",
+                    7,
+                )
+                pyxel.text(184, 58, chunks_text, 7)
+                pyxel.text(
+                    184,
+                    68,
+                    f"active={self.model.debug.active_enemies}/{len(self.model.enemies)}",
+                    7,
+                )
+            pyxel.text(8, 158, "F focus / P pan", 7)
+            pyxel.text(8, 168, f"proj={self.projection_mode} / V toggle", 7)
+
+    def field_task_hud_rect(self) -> Rect:
+        return self.office_rect(148, 7, 164, 42)
+
+    def draw_field_task_hud(self) -> None:
+        task = self.office.active_field_task
+        if task is None:
+            return
+        rect = self.field_task_hud_rect()
+        self.draw_panel_frame(rect, fill=0, inner=12)
+        content_rect = Rect(rect.x + 5, rect.y + 2, rect.width - 10, rect.height - 4)
+        row_height = content_rect.height / 2
+        self.draw_office_text_in_rect(
+            Rect(content_rect.x, content_rect.y, content_rect.width, row_height),
+            "現在の案件",
+            12,
+            preferred_styles=("office_japanese", "office_japanese_button"),
+        )
+        self.draw_office_text_in_rect(
+            Rect(content_rect.x, content_rect.y + row_height, content_rect.width, row_height),
+            task.objective,
+            7,
+            preferred_styles=("office_japanese", "office_japanese_button"),
+        )
+
+    def draw_meter(
+        self, x: int, y: int, width: int, height: int, value: float, maximum: float, color: int
+    ) -> None:
+        filled = 0 if maximum <= 0.0 else int(width * max(0.0, min(value / maximum, 1.0)))
+        self.pyxel.rect(x, y, width, height, 1)
+        self.pyxel.rect(x, y, filled, height, color)
+        self.pyxel.rectb(x, y, width, height, 7)
+
+    def interact_button_label(self) -> str:
+        return self.ui_token(self.interact_button_token())
+
+    def interact_button_token(self) -> str:
+        if self.model.interaction is not None:
+            if self.model.interaction.kind == "water_refill":
+                return "CANCEL_REFILL"
+            if self.model.interaction.kind == "energy_refill":
+                return "CANCEL_CHARGE"
+            return "DONE"
+        target = (
+            None if self.model.world_paused else self.model.interaction_candidate(self.camera())
+        )
+        if target is None:
+            return "CHECK"
+        if target.kind == "water_station" and target.supply == "working":
+            return "REFILL"
+        if target.kind == "solar_station":
+            return "CHARGE"
+        return "CHECK"
+
+    def action_button_label(self) -> str:
+        return self.ui_token(self.action_button_mode())
+
+    def action_button_mode(self) -> str:
+        session = self.model.combat_session
+        if session is not None:
+            counter_mode = self.model.combat_counter_action_mode()
+            if counter_mode != "NONE":
+                return counter_mode
+            if session.phase in {
+                "COMBAT_ENTRY",
+                "COMBAT_READY",
+                "PARRY_RESOLVE",
+                "PERFECT_FREEZE",
+                "COMBAT_EXIT_DEFLECT",
+                "COMBAT_EXIT_PLAYER_KNOCKBACK",
+                "COMBAT_EXIT_COUNTER",
+                "VICTORY_CUE",
+                "COMBAT_RESTORE_JUMP",
+            }:
+                return "NONE"
+            return "GUARD"
+        if self.model.world_paused:
+            return "NONE"
+        camera = self.camera()
+        if self.model.captured_enemy(camera) is not None:
+            return "ZAP"
+        if self.model.bubble is not None:
+            return "NONE"
+        if self.model.guard_threat() is not None:
+            return "GUARD"
+        if self.model.bubble_target(camera) is not None:
+            return "BUBBLE"
+        return "NONE"
+
+    def combat_timing_bar_rect(self, session=None) -> Rect:
+        raw_rect = self.model.combat_parry_timing_bar_rect_ref(session=session)
+        scale_x = self.runtime.screen_width / 512.0
+        scale_y = self.runtime.screen_height / 236.0
+        return Rect(
+            float(raw_rect[0]) * scale_x,
+            float(raw_rect[1]) * scale_y,
+            float(raw_rect[2]) * scale_x,
+            float(raw_rect[3]) * scale_y,
+        )
+
+    def draw_combat_timing_bar(self) -> None:
+        session = self.model.combat_session
+        if session is None or session.phase not in {
+            "COMBAT_READY",
+            "PARRY_TIMING",
+            "PARRY_RESOLVE",
+        }:
+            return
+        pyxel = self.pyxel
+        rect = self.combat_timing_bar_rect(session)
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        scale_y = self.runtime.screen_height / 236.0
+        padding = float(self.model.combat_parry_value("track_padding_px", 12, session=session)) * (
+            self.runtime.screen_width / 512.0
+        )
+        track_x = int(rect.x + padding)
+        track_w = max(8, int(rect.width - padding * 2))
+        track_h = max(6, int(8 * scale_y))
+        track_y = int(rect.y + rect.height - max(17, round(18 * scale_y)))
+        slider = self.model.combat_timing_slider_position(session)
+        progress_w = int(track_w * slider) if slider is not None else 0
+        pyxel.rect(track_x - 1, track_y - 1, track_w + 2, track_h + 2, 0)
+        pyxel.rect(track_x, track_y, track_w, track_h, 1)
+        if progress_w > 0:
+            pyxel.rect(track_x, track_y, progress_w, track_h, 5)
+            pyxel.rect(track_x, track_y, max(1, progress_w), max(1, track_h // 2), 6)
+        pyxel.rectb(track_x, track_y, track_w, track_h, 7)
+        for index, marker in enumerate(session.marker_positions):
+            judgement = (
+                session.marker_judgements[index] if index < len(session.marker_judgements) else None
+            )
+            color = 11 if judgement == "HIT" else 8 if judgement == "MISS" else 7
+            marker_x = int(track_x + marker * track_w)
+            marker_y = int(track_y + track_h / 2)
+            if judgement == "HIT":
+                pyxel.circ(marker_x, marker_y, 4, 11)
+                pyxel.circb(marker_x, marker_y, 5, 7)
+            elif judgement == "MISS":
+                pyxel.circb(marker_x, marker_y, 5, 8)
+                pyxel.line(marker_x - 3, marker_y - 3, marker_x + 3, marker_y + 3, 8)
+                pyxel.line(marker_x - 3, marker_y + 3, marker_x + 3, marker_y - 3, 8)
+            else:
+                pyxel.circb(marker_x, marker_y, 5, color)
+                pyxel.circb(marker_x, marker_y, 3, 13)
+        if slider is not None:
+            slider_x = int(track_x + slider * track_w)
+            slider_y = int(track_y + track_h / 2)
+            pyxel.line(slider_x, track_y - 4, slider_x, track_y + track_h + 4, 0)
+            pyxel.circ(slider_x, slider_y, 4, 10)
+            pyxel.circb(slider_x, slider_y, 6, 7)
+        label = "PERFECT" if session.result == "perfect" else "GOOD" if session.result else "PARRY"
+        label_scale = 2
+        self.draw_spaced_pixel_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y + max(5, round(6 * scale_y))),
+            label,
+            10 if session.result == "perfect" else 7,
+            scale=label_scale,
+            gap=1,
+        )
+        self.draw_combat_countdown_cue(session)
+
+    def draw_combat_countdown_cue(self, session) -> None:
+        cue = self.combat_countdown_cue_text(session)
+        if cue is None:
+            return
+        cue_scale = 3
+        cue_gap = 2
+        cue_width = self.spaced_pixel_text_width(cue, cue_scale, cue_gap)
+        _, cue_h = pixel_text_size(cue, cue_scale)
+        width = max(92, cue_width + 28)
+        height = max(44, cue_h + 24)
+        x = int((self.runtime.screen_width - width) / 2)
+        y = int(self.runtime.screen_height * 0.38 - height / 2)
+        rect = Rect(float(x), float(y), float(width), float(height))
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        self.draw_spaced_pixel_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y + rect.height / 2 - cue_h / 2),
+            cue,
+            10 if cue == "GO!" else 7,
+            scale=cue_scale,
+            gap=cue_gap,
+        )
+
+    def combat_countdown_cue_text(self, session) -> str | None:
+        combat = self.runtime.raw.get("combat_v1", {})
+        ready = combat.get("ready_sequence", {}) if isinstance(combat, dict) else {}
+        if not isinstance(ready, dict):
+            ready = {}
+        ready_sec = max(0.0, float(ready.get("ready_sec", 0.45)))
+        step_sec = max(1.0 / 60.0, float(ready.get("count_step_sec", 0.38)))
+        go_sec = max(0.0, float(ready.get("go_sec", 0.22)))
+        if session.phase == "COMBAT_READY":
+            elapsed = max(0.0, session.phase_elapsed_sec)
+            if elapsed < ready_sec:
+                return "READY!"
+            index = int((elapsed - ready_sec) / step_sec)
+            if 0 <= index < 3:
+                return str(3 - index)
+            return None
+        if session.phase == "PARRY_TIMING" and session.timing_elapsed_sec < go_sec:
+            return "GO!"
+        return None
+
+    def draw_interaction_chip(self) -> None:
+        interaction = self.model.interaction
+        if interaction is None:
+            return
+        if interaction.kind == "inspect":
+            self.draw_inspect_panel(interaction)
+            return
+        self.draw_progress_popup(interaction)
+
+    def draw_progress_popup(self, interaction) -> None:
+        pyxel = self.pyxel
+        rect = self.interaction_chip_rect()
+        accent = 10 if interaction.kind == "energy_refill" else 12
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        if rect.height <= 32:
+            self.draw_compact_progress_slot(rect, interaction, accent)
+            return
+        profile = self.runtime.profile.name
+        scale = 1.25 if profile == "high" else 1.0
+        compact = rect.height <= 50
+        pad_x = int(round(8 * scale))
+        title_x = int(rect.x + pad_x)
+        title_y = int(rect.y + round(5 * scale))
+        pct_w = int(round(42 * scale))
+        title_w = max(24, int(rect.width - pad_x * 2 - pct_w))
+        pct_text = f"{int(round(interaction.progress * 100)):03d}%"
+        self.draw_ui_text(
+            pyxel,
+            title_x,
+            title_y,
+            self.fit_ui_text_to_width(self.interaction_title(interaction), title_w, "body"),
+            7,
+            "body",
+        )
+        self.draw_text_right(
+            int(rect.x + rect.width - round(8 * scale)),
+            title_y,
+            pct_text,
+            13,
+            "numeric",
+        )
+        meter_x = title_x
+        meter_y = int(rect.y + rect.height - round((12 if compact else 28) * scale))
+        meter_w = int(rect.width - round(16 * scale))
+        meter_h = max(4, int(round((5 if compact else 6) * scale)))
+        self.draw_meter(
+            meter_x,
+            meter_y,
+            meter_w,
+            meter_h,
+            interaction.progress,
+            1.0,
+            accent,
+        )
+        lines = self.interaction_lines(interaction)
+        if lines and not compact:
+            line = self.fit_ui_text_to_width(lines[0], meter_w, "body")
+            self.draw_ui_text(
+                pyxel,
+                meter_x,
+                int(rect.y + round(42 * scale)),
+                line,
+                13,
+                "body",
+            )
+
+    def draw_compact_progress_slot(self, rect: Rect, interaction, accent: int) -> None:
+        icon_size = 12 if self.runtime.profile.name != "high" else 14
+        icon_x = int(rect.x + 7)
+        icon_y = int(rect.y + rect.height / 2 - icon_size / 2)
+        icon_token = "CHARGE" if interaction.kind == "energy_refill" else "REFILL"
+        self.draw_button_icon_at(icon_token, icon_x, icon_y, icon_size, accent)
+
+        label_x = icon_x + icon_size + 5
+        meter_x = int(rect.x + 74)
+        meter_w = max(24, int(rect.x + rect.width - meter_x - 8))
+        label_w = max(12, meter_x - label_x - 5)
+        title = self.interaction_title(interaction)
+        style_name = self.ui_text_style_name(title, "button")
+        label = self.fit_ui_text_to_width(title, label_w, style_name)
+        text_h = self.ui_renderer.text_height(style_name)
+        text_y = int(rect.y + rect.height / 2 - text_h / 2 + 3)
+        self.draw_ui_text(self.pyxel, label_x, text_y, label, 7, style_name)
+        self.draw_meter(
+            meter_x,
+            int(rect.y + rect.height / 2 - 3),
+            meter_w,
+            6,
+            interaction.progress,
+            1.0,
+            accent,
+        )
+
+    def draw_inspect_panel(self, interaction) -> None:
+        panel = self.inspect_panel_rect()
+        title_rect = self.inspect_title_rect()
+        text_rect = self.inspect_text_rect()
+        page_rect = self.inspect_page_rect()
+        done_rect = self.interaction_done_button_rect()
+        self.draw_panel_frame(panel, fill=0, inner=5)
+        title = self.fit_ui_text_to_width(
+            self.interaction_title(interaction),
+            int(title_rect.width),
+            "title",
+        )
+        self.draw_ui_text(self.pyxel, int(title_rect.x), int(title_rect.y), title, 7, "title")
+        lines = self.interaction_lines(interaction)
+        line_height = 25 if self.runtime.profile.name == "high" else 20
+        max_lines = max(1, int(text_rect.height // line_height))
+        wrapped = self.wrap_ui_lines(lines, int(text_rect.width), "body")
+        for index, line in enumerate(wrapped[:max_lines]):
+            self.draw_ui_text(
+                self.pyxel,
+                int(text_rect.x),
+                int(text_rect.y + index * line_height),
+                line,
+                13,
+                "body",
+            )
+        if len(wrapped) > max_lines:
+            self.draw_ui_text_center(
+                int(page_rect.x + page_rect.width / 2),
+                int(page_rect.y),
+                "1/2",
+                13,
+                "auxiliary",
+            )
+        self.draw_button(done_rect, self.ui_token("DONE"), 5, style_name="button")
+
+    def draw_button(
+        self,
+        rect: Rect,
+        label: str,
+        color: int,
+        text_color: int = 0,
+        style_name: str = "label",
+        text_offset_y: int = 0,
+    ) -> None:
+        pyxel = self.pyxel
+        pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), color)
+        pyxel.rectb(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 7)
+        text = self.fit_ui_text_to_width(label, int(rect.width) - 8, style_name)
+        text_rect = Rect(rect.x, rect.y + text_offset_y, rect.width, rect.height)
+        self.draw_ui_text_in_rect(text_rect, text, text_color, style_name, align="center")
+
+    def draw_panel_frame(self, rect: Rect, fill: int, inner: int | None = None) -> None:
+        pyxel = self.pyxel
+        x = int(rect.x)
+        y = int(rect.y)
+        width = int(rect.width)
+        height = int(rect.height)
+        pyxel.rect(x, y, width, height, fill)
+        pyxel.rectb(x, y, width, height, 7)
+        chamfer = 5 if self.runtime.profile.name == "high" else 4
+        pyxel.line(x, y + chamfer, x + chamfer, y, 6)
+        pyxel.line(x + width - 1 - chamfer, y, x + width - 1, y + chamfer, 6)
+        pyxel.line(
+            x + width - 1,
+            y + height - 1 - chamfer,
+            x + width - 1 - chamfer,
+            y + height - 1,
+            6,
+        )
+        pyxel.line(x + chamfer, y + height - 1, x, y + height - 1 - chamfer, 6)
+        if inner is not None and width > 10 and height > 10:
+            inset = 3 if self.runtime.profile.name != "high" else 4
+            pyxel.rectb(x + inset, y + inset, width - inset * 2, height - inset * 2, inner)
+
+    def draw_action_button(self, rect: Rect, token: str, slot: str, enabled: bool) -> None:
+        theme = self.ui_theme()
+        fill = theme["context_fill"] if slot == "context" else theme["primary_fill"]
+        text_color = theme["context_text"] if slot == "context" else theme["primary_text"]
+        if not enabled:
+            fill = theme["disabled_fill"]
+            text_color = theme["disabled_text"]
+        inner_key = "context_light" if slot == "context" else "primary_light"
+        self.draw_panel_frame(rect, fill=fill, inner=theme[inner_key])
+        if (
+            enabled
+            and slot == "primary"
+            and token in {"BUBBLE", "ZAP"}
+            and self.model.combat_counter_action_mode() == token
+            and (self.frame // 8) % 2 == 0
+        ):
+            self.pyxel.rectb(
+                int(rect.x) + 2,
+                int(rect.y) + 2,
+                max(1, int(rect.width) - 4),
+                max(1, int(rect.height) - 4),
+                10,
+            )
+        if rect.height <= 30:
+            self.draw_compact_action_button_content(rect, token, text_color)
+            return
+        self.draw_button_icon(token, rect, text_color)
+        label_rect = self.action_button_label_rect(rect)
+        label = self.fit_ui_text_to_width(self.ui_token(token), int(label_rect.width), "button")
+        self.draw_ui_text_in_rect(
+            label_rect,
+            label,
+            text_color,
+            "button",
+            align="center",
+        )
+
+    def draw_compact_action_button_content(self, rect: Rect, token: str, color: int) -> None:
+        icon_size = 12 if self.runtime.profile.name != "high" else 14
+        pad_x = 6
+        gap = 4
+        icon_x = int(rect.x + pad_x)
+        icon_y = int(rect.y + rect.height / 2 - icon_size / 2)
+        self.draw_button_icon_at(token, icon_x, icon_y, icon_size, color)
+        label_x = icon_x + icon_size + gap
+        label_w = max(8, int(rect.x + rect.width - label_x - 4))
+        label_text = self.ui_token(token)
+        style_name = self.ui_text_style_name(label_text, "button")
+        label = self.fit_ui_text_to_width(label_text, label_w, style_name)
+        text_h = self.ui_renderer.text_height(style_name)
+        text_y = int(rect.y + rect.height / 2 - text_h / 2 + 3)
+        self.draw_ui_text(self.pyxel, label_x, text_y, label, color, style_name)
+
+    def action_button_label_rect(self, rect: Rect) -> Rect:
+        if rect.height <= 30:
+            icon_size = 12 if self.runtime.profile.name != "high" else 14
+            pad_x = 6
+            gap = 4
+            label_x = rect.x + pad_x + icon_size + gap
+            return Rect(label_x, rect.y, rect.x + rect.width - label_x - 4, rect.height)
+        pad_x = 8 if self.runtime.profile.name == "high" else 6
+        label_h = 20 if self.runtime.profile.name == "high" else 16
+        bottom_pad = 8 if self.runtime.profile.name == "high" else 6
+        return Rect(
+            rect.x + pad_x,
+            rect.y + rect.height - label_h - bottom_pad,
+            rect.width - pad_x * 2,
+            label_h,
+        )
+
+    def draw_button_icon(self, token: str, rect: Rect, color: int) -> None:
+        if self.runtime.profile.name == "high":
+            icon_size = 16
+            y_offset = 5
+        elif self.runtime.profile.name == "low":
+            icon_size = 12
+            y_offset = 4
+        else:
+            icon_size = 14
+            y_offset = 4
+        x = int(rect.x + rect.width / 2 - icon_size / 2)
+        y = int(rect.y + y_offset)
+        self.draw_button_icon_at(token, x, y, icon_size, color)
+
+    def draw_button_icon_at(self, token: str, x: int, y: int, icon_size: int, color: int) -> None:
+        pyxel = self.pyxel
+        cx = x + icon_size // 2
+        cy = y + icon_size // 2
+        if token in {"CHECK", "DONE", "NEXT"}:
+            pyxel.circb(cx - 2, cy - 2, max(4, icon_size // 4), color)
+            pyxel.line(cx + 2, cy + 2, cx + icon_size // 2 - 1, cy + icon_size // 2 - 1, color)
+        elif token in {"GUARD", "CANCEL_REFILL", "CANCEL_CHARGE"}:
+            pyxel.line(cx, y, x + icon_size - 3, y + 4, color)
+            pyxel.line(x + icon_size - 3, y + 4, x + icon_size - 5, y + icon_size - 3, color)
+            pyxel.line(x + icon_size - 5, y + icon_size - 3, cx, y + icon_size - 1, color)
+            pyxel.line(cx, y + icon_size - 1, x + 3, y + icon_size - 3, color)
+            pyxel.line(x + 3, y + icon_size - 3, x + 2, y + 4, color)
+            pyxel.line(x + 2, y + 4, cx, y, color)
+        elif token == "BUBBLE":
+            pyxel.circb(cx - 3, cy, 4, color)
+            pyxel.circb(cx + 4, cy - 4, 3, color)
+        elif token in {"ZAP", "CHARGE"}:
+            pyxel.line(cx, y, x + 3, cy, color)
+            pyxel.line(x + 3, cy, cx, cy, color)
+            pyxel.line(cx, cy, x + 6, y + icon_size - 1, color)
+        elif token == "REFILL":
+            pyxel.circ(cx, cy + 2, max(4, icon_size // 4), color)
+            pyxel.line(cx, y + 1, cx - 4, cy, color)
+            pyxel.line(cx, y + 1, cx + 4, cy, color)
+        else:
+            pyxel.rect(cx - 1, y + 2, 3, icon_size - 4, color)
+
+    def draw_system_button(self, hit_rect: Rect, visual_rect: Rect, icon: str) -> None:
+        theme = self.ui_theme()
+        self.draw_panel_frame(visual_rect, fill=theme["system_fill"], inner=theme["system_hover"])
+        x = int(visual_rect.x)
+        y = int(visual_rect.y)
+        width = int(visual_rect.width)
+        height = int(visual_rect.height)
+        cx = x + width // 2
+        cy = y + height // 2
+        if icon == "pause":
+            bar_w = max(3, width // 7)
+            pyxel = self.pyxel
+            pyxel.rect(cx - bar_w - 2, y + height // 4, bar_w, height // 2, 7)
+            pyxel.rect(cx + 2, y + height // 4, bar_w, height // 2, 7)
+        else:
+            self.pyxel.rect(x + width // 4, cy - 4, 4, 8, 7)
+            self.pyxel.line(x + width // 4 + 4, cy - 4, cx + 2, cy - 8, 7)
+            self.pyxel.line(x + width // 4 + 4, cy + 4, cx + 2, cy + 8, 7)
+            if not self.audio.muted:
+                self.pyxel.circb(cx + 6, cy, 5, 7)
+
+    def draw_text_right(self, right_x: int, y: int, text: str, color: int, style_name: str) -> None:
+        style_name = self.ui_text_style_name(text, style_name)
+        self.draw_ui_text(
+            self.pyxel,
+            right_x - self.ui_renderer.text_width(text, style_name),
+            y,
+            text,
+            color,
+            style_name,
+        )
+
+    def draw_ui_text_in_rect(
+        self,
+        rect: Rect,
+        text: str,
+        color: int,
+        style_name: str,
+        align: str = "left",
+    ) -> None:
+        style_name = self.ui_text_style_name(text, style_name)
+        text_width = self.ui_renderer.text_width(text, style_name)
+        text_height = self.ui_renderer.text_height(style_name)
+        if align == "right":
+            x = int(rect.x + rect.width - text_width)
+        elif align == "center":
+            x = int(rect.x + rect.width / 2 - text_width / 2)
+        else:
+            x = int(rect.x)
+        y_float = rect.y + max(0.0, (rect.height - text_height) / 2.0)
+        y_float += self.ui_text_vertical_offset(style_name)
+        max_y = rect.y + rect.height - text_height
+        if max_y >= rect.y:
+            y_float = min(max(y_float, rect.y), max_y)
+        y = int(y_float)
+        self.draw_ui_text(self.pyxel, x, y, text, color, style_name)
+
+    def ui_text_vertical_offset(self, style_name: str) -> int:
+        if style_name == "button":
+            return -2
+        if style_name in {"tooltip", "resource", "numeric"}:
+            return -1
+        return 0
+
+    def draw_resource_panel(self) -> None:
+        rect = self.resource_panel_rect()
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        profile = self.runtime.profile.name
+        compact = rect.width <= 170
+        if compact:
+            rows = (
+                (6, 5, 24, 3, 28, 56, 8, 68),
+                (6, 22, 24, 20, 28, 56, 25, 68),
+            )
+        elif profile == "high":
+            rows = (
+                (10, 10, 30, 8, 42, 75, 8, 35, 120, 15, 80),
+                (10, 35, 30, 33, 42, 75, 33, 35, 120, 40, 80),
+            )
+        elif profile == "low":
+            rows = (
+                (8, 6, 24, 4, 34, 60, 4, 28, 96, 10, 52),
+                (8, 26, 24, 24, 34, 60, 24, 28, 96, 30, 52),
+            )
+        else:
+            rows = (
+                (8, 8, 24, 6, 34, 60, 6, 28, 96, 12, 64),
+                (8, 28, 24, 26, 34, 60, 26, 28, 96, 32, 64),
+            )
+        resources = (
+            (self.ui("hud.water"), int(self.model.water), self.model.water_max, 12, "water"),
+            (self.ui("hud.energy"), int(self.model.energy), self.model.energy_max, 10, "energy"),
+        )
+        row_text_height = 22 if profile == "high" else 18
+        for index, (label, value, maximum, color, icon) in enumerate(resources):
+            x = int(rect.x)
+            y = int(rect.y)
+            if compact:
+                icon_x, icon_y, value_x, value_y, value_w, meter_x, meter_y, meter_w = rows[index]
+                self.draw_resource_icon(x + icon_x, y + icon_y, icon, color)
+                self.draw_ui_text_in_rect(
+                    Rect(x + value_x, y + value_y, value_w, row_text_height),
+                    f"{value:03d}",
+                    7,
+                    "numeric",
+                    align="right",
+                )
+                self.draw_meter(x + meter_x, y + meter_y, meter_w, 6, value, maximum, color)
+            else:
+                (
+                    icon_x,
+                    icon_y,
+                    label_x,
+                    label_y,
+                    label_w,
+                    value_x,
+                    value_y,
+                    value_w,
+                    meter_x,
+                    meter_y,
+                    meter_w,
+                ) = rows[index]
+                self.draw_resource_icon(x + icon_x, y + icon_y, icon, color)
+                self.draw_ui_text_in_rect(
+                    Rect(x + label_x, y + label_y, label_w, row_text_height),
+                    label,
+                    color,
+                    "resource",
+                    align="left",
+                )
+                self.draw_ui_text_in_rect(
+                    Rect(x + value_x, y + value_y, value_w, row_text_height),
+                    f"{value:03d}",
+                    7,
+                    "numeric",
+                    align="right",
+                )
+                self.draw_meter(x + meter_x, y + meter_y, meter_w, 7, value, maximum, color)
+
+    def draw_resource_icon(self, x: int, y: int, icon: str, color: int) -> None:
+        if icon == "water":
+            self.pyxel.circ(x + 6, y + 7, 5, color)
+            self.pyxel.tri(x + 6, y, x + 2, y + 8, x + 10, y + 8, color)
+        else:
+            self.pyxel.line(x + 7, y, x + 2, y + 7, color)
+            self.pyxel.line(x + 2, y + 7, x + 7, y + 7, color)
+            self.pyxel.line(x + 7, y + 7, x + 4, y + 13, color)
+
+    def draw_wordmark(self) -> None:
+        rect = self.wordmark_rect()
+        if rect.x < self.resource_panel_rect().x + self.resource_panel_rect().width + 8:
+            return
+        self.draw_text_center(
+            int(rect.x + rect.width / 2), int(rect.y + 1), "DRIFTWITHME", 7, scale=2
+        )
+        baseline = int(rect.y + rect.height - 2)
+        self.pyxel.line(int(rect.x + 8), baseline, int(rect.x + rect.width - 8), baseline, 6)
+
+    def draw_location_label(self) -> None:
+        rect = self.location_rect()
+        self.draw_panel_frame(rect, fill=1, inner=None)
+        text = self.fit_ui_text_to_width(self.ui("hud.location"), int(rect.width) - 8, "auxiliary")
+        self.draw_ui_text_center(
+            int(rect.x + rect.width / 2),
+            int(rect.y + 3),
+            text,
+            7,
+            "auxiliary",
+        )
+
+    def draw_minimap(self) -> None:
+        rect = self.minimap_visual_rect()
+        x = int(rect.x)
+        y = int(rect.y)
+        size = int(rect.width)
+        radius = size // 2 - 2
+        cx = x + size // 2
+        cy = y + size // 2
+        self.pyxel.circ(cx, cy, radius, 1)
+        self.pyxel.circb(cx, cy, radius, 7)
+        for offset in range(-radius + 6, radius, 8):
+            span = int(math.sqrt(max(0, radius * radius - offset * offset)))
+            self.pyxel.line(cx - span, cy + offset, cx + span, cy + offset, 5)
+            self.pyxel.line(cx + offset, cy - span, cx + offset, cy + span, 5)
+        map_side = max(16, int((size - 12) / math.sqrt(2)))
+        map_x = cx - map_side // 2
+        map_y = cy - map_side // 2
+        for obj in self.world.objects:
+            px, py = self.minimap_point(obj.x, obj.z, map_x, map_y, map_side)
+            if obj.kind == "water_station":
+                color = 12
+            elif obj.kind == "solar_station":
+                color = 10
+            elif obj.inspectable:
+                color = 7
+            else:
+                color = 5
+            self.pyxel.pset(px, py, color)
+        office = getattr(self, "office", None)
+        task = None if office is None else office.active_field_task
+        if task is not None and task.completion_condition_id == "inspect_anomaly_source":
+            target = self.model.enemy_by_id("urchin_abnormal_04")
+            if target is not None and target.state != "DEFEATED":
+                target_x, target_y = self.minimap_point(
+                    target.x,
+                    target.z,
+                    map_x,
+                    map_y,
+                    map_side,
+                )
+                self.pyxel.circb(target_x, target_y, 3, 10)
+        px, py = self.minimap_point(
+            self.model.player.x,
+            self.model.player.z,
+            map_x,
+            map_y,
+            map_side,
+        )
+        self.pyxel.circ(px, py, 2, 7)
+
+    def minimap_point(
+        self,
+        world_x: float,
+        world_z: float,
+        map_x: int,
+        map_y: int,
+        map_side: int,
+    ) -> tuple[int, int]:
+        rect = self.world.minimap_rect
+        u = 0.0 if rect.width <= 0 else max(0.0, min((world_x - rect.min_x) / rect.width, 1.0))
+        v = 1.0
+        if rect.depth > 0:
+            normalized_z = max(0.0, min((world_z - rect.min_z) / rect.depth, 1.0))
+            v = 1.0 - normalized_z
+        return map_x + round(u * (map_side - 1)), map_y + round(v * (map_side - 1))
+
+    def draw_tooltip(self) -> None:
+        text = self.current_tooltip_text()
+        if not text:
+            return
+        rect = self.tooltip_rect(two_lines=False)
+        self.draw_panel_frame(rect, fill=0, inner=5)
+        style_name = self.ui_text_style_name(text, "tooltip")
+        fitted = self.fit_ui_text_to_width(text, int(rect.width) - 16, style_name)
+        if rect.height <= 24:
+            text_w = self.ui_renderer.text_width(fitted, style_name)
+            text_h = self.ui_renderer.text_height(style_name)
+            x = int(rect.x + rect.width / 2 - text_w / 2)
+            y = int(rect.y + rect.height / 2 - text_h / 2 + 3)
+            self.draw_ui_text(
+                self.pyxel,
+                x,
+                y,
+                fitted,
+                8 if self.last_denied_reason else 7,
+                style_name,
+            )
+            return
+        self.draw_ui_text_in_rect(
+            Rect(rect.x + 8, rect.y + 4, rect.width - 16, rect.height - 8),
+            fitted,
+            8 if self.last_denied_reason else 7,
+            style_name,
+            align="center",
+        )
+
+    def current_tooltip_text(self) -> str:
+        if self.model.world_paused:
+            return ""
+        if self.last_denied_reason:
+            return self.denied_reason_text(self.last_denied_reason)
+        if self.model.player.barrier_active:
+            return self.ui("hint.guard_hold")
+        token = self.action_button_mode()
+        if token == "NONE":
+            token = self.interact_button_token()
+            if token == "CHECK" and self.model.interaction_candidate(self.camera()) is None:
+                return ""
+        return self.tooltip_for_token(token)
+
+    def tooltip_for_token(self, token: str) -> str:
+        mapping = {
+            "CHECK": "tooltip.check",
+            "REFILL": "tooltip.refill",
+            "CHARGE": "tooltip.charge",
+            "GUARD": "tooltip.guard",
+            "BUBBLE": "tooltip.bubble",
+            "ZAP": "tooltip.zap",
+            "NONE": "tooltip.none",
+        }
+        key = mapping.get(token)
+        return self.ui(key) if key is not None else ""
+
+    def wrap_ui_lines(self, lines: tuple[str, ...], max_width: int, style_name: str) -> list[str]:
+        wrapped: list[str] = []
+        for line in lines:
+            line_style = self.ui_text_style_name(line, style_name)
+            current = ""
+            for char in line:
+                candidate = current + char
+                if current and self.ui_renderer.text_width(candidate, line_style) > max_width:
+                    wrapped.append(current)
+                    current = char
+                else:
+                    current = candidate
+            if current:
+                wrapped.append(current)
+        return wrapped
+
+    def draw_text_center(self, x: int, y: int, text: str, color: int, scale: int = 2) -> None:
+        text = text.upper()
+        text_width, _ = pixel_text_size(text, scale)
+        draw_pixel_text(self.pyxel, x - text_width // 2, y, text, color, scale=scale)
+
+    def draw_spaced_pixel_text_center(
+        self, x: int, y: int, text: str, color: int, scale: int = 1, gap: int = 1
+    ) -> None:
+        text = text.upper()
+        glyphs = tuple(text)
+        if not glyphs:
+            return
+        widths = tuple(pixel_text_size(char, scale)[0] for char in glyphs)
+        total_width = sum(widths) + gap * max(0, len(glyphs) - 1)
+        cursor_x = x - total_width // 2
+        for char, width in zip(glyphs, widths, strict=True):
+            draw_pixel_text(self.pyxel, cursor_x, y, char, color, scale=scale)
+            cursor_x += width + gap
+
+    def spaced_pixel_text_width(self, text: str, scale: int = 1, gap: int = 1) -> int:
+        glyphs = tuple(text.upper())
+        if not glyphs:
+            return 0
+        return sum(pixel_text_size(char, scale)[0] for char in glyphs) + gap * (len(glyphs) - 1)
+
+    def fit_text_to_width(self, text: str, max_width: int, scale: int) -> str:
+        text = text.upper()
+        if pixel_text_size(text, scale)[0] <= max_width:
+            return text
+        suffix = ".."
+        while text and pixel_text_size(text + suffix, scale)[0] > max_width:
+            text = text[:-1]
+        return text + suffix if text else suffix
+
+    @property
+    def ui_renderer(self) -> UITextRenderer:
+        renderer = getattr(self, "ui_text", None)
+        if renderer is None:
+            renderer = load_ui_text_renderer(self.pyxel, self.runtime)
+            self.ui_text = renderer
+        return renderer
+
+    def ui(self, key: str) -> str:
+        return self.ui_renderer.resources.text(key)
+
+    def ui_token(self, token: str) -> str:
+        return self.ui_renderer.resources.token(token)
+
+    def denied_reason_text(self, reason: str) -> str:
+        return self.ui_renderer.resources.reason(reason)
+
+    def draw_ui_text(self, pyxel, x: int, y: int, text: str, color: int, style_name: str) -> None:
+        style_name = self.ui_text_style_name(text, style_name)
+        y = self.ui_text_language_y(y, text)
+        self.ui_renderer.draw(pyxel, x, y, text, color, style_name)
+
+    def draw_ui_text_center(self, x: int, y: int, text: str, color: int, style_name: str) -> None:
+        style_name = self.ui_text_style_name(text, style_name)
+        y = self.ui_text_language_y(y, text)
+        self.ui_renderer.draw_centered(self.pyxel, x, y, text, color, style_name)
+
+    def fit_ui_text_to_width(self, text: str, max_width: int, style_name: str) -> str:
+        style_name = self.ui_text_style_name(text, style_name)
+        return self.ui_renderer.fit_text(text, max_width, style_name)
+
+    def ui_text_style_name(self, text: str, style_name: str) -> str:
+        if not self.ui_text_has_japanese(text):
+            return style_name
+        if style_name == "button":
+            return "japanese_button"
+        if style_name in {"label", "body", "title", "tooltip", "resource"}:
+            return "japanese"
+        return style_name
+
+    def ui_text_language_y(self, y: int, text: str) -> int:
+        return y - 8 if self.ui_text_has_japanese(text) else y
+
+    @staticmethod
+    def ui_text_has_japanese(text: str) -> bool:
+        return any("\u3040" <= char <= "\u30ff" or "\u3400" <= char <= "\u9fff" for char in text)
+
+    def interaction_title(self, interaction) -> str:
+        if interaction.kind == "water_refill":
+            return self.ui("interaction.water_refill.title")
+        if interaction.kind == "energy_refill":
+            return self.ui("interaction.energy_charge.title")
+        if interaction.kind == "inspect" and interaction.title == "NO WATER":
+            return self.ui("interaction.no_water.title")
+        return self.ui_renderer.resources.raw_text(interaction.title)
+
+    def interaction_lines(self, interaction) -> tuple[str, ...]:
+        if interaction.kind == "water_refill":
+            return (self.ui("interaction.water_refill.line"),)
+        if interaction.kind == "energy_refill":
+            return (self.ui("interaction.energy_charge.line"),)
+        if interaction.kind == "inspect" and interaction.title == "NO WATER":
+            return (self.ui("interaction.no_water.line"),)
+        if interaction.kind == "inspect":
+            obj = self.world.object_by_id(interaction.object_id)
+            if obj is not None and obj.text_key is not None:
+                text = self.world.texts.get(obj.text_key, {})
+                lines = tuple(str(line) for line in text.get(self.ui_renderer.resources.locale, ()))
+                if lines:
+                    return lines
+        return tuple(self.ui_renderer.resources.raw_text(line) for line in interaction.lines)
+
+
+def _smoothstep(value: float) -> float:
+    amount = max(0.0, min(1.0, value))
+    return amount * amount * (3.0 - 2.0 * amount)
+
+
+def _smooth_lerp(origin: float, target: float, amount: float) -> float:
+    eased = _smoothstep(amount)
+    return origin + (target - origin) * eased
+
+
+def _two_segment_smooth_lerp(
+    origin: float,
+    peak: float,
+    target: float,
+    first_duration: float,
+    second_duration: float,
+    elapsed: float,
+) -> float:
+    if elapsed < first_duration:
+        return _smooth_lerp(origin, peak, elapsed / max(1e-6, first_duration))
+    return _smooth_lerp(
+        peak,
+        target,
+        (elapsed - first_duration) / max(1e-6, second_duration),
+    )
+
+
+def _lerp_vec3(origin: Vec3, target: Vec3, amount: float) -> Vec3:
+    return Vec3(
+        origin.x + (target.x - origin.x) * amount,
+        origin.y + (target.y - origin.y) * amount,
+        origin.z + (target.z - origin.z) * amount,
+    )
+
+
+def main() -> None:
+    DriftWithMeApp()
+
+
+if __name__ == "__main__":
+    main()

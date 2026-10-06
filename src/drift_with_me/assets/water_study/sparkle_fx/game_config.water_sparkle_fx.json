@@ -1,0 +1,40 @@
+{
+  "water_sparkle_fx": {
+    "enabled": true,
+    "asset_bank": "water_sparkle_fx_bank0_256",
+    "display_scale": 1,
+    "allow_runtime_upscale": false,
+    "spawn": {
+      "max_large_cross": 1,
+      "max_medium_cross": 3,
+      "max_small_cross": 5,
+      "max_large_glint": 1,
+      "max_medium_glint": 2,
+      "max_micro_cluster": 3,
+      "max_micro_particles": 14,
+      "sparkle_interval_frames": [
+        8,
+        20
+      ],
+      "micro_particle_interval_frames": [
+        2,
+        6
+      ],
+      "min_spawn_distance_px": 20,
+      "large_min_spawn_distance_px": 48
+    },
+    "motion": {
+      "position_jitter_px": 1,
+      "allow_orbital_motion": false,
+      "allow_continuous_drift": false
+    },
+    "animation": {
+      "one_shot": true,
+      "despawn_after_last_frame": true
+    },
+    "layer_order": {
+      "micro_particles": 6,
+      "sprite_sparkles": 7
+    }
+  }
+}
