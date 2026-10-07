@@ -5,6 +5,7 @@ from enum import StrEnum
 from typing import Any
 
 from drift_with_me import config
+from drift_with_me.field_visit import RETURN_TURNS, FieldProgress
 
 
 class Classification(StrEnum):
@@ -168,6 +169,7 @@ class CaseSession:
     feedback: str = ""
     field_task_id: str | None = None
     field_result: FieldResult | None = None
+    field_progress: FieldProgress = field(default_factory=FieldProgress)
 
 
 CLASSIFICATION_RESULT_STATES: dict[Classification, CaseState] = {
@@ -546,7 +548,30 @@ class OfficePrototype:
         session.feedback = "結果を記録しました。"
         self.active_field_task = None
         script = self.current_counter_script
-        if script is not None and script.field_return is not None:
+        if result.result_code in RETURN_TURNS:
+            opening, closing = RETURN_TURNS[result.result_code]
+            steps = [
+                DialogueStep(
+                    f"{task.task_id}:return:{result.result_code}:opening",
+                    tuple(DialogueLine(speaker, text) for speaker, text in opening),
+                )
+            ]
+            steps.extend(
+                DialogueStep(
+                    f"{task.task_id}:report:{index}",
+                    (DialogueLine("ジャック", text),),
+                )
+                for index, text in enumerate(result.report_lines)
+            )
+            steps.append(
+                DialogueStep(
+                    f"{task.task_id}:return:{result.result_code}:closing",
+                    tuple(DialogueLine(speaker, text) for speaker, text in closing),
+                )
+            )
+            self._show_dialogue_step(session, steps[0])
+            session.pending_dialogue_steps.extend(steps[1:])
+        elif script is not None and script.field_return is not None:
             field_return = script.field_return
             steps = self._eligible_steps(
                 session,

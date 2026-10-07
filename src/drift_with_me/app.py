@@ -10,6 +10,7 @@ from drift_with_me.audio import AudioEngine
 from drift_with_me.build_info import BUILD_LABEL
 from drift_with_me.camera import CameraController
 from drift_with_me.effects import EffectSystem
+from drift_with_me.field_visit import ANOMALY_ID, FieldConversation, observation_conversation
 from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
 from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput, Rect
 from drift_with_me.math3d import (
@@ -342,6 +343,7 @@ class DriftWithMeApp:
         self.world = load_world_data()
         self.model = GameModel(self.runtime.raw, self.world)
         self.office = OfficePrototype.load()
+        self.field_conversation: FieldConversation | None = None
         self.office_focus = "questions"
         self.office_question_index = 0
         self.office_classification_index = 0
@@ -1037,19 +1039,33 @@ class DriftWithMeApp:
         self.clear_world_input_latches()
         self.previous_time = None
         self.screen = AppScreen.PLAY
+        session = self.office.current_session
+        if (
+            self.office.active_field_task is not None
+            and session is not None
+            and session.field_progress.event_floor == 0
+        ):
+            session.field_progress.event_floor = self.model.event_queue.next_event_id
         self.show_location_label()
 
     def complete_office_field_task(self) -> bool:
         task = self.office.active_field_task
         if task is None:
             return False
-        result = FieldResult(
-            task_id=task.task_id,
-            case_id=task.case_id,
-            result_code="ANOMALOUS_URCHIN_FOUND",
-            discovered_fact_ids=("abnormal_urchin_present", "no_facility_damage"),
-            report_lines=("通常個体3", "異常個体1", "設備被害なし"),
-        )
+        session = self.office.current_session
+        if (
+            session is None
+            or self.model.combat_session is not None
+            or self.model.interaction is not None
+        ):
+            return False
+        progress = session.field_progress
+        if not progress.can_report:
+            if not self.model.danger_blocks_interaction():
+                return False
+            progress.interrupted = True
+        code, facts, lines = progress.report()
+        result = FieldResult(task.task_id, task.case_id, code, facts, lines)
         if not self.office.complete_field_task(result):
             return False
         self.clear_world_input_latches()
@@ -1681,6 +1697,12 @@ class DriftWithMeApp:
 
     def reset_scene_for_debug(self) -> None:
         self.model.reset_scene()
+        self.field_conversation = None
+        office = getattr(self, "office", None)
+        session = office.current_session if office is not None else None
+        if office is not None and office.active_field_task is not None and session is not None:
+            session.field_progress = type(session.field_progress)()
+            session.field_progress.event_floor = self.model.event_queue.next_event_id
         self.audio.reset_event_history()
         self.effects.reset()
         self.camera_controller.reset(Vec3(self.model.player.x, 0.0, self.model.player.z))
@@ -1759,6 +1781,14 @@ class DriftWithMeApp:
             return
 
         self.handle_debug_camera_shortcuts()
+        if (
+            self.model.interaction is None
+            and self.model.combat_session is None
+            and self.office.active_field_task is not None
+            and self.mouse_pressed_in(self.field_return_button_rect())
+            and self.complete_office_field_task()
+        ):
+            return
         if self.model.world_paused:
             self.pointer.cancel()
             self.cancel_double_tap_move_gesture()
@@ -1776,6 +1806,11 @@ class DriftWithMeApp:
                     self.update_camera_controller(elapsed)
                     return
             elif interaction is not None and interaction.kind == "inspect":
+                if getattr(self, "field_conversation", None) is not None:
+                    if self.inspect_completion_requested():
+                        self.advance_field_conversation()
+                    self.update_camera_controller(elapsed)
+                    return
                 if not self.inspect_completion_requested():
                     paused_events = self.model.update_paused(elapsed)
                     self.update_camera_controller(elapsed)
@@ -1899,20 +1934,25 @@ class DriftWithMeApp:
             elif event.kind == "combat_restored":
                 self.start_combat_camera_restore()
                 if self.office_field_event_matches(event.actor_id):
-                    self.complete_office_field_task()
+                    self.record_office_field_event(event)
             elif event.kind == "discharge_succeeded":
                 if not bool(
                     event.payload.get("combat_counter")
                 ) and self.office_field_event_matches(event.target_id):
-                    self.complete_office_field_task()
+                    self.record_office_field_event(event)
             elif event.kind == "action_denied":
                 self.set_denied_reason(str(event.payload.get("reason", "denied")))
             elif event.kind == "inspection_completed":
                 self.show_location_label()
-                if self.office_field_event_matches(event.target_id):
-                    self.complete_office_field_task()
+                self.record_office_field_event(event)
+                self.field_conversation = None
+            elif event.kind == "interaction_cancelled":
+                self.field_conversation = None
             elif event.kind == "interaction_started" and event.target_id is not None:
                 target = self.world.object_by_id(event.target_id)
+                if target is not None:
+                    target = self.model.presentation_object(target)
+                self.begin_field_conversation(event.target_id)
                 interaction_kind = str(event.payload.get("interaction_kind", ""))
                 hold_sec = (
                     math.inf
@@ -1943,6 +1983,84 @@ class DriftWithMeApp:
             camera_reactions_allowed=self.combat_camera_reactions_allowed(),
         )
         self.audio.play_events(events)
+
+    def begin_field_conversation(self, target_id: str) -> None:
+        self.field_conversation = None
+        office = getattr(self, "office", None)
+        if office is None:
+            return
+        task = office.active_field_task
+        session = self.office.current_session
+        interaction = self.model.interaction
+        if task is None or session is None or interaction is None or interaction.kind != "inspect":
+            return
+        progress = session.field_progress
+        repeated = target_id in progress.conversations_completed
+        lines = observation_conversation(
+            target_id,
+            session.asked_question_ids,
+            repeated,
+            self.model.config["simulation"]["day_phase"] == "day",
+        )
+        if lines:
+            index = (
+                0
+                if repeated
+                else min(progress.conversation_positions.get(target_id, 0), len(lines) - 1)
+            )
+            self.field_conversation = FieldConversation(target_id, lines, index)
+
+    def advance_field_conversation(self) -> bool:
+        conversation = getattr(self, "field_conversation", None)
+        session = self.office.current_session
+        if conversation is None or session is None or self.model.interaction is None:
+            return False
+        if conversation.index + 1 < len(conversation.lines):
+            conversation.index += 1
+            session.field_progress.conversation_positions[conversation.target_id] = (
+                conversation.index
+            )
+            return True
+        session.field_progress.conversations_completed.add(conversation.target_id)
+        session.field_progress.conversation_positions.pop(conversation.target_id, None)
+        self.process_events(self.model.complete_interaction())
+        self.camera_controller.cancel_focus()
+        self.field_conversation = None
+        return True
+
+    def record_office_field_event(self, event) -> None:
+        office = getattr(self, "office", None)
+        if office is None:
+            return
+        session = office.current_session
+        if self.office.active_field_task is None or session is None:
+            return
+        progress = session.field_progress
+        if event.event_id < progress.event_floor or event.event_id <= progress.last_event_id:
+            return
+        progress.last_event_id = event.event_id
+        if event.kind == "inspection_completed":
+            progress.observe(event.target_id)
+        elif event.kind in {"combat_restored", "discharge_succeeded"}:
+            target_id = event.actor_id if event.kind == "combat_restored" else event.target_id
+            if target_id != ANOMALY_ID:
+                return
+            enemy = self.model.enemy_by_id(target_id)
+            progress.enemy_ids.add(target_id)
+            if enemy is not None and enemy.state == "DEFEATED":
+                progress.dealt_target_ids.add(target_id)
+            elif event.kind == "combat_restored":
+                outcome = event.payload.get("combat_outcome")
+                if outcome == "player_knockback":
+                    progress.interrupted = True
+                elif outcome == "deflect":
+                    progress.observations["anomaly_repelled"] = (
+                        "異常個体を押し返し、距離を取りました。"
+                    )
+                elif outcome == "capture":
+                    progress.observations["anomaly_temporarily_captured"] = (
+                        "異常個体を一時的に泡で止めました。"
+                    )
 
     def office_field_event_matches(self, target_id: str | None) -> bool:
         office = getattr(self, "office", None)
@@ -2257,6 +2375,8 @@ class DriftWithMeApp:
         pointer = self.pointer_snapshot
         if not pointer.pressed:
             return False
+        if getattr(self, "field_conversation", None) is not None:
+            return self.office_rect(40, 126, 432, 100).contains(pointer.x, pointer.y)
         if self.interaction_done_button_rect().contains(pointer.x, pointer.y):
             return True
         return not self.inspect_panel_rect().contains(pointer.x, pointer.y)
@@ -2298,6 +2418,12 @@ class DriftWithMeApp:
             return tuple(rects)
         interaction = self.model.interaction
         if interaction is not None and interaction.kind == "inspect":
+            if getattr(self, "field_conversation", None) is not None:
+                return (
+                    self.pause_button_rect(),
+                    self.sound_button_rect(),
+                    self.office_rect(40, 126, 432, 100),
+                )
             return (
                 self.pause_button_rect(),
                 self.sound_button_rect(),
@@ -2315,6 +2441,8 @@ class DriftWithMeApp:
             rects.append(self.interaction_chip_rect())
         elif self.last_denied_reason:
             rects.append(self.tooltip_rect(two_lines=False))
+        if getattr(self, "office", None) is not None and self.office.active_field_task is not None:
+            rects.append(self.field_return_button_rect())
         return tuple(rects)
 
     def office_rect(self, x: float, y: float, width: float, height: float) -> Rect:
@@ -2854,7 +2982,11 @@ class DriftWithMeApp:
             self.draw_office_portrait(
                 portrait,
                 case.visitor.portrait_id,
-                smile=session.state in OFFICE_PORTRAIT_SMILE_STATES,
+                smile=session.state in OFFICE_PORTRAIT_SMILE_STATES
+                and not (
+                    session.field_result is not None
+                    and session.field_result.result_code == "INTERRUPTED"
+                ),
             )
             visitor_lines = self.office_visitor_info_lines(case)
             self.draw_office_wrapped_lines(
@@ -4184,26 +4316,27 @@ class DriftWithMeApp:
     def field_task_hud_rect(self) -> Rect:
         return self.office_rect(148, 7, 164, 42)
 
+    def field_return_button_rect(self) -> Rect:
+        return self.office_rect(258, 12, 48, 32)
+
+    def can_return_from_field(self) -> bool:
+        session = self.office.current_session
+        return bool(
+            session
+            and (session.field_progress.can_report or self.model.danger_blocks_interaction())
+        )
+
     def draw_field_task_hud(self) -> None:
         task = self.office.active_field_task
         if task is None:
             return
         rect = self.field_task_hud_rect()
         self.draw_panel_frame(rect, fill=0, inner=12)
-        content_rect = Rect(rect.x + 5, rect.y + 2, rect.width - 10, rect.height - 4)
-        row_height = content_rect.height / 2
-        self.draw_office_text_in_rect(
-            Rect(content_rect.x, content_rect.y, content_rect.width, row_height),
-            "現在の案件",
-            12,
-            preferred_styles=("office_japanese", "office_japanese_button"),
-        )
-        self.draw_office_text_in_rect(
-            Rect(content_rect.x, content_rect.y + row_height, content_rect.width, row_height),
-            task.objective,
-            7,
-            preferred_styles=("office_japanese", "office_japanese_button"),
-        )
+        self.draw_office_text_in_rect(self.office_rect(154, 10, 98, 16), "北側浅瀬", 12)
+        status = "記録あり" if self.can_return_from_field() else "近くを調べる"
+        self.draw_office_text_in_rect(self.office_rect(154, 29, 98, 16), status, 7)
+        ready = self.can_return_from_field()
+        self.draw_office_button(self.field_return_button_rect(), "帰庁", 10 if ready else 5)
 
     def draw_meter(
         self, x: int, y: int, width: int, height: int, value: float, maximum: float, color: int
@@ -4478,7 +4611,27 @@ class DriftWithMeApp:
             accent,
         )
 
+    def draw_field_conversation(self) -> None:
+        conversation = self.field_conversation
+        if conversation is None:
+            return
+        panel = self.office_rect(40, 126, 432, 100)
+        self.draw_panel_frame(panel, fill=0, inner=12)
+        speaker, text = conversation.lines[conversation.index]
+        self.draw_office_text_in_rect(self.office_rect(50, 133, 400, 18), speaker, 12)
+        self.draw_office_wrapped_lines(self.office_rect(50, 154, 400, 48), (text,), 7)
+        self.draw_office_text_in_rect(
+            self.office_rect(50, 204, 50, 16),
+            f"{conversation.index + 1}/{len(conversation.lines)}",
+            13,
+        )
+        label = "次へ" if conversation.index + 1 < len(conversation.lines) else "記録する"
+        self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
+
     def draw_inspect_panel(self, interaction) -> None:
+        if getattr(self, "field_conversation", None) is not None:
+            self.draw_field_conversation()
+            return
         panel = self.inspect_panel_rect()
         title_rect = self.inspect_title_rect()
         text_rect = self.inspect_text_rect()
@@ -4853,6 +5006,7 @@ class DriftWithMeApp:
         map_x = cx - map_side // 2
         map_y = cy - map_side // 2
         for obj in self.world.objects:
+            obj = self.model.presentation_object(obj)
             px, py = self.minimap_point(obj.x, obj.z, map_x, map_y, map_side)
             if obj.kind == "water_station":
                 color = 12

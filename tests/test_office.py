@@ -1338,6 +1338,7 @@ def test_off001_start_game_enters_office_without_advancing_world() -> None:
 def test_off001_debug_field_button_prepares_task_and_enters_exploration() -> None:
     app = DriftWithMeApp.__new__(DriftWithMeApp)
     app.office = OfficePrototype.load()
+    app.model = GameModel(load_runtime_config().raw, load_world_data())
     app.pointer = SimpleNamespace(cancel=lambda: None)
     app.double_tap_move = SimpleNamespace(cancel=lambda: None)
     app.pending_action_pressed = True
@@ -1383,7 +1384,7 @@ def make_active_office_field_event_app() -> DriftWithMeApp:
 
     app.pointer = SimpleNamespace(cancel=lambda: None)
     app.double_tap_move = SimpleNamespace(cancel=lambda: None)
-    app.model = SimpleNamespace(cancel_auto_move=lambda: None)
+    app.model = GameModel(load_runtime_config().raw, load_world_data())
     app.camera_controller = SimpleNamespace(cancel_focus=lambda: None)
     app.effects = SimpleNamespace(process_events=lambda *args, **kwargs: None)
     app.audio = SimpleNamespace(play_events=lambda events: None)
@@ -1415,6 +1416,8 @@ def test_off001_inspection_event_returns_active_field_task_to_same_case() -> Non
     app.process_events([event])
 
     session = app.office.current_session
+    assert app.screen == AppScreen.PLAY
+    assert app.complete_office_field_task()
     assert app.screen == AppScreen.OFFICE
     assert session is not None
     assert session.case_id == "OFF-PROT-003"
@@ -1435,9 +1438,12 @@ def test_off001_exploration_discharge_returns_active_field_task_to_same_case() -
         payload={"energy_cost": 20.0},
     )
 
+    app.model.enemy_by_id("urchin_abnormal_04").state = "DEFEATED"
     app.process_events([event])
 
     session = app.office.current_session
+    assert app.screen == AppScreen.PLAY
+    assert app.complete_office_field_task()
     assert app.screen == AppScreen.OFFICE
     assert session is not None
     assert session.state == CaseState.FIELD_RETURNED
@@ -1473,8 +1479,11 @@ def test_off001_combat_discharge_waits_for_combat_restore_before_returning() -> 
         world_position=(800.0, 0.0, 704.0),
         payload={"combat_outcome": "defeat"},
     )
+    app.model.enemy_by_id("urchin_abnormal_04").state = "DEFEATED"
     app.process_events([restored])
 
+    assert app.screen == AppScreen.PLAY
+    assert app.complete_office_field_task()
     assert app.screen == AppScreen.OFFICE
     assert session.state == CaseState.FIELD_RETURNED
 

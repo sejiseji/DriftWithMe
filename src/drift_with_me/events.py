@@ -19,6 +19,10 @@ class EventQueue:
     def __init__(self) -> None:
         self._next_event_id = 1
 
+    @property
+    def next_event_id(self) -> int:
+        return self._next_event_id
+
     def emit(
         self,
         world_tick: int,

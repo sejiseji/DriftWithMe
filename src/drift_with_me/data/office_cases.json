@@ -131,7 +131,7 @@
         "task_id": "FIELD-PROT-003",
         "location_id": "north_shallow",
         "title": "北側浅瀬の異常音確認",
-        "objective": "異常音の発生源を確認する",
+        "objective": "北側浅瀬の様子を確認する",
         "completion_condition_id": "inspect_anomaly_source"
       }
     },

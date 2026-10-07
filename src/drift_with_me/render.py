@@ -466,8 +466,16 @@ class Renderer:
         combat_background_screen_rect = (
             self.combat_background_screen_exclusion_rect(model, camera) if combat_isolated else None
         )
+        visible_candidates = list(visible_query.objects)
+        robot_anchor = model.world.object_by_id("maintenance_unit")
+        if robot_anchor is not None and not any(
+            obj.id == robot_anchor.id for obj in visible_candidates
+        ):
+            visible_candidates.append(robot_anchor)
         visible_objects = [
-            obj for obj in visible_query.objects if self.object_is_visible(obj, camera, margin)
+            resolved
+            for obj in visible_candidates
+            if self.object_is_visible(resolved := model.presentation_object(obj), camera, margin)
         ]
         visible_details = [
             detail
@@ -2365,6 +2373,37 @@ class Renderer:
             color = 0
         return max(0, min(15, color))
 
+    def draw_maintenance_robot(
+        self, model: GameModel, obj: StaticObject, camera: CameraState
+    ) -> None:
+        root = camera.project(Vec3(obj.x, 0, obj.z))
+        top = camera.project(Vec3(obj.x, 18, obj.z))
+        if root is None or top is None:
+            return
+        px = self.pyxel
+        x, y = round(root.x), round(root.y)
+        h = max(8, round(abs(root.y - top.y)))
+        w = max(8, round(h * 0.72))
+        left = x - w // 2
+        px.elli(left - 2, y - 3, w + 4, 5, 5)
+        px.rect(left, y - h + 3, w, h - 5, 6)
+        px.rectb(left, y - h + 3, w, h - 5, 5)
+        px.rect(left + 2, y - h + 5, max(4, w - 4), max(3, h // 4), 1)
+        px.pset(left + 3, y - h + 6, 12)
+        px.pset(left + w - 4, y - h + 6, 12)
+        px.rect(left + 2, y - 4, 3, 4, 0)
+        px.rect(left + w - 5, y - 4, 3, 4, 0)
+        jar_x = left + w + 1
+        px.rect(jar_x, y - h // 2, 4, max(4, h // 3), 7)
+        px.rect(jar_x + 1, y - h // 2 + 2, 2, max(2, h // 3 - 2), 12)
+        px.line(x, y - h + 3, x, y - h, 5)
+        px.pset(x, y - h, 10)
+        if model.maintenance_robot.phase == "MEASURE":
+            px.line(x, y - h // 2, jar_x + 2, y - h // 2 + 3, 10)
+            px.pset(left + 3, y - h + 10, 11)
+        elif model.maintenance_robot.phase in {"OUTBOUND", "RETURN"}:
+            px.pset(left + 2 + int(model.maintenance_robot.clock * 8) % 2, y - 2, 13)
+
     def draw_object(
         self,
         model: GameModel,
@@ -2372,6 +2411,9 @@ class Renderer:
         camera: CameraState,
         effects: EffectSystem | None = None,
     ) -> None:
+        if obj.id == "maintenance_unit":
+            self.draw_maintenance_robot(model, obj, camera)
+            return
         if self.draw_object_sprite(model, obj, camera, effects):
             return
         if obj.kind == "sprite_prop":

@@ -7,6 +7,7 @@ from typing import Any
 
 from drift_with_me.camera import camera_ground_axes, smoothing_alpha
 from drift_with_me.events import EventQueue, GameEvent
+from drift_with_me.maintenance_robot import MaintenanceRobot
 from drift_with_me.math3d import (
     AffineCameraState,
     CameraState,
@@ -198,6 +199,7 @@ class GameModel:
         self.last_events: list[GameEvent] = []
         self.action_lock_remaining = 0.0
         self.interaction: InteractionState | None = None
+        self.maintenance_robot = MaintenanceRobot()
         self.barrier_blocked_until_release = False
         self.bubble: BubbleState | None = None
         self.bubble_cooldown_remaining = 0.0
@@ -271,6 +273,7 @@ class GameModel:
         self.last_events = []
         self.action_lock_remaining = 0.0
         self.interaction = None
+        self.maintenance_robot = MaintenanceRobot()
         self.barrier_blocked_until_release = False
         self.bubble = None
         self.bubble_cooldown_remaining = 0.0
@@ -402,6 +405,7 @@ class GameModel:
             return events
 
         self.world_tick += 1
+        self.maintenance_robot.update(dt, self.world)
         self.action_lock_remaining = max(0.0, self.action_lock_remaining - dt)
         self.bubble_cooldown_remaining = max(0.0, self.bubble_cooldown_remaining - dt)
         self.actor_facing_target_remaining = max(0.0, self.actor_facing_target_remaining - dt)
@@ -1242,6 +1246,7 @@ class GameModel:
     ) -> None:
         self.cancel_auto_move()
         self.player.barrier_active = False
+        target = self.presentation_object(target)
         self.interaction = InteractionState(
             kind=kind,
             object_id=target.id,
@@ -1402,10 +1407,16 @@ class GameModel:
             self.player.z,
         )
 
+    def presentation_object(self, obj: StaticObject) -> StaticObject:
+        if obj.id == "maintenance_unit":
+            return self.maintenance_robot.presentation(self.world.object_by_id(obj.id) or obj)
+        return obj
+
     def interaction_candidate(self, camera: CameraState | None = None) -> StaticObject | None:
         interaction_range = float(self.config["interaction"]["range"])
         candidates = []
         for obj in self.world.objects:
+            obj = self.presentation_object(obj)
             if not obj.inspectable:
                 continue
             distance = math.hypot(obj.x - self.player.x, obj.z - self.player.z)
