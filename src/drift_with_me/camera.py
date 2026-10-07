@@ -64,6 +64,10 @@ class CameraController:
         self.affine_profile = AffineProjectionProfile.from_config(raw_config)
         self.follow_target = Vec3(initial_target.x, 0.0, initial_target.z)
         self.lookahead_offset = Vec2(0.0, 0.0)
+        self.last_player_position = Vec2(initial_target.x, initial_target.z)
+        self.player_moving = False
+        self.has_player_moved = False
+        self.last_moving_direction: tuple[float | None, float | None] = (None, None)
         self.water_source_zoom_multiplier = 1.0
         self.water_source_zoom_targets = self.resolve_water_source_zoom_targets()
         self.active_zone_id: str | None = None
@@ -93,6 +97,10 @@ class CameraController:
     def reset(self, target: Vec3) -> None:
         self.follow_target = Vec3(target.x, 0.0, target.z)
         self.lookahead_offset = Vec2(0.0, 0.0)
+        self.last_player_position = Vec2(target.x, target.z)
+        self.player_moving = False
+        self.has_player_moved = False
+        self.last_moving_direction = (None, None)
         self.water_source_zoom_multiplier = 1.0
         self.active_zone_id = None
         self.base_blend = None
@@ -109,6 +117,21 @@ class CameraController:
         lookahead_dir_z: float | None = None,
     ) -> CameraState:
         dt = max(0.0, dt)
+        if dt > 0:
+            speed = (
+                math.hypot(
+                    player_x - self.last_player_position.x, player_z - self.last_player_position.y
+                )
+                / dt
+            )
+            threshold = 0.2 if self.player_moving else 0.5
+            self.player_moving = speed > threshold
+            self.last_player_position = Vec2(player_x, player_z)
+            if self.player_moving:
+                self.has_player_moved = True
+                self.last_moving_direction = (lookahead_dir_x, lookahead_dir_z)
+            elif self.has_player_moved and lookahead_dir_x is not None:
+                lookahead_dir_x, lookahead_dir_z = self.last_moving_direction
         self.update_water_source_zoom(dt, player_x, player_z)
         self.update_follow_target(dt, player_x, player_z, lookahead_dir_x, lookahead_dir_z)
         base = self.resolve_base_shot(player_x, player_z)
@@ -314,7 +337,12 @@ class CameraController:
         lookahead_dir_z: float | None,
     ) -> None:
         desired_offset = self.directional_lookahead_offset(lookahead_dir_x, lookahead_dir_z)
-        offset_tau = self.directional_lookahead_smoothing_tau(desired_offset)
+        settling = self.has_player_moved and not self.player_moving
+        offset_tau = (
+            float(self.camera_config.get("lookahead_stop_smooth_sec", 0.18))
+            if settling
+            else self.directional_lookahead_smoothing_tau(desired_offset)
+        )
         offset_alpha = smoothing_alpha(dt, offset_tau)
         self.lookahead_offset = Vec2(
             self.lookahead_offset.x + (desired_offset.x - self.lookahead_offset.x) * offset_alpha,
@@ -325,6 +353,8 @@ class CameraController:
         follow_tau = float(
             self.camera_config.get("lookahead_follow_tau_sec", self.camera_config["follow_tau_sec"])
         )
+        if settling:
+            follow_tau = float(self.camera_config.get("lookahead_stop_follow_tau_sec", 0.12))
         alpha = smoothing_alpha(dt, follow_tau)
         self.follow_target = Vec3(
             clamp(
