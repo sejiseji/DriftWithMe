@@ -12,6 +12,7 @@ from drift_with_me.abnormal_urchin_arms import (
     quantized_arm_points,
 )
 from drift_with_me.effects import EffectSystem, EnemySnapshot, ReactiveEnvironmentState
+from drift_with_me.grass_sway import bend_angle, rotate_tip, sample_gust
 from drift_with_me.hex_assets import (
     FRAME_LOOP_ANIMATION,
     LoadedSpriteAsset,
@@ -310,6 +311,20 @@ class Renderer:
         pyxel.cls(13)
         self.draw_ground(model.world, camera)
         self._active_baked_ground_patches = self.draw_baked_ground_patches(model, camera)
+        self._grass_sway_config = (
+            model.config.get("grass_sway", {})
+            if self.camera_is_affine(camera) and model.combat_session is None
+            else {}
+        )
+        self._grass_wind_time = presentation_time
+        self._grass_wind_model = model
+        self._grass_wind_counts = (0, 0)
+        self._grass_sway_gust = (
+            sample_gust(presentation_time, int(self._grass_sway_config.get("gust_seed", 20261007)))
+            if self._grass_sway_config.get("enabled", False)
+            and self._grass_sway_config.get("gust_enabled", True)
+            else (1.0, 0.0)
+        )
         self._visible_grassland_micro_areas = self.draw_grassland_micro_layer(model, camera)
         self._visible_forest_light_spots = self.draw_forest_light_layer(model, camera)
         self._visible_ambient_motes = self.draw_ambient_motes_layer(
@@ -984,6 +999,15 @@ class Renderer:
         self.draw_grassland_micro_base_variation(
             camera, corners, bounds, area_rect, draw_rect, area, config
         )
+        from drift_with_me.grass_wind import draw_grass_wind
+
+        if getattr(self, "_grass_wind_model", None) is not None:
+            wind_counts = draw_grass_wind(
+                self, self._grass_wind_model, camera, self._grass_wind_time, area=area
+            )
+            self._grass_wind_counts = tuple(
+                a + b for a, b in zip(self._grass_wind_counts, wind_counts, strict=True)
+            )
         self.draw_grassland_micro_pattern(
             camera, corners, bounds, area_rect, draw_rect, area, config
         )
@@ -1268,6 +1292,7 @@ class Renderer:
         cell_max_z = math.ceil(z1 / cell_world)
         margin = 8.0
         drawn = 0
+        sway_config = getattr(self, "_grass_sway_config", {})
         for cell_z in range(cell_min_z, cell_max_z):
             origin_z = cell_z * cell_world
             for cell_x in range(cell_min_x, cell_max_x):
@@ -1324,6 +1349,23 @@ class Renderer:
                         continue
                     if not self.point_in_projected_quad(root.x, root.y, corners):
                         continue
+                    sway = 0.0
+                    if sway_config.get(
+                        "enabled", False
+                    ) and not self.point_in_active_baked_ground_patch(world_x, world_z):
+                        in_water = any(
+                            a.rect.contains_point(world_x, world_z)
+                            for a in self._grass_wind_model.world.shallow_water_areas
+                        )
+                        if not in_water:
+                            sway = bend_angle(
+                                world_x,
+                                world_z,
+                                self._grass_wind_time,
+                                self.grassland_unit(cell_x, cell_z, salt + 19, jitter_seed),
+                                sway_config,
+                                self._grass_sway_gust,
+                            )
                     self.draw_micro_grass_blade(
                         int(round(root.x)),
                         int(round(root.y)),
@@ -1332,6 +1374,7 @@ class Renderer:
                         colors[1],
                         lean,
                         shape,
+                        sway,
                     )
                     drawn += 1
                     if drawn >= max_visible:
@@ -2257,20 +2300,29 @@ class Renderer:
         shadow_color: int,
         lean: int = 1,
         shape: int = 0,
+        sway: float = 0.0,
     ) -> None:
         tip_y = root_y - height
         tip_x = root_x + max(-1, min(1, lean))
+        original_tip_y = tip_y
+        tip_x, tip_y = rotate_tip(root_x, root_y, tip_x, tip_y, sway)
         if shape == 1:
-            self.pyxel.line(root_x, root_y, root_x - 1, tip_y + 1, shadow_color)
+            shadow_x, shadow_y = rotate_tip(root_x, root_y, root_x - 1, original_tip_y + 1, sway)
+            self.pyxel.line(root_x, root_y, shadow_x, shadow_y, shadow_color)
             self.pyxel.line(root_x, root_y, tip_x, tip_y, color)
         elif shape == 2:
             self.pyxel.line(root_x, root_y, tip_x, tip_y, color)
             side_tip_x = root_x + 1 - max(-1, min(1, lean))
-            self.pyxel.line(root_x + 1, root_y, side_tip_x, tip_y + 2, color)
+            side_x, side_y = rotate_tip(root_x + 1, root_y, side_tip_x, original_tip_y + 2, sway)
+            self.pyxel.line(root_x + 1, root_y, side_x, side_y, color)
         elif shape == 3:
             short_tip_y = root_y - max(1, height - 2)
-            self.pyxel.line(root_x, root_y, root_x, short_tip_y, shadow_color)
-            self.pyxel.pset(root_x + max(-1, min(1, lean)), tip_y + 1, color)
+            short_x, short_y = rotate_tip(root_x, root_y, root_x, short_tip_y, sway)
+            self.pyxel.line(root_x, root_y, short_x, short_y, shadow_color)
+            dot_x, dot_y = rotate_tip(
+                root_x, root_y, root_x + max(-1, min(1, lean)), original_tip_y + 1, sway
+            )
+            self.pyxel.pset(dot_x, dot_y, color)
         else:
             self.pyxel.line(root_x, root_y, tip_x, tip_y, color)
             if height >= 5:

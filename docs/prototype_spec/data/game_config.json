@@ -1211,5 +1211,30 @@
       "combat_deflect_started": 65,
       "combat_victory_cue_started": 75
     }
+  },
+  "grass_wind": {
+    "enabled": false,
+    "rect_xz": [
+      288.0,
+      336.0,
+      736.0,
+      704.0
+    ],
+    "cell_world": 8.0,
+    "strength": 0.65,
+    "speed_world_per_sec": 26.0
+  },
+  "grass_sway": {
+    "enabled": true,
+    "rect_xz": [
+      288.0,
+      336.0,
+      736.0,
+      704.0
+    ],
+    "strength": 0.7,
+    "speed_world_per_sec": 38.0,
+    "gust_enabled": true,
+    "gust_seed": 20261007
   }
 }
