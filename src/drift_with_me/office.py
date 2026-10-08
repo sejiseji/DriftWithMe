@@ -429,6 +429,16 @@ class OfficePrototype:
             return False
         if session.state not in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}:
             return False
+        if case.case_id == "OFF-JUN-W2-CONSTRUCTION":
+            hero = self.sessions.get("OFF-JUN-W2-HERO")
+            if (
+                hero is None
+                or hero.field_result is None
+                or set(hero.field_result.discovered_fact_ids)
+                != {"bank_unsafe", "shade_no_seat", "hatch_present"}
+            ):
+                session.feedback = "三か所を確認してから、報告しましょう。"
+                return False
         selected = Classification(classification)
         session.selected_classification = selected
         script = self.current_counter_script
@@ -545,6 +555,11 @@ class OfficePrototype:
         ):
             return False
         if result.task_id != task.task_id or result.case_id != task.case_id:
+            return False
+        if task.case_id == "OFF-JUN-W2-HERO" and (
+            result.result_code != "EAST_SITE_CONFIRMED"
+            or set(result.discovered_fact_ids) != {"bank_unsafe", "shade_no_seat", "hatch_present"}
+        ):
             return False
         session.field_result = result
         session.state = CaseState.FIELD_RETURNED

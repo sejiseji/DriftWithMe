@@ -27,6 +27,90 @@
       ],
       "expected_classification": "COUNTER_COMPLETE",
       "field_task": null
+    },
+    {
+      "case_id": "OFF-JUN-W2-RECEIPT",
+      "title": "証明書の受け取り",
+      "visitor": {
+        "id": "off-jun-w2-receipt",
+        "name": "受取の来訪者",
+        "kind": "",
+        "portrait_id": "generic_receipt_placeholder"
+      },
+      "initial_purpose": "できあがった証明書を受け取る",
+      "document_status": "確認済み",
+      "questions": [
+        {
+          "id": "receipt",
+          "label": "受取の確認",
+          "jack": "お名前と受取の控えを見せていただけますか？",
+          "reply": "はい。こちらです。",
+          "memo": [
+            "できあがった証明書を受け取る"
+          ],
+          "answer_summary": "はい。こちらです。"
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-JUN-W2-HERO",
+      "title": "古い案内の場所",
+      "visitor": {
+        "id": "off-jun-w2-hero",
+        "name": "旅の勇者",
+        "kind": "",
+        "portrait_id": "smug_blond_hero"
+      },
+      "initial_purpose": "東側の水路沿いの今の様子を知りたい",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "place",
+          "label": "場所の確認",
+          "jack": "東側の水路沿いですね。今の様子を見てきます。",
+          "reply": "頼んだぞ。古い案内には、ひと休みできる場所とあってな。",
+          "memo": [
+            "東側の水路沿いの今の様子を知りたい"
+          ],
+          "answer_summary": "頼んだぞ。古い案内には、ひと休みできる場所とあってな。"
+        }
+      ],
+      "expected_classification": "FIELD_CHECK",
+      "field_task": {
+        "task_id": "FIELD-JUN-W2-EAST",
+        "location_id": "east_canal",
+        "title": "東側の水路沿い",
+        "objective": "岸、木陰、古い点検口を確認する",
+        "completion_condition_id": "inspect_east_site"
+      }
+    },
+    {
+      "case_id": "OFF-JUN-W2-CONSTRUCTION",
+      "title": "水路沿いの確認報告",
+      "visitor": {
+        "id": "off-jun-w2-construction",
+        "name": "建設課担当",
+        "kind": "",
+        "portrait_id": "generic_construction_placeholder"
+      },
+      "initial_purpose": "現地で見た3か所を建設課へ伝える",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "report",
+          "label": "報告する",
+          "jack": "岸は崩れていました。木陰は涼しいですが、座る場所がありません。",
+          "reply": "足元と休憩場所ですね。点検口はありましたか？",
+          "memo": [
+            "現地で見た3か所を建設課へ伝える"
+          ],
+          "answer_summary": "足元と休憩場所ですね。点検口はありましたか？"
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
     }
   ],
   "counter_scripts": {
@@ -65,6 +149,103 @@
           "MISSING_DOCUMENTS": "今回は前回ご案内した資料がそろっています。",
           "REFER_OTHER": "追加資料はここでお預かりできます。",
           "FIELD_CHECK": "お持ちの資料を確認して受け付けましょう。"
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W2-RECEIPT",
+        "opening": [
+          {
+            "turn_id": "receipt_arrival",
+            "jack": "お待たせしました。証明書のお受け取りですね。",
+            "reply": "はい。受け取りに来ました。"
+          }
+        ],
+        "resolution": {
+          "classification": "COUNTER_COMPLETE",
+          "requires_completed_questions": [
+            "receipt"
+          ],
+          "if_requirements_missing": "お話を確認しましょう。",
+          "turns": [
+            {
+              "turn_id": "receipt_handover",
+              "jack": "こちらです。お確かめください。",
+              "reply": "ありがとうございます。"
+            }
+          ]
+        },
+        "feedback": {
+          "COUNTER_COMPLETE": "受け付けました。"
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W2-HERO",
+        "opening": [
+          {
+            "turn_id": "hero_w2_arrival",
+            "jack": "今日はどうされましたか？",
+            "reply": "東側の水路沿いだ。古い案内の場所が、今どうなっているか気になってな。"
+          }
+        ],
+        "resolution": {
+          "classification": "FIELD_CHECK",
+          "requires_completed_questions": [
+            "place"
+          ],
+          "if_requirements_missing": "お話を確認しましょう。",
+          "turns": [
+            {
+              "turn_id": "hero_w2_depart",
+              "jack": "戻ったらお伝えします。少しお待ちください。",
+              "reply": "うむ。急がず確かめてきてくれ。"
+            }
+          ]
+        },
+        "feedback": {
+          "FIELD_CHECK": "受け付けました。"
+        },
+        "field_return": {
+          "preamble": [
+            {
+              "turn_id": "hero_w2_return",
+              "jack": "見てきました。整備について、建設課に相談してみます。",
+              "reply": "そうか。頼んだぞ。"
+            }
+          ],
+          "empty_report_text": "岸、木陰、古い点検口の様子を確認しました。",
+          "closing": []
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W2-CONSTRUCTION",
+        "opening": [
+          {
+            "turn_id": "construction_arrival",
+            "jack": "水路沿いの様子を見てきました。",
+            "reply": "ありがとうございます。聞かせてください。"
+          }
+        ],
+        "resolution": {
+          "classification": "COUNTER_COMPLETE",
+          "requires_completed_questions": [
+            "report"
+          ],
+          "if_requirements_missing": "お話を確認しましょう。",
+          "turns": [
+            {
+              "turn_id": "construction_hatch",
+              "jack": "はい。草に隠れた古い点検口もありました。何につながるかは分かりません。",
+              "reply": "まず図面を調べます。岸と休憩場所の整備も検討します。"
+            },
+            {
+              "turn_id": "construction_close",
+              "jack": "よろしくお願いします。",
+              "reply": "見てきてくれて助かりました。"
+            }
+          ]
+        },
+        "feedback": {
+          "COUNTER_COMPLETE": "受け付けました。"
         }
       }
     ]

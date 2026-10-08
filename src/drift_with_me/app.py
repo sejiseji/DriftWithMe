@@ -14,6 +14,7 @@ from drift_with_me.east_site import SITE_FACTS, SITE_LABELS, EastSiteProgress
 from drift_with_me.effects import EffectSystem
 from drift_with_me.field_transition import FieldTransition, travel_lines
 from drift_with_me.field_visit import ANOMALY_ID, FieldConversation, observation_conversation
+from drift_with_me.first_sight import FirstSightQueue
 from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
 from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput, Rect
 from drift_with_me.math3d import (
@@ -38,6 +39,7 @@ from drift_with_me.office import (
 )
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer, jack_blink_closed, jack_idle_hover
+from drift_with_me.save_state import ProgressStore, snapshot
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.water_study_assets import (
     APPROVED_LOOK04_PLUS_SPARKLE_FPS,
@@ -356,6 +358,14 @@ class DriftWithMeApp:
         self.field_transition: FieldTransition | None = None
         self.field_input_wait_for_release = False
         self.east_site_progress = EastSiteProgress()
+        self.first_sight_seen = set()
+        self.first_sight_queue = FirstSightQueue()
+        self.first_sight_conversation = None
+        self.progress_store = ProgressStore(enabled=not headless)
+        self.saved_progress = self.progress_store.load()
+        self.session_started = False
+        self.new_game_confirmation = False
+        self.last_checkpoint = None
         self.field_conversation: FieldConversation | None = None
         self.office_focus = "questions"
         self.office_question_index = 0
@@ -524,6 +534,8 @@ class DriftWithMeApp:
         if pyxel.btnp(pyxel.KEY_M):
             self.audio.toggle_mute()
 
+        if self.screen == AppScreen.PLAY and self.update_first_sight(elapsed):
+            return
         if self.screen == AppScreen.START:
             self.update_start_screen()
         elif self.screen == AppScreen.OFFICE:
@@ -535,8 +547,28 @@ class DriftWithMeApp:
         else:
             self.update_play_screen(elapsed)
 
+        self.checkpoint_progress()
         if self.smoke_frames is not None and self.frame >= self.smoke_frames:
             pyxel.quit()
+
+    def checkpoint_progress(self) -> bool:
+        store = getattr(self, "progress_store", None)
+        if (
+            store is None
+            or not getattr(self, "session_started", False)
+            or self.screen == AppScreen.START
+            or self.field_transition is not None
+            or self.week_transition is not None
+            or self.model.world_paused
+            or self.model.combat_session is not None
+            or getattr(self, "first_sight_conversation", None) is not None
+        ):
+            return False
+        data = snapshot(self)
+        if data == self.last_checkpoint:
+            return False
+        self.last_checkpoint = data
+        return store.write(data)
 
     def consume_elapsed(self) -> float:
         now = time.monotonic()
@@ -551,31 +583,74 @@ class DriftWithMeApp:
             return max_elapsed
         return max(0.0, elapsed)
 
+    def continue_button_rect(self) -> Rect:
+        return self.office_rect(156, 82, 200, 23)
+
+    def new_game_button_rect(self) -> Rect:
+        return self.office_rect(156, 110, 200, 23)
+
     def update_start_screen(self) -> None:
-        pyxel = self.pyxel
-        if pyxel.btnp(pyxel.KEY_RETURN):
+        if self.new_game_confirmation:
+            if self.key_pressed("KEY_ESCAPE", "KEY_X") or self.mouse_pressed_in(
+                self.new_game_button_rect()
+            ):
+                self.new_game_confirmation = False
+            elif self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
+                self.continue_button_rect()
+            ):
+                self.start_game(new_game=True)
+            return
+        if self.saved_progress is not None and (
+            self.key_pressed("KEY_RETURN", "KEY_Z")
+            or self.mouse_pressed_in(self.continue_button_rect())
+        ):
             self.start_game()
             return
-        if pyxel.btnp(pyxel.KEY_1):
-            self.audio.play_preview("bubble_fired")
-        if pyxel.btnp(pyxel.KEY_2):
-            self.audio.play_preview("enemy_captured")
-        if pyxel.btnp(pyxel.KEY_3):
-            self.audio.play_preview("barrier_repelled")
-        if pyxel.btnp(pyxel.KEY_4):
-            self.audio.play_preview("discharge_succeeded")
-        if pyxel.btnp(pyxel.KEY_5):
-            self.audio.play_preview("action_denied")
-
-        if self.mouse_pressed_in(self.start_button_rect()):
-            self.start_game()
+        if self.mouse_pressed_in(self.new_game_button_rect()) or (
+            self.saved_progress is None and self.key_pressed("KEY_RETURN")
+        ):
+            # Broken or unsupported records are preserved until explicit consent too.
+            if self.saved_progress is not None or self.progress_store.has_record:
+                self.new_game_confirmation = True
+            else:
+                self.start_game(new_game=True)
+            return
         if self.mouse_pressed_in(self.sound_button_rect()):
             self.audio.toggle_mute()
-        for event_name, rect in self.preview_button_rects():
-            if self.mouse_pressed_in(rect):
-                self.audio.play_preview(event_name)
 
-    def start_game(self) -> None:
+    def start_game(self, *, new_game: bool = False) -> None:
+        if getattr(self, "saved_progress", None) is not None and not new_game:
+            week, offices, sites, seen, resources, defeated = self.saved_progress
+            self.work_week = self.map_work_week = week
+            self.week_office_history = offices
+            self.office = offices[week]
+            self.east_site_progress = sites
+            self.first_sight_seen = seen
+            self.field_transition = self.week_transition = self.field_conversation = None
+            self.model.reset_scene()
+            self.model.water = resources["water"]
+            self.model.energy = resources["energy"]
+            for enemy in self.model.enemies:
+                if enemy.id in defeated:
+                    enemy.state = "DEFEATED"
+            self.camera_controller.reset(Vec3(self.model.player.x, 0.0, self.model.player.z))
+        elif new_game:
+            self.progress_store.authorize_new_game()
+            self.office = OfficePrototype.load()
+            self.work_week = self.map_work_week = WorkWeek()
+            self.week_office_history = {self.work_week: self.office}
+            self.east_site_progress = EastSiteProgress()
+            self.first_sight_seen = set()
+            self.saved_progress = None
+            self.model.reset_scene()
+            self.field_transition = self.week_transition = self.field_conversation = None
+        self.first_sight_queue = FirstSightQueue()
+        self.first_sight_conversation = None
+        self.session_started = True
+        self.new_game_confirmation = False
+        self.last_checkpoint = None
+        self.office_dialogue_playback = OfficeDialoguePlayback()
+        self.office_answer_case_id = self.office_answer_question_id = None
         self.end_office_consultation()
         self.pointer.cancel()
         self.cancel_double_tap_move_gesture()
@@ -1101,6 +1176,14 @@ class DriftWithMeApp:
                 else None,
             ),
         )
+        if (
+            self.office.active_field_task
+            and self.office.active_field_task.case_id == "OFF-JUN-W2-HERO"
+        ):
+            self.field_transition.lines = (
+                ("ジャック", "東側の水路だね。三か所、見てこよう。"),
+                ("ヒューズ", "ええ。足元を確かめながらね。"),
+            )
 
     def complete_office_field_task(self) -> bool:
         if getattr(self, "field_transition", None) is not None:
@@ -1125,11 +1208,35 @@ class DriftWithMeApp:
             reported.interrupted |= interrupted
             code, facts, lines = reported.report()
             result = FieldResult(task.task_id, task.case_id, code, facts, lines)
-        self.field_transition = FieldTransition(
-            "back",
-            travel_lines("back", progress, interrupted=interrupted, case_id=task.case_id),
-            report=result,
-        )
+        lines = travel_lines("back", progress, interrupted=interrupted, case_id=task.case_id)
+        if task.case_id == "OFF-JUN-W2-HERO":
+            complete = self.east_site_progress.facts == set(SITE_FACTS.values())
+            result = (
+                FieldResult(
+                    task.task_id,
+                    task.case_id,
+                    "EAST_SITE_CONFIRMED",
+                    tuple(sorted(self.east_site_progress.facts)),
+                    (),
+                )
+                if complete
+                else None
+            )
+            lines = (
+                (
+                    "ジャック",
+                    "三か所見られたね。戻って建設課に伝えよう。"
+                    if complete
+                    else "まだ見てない所もあるけど、一度戻ろう。",
+                ),
+                (
+                    "ヒューズ",
+                    "ええ。見たことから話しましょう。"
+                    if complete
+                    else "いいわよ。続きは、また来ましょう。",
+                ),
+            )
+        self.field_transition = FieldTransition("back", lines, report=result)
         self.clear_world_input_latches()
         self.model.cancel_auto_move()
         self.camera_controller.cancel_focus()
@@ -1914,6 +2021,114 @@ class DriftWithMeApp:
         if recognizer is not None:
             recognizer.cancel()
 
+    def first_sight_visible_targets(self) -> dict[str, str]:
+        camera = self.scene_camera(self.camera())
+        visible = {}
+        for enemy in self.model.enemies:
+            if enemy.kind not in {"normal", "abnormal"} or enemy.state == "DEFEATED":
+                continue
+            placement = (
+                self.renderer.enemy_sprite_placement(self.model, enemy, camera)
+                if self.renderer
+                else None
+            )
+            if placement is None:
+                is_visible = self.model.enemy_visible(enemy, camera)
+            else:
+                x, y, w, h = placement.rect
+                is_visible = (
+                    x < camera.viewport_width
+                    and x + w > 0
+                    and y < camera.viewport_height
+                    and y + h > 0
+                )
+            if is_visible:
+                visible.setdefault(enemy.kind, enemy.id)
+        return visible
+
+    def first_sight_subject_clear(self, target_id: str) -> bool:
+        enemy = self.model.enemy_by_id(target_id)
+        if enemy is None or self.renderer is None:
+            return False
+        camera = self.scene_camera(self.camera())
+        placement = self.renderer.enemy_sprite_placement(self.model, enemy, camera)
+        if placement is None:
+            return False
+        x, y, w, h = placement.rect
+        panel = self.office_rect(40, 126, 432, 100)
+        return y >= self.office_rect(0, 48, 0, 0).y and y + h < panel.y
+
+    def update_first_sight(self, elapsed: float) -> bool:
+        queue = getattr(self, "first_sight_queue", None)
+        if queue is None:
+            return False
+        visible = self.first_sight_visible_targets()
+        queue.observe(visible, self.first_sight_seen, elapsed)
+        conversation = self.first_sight_conversation
+        safe = (
+            not self.model.world_paused
+            and self.model.combat_session is None
+            and self.field_conversation is None
+            and self.field_transition is None
+            and self.week_transition is None
+            and not self.camera_controller.freezes_world
+            and not self.model.danger_blocks_interaction()
+            and all(
+                math.hypot(e.x - self.model.player.x, e.z - self.model.player.z)
+                > float(self.runtime.raw["interaction"]["danger_block_radius"]) + 16
+                for e in self.model.enemies
+                if e.state != "DEFEATED"
+            )
+            and not any(
+                e.state in {"DASH", "WINDUP", "CAPTURED"}
+                for e in self.model.enemies
+                if e.id in visible.values()
+            )
+        )
+        if conversation is not None:
+            # Do not continue pointing at a target that has left the frame.
+            if (
+                not safe
+                or visible.get(conversation.kind) != conversation.target_id
+                or not self.first_sight_subject_clear(conversation.target_id)
+            ):
+                self.first_sight_conversation = None
+                queue.finish()
+                return False
+            self.clear_world_input_latches()
+            self.model.cancel_auto_move()
+            if conversation.wait_release:
+                if not self.travel_input_held():
+                    conversation.wait_release = False
+                return True
+            if self.key_pressed("KEY_ESCAPE", "KEY_X") or self.mouse_pressed_in(
+                self.site_cancel_rect()
+            ):
+                self.first_sight_conversation = None
+                queue.finish()
+                return True
+            if self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
+                self.office_rect(40, 126, 432, 100)
+            ):
+                if conversation.index + 1 < len(conversation.lines):
+                    conversation.index += 1
+                    conversation.wait_release = True
+                else:
+                    self.first_sight_seen.add(conversation.kind)
+                    self.first_sight_conversation = None
+                    queue.finish()
+                    self.checkpoint_progress()
+                return True
+            return True
+        eligible = {target for target in visible.values() if self.first_sight_subject_clear(target)}
+        conversation = queue.begin(self.first_sight_seen, safe, eligible)
+        if conversation is not None:
+            self.first_sight_conversation = conversation
+            self.clear_world_input_latches()
+            self.model.cancel_auto_move()
+            return True
+        return False
+
     def update_play_screen(self, elapsed: float) -> None:
         pyxel = self.pyxel
         if pyxel.btnp(pyxel.KEY_ESCAPE):
@@ -2168,7 +2383,13 @@ class DriftWithMeApp:
         task = office.active_field_task
         session = self.office.current_session
         interaction = self.model.interaction
-        if task is None or session is None or interaction is None or interaction.kind != "inspect":
+        if (
+            task is None
+            or session is None
+            or interaction is None
+            or interaction.kind != "inspect"
+            or task.case_id != "OFF-PROT-003"
+        ):
             return
         progress = session.field_progress
         repeated = target_id in progress.conversations_completed
@@ -2226,7 +2447,11 @@ class DriftWithMeApp:
         if event.target_id in SITE_FACTS:
             return
         session = office.current_session
-        if self.office.active_field_task is None or session is None:
+        if (
+            self.office.active_field_task is None
+            or session is None
+            or self.office.active_field_task.case_id != "OFF-PROT-003"
+        ):
             return
         progress = session.field_progress
         if event.event_id < progress.event_floor or event.event_id <= progress.last_event_id:
@@ -2987,6 +3212,11 @@ class DriftWithMeApp:
             self.draw_water_study()
         else:
             self.draw_play()
+        store = getattr(self, "progress_store", None)
+        if store is not None and (
+            not store.available or "できません" in store.message or "前の保存" in store.message
+        ):
+            self.draw_office_text_in_rect(self.office_rect(8, 32, 496, 15), store.message, 10)
         self.draw_week_transition()
         if self.build_label_visible():
             self.draw_build_label()
@@ -3068,32 +3298,31 @@ class DriftWithMeApp:
         )
 
     def draw_start(self) -> None:
-        pyxel = self.pyxel
-        pyxel.cls(1)
+        self.pyxel.cls(1)
         self.draw_text_center(self.runtime.screen_width // 2, 28, "DriftWithMe", 7, scale=3)
-        self.draw_text_center(self.runtime.screen_width // 2, 54, "Jack World P0 JWP007", 10)
-        self.draw_button(self.start_button_rect(), self.ui("ui.start"), 11)
-        self.draw_system_button(self.sound_button_rect(), self.sound_visual_rect(), "sound")
-        self.draw_ui_text_center(
-            self.runtime.screen_width // 2, 124, self.ui("ui.se_preview"), 7, "label"
-        )
-        for index, (event_name, rect) in enumerate(self.preview_button_rects(), start=1):
-            self.draw_button(rect, str(index), 5)
-            label = event_name.split("_", maxsplit=1)[0][:6]
-            self.draw_text_center(
-                int(rect.x + rect.width / 2),
-                int(rect.y + rect.height + 5),
-                label,
+        if self.new_game_confirmation:
+            self.draw_office_text_in_rect(
+                self.office_rect(56, 58, 400, 20),
+                "保存していた続きは、新しい記録に替わります",
                 7,
-                scale=1,
+                align="center",
             )
-        self.draw_ui_text_center(
-            self.runtime.screen_width // 2,
-            self.runtime.screen_height - 18,
-            self.ui("ui.start_hint"),
+            self.draw_office_button(self.continue_button_rect(), "新しく始める", 11, text_color=0)
+            self.draw_office_button(self.new_game_button_rect(), "戻る", 5)
+        else:
+            if self.saved_progress is not None:
+                self.draw_office_button(self.continue_button_rect(), "続きから", 11, text_color=0)
+            self.draw_office_button(self.new_game_button_rect(), "はじめから", 5)
+        self.draw_office_text_in_rect(
+            self.office_rect(32, 149, 448, 28),
+            "窓口から再開します。途中の戦闘は戻ります",
             13,
-            "hint",
+            align="center",
         )
+        self.draw_office_text_in_rect(
+            self.office_rect(32, 180, 448, 34), self.progress_store.message, 10, align="center"
+        )
+        self.draw_system_button(self.sound_button_rect(), self.sound_visual_rect(), "sound")
 
     def draw_office(self) -> None:
         pyxel = self.pyxel
@@ -3302,14 +3531,14 @@ class DriftWithMeApp:
         partial_week = getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 2)
         self.draw_office_text_in_rect(
             self.office_rect(116, 78, 280, 34),
-            "次の案件は準備中です" if partial_week else "本日の試行案件は完了しました",
+            "今週の用件はここまでです" if partial_week else "本日の試行案件は完了しました",
             7,
             preferred_styles=("office_japanese", "office_japanese_button"),
             align="center",
         )
         self.draw_office_text_in_rect(
             self.office_rect(116, 116, 280, 24),
-            "グロウさんの資料を受け付けました" if partial_week else "4件の処理結果を記録しました",
+            "建設課へ確認したことを伝えました" if partial_week else "4件の処理結果を記録しました",
             13,
             preferred_styles=("office_japanese_button", "office_japanese"),
             align="center",
@@ -4214,6 +4443,8 @@ class DriftWithMeApp:
         if self.model.interaction is not None:
             self.draw_interaction_chip()
         self.draw_combat_chance_cues()
+        if getattr(self, "first_sight_conversation", None) is not None:
+            self.draw_field_conversation(self.first_sight_conversation)
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
         camera = self.combat_scene_camera(camera)
@@ -4978,8 +5209,8 @@ class DriftWithMeApp:
             12,
         )
 
-    def draw_field_conversation(self) -> None:
-        conversation = self.field_conversation
+    def draw_field_conversation(self, conversation=None) -> None:
+        conversation = conversation or self.field_conversation
         if conversation is None:
             return
         panel = self.office_rect(40, 126, 432, 100)
@@ -4992,9 +5223,13 @@ class DriftWithMeApp:
             f"{conversation.index + 1}/{len(conversation.lines)}",
             13,
         )
-        if conversation.target_id in SITE_FACTS:
+        if conversation.target_id in SITE_FACTS or hasattr(conversation, "kind"):
             self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
-        label = "次へ" if conversation.index + 1 < len(conversation.lines) else "記録する"
+        label = (
+            "次へ"
+            if conversation.index + 1 < len(conversation.lines)
+            else ("閉じる" if hasattr(conversation, "kind") else "記録する")
+        )
         self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
 
     def draw_inspect_panel(self, interaction) -> None:

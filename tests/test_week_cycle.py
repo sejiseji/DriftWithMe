@@ -117,7 +117,7 @@ def test_week_office_map_binding_and_history_change_once_under_black():
     current = app.office
     assert app.work_week == app.map_work_week == WorkWeek(6, 2)
     assert current.current_case.case_id == "OFF-JUN-W2-GROW"
-    assert len(current.cases) == 1
+    assert len(current.cases) == 4
     assert previous.sessions == before
     assert app.week_office_history[WorkWeek()] is previous
     app.update_week_transition(10)
@@ -148,7 +148,7 @@ def test_return_visit_accepts_documents_without_repeating_hearing_or_granting_re
     session = office.current_session
     assert session.state == CaseState.CLOSED_COUNTER
     assert any("担当へ渡します" in line.text for line in session.dialogue)
-    assert office.advance_case() and office.complete
+    assert office.advance_case() and office.current_case.case_id == "OFF-JUN-W2-RECEIPT"
     assert not office.advance_case()
     assert (
         OfficePrototype.load().cases[1].expected_classification == Classification.MISSING_DOCUMENTS
