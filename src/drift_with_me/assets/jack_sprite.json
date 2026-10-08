@@ -3891,16 +3891,16 @@
       "schema_version": 1,
       "id": "succubus_green",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -3908,13 +3908,13 @@
       "frames": [
         {
           "id": "idle_00",
-          "path": "succubus_green_64.hex",
-          "source_hash": "f48b150e41b07e237357f3f4d6fe9d079548cb998ebda836a9dc6dd4464c1f8e"
+          "path": "Mina_116_normal.hex",
+          "source_hash": "eabcdeaddd942865cfbbf3a47d508d4b2ba7e0e6a0b863869a09577ddfbe4a3c"
         }
       ],
-      "source_hash": "f48b150e41b07e237357f3f4d6fe9d079548cb998ebda836a9dc6dd4464c1f8e",
+      "source_hash": "eabcdeaddd942865cfbbf3a47d508d4b2ba7e0e6a0b863869a09577ddfbe4a3c",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_mina_portrait_states_116_approved_v1_0",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -4011,16 +4011,16 @@
       "schema_version": 1,
       "id": "succubus_green_blink_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4028,13 +4028,13 @@
       "frames": [
         {
           "id": "closed_00",
-          "path": "succubus_green_blink_overlay_64.hex",
-          "source_hash": "1f3c0da15de32f7ab7f6c1cb80c50ae5a3ca90eb66af8e21abd9f76cde03a2c1"
+          "path": "Mina_116_normal_closed_overlay.hex",
+          "source_hash": "5f4569d42c695189e29cfa0816ff42ee8d7a46fd5ed08c591140eb6de449af14"
         }
       ],
-      "source_hash": "1f3c0da15de32f7ab7f6c1cb80c50ae5a3ca90eb66af8e21abd9f76cde03a2c1",
+      "source_hash": "5f4569d42c695189e29cfa0816ff42ee8d7a46fd5ed08c591140eb6de449af14",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_mina_portrait_states_116_approved_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -4131,16 +4131,16 @@
       "schema_version": 1,
       "id": "succubus_green_blink_half_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4148,13 +4148,13 @@
       "frames": [
         {
           "id": "half_00",
-          "path": "succubus_green_blink_half_overlay_64.hex",
-          "source_hash": "a1a59801e11973255707f7cddaa1751609d864a59add6836f3900ea3cbc6dadd"
+          "path": "Mina_116_normal_half_overlay.hex",
+          "source_hash": "b3075ddead9b57d0fbbcc0c6d9c744844a0ec0312cb3b14afb4577d60bf0c063"
         }
       ],
-      "source_hash": "a1a59801e11973255707f7cddaa1751609d864a59add6836f3900ea3cbc6dadd",
+      "source_hash": "b3075ddead9b57d0fbbcc0c6d9c744844a0ec0312cb3b14afb4577d60bf0c063",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_mina_portrait_states_116_approved_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -4251,16 +4251,16 @@
       "schema_version": 1,
       "id": "succubus_green_smile",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4268,13 +4268,13 @@
       "frames": [
         {
           "id": "smile_00",
-          "path": "succubus_green_smile_64.hex",
-          "source_hash": "0254cc1baa08d5c3c41c6bc95cadae4200fff1487f85a54b5184141294576d87"
+          "path": "Mina_116_smile_closed.hex",
+          "source_hash": "ab5ae3d6a35303333165c3bbf68d6adecf78db4609a235d96e6ed1df616de231"
         }
       ],
-      "source_hash": "0254cc1baa08d5c3c41c6bc95cadae4200fff1487f85a54b5184141294576d87",
+      "source_hash": "ab5ae3d6a35303333165c3bbf68d6adecf78db4609a235d96e6ed1df616de231",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_mina_portrait_states_116_approved_v1_0",
       "ui_role": "office_visitor_portrait_smile"
     },
     {
@@ -4431,16 +4431,16 @@
       "schema_version": 1,
       "id": "succubus_green_smile_blink_open_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4448,29 +4448,29 @@
       "frames": [
         {
           "id": "open_00",
-          "path": "succubus_green_smile_blink_open_overlay_64.hex",
-          "source_hash": "6f3ca82dacae3d53d43770b1b49ad52d4d540774d897c090e4f9a0824ccf7caf"
+          "path": "Mina_116_smile_open_overlay.hex",
+          "source_hash": "819dd4c9c9542c27d2f604dc9a0e51d68cf026d5344be6558aecc7955aec5bc0"
         }
       ],
-      "source_hash": "6f3ca82dacae3d53d43770b1b49ad52d4d540774d897c090e4f9a0824ccf7caf",
+      "source_hash": "819dd4c9c9542c27d2f604dc9a0e51d68cf026d5344be6558aecc7955aec5bc0",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_mina_portrait_states_116_approved_v1_0",
       "ui_role": "office_visitor_smile_blink_overlay"
     },
     {
       "schema_version": 1,
       "id": "succubus_green_smile_blink_half_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4478,13 +4478,13 @@
       "frames": [
         {
           "id": "half_00",
-          "path": "succubus_green_smile_blink_half_overlay_64.hex",
-          "source_hash": "f362c3089d2819a09da54c1d85c132b053ab1ad3c77f855ced20d92faa3a247b"
+          "path": "Mina_116_smile_half_overlay.hex",
+          "source_hash": "08810204138c88818c140319b0a4b4923f1186452611b7f62a714efaecdd4ade"
         }
       ],
-      "source_hash": "f362c3089d2819a09da54c1d85c132b053ab1ad3c77f855ced20d92faa3a247b",
+      "source_hash": "08810204138c88818c140319b0a4b4923f1186452611b7f62a714efaecdd4ade",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_mina_portrait_states_116_approved_v1_0",
       "ui_role": "office_visitor_smile_blink_overlay"
     },
     {

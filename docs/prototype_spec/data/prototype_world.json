@@ -2735,6 +2735,69 @@
       "solid": false,
       "animation": "idle_2_frames",
       "reaction_radius": 24.0
+    },
+    {
+      "id": "tree_55",
+      "kind": "sprite_prop",
+      "position": [
+        352.0,
+        0.0,
+        64.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_56",
+      "kind": "sprite_prop",
+      "position": [
+        592.0,
+        0.0,
+        96.0
+      ],
+      "visual": "tree_thin_b",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
+    },
+    {
+      "id": "tree_57",
+      "kind": "sprite_prop",
+      "position": [
+        848.0,
+        0.0,
+        64.0
+      ],
+      "visual": "tree_leafy_a",
+      "solid": true,
+      "half_extents_xz": [
+        8.0,
+        8.0
+      ],
+      "height": 64.0,
+      "occludes_player": true,
+      "sprite_world_size": [
+        48.0,
+        64.0
+      ]
     }
   ],
   "enemies": [

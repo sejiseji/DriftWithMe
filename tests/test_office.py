@@ -33,13 +33,13 @@ from drift_with_me.world import load_world_data
 
 ROOT = Path(__file__).resolve().parents[1]
 OFFICE_PORTRAIT_HASHES = {
-    "succubus_green": "f48b150e41b07e237357f3f4d6fe9d079548cb998ebda836a9dc6dd4464c1f8e",
+    "succubus_green": "eabcdeaddd942865cfbbf3a47d508d4b2ba7e0e6a0b863869a09577ddfbe4a3c",
     "tired_gray_oldman": "5c22b1b9deebc78a3c64c92206c8df23974b8e1620ccde1ac739e6e180715332",
     "nervous_elf_woodsman": "6197d58204fac11c61845356c214018db23136edf3bf755695536c5396885159",
     "smug_blond_hero": "463210229aff8772f0e1cb0757b6b89d0ab05fca12a441716edc4714df21f572",
 }
 OFFICE_PORTRAIT_SMILE_HASHES = {
-    "succubus_green_smile": ("0254cc1baa08d5c3c41c6bc95cadae4200fff1487f85a54b5184141294576d87"),
+    "succubus_green_smile": ("ab5ae3d6a35303333165c3bbf68d6adecf78db4609a235d96e6ed1df616de231"),
     "tired_gray_oldman_smile": ("611808965bda0cf2b3f4be9a6cb476286a87d74ed04aa2f17386423fd468b1bc"),
     "nervous_elf_woodsman_smile": (
         "8347fec1a718f68b1f98798998106dfc3cfaaf64b90acd17163c92a0d44fd9a2"
@@ -48,10 +48,10 @@ OFFICE_PORTRAIT_SMILE_HASHES = {
 }
 OFFICE_PORTRAIT_BLINK_HASHES = {
     "succubus_green_blink_half_overlay": (
-        "a1a59801e11973255707f7cddaa1751609d864a59add6836f3900ea3cbc6dadd"
+        "b3075ddead9b57d0fbbcc0c6d9c744844a0ec0312cb3b14afb4577d60bf0c063"
     ),
     "succubus_green_blink_overlay": (
-        "1f3c0da15de32f7ab7f6c1cb80c50ae5a3ca90eb66af8e21abd9f76cde03a2c1"
+        "5f4569d42c695189e29cfa0816ff42ee8d7a46fd5ed08c591140eb6de449af14"
     ),
     "tired_gray_oldman_blink_half_overlay": (
         "1159b87e59b0bc8f91c1376e0c8e373bd006e3bd6c98c079a1c6f30fe807889a"
@@ -227,9 +227,9 @@ def test_off001_portrait_sources_preserve_asset_contract() -> None:
 
     for asset_id, expected_hash in OFFICE_PORTRAIT_HASHES.items():
         asset = assets[asset_id]
-        size = 64 if asset_id.startswith("succubus_green") else 116
+        size = 116
         policy = (
-            "off001_visitor_portrait_states_64_direct_v1_0"
+            "off001_mina_portrait_states_116_approved_v1_0"
             if asset_id.startswith("succubus_green")
             else "off001_visitor_portrait_states_116_v1_0"
         )
@@ -255,9 +255,9 @@ def test_off001_portrait_smiles_preserve_asset_contract() -> None:
     assert set(OFFICE_PORTRAIT_SMILE_IDS.values()) == set(OFFICE_PORTRAIT_SMILE_HASHES)
     for asset_id, expected_hash in OFFICE_PORTRAIT_SMILE_HASHES.items():
         asset = assets[asset_id]
-        size = 64 if asset_id.startswith("succubus_green") else 116
+        size = 116
         policy = (
-            "off001_visitor_portrait_states_64_direct_v1_0"
+            "off001_mina_portrait_states_116_approved_v1_0"
             if asset_id.startswith("succubus_green")
             else "off001_visitor_portrait_states_116_v1_0"
         )
@@ -288,9 +288,9 @@ def test_off001_portrait_blink_overlays_preserve_asset_contract() -> None:
     assert overlay_ids == set(OFFICE_PORTRAIT_BLINK_HASHES)
     for asset_id, expected_hash in OFFICE_PORTRAIT_BLINK_HASHES.items():
         asset = assets[asset_id]
-        size = 64 if asset_id.startswith("succubus_green") else 116
+        size = 116
         policy = (
-            "off001_visitor_portrait_states_64_direct_v1_0"
+            "off001_mina_portrait_states_116_approved_v1_0"
             if asset_id.startswith("succubus_green")
             else "off001_visitor_portrait_states_116_v1_0"
         )

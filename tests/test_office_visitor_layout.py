@@ -22,7 +22,7 @@ def test_every_visitor_expression_and_blink_stays_inside_large_name_only_layout(
     for case in office.cases:
         assert app.office_visitor_info_lines(case) == (case.visitor.name,)
         assert app.ui_text.text_width(case.visitor.name, "office_japanese") <= name.width
-        size = 64 if case.visitor.portrait_id == "succubus_green" else 116
+        size = 116
         scale = target_width / size
         if scale >= 2:
             scale = float(int(scale))

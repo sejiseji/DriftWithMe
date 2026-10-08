@@ -17,7 +17,7 @@ from drift_with_me.input import Rect
 
 ROOT = Path(__file__).resolve().parents[1]
 EYES = {
-    "succubus_green": ((21, 26, 9, 4, 1, 1), (35, 28, 7, 3, 1, 1)),
+    "succubus_green": ((38, 46, 16, 9, 0, 0), (60, 49, 19, 10, 0, 0)),
     "tired_gray_oldman": ((37, 47, 11, 6, 0, 0), (57, 47, 11, 5, 0, 0)),
     "smug_blond_hero": ((48, 42, 18, 7, 0, 0), (68, 50, 10, 7, 0, 0)),
     "nervous_elf_woodsman": ((39, 55, 13, 6, 0, 0), (62, 53, 12, 5, 0, 0)),
@@ -57,32 +57,32 @@ APPROVED_POSE_HASHES = {
         "succubus_green",
         False,
         "open",
-    ): "f48b150e41b07e237357f3f4d6fe9d079548cb998ebda836a9dc6dd4464c1f8e",
+    ): "eabcdeaddd942865cfbbf3a47d508d4b2ba7e0e6a0b863869a09577ddfbe4a3c",
     (
         "succubus_green",
         False,
         "half",
-    ): "0268492396799c23a6a31cfdd05375ccb7d711a724efb2911540c4a796a5ad65",
+    ): "fe6d5842f860a3505d3403637907f9391c9d520be3b9c8070a73e597cc3e5962",
     (
         "succubus_green",
         False,
         "closed",
-    ): "077ebbda4d4acd21d63073e56bd7aa32dbed060a99a86ce68670da9a15610b64",
+    ): "17ebdd0c712dd0086fee80a9af93f7c7220677a0384996369c51cb08d2e7888c",
     (
         "succubus_green",
         True,
         "open",
-    ): "2af3659d921f745ccf94c812a1dfa8bb9f185bdcf01ca95d7b5894cf3bfb4545",
+    ): "dabf2d6f138e37be2c06a15cf8896d5a16172f7c75ad022e47c9f449d26b2028",
     (
         "succubus_green",
         True,
         "half",
-    ): "f28b3a157a0832c1025d913f5e66e754cbf6360e17d2b24d0d47620d4c37d8c4",
+    ): "d3d56bf1a059cb1c0083d68485b71afef301b5a98d467cc4b547754d31b22ad3",
     (
         "succubus_green",
         True,
         "closed",
-    ): "0254cc1baa08d5c3c41c6bc95cadae4200fff1487f85a54b5184141294576d87",
+    ): "ab5ae3d6a35303333165c3bbf68d6adecf78db4609a235d96e6ed1df616de231",
     (
         "tired_gray_oldman",
         False,
