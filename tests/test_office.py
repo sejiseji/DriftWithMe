@@ -30,6 +30,7 @@ from drift_with_me.office import (
     parse_case_definitions,
 )
 from drift_with_me.world import load_world_data
+from field_transition_helpers import finish_travel
 
 ROOT = Path(__file__).resolve().parents[1]
 OFFICE_PORTRAIT_HASHES = {
@@ -1371,7 +1372,9 @@ def test_off001_debug_field_button_prepares_task_and_enters_exploration() -> Non
     app.screen = AppScreen.OFFICE
     app.show_location_label = lambda: None
 
+    app.camera_controller = SimpleNamespace(cancel_focus=lambda: None)
     assert app.activate_office_field_debug()
+    finish_travel(app)
 
     case = app.office.current_case
     session = app.office.current_session
@@ -1439,6 +1442,7 @@ def test_off001_inspection_event_returns_active_field_task_to_same_case() -> Non
     session = app.office.current_session
     assert app.screen == AppScreen.PLAY
     assert app.complete_office_field_task()
+    finish_travel(app)
     assert app.screen == AppScreen.OFFICE
     assert session is not None
     assert session.case_id == "OFF-PROT-003"
@@ -1465,6 +1469,7 @@ def test_off001_exploration_discharge_returns_active_field_task_to_same_case() -
     session = app.office.current_session
     assert app.screen == AppScreen.PLAY
     assert app.complete_office_field_task()
+    finish_travel(app)
     assert app.screen == AppScreen.OFFICE
     assert session is not None
     assert session.state == CaseState.FIELD_RETURNED
@@ -1505,6 +1510,7 @@ def test_off001_combat_discharge_waits_for_combat_restore_before_returning() -> 
 
     assert app.screen == AppScreen.PLAY
     assert app.complete_office_field_task()
+    finish_travel(app)
     assert app.screen == AppScreen.OFFICE
     assert session.state == CaseState.FIELD_RETURNED
 

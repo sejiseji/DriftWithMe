@@ -11,6 +11,7 @@ from drift_with_me.build_info import BUILD_LABEL
 from drift_with_me.camera import CameraController
 from drift_with_me.document_reading import reading_pose_pixels
 from drift_with_me.effects import EffectSystem
+from drift_with_me.field_transition import FieldTransition, travel_lines
 from drift_with_me.field_visit import ANOMALY_ID, FieldConversation, observation_conversation
 from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
 from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput, Rect
@@ -351,6 +352,8 @@ class DriftWithMeApp:
         self.week_input_wait_for_release = False
         self.week_office_history = {self.work_week: self.office}
         self.map_work_week = self.work_week
+        self.field_transition: FieldTransition | None = None
+        self.field_input_wait_for_release = False
         self.field_conversation: FieldConversation | None = None
         self.office_focus = "questions"
         self.office_question_index = 0
@@ -499,6 +502,8 @@ class DriftWithMeApp:
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.update_field_transition(elapsed):
+            return
         if self.update_week_transition(elapsed):
             return
         self.update_denied_feedback(elapsed)
@@ -635,6 +640,7 @@ class DriftWithMeApp:
             CaseState.REFERRED,
             CaseState.WAITING_DOCUMENTS,
             CaseState.FIELD_CHECK_REQUIRED,
+            CaseState.FIELD_ACTIVE,
             CaseState.FIELD_RETURNED,
         }:
             if confirm_pressed or self.mouse_pressed_in(self.office_footer_action_rect()):
@@ -1027,6 +1033,9 @@ class DriftWithMeApp:
         if session is None:
             self.enter_exploration_from_office()
             return
+        if session.state == CaseState.FIELD_ACTIVE:
+            self.enter_exploration_from_office()
+            return
         if session.state == CaseState.FIELD_CHECK_REQUIRED:
             if self.office.prepare_field_task() is not None:
                 self.enter_exploration_from_office()
@@ -1037,6 +1046,8 @@ class DriftWithMeApp:
             self.office_classification_index = 0
 
     def activate_office_field_debug(self) -> bool:
+        if getattr(self, "field_transition", None) is not None:
+            return False
         if self.office.prepare_debug_field_task() is None:
             return False
         self.office_focus = "questions"
@@ -1048,46 +1059,172 @@ class DriftWithMeApp:
         self.enter_exploration_from_office()
         return True
 
+    def travel_input_held(self) -> bool:
+        return self.pointer_snapshot.down or any(
+            self.pyxel.btn(getattr(self.pyxel, name))
+            for name in (
+                "KEY_RETURN",
+                "KEY_Z",
+                "KEY_ESCAPE",
+                "KEY_X",
+                "KEY_UP",
+                "KEY_DOWN",
+                "KEY_LEFT",
+                "KEY_RIGHT",
+                "KEY_W",
+                "KEY_A",
+                "KEY_S",
+                "KEY_D",
+                "KEY_E",
+                "KEY_SPACE",
+            )
+        )
+
     def enter_exploration_from_office(self) -> None:
+        if getattr(self, "field_transition", None) is not None:
+            return
         self.end_office_consultation()
         self.clear_world_input_latches()
-        self.previous_time = None
-        self.screen = AppScreen.PLAY
+        self.model.cancel_auto_move()
+        self.camera_controller.cancel_focus()
         session = self.office.current_session
-        if (
-            self.office.active_field_task is not None
-            and session is not None
-            and session.field_progress.event_floor == 0
-        ):
-            session.field_progress.event_floor = self.model.event_queue.next_event_id
-        self.show_location_label()
+        progress = session.field_progress if session and self.office.active_field_task else None
+        self.field_transition = FieldTransition(
+            "out",
+            travel_lines(
+                "out",
+                progress,
+                case_id=self.office.active_field_task.case_id
+                if self.office.active_field_task
+                else None,
+            ),
+        )
 
     def complete_office_field_task(self) -> bool:
-        task = self.office.active_field_task
-        if task is None:
+        if getattr(self, "field_transition", None) is not None:
             return False
+        task = self.office.active_field_task
         session = self.office.current_session
         if (
-            session is None
+            task is None
+            or session is None
             or self.model.combat_session is not None
             or self.model.interaction is not None
         ):
             return False
         progress = session.field_progress
-        if not progress.can_report:
-            if not self.model.danger_blocks_interaction():
-                return False
-            progress.interrupted = True
-        code, facts, lines = progress.report()
-        result = FieldResult(task.task_id, task.case_id, code, facts, lines)
-        if not self.office.complete_field_task(result):
-            return False
+        interrupted = self.model.danger_blocks_interaction()
+        # Snapshot the existing facts, but commit only at full black.
+        result = None
+        if progress.can_report or interrupted:
+            from copy import deepcopy
+
+            reported = deepcopy(progress)
+            reported.interrupted |= interrupted
+            code, facts, lines = reported.report()
+            result = FieldResult(task.task_id, task.case_id, code, facts, lines)
+        self.field_transition = FieldTransition(
+            "back",
+            travel_lines("back", progress, interrupted=interrupted, case_id=task.case_id),
+            report=result,
+        )
         self.clear_world_input_latches()
         self.model.cancel_auto_move()
         self.camera_controller.cancel_focus()
-        self.previous_time = None
-        self.screen = AppScreen.OFFICE
         return True
+
+    def apply_field_scene_at_black(self, transition: FieldTransition) -> None:
+        if transition.applied:
+            return
+        if transition.direction == "out":
+            self.screen = AppScreen.PLAY
+            session = self.office.current_session
+            if (
+                self.office.active_field_task
+                and session
+                and session.field_progress.event_floor == 0
+            ):
+                session.field_progress.event_floor = self.model.event_queue.next_event_id
+            self.show_location_label()
+        else:
+            if transition.report is not None:
+                self.office.complete_field_task(transition.report)
+            self.screen = AppScreen.OFFICE
+            self.office_focus = "questions"
+            self.office_question_index = self.office_classification_index = 0
+            self.office_dialogue_playback = OfficeDialoguePlayback()
+            self.office_answer_case_id = self.office_answer_question_id = None
+        transition.applied = True
+        self.previous_time = None
+
+    def field_travel_cancel_rect(self) -> Rect:
+        return self.office_rect(112, 202, 96, 20)
+
+    def update_field_transition(self, elapsed: float) -> bool:
+        transition = getattr(self, "field_transition", None)
+        if transition is None:
+            if getattr(self, "field_input_wait_for_release", False):
+                if not self.travel_input_held():
+                    self.field_input_wait_for_release = False
+                return True
+            return False
+        self.clear_world_input_latches()
+        if transition.phase == "black":
+            self.apply_field_scene_at_black(transition)
+            transition.phase, transition.elapsed = "fade_in", 0.0
+            return True
+        if transition.phase == "dialogue":
+            if transition.wait_release:
+                if not self.travel_input_held():
+                    transition.wait_release = False
+                return True
+            if transition.direction == "back" and (
+                self.key_pressed("KEY_ESCAPE", "KEY_X")
+                or self.mouse_pressed_in(self.field_travel_cancel_rect())
+            ):
+                self.field_transition = None
+                self.field_input_wait_for_release = True
+                return True
+            if self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
+                self.office_rect(40, 126, 432, 100)
+            ):
+                transition.advance()
+        else:
+            transition.tick(elapsed)
+        if transition.phase == "done":
+            self.field_transition = None
+            self.field_input_wait_for_release = True
+            self.previous_time = None
+        return True
+
+    def draw_field_transition(self) -> None:
+        transition = getattr(self, "field_transition", None)
+        if transition is None:
+            return
+        if transition.phase == "dialogue":
+            panel = self.office_rect(40, 126, 432, 100)
+            self.draw_panel_frame(panel, fill=0, inner=12)
+            speaker, text = transition.lines[transition.index]
+            self.draw_office_text_in_rect(self.office_rect(50, 133, 400, 18), speaker, 12)
+            self.draw_office_wrapped_lines(self.office_rect(50, 154, 400, 48), (text,), 7)
+            self.draw_office_text_in_rect(
+                self.office_rect(50, 204, 50, 16), f"{transition.index + 1}/2", 13
+            )
+            label = (
+                "次へ"
+                if transition.index == 0
+                else "出発"
+                if transition.direction == "out"
+                else "帰庁"
+            )
+            self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
+            if transition.direction == "back":
+                self.draw_office_text_in_rect(self.field_travel_cancel_rect(), "やめる", 13)
+        self.pyxel.dither(transition.darkness)
+        try:
+            self.pyxel.rect(0, 0, self.runtime.screen_width, self.runtime.screen_height, 0)
+        finally:
+            self.pyxel.dither(1.0)
 
     def update_pause_screen(self) -> None:
         pyxel = self.pyxel
@@ -2811,6 +2948,7 @@ class DriftWithMeApp:
         self.draw_week_transition()
         if self.build_label_visible():
             self.draw_build_label()
+        self.draw_field_transition()
 
     def build_label_visible(self) -> bool:
         if getattr(self, "screen", AppScreen.PLAY) == AppScreen.OFFICE:
@@ -3700,7 +3838,7 @@ class DriftWithMeApp:
 
     @staticmethod
     def office_footer_action_label(state: CaseState) -> str:
-        if state == CaseState.FIELD_CHECK_REQUIRED:
+        if state in {CaseState.FIELD_CHECK_REQUIRED, CaseState.FIELD_ACTIVE}:
             return "現地へ"
         if state == CaseState.FIELD_RETURNED:
             return "案件完了"
@@ -4488,11 +4626,7 @@ class DriftWithMeApp:
         return self.office_rect(258, 12, 48, 32)
 
     def can_return_from_field(self) -> bool:
-        session = self.office.current_session
-        return bool(
-            session
-            and (session.field_progress.can_report or self.model.danger_blocks_interaction())
-        )
+        return bool(self.office.active_field_task and self.office.current_session)
 
     def draw_field_task_hud(self) -> None:
         task = self.office.active_field_task
@@ -4501,7 +4635,9 @@ class DriftWithMeApp:
         rect = self.field_task_hud_rect()
         self.draw_panel_frame(rect, fill=0, inner=12)
         self.draw_office_text_in_rect(self.office_rect(154, 10, 98, 16), "北側浅瀬", 12)
-        status = "記録あり" if self.can_return_from_field() else "近くを調べる"
+        status = (
+            "記録あり" if self.office.current_session.field_progress.can_report else "近くを調べる"
+        )
         self.draw_office_text_in_rect(self.office_rect(154, 29, 98, 16), status, 7)
         ready = self.can_return_from_field()
         self.draw_office_button(self.field_return_button_rect(), "帰庁", 10 if ready else 5)

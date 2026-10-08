@@ -12,6 +12,7 @@ from drift_with_me.math3d import CameraState, Vec3
 from drift_with_me.model import GameModel, InputIntent
 from drift_with_me.office import CaseState, Classification, OfficePrototype
 from drift_with_me.world import load_world_data
+from field_transition_helpers import finish_travel
 
 
 def drain(office):
@@ -52,6 +53,7 @@ def make_visit(asked=("place",)):
     app.show_location_label = lambda: None
     app.field_conversation = None
     app.enter_exploration_from_office()
+    finish_travel(app)
     return app
 
 
@@ -75,6 +77,7 @@ def test_unasked_hearing_is_not_recalled_and_all_points_are_optional(target_id):
     assert app.model.interaction is None
     assert app.screen == AppScreen.PLAY
     assert app.complete_office_field_task()
+    finish_travel(app)
     result = app.office.current_session.field_result
     assert result.result_code == "OBSERVED"
     assert len(result.discovered_fact_ids) == 1
@@ -186,6 +189,7 @@ def test_three_no_input_failures_return_as_interrupted_without_success_claims():
     assert app.screen == AppScreen.PLAY
     assert app.office.current_session.field_progress.interrupted
     assert app.complete_office_field_task()
+    finish_travel(app)
     result = app.office.current_session.field_result
     assert result.result_code == "INTERRUPTED"
     assert "anomaly_dealt_with" not in result.discovered_fact_ids
@@ -199,6 +203,7 @@ def test_retry_then_actual_counter_success_upgrades_result():
     enemy = run_combat(app, True)
     assert enemy.state == "DEFEATED"
     assert app.complete_office_field_task()
+    finish_travel(app)
     result = app.office.current_session.field_result
     assert result.result_code == "DEALT_WITH"
     assert "anomaly_dealt_with" in result.discovered_fact_ids
@@ -240,6 +245,7 @@ def test_deflection_and_capture_are_not_reported_as_defeat():
         )
         app.process_events([event])
         assert app.complete_office_field_task()
+        finish_travel(app)
         assert app.office.current_session.field_result.result_code == "OBSERVED"
         assert not app.office.current_session.field_progress.interrupted
 
@@ -254,6 +260,7 @@ def test_different_results_change_lamel_reply_and_other_cases_still_advance():
         if code == "DEALT_WITH":
             progress.dealt_target_ids.add(ANOMALY_ID)
         assert app.complete_office_field_task()
+        finish_travel(app)
         replies.append(
             tuple(
                 line.text
@@ -276,9 +283,11 @@ def test_different_results_change_lamel_reply_and_other_cases_still_advance():
         assert office.advance_case()
 
 
-def test_return_requires_a_record_or_a_real_hazard():
+def test_unconfirmed_return_keeps_the_active_task_for_another_visit():
     app = make_visit()
-    assert not app.complete_office_field_task()
+    assert app.complete_office_field_task()
+    finish_travel(app)
+    assert app.office.current_session.field_result is None
     assert app.office.current_session.state == CaseState.FIELD_ACTIVE
     progress = FieldProgress()
     progress.observe("tap_stopped")
