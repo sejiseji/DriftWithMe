@@ -56,6 +56,7 @@ class QuestionDefinition:
     visitor_reply: str
     answer_summary: str
     memo_updates: tuple[MemoFact, ...]
+    visual_action: str | None = None
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,7 @@ class CounterDialogueTurn:
     jack_text: str
     visitor_reply: str
     required_question_ids: tuple[str, ...] = ()
+    visual_action: str | None = None
 
 
 @dataclass(frozen=True)
@@ -124,6 +126,7 @@ class CaseDefinition:
 class DialogueLine:
     speaker: str
     text: str
+    visual_action: str | None = None
 
 
 @dataclass(frozen=True)
@@ -266,7 +269,7 @@ class OfficePrototype:
         return DialogueStep(
             step_id=turn.turn_id,
             lines=(
-                DialogueLine("Jack", turn.jack_text),
+                DialogueLine("Jack", turn.jack_text, turn.visual_action),
                 DialogueLine(visitor_name, turn.visitor_reply),
             ),
         )
@@ -374,7 +377,7 @@ class OfficePrototype:
         session.pending_question_id = question_id
         session.dialogue.extend(
             (
-                DialogueLine("Jack", question.jack_text),
+                DialogueLine("Jack", question.jack_text, question.visual_action),
                 DialogueLine(case.visitor.name, question.visitor_reply),
             )
         )
@@ -652,6 +655,7 @@ def parse_case_definitions(raw: dict[str, Any]) -> tuple[CaseDefinition, ...]:
                     visitor_reply=str(question["reply"]),
                     answer_summary=str(question.get("answer_summary", question["reply"])),
                     memo_updates=memo_updates,
+                    visual_action=question.get("visual_action"),
                 )
             )
         visitor = item["visitor"]
@@ -768,6 +772,7 @@ def parse_counter_dialogue_turns(
                 turn_id=turn_id,
                 jack_text=str(raw["jack"]),
                 visitor_reply=str(raw["reply"]),
+                visual_action=raw.get("visual_action"),
                 required_question_ids=tuple(
                     str(value) for value in raw.get("requires_completed_questions", ())
                 ),

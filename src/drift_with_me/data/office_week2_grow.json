@@ -1,0 +1,72 @@
+{
+  "version": "0.1.0",
+  "cases": [
+    {
+      "case_id": "OFF-JUN-W2-GROW",
+      "title": "減免申請の追加資料",
+      "visitor": {
+        "id": "resident_b",
+        "name": "グロウ",
+        "kind": "魔族",
+        "portrait_id": "tired_gray_oldman"
+      },
+      "initial_purpose": "先日の申請に不足していた資料を提出する",
+      "document_status": "前回案内した収入資料を持参",
+      "questions": [
+        {
+          "id": "supplement",
+          "label": "資料の確認",
+          "jack": "前回ご案内した資料はそろっています。こちら、お預かりしてよろしいですか？",
+          "reply": "ああ、頼む。",
+          "memo": [
+            "追加資料: 提示済み"
+          ],
+          "answer_summary": "前週に不足していた収入資料を持参",
+          "visual_action": "read_document"
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    }
+  ],
+  "counter_scripts": {
+    "cases": [
+      {
+        "case_id": "OFF-JUN-W2-GROW",
+        "opening": [
+          {
+            "turn_id": "grow_w2_arrival",
+            "jack": "グロウさん、お待たせしました。",
+            "reply": "先日はどうも。資料を持ってきた。これで足りるか。"
+          },
+          {
+            "turn_id": "grow_w2_handover",
+            "jack": "拝見しますね。",
+            "reply": "月ごとの明細だ。言われた分をそろえてきた。",
+            "visual_action": "read_document"
+          }
+        ],
+        "resolution": {
+          "classification": "COUNTER_COMPLETE",
+          "requires_completed_questions": [
+            "supplement"
+          ],
+          "if_requirements_missing": "お持ちの資料を確認しましょう。",
+          "turns": [
+            {
+              "turn_id": "grow_w2_received",
+              "jack": "先日の申請書と一緒に、担当へ渡します。結果が出たらご連絡しますね。",
+              "reply": "助かった。よろしく頼む。"
+            }
+          ]
+        },
+        "feedback": {
+          "COUNTER_COMPLETE": "追加資料を受け付けました。減免の結果は担当からお知らせします。",
+          "MISSING_DOCUMENTS": "今回は前回ご案内した資料がそろっています。",
+          "REFER_OTHER": "追加資料はここでお預かりできます。",
+          "FIELD_CHECK": "お持ちの資料を確認して受け付けましょう。"
+        }
+      }
+    ]
+  }
+}

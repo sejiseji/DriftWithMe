@@ -9,6 +9,7 @@ from drift_with_me import config
 from drift_with_me.audio import AudioEngine
 from drift_with_me.build_info import BUILD_LABEL
 from drift_with_me.camera import CameraController
+from drift_with_me.document_reading import reading_pose_pixels
 from drift_with_me.effects import EffectSystem
 from drift_with_me.field_visit import ANOMALY_ID, FieldConversation, observation_conversation
 from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
@@ -47,6 +48,7 @@ from drift_with_me.water_study_assets import (
     WaterStudyPlane,
     preload_water_study_cache,
 )
+from drift_with_me.week_cycle import WeekTransition, WorkWeek, load_week_office
 from drift_with_me.world import load_world_data
 
 
@@ -133,7 +135,7 @@ class WaterStudyJackFloat:
 
 @dataclass
 class OfficeDialoguePlayback:
-    signature: tuple[str, tuple[tuple[str, str], ...]] | None = None
+    signature: tuple[str, tuple[tuple[str, str, str | None], ...]] | None = None
     pages: tuple[tuple[OfficeDialogueLine, ...], ...] = ()
     page_index: int = 0
     revealed_chars: float = 0.0
@@ -145,6 +147,7 @@ class OfficeDialogueLine:
     visitor: bool
     indent_px: int = 0
     speaker: str = ""
+    visual_action: str | None = None
 
 
 @dataclass(frozen=True)
@@ -343,6 +346,11 @@ class DriftWithMeApp:
         self.world = load_world_data()
         self.model = GameModel(self.runtime.raw, self.world)
         self.office = OfficePrototype.load()
+        self.work_week = WorkWeek()
+        self.week_transition: WeekTransition | None = None
+        self.week_input_wait_for_release = False
+        self.week_office_history = {self.work_week: self.office}
+        self.map_work_week = self.work_week
         self.field_conversation: FieldConversation | None = None
         self.office_focus = "questions"
         self.office_question_index = 0
@@ -491,6 +499,8 @@ class DriftWithMeApp:
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.update_week_transition(elapsed):
+            return
         self.update_denied_feedback(elapsed)
         self.update_location_label(elapsed)
         if self.screen == AppScreen.PLAY:
@@ -594,6 +604,9 @@ class DriftWithMeApp:
         session = self.office.current_session
         case = self.office.current_case
         if session is None or case is None:
+            if self.mouse_pressed_in(self.office_next_week_rect()):
+                self.begin_next_week()
+                return
             if self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
                 self.office_footer_action_rect()
             ):
@@ -775,7 +788,7 @@ class DriftWithMeApp:
             return playback
 
         active_lines = self.office.active_dialogue_lines()
-        recent = tuple((line.speaker, line.text) for line in active_lines)
+        recent = tuple((line.speaker, line.text, line.visual_action) for line in active_lines)
         signature = (case.case_id, recent)
         if playback.signature == signature:
             return playback
@@ -783,13 +796,14 @@ class DriftWithMeApp:
         content_rect = self.office_dialogue_content_rect()
         style_name = "office_japanese"
         pages: list[tuple[OfficeDialogueLine, ...]] = []
-        for speaker, text in recent:
+        for speaker, text, visual_action in recent:
             wrapped_lines = tuple(
                 OfficeDialogueLine(
                     text=line.text,
                     visitor=speaker == case.visitor.name,
                     indent_px=line.indent_px,
                     speaker=speaker,
+                    visual_action=visual_action,
                 )
                 for line in self.wrap_office_hanging_text(
                     f"{speaker}: {text}", max(1, int(content_rect.width)), style_name
@@ -2781,6 +2795,8 @@ class DriftWithMeApp:
         )
 
     def draw(self) -> None:
+        if self.screen != AppScreen.OFFICE or self.office.complete:
+            self._office_reading_key = None
         if self.screen == AppScreen.START:
             self.draw_start()
         elif self.screen == AppScreen.OFFICE:
@@ -2792,6 +2808,7 @@ class DriftWithMeApp:
             self.draw_water_study()
         else:
             self.draw_play()
+        self.draw_week_transition()
         if self.build_label_visible():
             self.draw_build_label()
 
@@ -3102,16 +3119,17 @@ class DriftWithMeApp:
     def draw_office_complete(self) -> None:
         panel = self.office_rect(106, 68, 300, 96)
         self.draw_panel_frame(panel, fill=0, inner=11)
+        partial_week = getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 2)
         self.draw_office_text_in_rect(
             self.office_rect(116, 78, 280, 34),
-            "本日の試行案件は完了しました",
+            "次の案件は準備中です" if partial_week else "本日の試行案件は完了しました",
             7,
             preferred_styles=("office_japanese", "office_japanese_button"),
             align="center",
         )
         self.draw_office_text_in_rect(
             self.office_rect(116, 116, 280, 24),
-            "4件の処理結果を記録しました",
+            "グロウさんの資料を受け付けました" if partial_week else "4件の処理結果を記録しました",
             13,
             preferred_styles=("office_japanese_button", "office_japanese"),
             align="center",
@@ -3123,10 +3141,114 @@ class DriftWithMeApp:
             text_color=0,
         )
 
+        self.draw_office_text_in_rect(
+            self.office_rect(8, 210, 180, 23),
+            getattr(self, "work_week", WorkWeek()).label,
+            13,
+        )
+        if self.can_begin_next_week():
+            self.draw_office_button(self.office_next_week_rect(), "次の週へ", 11, text_color=0)
+
+    def office_next_week_rect(self) -> Rect:
+        return self.office_rect(232, 210, 132, 23)
+
+    def can_begin_next_week(self) -> bool:
+        week = getattr(self, "work_week", WorkWeek())
+        return (
+            self.screen == AppScreen.OFFICE
+            and week == WorkWeek()
+            and getattr(self, "week_transition", None) is None
+            and not getattr(self, "week_input_wait_for_release", False)
+            and getattr(self, "office_consultation", None) is None
+            and self.office.complete
+            and self.office.active_field_task is None
+            and all(s.state == CaseState.RESOLVED for s in self.office.sessions.values())
+        )
+
+    def begin_next_week(self) -> bool:
+        if not self.can_begin_next_week():
+            return False
+        target = self.work_week.following()
+        if target is None:
+            return False
+        next_office = load_week_office(target)
+        if next_office is None:
+            return False
+        self.pending_week_office = next_office
+        timing = self.runtime.raw.get("week_transition", {})
+        self.week_transition = WeekTransition(
+            target,
+            fade_out=float(timing.get("fade_out_sec", 0.55)),
+            title_hold=float(timing.get("title_hold_sec", 1.25)),
+            fade_in=float(timing.get("fade_in_sec", 0.65)),
+        )
+        self.pointer.cancel()
+        self.clear_world_input_latches()
+        return True
+
+    def apply_next_week_at_black(self) -> None:
+        transition = self.week_transition
+        assert transition is not None and transition.darkness == 1.0
+        # Prepare first, then bind office, calendar and shared-map week together.
+        # No authored map differences yet: preserve world/model and field results.
+        self.work_week, self.office, self.map_work_week = (
+            transition.target,
+            self.pending_week_office,
+            transition.target,
+        )
+        self.week_office_history[self.work_week] = self.office
+        self.pending_week_office = None
+        self.end_office_consultation()
+        self.office_dialogue_playback = OfficeDialoguePlayback()
+        self.office_answer_case_id = None
+        self.office_answer_question_id = None
+        self.office_focus = "questions"
+        self.office_question_index = self.office_classification_index = 0
+        self.screen = AppScreen.OFFICE
+
+    def update_week_transition(self, elapsed: float) -> bool:
+        transition = getattr(self, "week_transition", None)
+        if transition is not None:
+            transition.advance(elapsed, self.apply_next_week_at_black)
+            if transition.complete:
+                self.week_transition = None
+                self.week_input_wait_for_release = True
+                self.pointer.cancel()
+                self.clear_world_input_latches()
+            return True
+        if getattr(self, "week_input_wait_for_release", False):
+            held = self.pointer_snapshot.down or any(
+                self.pyxel.btn(getattr(self.pyxel, name))
+                for name in ("KEY_RETURN", "KEY_Z", "KEY_ESCAPE", "KEY_X")
+            )
+            if not held:
+                self.week_input_wait_for_release = False
+            return True
+        return False
+
+    def draw_week_transition(self) -> None:
+        transition = getattr(self, "week_transition", None)
+        if transition is None:
+            return
+        pyxel = self.pyxel
+        pyxel.dither(transition.darkness)
+        try:
+            pyxel.rect(0, 0, self.runtime.screen_width, self.runtime.screen_height, 0)
+        finally:
+            pyxel.dither(1.0)
+        if transition.showing_title:
+            self.draw_office_text_in_rect(
+                Rect(0, self.runtime.screen_height / 2 - 18, self.runtime.screen_width, 36),
+                transition.target.label,
+                7,
+                align="center",
+            )
+
     def draw_office_dialogue(self, rect: Rect) -> None:
         playback = self.sync_office_dialogue_playback()
         page = self.office_dialogue_current_page(playback)
         if not page:
+            self._office_reading_key = None
             return
 
         self.draw_office_jack(page)
@@ -3163,7 +3285,7 @@ class DriftWithMeApp:
         ):
             self.draw_office_dialogue_advance_prompt(rect)
 
-    def office_jack_portrait_rect(self) -> Rect | None:
+    def office_jack_portrait_rect(self, *, reading: bool = False) -> Rect | None:
         content = self.office_dialogue_content_rect()
         line_height = content.height / OFFICE_DIALOGUE_LINES_PER_PAGE
         style = self.office_text_style(
@@ -3173,9 +3295,12 @@ class DriftWithMeApp:
         _, label_height = self.ui_renderer.visual_vertical_metrics(style)
         label_y = round(content.y + max(0.0, (line_height - label_height) / 2.0))
         min_top = label_y + label_height + 2
-        max_top = math.floor(content.y + content.height) - 32
+        height = 44 if reading else 32
+        max_top = math.floor(content.y + content.height) - height
         if max_top < min_top:
             return None
+        if reading:
+            return Rect(int(content.x), min_top, 32, height)
         player = self.runtime.raw["player"]
         world_amplitude = abs(float(player["visual_hover_amplitude"])) / 2.0
         amplitude = min(world_amplitude, 1.0, max(0.0, (max_top - min_top - 1) / 2.0))
@@ -3187,6 +3312,9 @@ class DriftWithMeApp:
         return Rect(int(content.x), min_top + math.ceil(amplitude) + offset, 32, 32)
 
     def draw_office_jack(self, page: tuple[OfficeDialogueLine, ...]) -> None:
+        reading = self.office_document_reading_active(page)
+        if not reading:
+            self._office_reading_key = None
         if not page or page[0].speaker != "Jack":
             return
         assets = getattr(self, "sprite_assets", None)
@@ -3201,10 +3329,13 @@ class DriftWithMeApp:
             asset = assets.get(str(configured_assets["player_front_blink_asset"])) or asset
         if asset is None:
             return
-        rect = self.office_jack_portrait_rect()
+        rect = self.office_jack_portrait_rect(reading=reading)
         if rect is None:
             return
         frame = asset.frame()
+        if reading:
+            self.draw_office_document_reading(rect, frame)
+            return
         self.pyxel.blt(
             int(rect.x),
             round(rect.y),
@@ -3215,6 +3346,43 @@ class DriftWithMeApp:
             frame.height,
             colkey=asset.definition.colkey,
         )
+
+    def office_document_reading_active(self, page: tuple[OfficeDialogueLine, ...]) -> bool:
+        case = self.office.current_case
+        return bool(
+            page
+            and page[0].speaker == "Jack"
+            and page[0].visual_action == "read_document"
+            and case is not None
+            and case.case_id == "OFF-JUN-W2-GROW"
+            and getattr(self, "office_consultation", None) is None
+        )
+
+    def draw_office_document_reading(self, rect: Rect, frame) -> None:
+        now = float(getattr(self, "presentation_time", 0.0))
+        playback = self.current_office_dialogue_playback()
+        key = (playback.signature, playback.page_index)
+        if getattr(self, "_office_reading_key", None) != key:
+            self._office_reading_key = key
+            self._office_reading_started_at = now
+        elapsed = max(0.0, now - self._office_reading_started_at)
+        phase = int(elapsed / 0.35) % 4
+        nod = 1.9 <= elapsed % 2.8 < 2.15
+        blink = jack_blink_closed(self.runtime.raw["player"].get("blink", {}), now)
+        cache = getattr(self, "_office_reading_frames", None)
+        if cache is None:
+            self._office_reading_frames = cache = {}
+        cache_key = (frame.source_hash, phase, nod, blink)
+        if cache_key not in cache:
+            source = self.pyxel.images[frame.image] if isinstance(frame.image, int) else frame.image
+            base = tuple(
+                tuple(source.pget(frame.u + x, frame.v + y) for x in range(32)) for y in range(32)
+            )
+            pixels = reading_pose_pixels(base, phase, nod=nod, blink=blink)
+            image = self.pyxel.Image(32, 44)
+            image.set(0, 0, ["".join(format(c, "X") for c in row) for row in pixels])
+            cache[cache_key] = image
+        self.pyxel.blt(int(rect.x), int(rect.y), cache[cache_key], 0, 0, 32, 44, colkey=0)
 
     def draw_office_dialogue_advance_prompt(self, rect: Rect) -> None:
         pattern = (
