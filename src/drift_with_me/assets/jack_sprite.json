@@ -4643,6 +4643,36 @@
         }
       ],
       "source_hash": "1281d51dc7ba8bf3b3b412541bcfb6550967ba1f88ca9f28827ac085711ce3be"
+    },
+    {
+      "schema_version": 1,
+      "id": "collapsed_bank_64x136",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 136,
+      "colkey": 8,
+      "anchor_px": [
+        0,
+        0
+      ],
+      "world_size": [
+        64.0,
+        136.0
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "collapsed_bank.hex",
+          "source_hash": "45d3a8d0e548cf9cccd98cc3f25b8a8cdb0582475746ab2ff7cdd5c1ef6a0870"
+        }
+      ],
+      "source_hash": "45d3a8d0e548cf9cccd98cc3f25b8a8cdb0582475746ab2ff7cdd5c1ef6a0870",
+      "render_mode": "ground_decal_prop",
+      "source_policy": "imagegen_palette_import_v1",
+      "environment_role": "static_ground_patch"
     }
   ],
   "notes": [

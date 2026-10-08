@@ -10,6 +10,7 @@ from drift_with_me.audio import AudioEngine
 from drift_with_me.build_info import BUILD_LABEL
 from drift_with_me.camera import CameraController
 from drift_with_me.document_reading import reading_pose_pixels
+from drift_with_me.east_site import SITE_FACTS, SITE_LABELS, EastSiteProgress
 from drift_with_me.effects import EffectSystem
 from drift_with_me.field_transition import FieldTransition, travel_lines
 from drift_with_me.field_visit import ANOMALY_ID, FieldConversation, observation_conversation
@@ -354,6 +355,7 @@ class DriftWithMeApp:
         self.map_work_week = self.work_week
         self.field_transition: FieldTransition | None = None
         self.field_input_wait_for_release = False
+        self.east_site_progress = EastSiteProgress()
         self.field_conversation: FieldConversation | None = None
         self.office_focus = "questions"
         self.office_question_index = 0
@@ -1847,6 +1849,7 @@ class DriftWithMeApp:
                 self.schedule_next_water_specular_flash()
 
     def reset_scene_for_debug(self) -> None:
+        self.east_site_progress = EastSiteProgress()
         self.model.reset_scene()
         self.field_conversation = None
         office = getattr(self, "office", None)
@@ -1958,7 +1961,12 @@ class DriftWithMeApp:
                     return
             elif interaction is not None and interaction.kind == "inspect":
                 if getattr(self, "field_conversation", None) is not None:
-                    if self.inspect_completion_requested():
+                    if self.field_conversation.target_id in SITE_FACTS and (
+                        self.key_pressed("KEY_X") or self.mouse_pressed_in(self.site_cancel_rect())
+                    ):
+                        self.process_events(self.model.cancel_interaction())
+                        self.camera_controller.cancel_focus()
+                    elif self.inspect_completion_requested():
                         self.advance_field_conversation()
                     self.update_camera_controller(elapsed)
                     return
@@ -2095,9 +2103,14 @@ class DriftWithMeApp:
                 self.set_denied_reason(str(event.payload.get("reason", "denied")))
             elif event.kind == "inspection_completed":
                 self.show_location_label()
-                self.record_office_field_event(event)
+                if event.target_id in SITE_FACTS:
+                    self.east_site_progress.complete(event.target_id)
+                else:
+                    self.record_office_field_event(event)
                 self.field_conversation = None
             elif event.kind == "interaction_cancelled":
+                if event.target_id in SITE_FACTS:
+                    self.east_site_progress.pending_completion = None
                 self.field_conversation = None
             elif event.kind == "interaction_started" and event.target_id is not None:
                 target = self.world.object_by_id(event.target_id)
@@ -2137,6 +2150,18 @@ class DriftWithMeApp:
 
     def begin_field_conversation(self, target_id: str) -> None:
         self.field_conversation = None
+        interaction = self.model.interaction
+        if (
+            target_id in SITE_FACTS
+            and interaction is not None
+            and interaction.kind == "inspect"
+            and interaction.object_id == target_id
+        ):
+            if not hasattr(self, "east_site_progress"):
+                self.east_site_progress = EastSiteProgress()
+            lines, index = self.east_site_progress.begin(target_id)
+            self.field_conversation = FieldConversation(target_id, lines, index)
+            return
         office = getattr(self, "office", None)
         if office is None:
             return
@@ -2164,7 +2189,22 @@ class DriftWithMeApp:
     def advance_field_conversation(self) -> bool:
         conversation = getattr(self, "field_conversation", None)
         session = self.office.current_session
-        if conversation is None or session is None or self.model.interaction is None:
+        if conversation is None or self.model.interaction is None:
+            return False
+        if conversation.target_id in SITE_FACTS:
+            if self.model.interaction.object_id != conversation.target_id:
+                return False
+            progress = self.east_site_progress
+            if conversation.index + 1 < len(conversation.lines):
+                conversation.index += 1
+                progress.positions[conversation.target_id] = conversation.index
+            else:
+                progress.pending_completion = conversation.target_id
+                self.process_events(self.model.complete_interaction())
+                self.camera_controller.cancel_focus()
+                self.field_conversation = None
+            return True
+        if session is None:
             return False
         if conversation.index + 1 < len(conversation.lines):
             conversation.index += 1
@@ -2182,6 +2222,8 @@ class DriftWithMeApp:
     def record_office_field_event(self, event) -> None:
         office = getattr(self, "office", None)
         if office is None:
+            return
+        if event.target_id in SITE_FACTS:
             return
         session = office.current_session
         if self.office.active_field_task is None or session is None:
@@ -4168,6 +4210,7 @@ class DriftWithMeApp:
             self.model, scene_camera, self.presentation_time, self.debug_enabled, self.effects
         )
         self.draw_hud()
+        self.draw_east_site_hint()
         if self.model.interaction is not None:
             self.draw_interaction_chip()
         self.draw_combat_chance_cues()
@@ -4915,6 +4958,26 @@ class DriftWithMeApp:
             accent,
         )
 
+    def site_cancel_rect(self) -> Rect:
+        return self.office_rect(112, 202, 96, 20)
+
+    def draw_east_site_hint(self) -> None:
+        if (
+            self.model.world_paused
+            or math.hypot(self.model.player.x - 928, self.model.player.z - 144) > 200
+        ):
+            return
+        target = self.model.interaction_candidate(self.scene_camera(self.camera()))
+        label = SITE_LABELS.get(target.id, "東側の水路") if target else "東側の水路"
+        panel = self.office_rect(148, 57, 164, 34)
+        self.draw_panel_frame(panel, 0, 12)
+        self.draw_office_text_in_rect(self.office_rect(154, 59, 150, 14), label, 7)
+        self.draw_office_text_in_rect(
+            self.office_rect(154, 74, 150, 14),
+            f"見た場所 {len(self.east_site_progress.facts)}/3",
+            12,
+        )
+
     def draw_field_conversation(self) -> None:
         conversation = self.field_conversation
         if conversation is None:
@@ -4929,6 +4992,8 @@ class DriftWithMeApp:
             f"{conversation.index + 1}/{len(conversation.lines)}",
             13,
         )
+        if conversation.target_id in SITE_FACTS:
+            self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
         label = "次へ" if conversation.index + 1 < len(conversation.lines) else "記録する"
         self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
 

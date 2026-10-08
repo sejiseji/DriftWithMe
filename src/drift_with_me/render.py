@@ -12,6 +12,8 @@ from drift_with_me.abnormal_urchin_arms import (
     quantized_arm_points,
 )
 from drift_with_me.cloud_shadow import CloudShadowLayer
+from drift_with_me.east_site import SITE_FACTS
+from drift_with_me.east_site_render import draw_east_site_ground
 from drift_with_me.effects import EffectSystem, EnemySnapshot, ReactiveEnvironmentState
 from drift_with_me.grass_sway import bend_angle, rotate_tip, sample_gust
 from drift_with_me.hex_assets import (
@@ -339,6 +341,7 @@ class Renderer:
             self.draw_shallow_water_shoreline_tiles(model, camera)
         self.draw_shallow_water_symbols(model, camera, presentation_time)
         self.draw_ground_surfaces(model, camera)
+        draw_east_site_ground(self, model, camera)
         self.cloud_shadow.draw(pyxel, model, camera)
         self.draw_background_effects(model, camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
@@ -2414,6 +2417,8 @@ class Renderer:
         camera: CameraState,
         effects: EffectSystem | None = None,
     ) -> None:
+        if obj.id in SITE_FACTS:
+            return
         if obj.id == "maintenance_unit":
             self.draw_maintenance_robot(model, obj, camera)
             return

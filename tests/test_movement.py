@@ -223,7 +223,7 @@ def test_world_loads_split_bounds_and_legacy_fallback() -> None:
 def test_world_loads_shallow_water_areas_separately_from_config() -> None:
     world = load_world_data()
 
-    assert len(world.shallow_water_areas) == 3
+    assert len(world.shallow_water_areas) == 4
     area = world.shallow_water_areas[0]
     assert area.id == "env005_spawn_shallow_test"
     assert area.contains_point(160.0, 160.0)

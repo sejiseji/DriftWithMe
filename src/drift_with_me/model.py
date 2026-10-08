@@ -600,7 +600,27 @@ class GameModel:
 
     def auto_move_path_clear(self, goal_x: float, goal_z: float) -> bool:
         radius = self.auto_move_nav_radius()
-        return self.has_line_of_sight(self.player.x, self.player.z, goal_x, goal_z, radius=radius)
+        return self.nav_segment_clear(self.player.x, self.player.z, goal_x, goal_z, radius)
+
+    def nav_segment_clear(self, x0: float, z0: float, x1: float, z1: float, radius: float) -> bool:
+        landing = self.world.east_site_landing_rect
+        if (
+            landing is not None
+            and not self.world.east_site_access_ready
+            and segment_aabb_time(
+                x0,
+                z0,
+                x1,
+                z1,
+                landing.min_x - radius,
+                landing.min_z - radius,
+                landing.max_x + radius,
+                landing.max_z + radius,
+            )
+            is not None
+        ):
+            return False
+        return self.has_line_of_sight(x0, z0, x1, z1, radius=radius)
 
     def auto_move_nav_radius(self) -> float:
         auto_move = self.config.get("auto_move", {})
@@ -636,7 +656,7 @@ class GameModel:
             return value
 
         def line_clear(a: tuple[float, float], b: tuple[float, float]) -> bool:
-            return self.has_line_of_sight(a[0], a[1], b[0], b[1], radius=radius)
+            return self.nav_segment_clear(a[0], a[1], b[0], b[1], radius)
 
         def link_candidates(x: float, z: float) -> list[tuple[float, tuple[int, int]]]:
             limit = max(1, int(auto_move.get("max_link_candidates", 32)))

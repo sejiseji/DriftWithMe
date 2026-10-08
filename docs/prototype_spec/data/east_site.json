@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "map_id": "prototype_square_01",
+  "access": "ordinary exploration; independent of authored office cases",
+  "landing_rect_xz": [
+    960,
+    184,
+    1024,
+    320
+  ],
+  "shade_rect_xz": [
+    852,
+    24,
+    910,
+    66
+  ],
+  "objects": [
+    {
+      "id": "jun_w2_canal_bank",
+      "kind": "inspectable",
+      "position": [
+        944,
+        0,
+        256
+      ],
+      "visual": "jun_w2_canal_bank",
+      "solid": false,
+      "inspectable": true,
+      "height": 6.0
+    },
+    {
+      "id": "jun_w2_shade",
+      "kind": "inspectable",
+      "position": [
+        884,
+        0,
+        40
+      ],
+      "visual": "jun_w2_shade",
+      "solid": false,
+      "inspectable": true,
+      "height": 6.0
+    },
+    {
+      "id": "jun_w2_old_hatch",
+      "kind": "inspectable",
+      "position": [
+        928,
+        0,
+        144
+      ],
+      "visual": "jun_w2_old_hatch",
+      "solid": false,
+      "inspectable": true,
+      "height": 6.0
+    }
+  ],
+  "shallow_water_areas": [
+    {
+      "id": "east_site_canal_connection",
+      "rect_xz": [
+        900,
+        224,
+        952,
+        280
+      ],
+      "symbol_density": 0.7,
+      "edge_symbol_density": 0.5,
+      "symbol_max": 12,
+      "edge_symbol_max": 8,
+      "symbol_phase": 7
+    }
+  ]
+}

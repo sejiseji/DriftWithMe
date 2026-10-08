@@ -296,6 +296,11 @@ class WorldData:
         visual_detail_per_chunk: int = 1,
     ) -> None:
         self.raw = raw
+        site = raw.get("east_site", {})
+        self.east_site_access_ready = False
+        self.east_site_landing_rect = (
+            WorldRect(*site["landing_rect_xz"]) if site.get("landing_rect_xz") else None
+        )
         ground = raw["ground"]
         self.width = float(ground["width_cells"] * ground["cell_size"])
         self.depth = float(ground["depth_cells"] * ground["cell_size"])
@@ -795,6 +800,22 @@ class WorldData:
         max_z = z + half_z
         if not self.walkable_rect.contains_aabb(min_x, min_z, max_x, max_z):
             return True
+        landing = self.east_site_landing_rect
+        if (
+            landing is not None
+            and not self.east_site_access_ready
+            and aabb_overlap(
+                min_x,
+                min_z,
+                max_x,
+                max_z,
+                landing.min_x,
+                landing.min_z,
+                landing.max_x,
+                landing.max_z,
+            )
+        ):
+            return True
         return bool(self.query_solids(min_x, min_z, max_x, max_z))
 
     def move_player_sliding(
@@ -866,6 +887,14 @@ class WorldData:
 def load_world_data(chunk_size: float = 128.0) -> WorldData:
     config = load_data_json("game_config.json")
     raw = load_data_json("prototype_world.json")
+    site = load_data_json("east_site.json")
+    if raw.get("map_id") == site["map_id"]:
+        raw["objects"] = [*raw["objects"], *site["objects"]]
+        raw["shallow_water_areas"] = [
+            *raw.get("shallow_water_areas", ()),
+            *site["shallow_water_areas"],
+        ]
+        raw["east_site"] = site
     culling = config["culling"]
     return WorldData(
         raw,
