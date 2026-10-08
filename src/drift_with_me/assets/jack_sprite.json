@@ -3921,16 +3921,16 @@
       "schema_version": 1,
       "id": "tired_gray_oldman",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -3938,29 +3938,29 @@
       "frames": [
         {
           "id": "idle_00",
-          "path": "tired_gray_oldman_64.hex",
-          "source_hash": "f2fee518076a01b633898e66fe096a54eca43be150e067ec8a6d47b2ec7d8b61"
+          "path": "Grow_116_normal.hex",
+          "source_hash": "5c22b1b9deebc78a3c64c92206c8df23974b8e1620ccde1ac739e6e180715332"
         }
       ],
-      "source_hash": "f2fee518076a01b633898e66fe096a54eca43be150e067ec8a6d47b2ec7d8b61",
+      "source_hash": "5c22b1b9deebc78a3c64c92206c8df23974b8e1620ccde1ac739e6e180715332",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_portrait"
     },
     {
       "schema_version": 1,
       "id": "nervous_elf_woodsman",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -3968,29 +3968,29 @@
       "frames": [
         {
           "id": "idle_00",
-          "path": "nervous_elf_woodsman_64.hex",
-          "source_hash": "e8ab1618e53055c714bb8040e6015bf6c41adb0f02fa7ee00efc0a3a59ab9bb4"
+          "path": "Ramel_116_normal.hex",
+          "source_hash": "6197d58204fac11c61845356c214018db23136edf3bf755695536c5396885159"
         }
       ],
-      "source_hash": "e8ab1618e53055c714bb8040e6015bf6c41adb0f02fa7ee00efc0a3a59ab9bb4",
+      "source_hash": "6197d58204fac11c61845356c214018db23136edf3bf755695536c5396885159",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_portrait"
     },
     {
       "schema_version": 1,
       "id": "smug_blond_hero",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -3998,13 +3998,13 @@
       "frames": [
         {
           "id": "idle_00",
-          "path": "smug_blond_hero_64.hex",
-          "source_hash": "5abb624393ecc542d2c03c723d54c9b40f10c50b2b2ff9e94e908ce714991e43"
+          "path": "Hero_116_normal.hex",
+          "source_hash": "463210229aff8772f0e1cb0757b6b89d0ab05fca12a441716edc4714df21f572"
         }
       ],
-      "source_hash": "5abb624393ecc542d2c03c723d54c9b40f10c50b2b2ff9e94e908ce714991e43",
+      "source_hash": "463210229aff8772f0e1cb0757b6b89d0ab05fca12a441716edc4714df21f572",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_portrait"
     },
     {
@@ -4041,16 +4041,16 @@
       "schema_version": 1,
       "id": "tired_gray_oldman_blink_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4058,29 +4058,29 @@
       "frames": [
         {
           "id": "closed_00",
-          "path": "tired_gray_oldman_blink_overlay_64.hex",
-          "source_hash": "c07d7487796eade7e1b3bb84376ea9f477a17f9f999d8224276e469cb078b2da"
+          "path": "Grow_116_normal_closed_overlay.hex",
+          "source_hash": "036af2f3436a79ce003185e61e14f6d0f3827b3691df5b0741094d202bd36771"
         }
       ],
-      "source_hash": "c07d7487796eade7e1b3bb84376ea9f477a17f9f999d8224276e469cb078b2da",
+      "source_hash": "036af2f3436a79ce003185e61e14f6d0f3827b3691df5b0741094d202bd36771",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
       "schema_version": 1,
       "id": "nervous_elf_woodsman_blink_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4088,29 +4088,29 @@
       "frames": [
         {
           "id": "closed_00",
-          "path": "nervous_elf_woodsman_blink_overlay_64.hex",
-          "source_hash": "ab7251e0bbc109e970f9bf9229d2d4dd31dad02b332470904b8b7eda7af1c719"
+          "path": "Ramel_116_normal_closed_overlay.hex",
+          "source_hash": "f1fd026c59fe9bfe2bd72d4024bc186b1967577e1cfbf3af9fa5594bcbbe05d1"
         }
       ],
-      "source_hash": "ab7251e0bbc109e970f9bf9229d2d4dd31dad02b332470904b8b7eda7af1c719",
+      "source_hash": "f1fd026c59fe9bfe2bd72d4024bc186b1967577e1cfbf3af9fa5594bcbbe05d1",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
       "schema_version": 1,
       "id": "smug_blond_hero_blink_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4118,13 +4118,13 @@
       "frames": [
         {
           "id": "closed_00",
-          "path": "smug_blond_hero_blink_overlay_64.hex",
-          "source_hash": "7f5a3082c16c0ce6de3d7cc3a97382d5962ca189383e0937ab0f407fa98a4474"
+          "path": "Hero_116_normal_closed_overlay.hex",
+          "source_hash": "7523740b013ec64e45cab1e3fdd9c46366666bb04ca1e01a876b749afd339e20"
         }
       ],
-      "source_hash": "7f5a3082c16c0ce6de3d7cc3a97382d5962ca189383e0937ab0f407fa98a4474",
+      "source_hash": "7523740b013ec64e45cab1e3fdd9c46366666bb04ca1e01a876b749afd339e20",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -4161,16 +4161,16 @@
       "schema_version": 1,
       "id": "tired_gray_oldman_blink_half_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4178,29 +4178,29 @@
       "frames": [
         {
           "id": "half_00",
-          "path": "tired_gray_oldman_blink_half_overlay_64.hex",
-          "source_hash": "cb20d2ee7bf927eaacbc0b705b9308985ac0a7f8fb31d4f77172c3bd82083b41"
+          "path": "Grow_116_normal_half_overlay.hex",
+          "source_hash": "1159b87e59b0bc8f91c1376e0c8e373bd006e3bd6c98c079a1c6f30fe807889a"
         }
       ],
-      "source_hash": "cb20d2ee7bf927eaacbc0b705b9308985ac0a7f8fb31d4f77172c3bd82083b41",
+      "source_hash": "1159b87e59b0bc8f91c1376e0c8e373bd006e3bd6c98c079a1c6f30fe807889a",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
       "schema_version": 1,
       "id": "nervous_elf_woodsman_blink_half_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4208,29 +4208,29 @@
       "frames": [
         {
           "id": "half_00",
-          "path": "nervous_elf_woodsman_blink_half_overlay_64.hex",
-          "source_hash": "2254551e3f66dd0d807df6f0df100c014319d5a373728c48bce98b1dc6deec34"
+          "path": "Ramel_116_normal_half_overlay.hex",
+          "source_hash": "4c3a965a33de0b2db487b1ce2d4133fa646097d2d7497ba5c74e66e435a76c98"
         }
       ],
-      "source_hash": "2254551e3f66dd0d807df6f0df100c014319d5a373728c48bce98b1dc6deec34",
+      "source_hash": "4c3a965a33de0b2db487b1ce2d4133fa646097d2d7497ba5c74e66e435a76c98",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
       "schema_version": 1,
       "id": "smug_blond_hero_blink_half_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4238,13 +4238,13 @@
       "frames": [
         {
           "id": "half_00",
-          "path": "smug_blond_hero_blink_half_overlay_64.hex",
-          "source_hash": "5fad6ed0f5eba65d22ba50a3c30e6f72e22fc3e60d17c468df8baf6ad4ea1024"
+          "path": "Hero_116_normal_half_overlay.hex",
+          "source_hash": "5c45811a08cf98bb594146d1d2318f13cc00e58b7391af622b914f300397edc6"
         }
       ],
-      "source_hash": "5fad6ed0f5eba65d22ba50a3c30e6f72e22fc3e60d17c468df8baf6ad4ea1024",
+      "source_hash": "5c45811a08cf98bb594146d1d2318f13cc00e58b7391af622b914f300397edc6",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_blink_overlay"
     },
     {
@@ -4281,16 +4281,16 @@
       "schema_version": 1,
       "id": "tired_gray_oldman_smile",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4298,29 +4298,29 @@
       "frames": [
         {
           "id": "smile_00",
-          "path": "tired_gray_oldman_smile_64.hex",
-          "source_hash": "ac41851ab735ec23760c08873f27cb5a0b3513ec2fdedbc1518b8f712e3f62cd"
+          "path": "Grow_116_smile_closed.hex",
+          "source_hash": "611808965bda0cf2b3f4be9a6cb476286a87d74ed04aa2f17386423fd468b1bc"
         }
       ],
-      "source_hash": "ac41851ab735ec23760c08873f27cb5a0b3513ec2fdedbc1518b8f712e3f62cd",
+      "source_hash": "611808965bda0cf2b3f4be9a6cb476286a87d74ed04aa2f17386423fd468b1bc",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_portrait_smile"
     },
     {
       "schema_version": 1,
       "id": "nervous_elf_woodsman_smile",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4328,29 +4328,29 @@
       "frames": [
         {
           "id": "smile_00",
-          "path": "nervous_elf_woodsman_smile_64.hex",
-          "source_hash": "73a9d75af2b04a1e4e82805158a3dffa28698fc715f75328234de38f321210d7"
+          "path": "Ramel_116_smile_closed.hex",
+          "source_hash": "8347fec1a718f68b1f98798998106dfc3cfaaf64b90acd17163c92a0d44fd9a2"
         }
       ],
-      "source_hash": "73a9d75af2b04a1e4e82805158a3dffa28698fc715f75328234de38f321210d7",
+      "source_hash": "8347fec1a718f68b1f98798998106dfc3cfaaf64b90acd17163c92a0d44fd9a2",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_portrait_smile"
     },
     {
       "schema_version": 1,
       "id": "smug_blond_hero_smile",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4358,29 +4358,29 @@
       "frames": [
         {
           "id": "smile_00",
-          "path": "smug_blond_hero_smile_64.hex",
-          "source_hash": "47f6c7d4088510f415df2ff2b9c7ea3e441c925ae9b8e75fe5fff15a1220bc11"
+          "path": "Hero_116_smile_closed.hex",
+          "source_hash": "cd87b35f1f928ef57a13ca274319e868b60587c0672255a0d780f4a9ab0c5145"
         }
       ],
-      "source_hash": "47f6c7d4088510f415df2ff2b9c7ea3e441c925ae9b8e75fe5fff15a1220bc11",
+      "source_hash": "cd87b35f1f928ef57a13ca274319e868b60587c0672255a0d780f4a9ab0c5145",
       "render_mode": "screen_space_portrait",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_portrait_smile"
     },
     {
       "schema_version": 1,
       "id": "nervous_elf_woodsman_smile_blink_open_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4388,29 +4388,29 @@
       "frames": [
         {
           "id": "open_00",
-          "path": "nervous_elf_woodsman_smile_blink_open_overlay_64.hex",
-          "source_hash": "f286ee0c5fce46b1d0150fd2954e4200a5d18ab947fee1bc52d645e4622f9844"
+          "path": "Ramel_116_smile_open_overlay.hex",
+          "source_hash": "a63228d760b9081e3ae9ea9d91c6e11bb65149a1a711527ad5d7e4ca8a45b1dd"
         }
       ],
-      "source_hash": "f286ee0c5fce46b1d0150fd2954e4200a5d18ab947fee1bc52d645e4622f9844",
+      "source_hash": "a63228d760b9081e3ae9ea9d91c6e11bb65149a1a711527ad5d7e4ca8a45b1dd",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_smile_blink_overlay"
     },
     {
       "schema_version": 1,
       "id": "nervous_elf_woodsman_smile_blink_half_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4418,13 +4418,13 @@
       "frames": [
         {
           "id": "half_00",
-          "path": "nervous_elf_woodsman_smile_blink_half_overlay_64.hex",
-          "source_hash": "7f0f527d318f5f1bbc8c23d563cc96db0cade919659b69dfd4b40dbfdffdd16f"
+          "path": "Ramel_116_smile_half_overlay.hex",
+          "source_hash": "25f96975bd20ea395f0ed340d833182bc6bcdfa95f54428d5977d52330553574"
         }
       ],
-      "source_hash": "7f0f527d318f5f1bbc8c23d563cc96db0cade919659b69dfd4b40dbfdffdd16f",
+      "source_hash": "25f96975bd20ea395f0ed340d833182bc6bcdfa95f54428d5977d52330553574",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_smile_blink_overlay"
     },
     {
@@ -4491,16 +4491,16 @@
       "schema_version": 1,
       "id": "tired_gray_oldman_smile_blink_open_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4508,29 +4508,29 @@
       "frames": [
         {
           "id": "open_00",
-          "path": "tired_gray_oldman_smile_blink_open_overlay_64.hex",
-          "source_hash": "a455c7e63fc1c1f3a09edc03d80ecef296d47efd3b68afc1530b0afd64512513"
+          "path": "Grow_116_smile_open_overlay.hex",
+          "source_hash": "148d11b0392e2ac8bdaf9ece5ac5d1352b9d9d95df471b59a6c1622596e137d9"
         }
       ],
-      "source_hash": "a455c7e63fc1c1f3a09edc03d80ecef296d47efd3b68afc1530b0afd64512513",
+      "source_hash": "148d11b0392e2ac8bdaf9ece5ac5d1352b9d9d95df471b59a6c1622596e137d9",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_smile_blink_overlay"
     },
     {
       "schema_version": 1,
       "id": "tired_gray_oldman_smile_blink_half_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4538,29 +4538,29 @@
       "frames": [
         {
           "id": "half_00",
-          "path": "tired_gray_oldman_smile_blink_half_overlay_64.hex",
-          "source_hash": "023fc886fa7f49a95c587dc4f61a75bd0d29c27a0b7d37a3df3ab3dfa7bc4476"
+          "path": "Grow_116_smile_half_overlay.hex",
+          "source_hash": "162794c4f8a39f0a5996722ed87eeebb6d86313df1be2e8a3c37a74d17e5bdcc"
         }
       ],
-      "source_hash": "023fc886fa7f49a95c587dc4f61a75bd0d29c27a0b7d37a3df3ab3dfa7bc4476",
+      "source_hash": "162794c4f8a39f0a5996722ed87eeebb6d86313df1be2e8a3c37a74d17e5bdcc",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_smile_blink_overlay"
     },
     {
       "schema_version": 1,
       "id": "smug_blond_hero_smile_blink_open_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4568,29 +4568,29 @@
       "frames": [
         {
           "id": "open_00",
-          "path": "smug_blond_hero_smile_blink_open_overlay_64.hex",
-          "source_hash": "05cafebc71b6e40a6cb5c2d4f7e60391d828c73fada5888c15623901e4d2d1bd"
+          "path": "Hero_116_smile_open_overlay.hex",
+          "source_hash": "dcb8ae4e30211c53d78fc8ed16762d942e8a2865229269f557db878ecefd4f3a"
         }
       ],
-      "source_hash": "05cafebc71b6e40a6cb5c2d4f7e60391d828c73fada5888c15623901e4d2d1bd",
+      "source_hash": "dcb8ae4e30211c53d78fc8ed16762d942e8a2865229269f557db878ecefd4f3a",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_smile_blink_overlay"
     },
     {
       "schema_version": 1,
       "id": "smug_blond_hero_smile_blink_half_overlay",
       "palette_id": "pyxel_default_16",
-      "hex_width": 64,
-      "hex_height": 64,
+      "hex_width": 116,
+      "hex_height": 116,
       "colkey": 8,
       "anchor_px": [
-        32,
-        32
+        58,
+        58
       ],
       "world_size": [
-        64.0,
-        64.0
+        116.0,
+        116.0
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
@@ -4598,13 +4598,13 @@
       "frames": [
         {
           "id": "half_00",
-          "path": "smug_blond_hero_smile_blink_half_overlay_64.hex",
-          "source_hash": "ff4de73ce48e7de332f0a4841a7d222e946e4c7ab09be440369009149f8629c9"
+          "path": "Hero_116_smile_half_overlay.hex",
+          "source_hash": "6468f773d1f00f0da1f9a61082b95f0281bb99505bcb1a3a792704c55d7b0159"
         }
       ],
-      "source_hash": "ff4de73ce48e7de332f0a4841a7d222e946e4c7ab09be440369009149f8629c9",
+      "source_hash": "6468f773d1f00f0da1f9a61082b95f0281bb99505bcb1a3a792704c55d7b0159",
       "render_mode": "screen_space_portrait_overlay",
-      "source_policy": "off001_visitor_portrait_states_64_direct_v1_0",
+      "source_policy": "off001_visitor_portrait_states_116_v1_0",
       "ui_role": "office_visitor_smile_blink_overlay"
     },
     {

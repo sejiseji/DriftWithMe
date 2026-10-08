@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -17,10 +18,41 @@ from drift_with_me.input import Rect
 ROOT = Path(__file__).resolve().parents[1]
 EYES = {
     "succubus_green": ((21, 26, 9, 4, 1, 1), (35, 28, 7, 3, 1, 1)),
-    "tired_gray_oldman": ((19, 25, 7, 5, 3, 1), (29, 25, 7, 4, 3, 1)),
-    "smug_blond_hero": ((24, 21, 9, 5, 1, 1), (36, 26, 5, 3, 1, 1)),
+    "tired_gray_oldman": ((37, 47, 11, 6, 0, 0), (57, 47, 11, 5, 0, 0)),
+    "smug_blond_hero": ((48, 42, 18, 7, 0, 0), (68, 50, 10, 7, 0, 0)),
+    "nervous_elf_woodsman": ((39, 55, 13, 6, 0, 0), (62, 53, 12, 5, 0, 0)),
 }
 APPROVED_POSE_HASHES = {
+    (
+        "nervous_elf_woodsman",
+        True,
+        "closed",
+    ): "8347fec1a718f68b1f98798998106dfc3cfaaf64b90acd17163c92a0d44fd9a2",
+    (
+        "nervous_elf_woodsman",
+        True,
+        "half",
+    ): "8d637210238287951cccd71c2da7d84c7c8a2bdc5cd911ab2482c313c8f1a5ef",
+    (
+        "nervous_elf_woodsman",
+        True,
+        "open",
+    ): "e16c64e16e4a062b0a04a3eaea80ba553752abdfad51aaa49d386a07215b469b",
+    (
+        "nervous_elf_woodsman",
+        False,
+        "closed",
+    ): "48cfcd09e39120274f0b7318243dc4255284f3820fad3f38fa34b8d120f12bf7",
+    (
+        "nervous_elf_woodsman",
+        False,
+        "half",
+    ): "acea91aa4c5a3f9f66978b9aa9a79d1b3fd432fbbd26c085da355ea04698fa50",
+    (
+        "nervous_elf_woodsman",
+        False,
+        "open",
+    ): "6197d58204fac11c61845356c214018db23136edf3bf755695536c5396885159",
     (
         "succubus_green",
         False,
@@ -55,62 +87,62 @@ APPROVED_POSE_HASHES = {
         "tired_gray_oldman",
         False,
         "open",
-    ): "f2fee518076a01b633898e66fe096a54eca43be150e067ec8a6d47b2ec7d8b61",
+    ): "5c22b1b9deebc78a3c64c92206c8df23974b8e1620ccde1ac739e6e180715332",
     (
         "tired_gray_oldman",
         False,
         "half",
-    ): "b0ddf549f7f5a8d22a73a4b13267255562387f04925ecfac5ed950e0d50af93e",
+    ): "023c7453d0cca07b472efe807f1a03e6a097672a6a42448e890fc6a0d4333736",
     (
         "tired_gray_oldman",
         False,
         "closed",
-    ): "06c5bfa42a230c88548d7d3add8aa34e589db798b5b9ab95ee84b1d58a3bf9c0",
+    ): "c57c4568befd04ea9eeb9919c564572bbfd39ad7334821003072a3ed6bf6bcb3",
     (
         "tired_gray_oldman",
         True,
         "open",
-    ): "218b8e1de7f0f8f690084a3908102983cff7e0ecec90569fd4bb9c6f0ed34c41",
+    ): "5c627939be1b389e590c1a75a741f51d8e209e12c3beb4b9f0c890684a4b6969",
     (
         "tired_gray_oldman",
         True,
         "half",
-    ): "a34f147440f004f3988ea18999ccfb95144244714d1a441cf186d0ff9eb7edfc",
+    ): "e193d101e222edd99f3b8da1111a4b73b6d89a9f3e9eefc12c2794f6a745c6fc",
     (
         "tired_gray_oldman",
         True,
         "closed",
-    ): "ac41851ab735ec23760c08873f27cb5a0b3513ec2fdedbc1518b8f712e3f62cd",
+    ): "611808965bda0cf2b3f4be9a6cb476286a87d74ed04aa2f17386423fd468b1bc",
     (
         "smug_blond_hero",
         False,
         "open",
-    ): "5abb624393ecc542d2c03c723d54c9b40f10c50b2b2ff9e94e908ce714991e43",
+    ): "463210229aff8772f0e1cb0757b6b89d0ab05fca12a441716edc4714df21f572",
     (
         "smug_blond_hero",
         False,
         "half",
-    ): "0d97b5c676076089c747404f0d9860825917f0db1fad62de668ab9cf89825d02",
+    ): "7495dbadfd9c0396b94011201b81544840101916c3022404ab4b1760e71d8c14",
     (
         "smug_blond_hero",
         False,
         "closed",
-    ): "709cd27fcdd0bc28be4139a29a9c95988f3645c509030644d22327f1385f1f03",
+    ): "a6fb24f8654c20a89deebee2c21511a90eb2b85d2641be9120af72138c263ce2",
     (
         "smug_blond_hero",
         True,
         "open",
-    ): "cd4e644c2886c45b0aa72ab19d3e9a2d41a3e86090373f4bceb5db53555328a6",
+    ): "f98d545bcbf5d6e309536037302dcb5eab6eab5a221f9a6e1a22d277f81f5f36",
     (
         "smug_blond_hero",
         True,
         "half",
-    ): "7e3e1a94554c4429b5d9aed22f577713c304f6205ac4efa1bcd81d617853c3eb",
+    ): "9bf23e7012892f91ac45cf57f783f588f667a18b04bc7e9d90d9fef0d299ed49",
     (
         "smug_blond_hero",
         True,
         "closed",
-    ): "47f6c7d4088510f415df2ff2b9c7ea3e441c925ae9b8e75fe5fff15a1220bc11",
+    ): "cd87b35f1f928ef57a13ca274319e868b60587c0672255a0d780f4a9ab0c5145",
 }
 
 
@@ -136,6 +168,7 @@ def test_approved_blink_poses_only_change_eye_pixels():
     pixels = sources()
     for name, eyes in EYES.items():
         for smile in (False, True):
+            size = math.isqrt(len(pixels[name]))
             base = pixels[OFFICE_PORTRAIT_SMILE_IDS[name] if smile else name]
             mapping = (
                 OFFICE_PORTRAIT_SMILE_BLINK_OVERLAY_IDS
@@ -149,8 +182,8 @@ def test_approved_blink_poses_only_change_eye_pixels():
                 for y in range(oy, oy + h)
             }
             for pose in ("open", "half", "closed"):
-                overlay = pixels[mapping[pose]] if pose in mapping else bytes([8] * 4096)
-                changed = {(i % 64, i // 64) for i, c in enumerate(overlay) if c != 8}
+                overlay = pixels[mapping[pose]] if pose in mapping else bytes([8] * len(base))
+                changed = {(i % size, i // size) for i, c in enumerate(overlay) if c != 8}
                 assert changed <= allowed
                 target = composite(base, overlay)
                 assert all((a == 8) == (b == 8) for a, b in zip(base, target, strict=True))
@@ -165,8 +198,8 @@ def test_every_person_expression_pose_transition_clears_previous_pixels():
 
     class PixelPyxel:
         @staticmethod
-        def rect(*args):
-            canvas[:] = [1] * 4096
+        def rect(x, y, width, height, color):
+            canvas[:] = [color] * (width * height)
 
         @staticmethod
         def rectb(*args):
@@ -174,14 +207,21 @@ def test_every_person_expression_pose_transition_clears_previous_pixels():
 
         @staticmethod
         def blt(x, y, image, u, v, w, h, *, colkey, scale):
-            assert (x, y, u, v, w, h, colkey, scale) == (0, 0, 0, 0, 64, 64, 8, 1)
+            size = math.isqrt(len(pixels[image]))
+            assert (x, y, u, v, w, h, colkey, scale) == (0, 0, 0, 0, size, size, 8, 1)
             for i, c in enumerate(pixels[image]):
                 if c != colkey:
                     canvas[i] = c
 
     assets = {
         name: SimpleNamespace(
-            frame=lambda name=name: SimpleNamespace(image=name, u=0, v=0, width=64, height=64),
+            frame=lambda name=name: SimpleNamespace(
+                image=name,
+                u=0,
+                v=0,
+                width=math.isqrt(len(pixels[name])),
+                height=math.isqrt(len(pixels[name])),
+            ),
             definition=SimpleNamespace(colkey=8),
         )
         for name in pixels
@@ -215,5 +255,6 @@ def test_every_person_expression_pose_transition_clears_previous_pixels():
         for current in targets:
             for name, smile, frame, expected in (previous, current):
                 app.frame = frame
-                app.draw_office_portrait(Rect(0, 0, 64, 64), name, smile=smile)
+                size = math.isqrt(len(pixels[name]))
+                app.draw_office_portrait(Rect(0, 0, size, size), name, smile=smile)
                 assert bytes(canvas) == expected

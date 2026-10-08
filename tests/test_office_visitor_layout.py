@@ -7,8 +7,10 @@ from drift_with_me.office import OfficePrototype
 from test_office_supervisor import app_for, finish
 
 
-@pytest.mark.parametrize("profile,scale", [("low", 95 / 64), ("medium", 116 / 64), ("high", 2.0)])
-def test_every_visitor_expression_and_blink_stays_inside_large_name_only_layout(profile, scale):
+@pytest.mark.parametrize("profile,target_width", [("low", 95), ("medium", 116), ("high", 145)])
+def test_every_visitor_expression_and_blink_stays_inside_large_name_only_layout(
+    profile, target_width
+):
     office = OfficePrototype.load()
     office.begin_current_case()
     finish(office)
@@ -20,14 +22,18 @@ def test_every_visitor_expression_and_blink_stays_inside_large_name_only_layout(
     for case in office.cases:
         assert app.office_visitor_info_lines(case) == (case.visitor.name,)
         assert app.ui_text.text_width(case.visitor.name, "office_japanese") <= name.width
+        size = 64 if case.visitor.portrait_id == "succubus_green" else 116
+        scale = target_width / size
+        if scale >= 2:
+            scale = float(int(scale))
         for smile in (False, True):
             for pose in ("open", "half", "closed"):
                 calls = []
                 loaded = []
 
-                def asset(asset_id, loaded=loaded):
+                def asset(asset_id, loaded=loaded, size=size):
                     loaded.append(asset_id)
-                    frame = SimpleNamespace(width=64, height=64, image=asset_id, u=0, v=0)
+                    frame = SimpleNamespace(width=size, height=size, image=asset_id, u=0, v=0)
                     return SimpleNamespace(
                         frame=lambda: frame, definition=SimpleNamespace(colkey=8)
                     )
@@ -50,13 +56,15 @@ def test_every_visitor_expression_and_blink_stays_inside_large_name_only_layout(
                 assert loaded[0] == expected
                 for args, kw in calls:
                     assert kw["scale"] == scale
-                    x = args[0] + 64 * (1 - scale) / 2
-                    y = args[1] + 64 * (1 - scale) / 2
+                    x = args[0] + size * (1 - scale) / 2
+                    y = args[1] + size * (1 - scale) / 2
                     assert (
-                        rect.x - 0.500001 <= x and x + 64 * scale <= rect.x + rect.width + 0.500001
+                        rect.x - 0.500001 <= x
+                        and x + size * scale <= rect.x + rect.width + 0.500001
                     )
                     assert (
-                        rect.y - 0.500001 <= y and y + 64 * scale <= rect.y + rect.height + 0.500001
+                        rect.y - 0.500001 <= y
+                        and y + size * scale <= rect.y + rect.height + 0.500001
                     )
                 assert all(
                     (args[:2], kw["scale"]) == (calls[0][0][:2], scale) for args, kw in calls

@@ -34,17 +34,17 @@ from drift_with_me.world import load_world_data
 ROOT = Path(__file__).resolve().parents[1]
 OFFICE_PORTRAIT_HASHES = {
     "succubus_green": "f48b150e41b07e237357f3f4d6fe9d079548cb998ebda836a9dc6dd4464c1f8e",
-    "tired_gray_oldman": "f2fee518076a01b633898e66fe096a54eca43be150e067ec8a6d47b2ec7d8b61",
-    "nervous_elf_woodsman": "e8ab1618e53055c714bb8040e6015bf6c41adb0f02fa7ee00efc0a3a59ab9bb4",
-    "smug_blond_hero": "5abb624393ecc542d2c03c723d54c9b40f10c50b2b2ff9e94e908ce714991e43",
+    "tired_gray_oldman": "5c22b1b9deebc78a3c64c92206c8df23974b8e1620ccde1ac739e6e180715332",
+    "nervous_elf_woodsman": "6197d58204fac11c61845356c214018db23136edf3bf755695536c5396885159",
+    "smug_blond_hero": "463210229aff8772f0e1cb0757b6b89d0ab05fca12a441716edc4714df21f572",
 }
 OFFICE_PORTRAIT_SMILE_HASHES = {
     "succubus_green_smile": ("0254cc1baa08d5c3c41c6bc95cadae4200fff1487f85a54b5184141294576d87"),
-    "tired_gray_oldman_smile": ("ac41851ab735ec23760c08873f27cb5a0b3513ec2fdedbc1518b8f712e3f62cd"),
+    "tired_gray_oldman_smile": ("611808965bda0cf2b3f4be9a6cb476286a87d74ed04aa2f17386423fd468b1bc"),
     "nervous_elf_woodsman_smile": (
-        "73a9d75af2b04a1e4e82805158a3dffa28698fc715f75328234de38f321210d7"
+        "8347fec1a718f68b1f98798998106dfc3cfaaf64b90acd17163c92a0d44fd9a2"
     ),
-    "smug_blond_hero_smile": ("47f6c7d4088510f415df2ff2b9c7ea3e441c925ae9b8e75fe5fff15a1220bc11"),
+    "smug_blond_hero_smile": ("cd87b35f1f928ef57a13ca274319e868b60587c0672255a0d780f4a9ab0c5145"),
 }
 OFFICE_PORTRAIT_BLINK_HASHES = {
     "succubus_green_blink_half_overlay": (
@@ -54,22 +54,22 @@ OFFICE_PORTRAIT_BLINK_HASHES = {
         "1f3c0da15de32f7ab7f6c1cb80c50ae5a3ca90eb66af8e21abd9f76cde03a2c1"
     ),
     "tired_gray_oldman_blink_half_overlay": (
-        "cb20d2ee7bf927eaacbc0b705b9308985ac0a7f8fb31d4f77172c3bd82083b41"
+        "1159b87e59b0bc8f91c1376e0c8e373bd006e3bd6c98c079a1c6f30fe807889a"
     ),
     "tired_gray_oldman_blink_overlay": (
-        "c07d7487796eade7e1b3bb84376ea9f477a17f9f999d8224276e469cb078b2da"
+        "036af2f3436a79ce003185e61e14f6d0f3827b3691df5b0741094d202bd36771"
     ),
     "nervous_elf_woodsman_blink_half_overlay": (
-        "2254551e3f66dd0d807df6f0df100c014319d5a373728c48bce98b1dc6deec34"
+        "4c3a965a33de0b2db487b1ce2d4133fa646097d2d7497ba5c74e66e435a76c98"
     ),
     "nervous_elf_woodsman_blink_overlay": (
-        "ab7251e0bbc109e970f9bf9229d2d4dd31dad02b332470904b8b7eda7af1c719"
+        "f1fd026c59fe9bfe2bd72d4024bc186b1967577e1cfbf3af9fa5594bcbbe05d1"
     ),
     "smug_blond_hero_blink_half_overlay": (
-        "5fad6ed0f5eba65d22ba50a3c30e6f72e22fc3e60d17c468df8baf6ad4ea1024"
+        "5c45811a08cf98bb594146d1d2318f13cc00e58b7391af622b914f300397edc6"
     ),
     "smug_blond_hero_blink_overlay": (
-        "7f5a3082c16c0ce6de3d7cc3a97382d5962ca189383e0937ab0f407fa98a4474"
+        "7523740b013ec64e45cab1e3fdd9c46366666bb04ca1e01a876b749afd339e20"
     ),
 }
 
@@ -227,16 +227,23 @@ def test_off001_portrait_sources_preserve_asset_contract() -> None:
 
     for asset_id, expected_hash in OFFICE_PORTRAIT_HASHES.items():
         asset = assets[asset_id]
-        assert (asset["hex_width"], asset["hex_height"]) == (64, 64)
+        size = 64 if asset_id.startswith("succubus_green") else 116
+        policy = (
+            "off001_visitor_portrait_states_64_direct_v1_0"
+            if asset_id.startswith("succubus_green")
+            else "off001_visitor_portrait_states_116_v1_0"
+        )
+        assert (asset["hex_width"], asset["hex_height"]) == (size, size)
         assert asset["colkey"] == 8
+        assert asset["anchor_px"] == [size / 2, size / 2]
         assert asset["source_hash"] == expected_hash
-        assert asset["source_policy"] == "off001_visitor_portrait_states_64_direct_v1_0"
+        assert asset["source_policy"] == policy
         assert asset["ui_role"] == "office_visitor_portrait"
         source_path = manifest_path.parent / asset["frames"][0]["path"]
         rows = source_path.read_text(encoding="ascii").splitlines()
         pixels = bytes(int(char, 16) for row in rows for char in row)
-        assert len(rows) == 64
-        assert all(len(row) == 64 for row in rows)
+        assert len(rows) == size
+        assert all(len(row) == size for row in rows)
         assert hashlib.sha256(pixels).hexdigest() == expected_hash
 
 
@@ -248,16 +255,23 @@ def test_off001_portrait_smiles_preserve_asset_contract() -> None:
     assert set(OFFICE_PORTRAIT_SMILE_IDS.values()) == set(OFFICE_PORTRAIT_SMILE_HASHES)
     for asset_id, expected_hash in OFFICE_PORTRAIT_SMILE_HASHES.items():
         asset = assets[asset_id]
-        assert (asset["hex_width"], asset["hex_height"]) == (64, 64)
+        size = 64 if asset_id.startswith("succubus_green") else 116
+        policy = (
+            "off001_visitor_portrait_states_64_direct_v1_0"
+            if asset_id.startswith("succubus_green")
+            else "off001_visitor_portrait_states_116_v1_0"
+        )
+        assert (asset["hex_width"], asset["hex_height"]) == (size, size)
         assert asset["colkey"] == 8
+        assert asset["anchor_px"] == [size / 2, size / 2]
         assert asset["source_hash"] == expected_hash
-        assert asset["source_policy"] == "off001_visitor_portrait_states_64_direct_v1_0"
+        assert asset["source_policy"] == policy
         assert asset["ui_role"] == "office_visitor_portrait_smile"
         source_path = manifest_path.parent / asset["frames"][0]["path"]
         rows = source_path.read_text(encoding="ascii").splitlines()
         pixels = bytes(int(char, 16) for row in rows for char in row)
-        assert len(rows) == 64
-        assert all(len(row) == 64 for row in rows)
+        assert len(rows) == size
+        assert all(len(row) == size for row in rows)
         assert hashlib.sha256(pixels).hexdigest() == expected_hash
 
 
@@ -274,17 +288,24 @@ def test_off001_portrait_blink_overlays_preserve_asset_contract() -> None:
     assert overlay_ids == set(OFFICE_PORTRAIT_BLINK_HASHES)
     for asset_id, expected_hash in OFFICE_PORTRAIT_BLINK_HASHES.items():
         asset = assets[asset_id]
+        size = 64 if asset_id.startswith("succubus_green") else 116
+        policy = (
+            "off001_visitor_portrait_states_64_direct_v1_0"
+            if asset_id.startswith("succubus_green")
+            else "off001_visitor_portrait_states_116_v1_0"
+        )
         source_path = manifest_path.parent / asset["frames"][0]["path"]
         rows = source_path.read_text(encoding="ascii").splitlines()
         pixels = bytes(int(char, 16) for row in rows for char in row)
         opaque_count = sum(pixel != 8 for pixel in pixels)
 
-        assert (asset["hex_width"], asset["hex_height"]) == (64, 64)
+        assert (asset["hex_width"], asset["hex_height"]) == (size, size)
         assert asset["colkey"] == 8
-        assert asset["source_policy"] == "off001_visitor_portrait_states_64_direct_v1_0"
+        assert asset["anchor_px"] == [size / 2, size / 2]
+        assert asset["source_policy"] == policy
         assert asset["ui_role"] == "office_visitor_blink_overlay"
-        assert len(rows) == 64
-        assert all(len(row) == 64 for row in rows)
+        assert len(rows) == size
+        assert all(len(row) == size for row in rows)
         assert 8 <= opaque_count <= 1024
         assert hashlib.sha256(pixels).hexdigest() == expected_hash
 
@@ -1598,14 +1619,18 @@ def test_lamel_smile_blink_sources_only_change_lens_interiors() -> None:
 
     path = ROOT / "src/drift_with_me/assets/jack_sprite.json"
     assets = {asset["id"]: asset for asset in json.loads(path.read_text())["source_assets"]}
-    allowed = {(x, y) for x in range(22, 29) for y in range(32, 36)} | {
-        (x, y) for x in range(35, 42) for y in range(29, 33)
+    allowed = {(x, y) for x in range(39, 52) for y in range(55, 61)} | {
+        (x, y) for x in range(62, 74) for y in range(53, 58)
     }
-    smile = (path.parent / "nervous_elf_woodsman_smile_64.hex").read_text().splitlines()
+    smile = (
+        (path.parent / assets["nervous_elf_woodsman_smile"]["frames"][0]["path"])
+        .read_text()
+        .splitlines()
+    )
     for asset_id in OFFICE_PORTRAIT_SMILE_BLINK_OVERLAY_IDS["nervous_elf_woodsman"].values():
         asset = assets[asset_id]
         rows = (path.parent / asset["frames"][0]["path"]).read_text().splitlines()
-        assert len(rows) == 64 and all(len(row) == 64 for row in rows)
+        assert len(rows) == 116 and all(len(row) == 116 for row in rows)
         pixels = bytes(int(c, 16) for row in rows for c in row)
         assert (
             hashlib.sha256(pixels).hexdigest()
