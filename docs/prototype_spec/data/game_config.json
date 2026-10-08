@@ -1238,5 +1238,13 @@
     "speed_world_per_sec": 38.0,
     "gust_enabled": true,
     "gust_seed": 20261007
+  },
+  "cloud_shadow": {
+    "enabled": true,
+    "period_sec": 420.0,
+    "clear_lead_sec": 70.0,
+    "travel_sec": 144.0,
+    "strength": 0.14,
+    "track_z_world": [500.0, 760.0, 260.0]
   }
 }

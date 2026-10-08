@@ -11,6 +11,7 @@ from drift_with_me.abnormal_urchin_arms import (
     abnormal_urchin_pose_state,
     quantized_arm_points,
 )
+from drift_with_me.cloud_shadow import CloudShadowLayer
 from drift_with_me.effects import EffectSystem, EnemySnapshot, ReactiveEnvironmentState
 from drift_with_me.grass_sway import bend_angle, rotate_tip, sample_gust
 from drift_with_me.hex_assets import (
@@ -296,6 +297,7 @@ class Renderer:
         )
         self._debug_enabled = False
         self.last_stats = RenderStats()
+        self.cloud_shadow = CloudShadowLayer()
 
     def draw_scene(
         self,
@@ -337,6 +339,7 @@ class Renderer:
             self.draw_shallow_water_shoreline_tiles(model, camera)
         self.draw_shallow_water_symbols(model, camera, presentation_time)
         self.draw_ground_surfaces(model, camera)
+        self.cloud_shadow.draw(pyxel, model, camera)
         self.draw_background_effects(model, camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
         self.draw_safe_zones(model.world, camera)
