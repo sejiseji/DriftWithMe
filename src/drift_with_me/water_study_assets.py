@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from dataclasses import dataclass
 from importlib import resources
 from typing import Any
@@ -705,6 +705,26 @@ def load_approved_look04_plus_sparkle_frame_sequences(
     layer_timing_callback: Callable[[str, float], None] | None = None,
     timer: Callable[[], float] = time.perf_counter,
 ) -> dict[str, WaterStudyFrameSequence]:
+    iterator = _iter_approved_look04_plus_sparkle_frame_sequences(
+        pyxel_module,
+        layer_ids=layer_ids,
+        layer_timing_callback=layer_timing_callback,
+        timer=timer,
+    )
+    while True:
+        try:
+            next(iterator)
+        except StopIteration as finished:
+            return finished.value
+
+
+def _iter_approved_look04_plus_sparkle_frame_sequences(
+    pyxel_module: Any,
+    *,
+    layer_ids: tuple[str, ...] = APPROVED_LOOK04_PLUS_SPARKLE_LAYER_IDS,
+    layer_timing_callback: Callable[[str, float], None] | None = None,
+    timer: Callable[[], float] = time.perf_counter,
+) -> Generator[dict[str, WaterStudyFrameSequence] | None, None, dict[str, WaterStudyFrameSequence]]:
     root = resources.files("drift_with_me").joinpath(
         "assets/water_study/approved_look04_plus_sparkle"
     )
@@ -773,17 +793,16 @@ def load_approved_look04_plus_sparkle_frame_sequences(
         if len(layer["frames"]) != frame_count:
             raise ValueError(f"{layer_id}: expected {frame_count} frames")
 
-    sequences: dict[str, WaterStudyFrameSequence] = {}
-    for layer_id in layer_ids:
-        layer_started_at = timer()
-        planes: list[WaterStudyPlane] = []
-        for frame_index in range(frame_count):
-            chunk_rows: dict[str, tuple[str, ...]] = {}
+    planes_by_layer: dict[str, list[WaterStudyPlane]] = {layer: [] for layer in layer_ids}
+    layer_work = {layer: 0.0 for layer in layer_ids}
+    for frame_index in range(frame_count):
+        for layer_id in layer_ids:
+            chunks: list[WaterStudyChunk] = []
             for row in range(chunk_grid_rows):
                 for col in range(chunk_grid_cols):
+                    chunk_started_at = timer()
                     source_suffix = f"c{row}{col}"
-                    normalized_suffix = f"c{col}{row}"
-                    chunk_rows[normalized_suffix] = parse_hex_rows(
+                    rows = parse_hex_rows(
                         root.joinpath(
                             "chunks_256/hex",
                             f"{layer_id}_f{frame_index:03d}_{source_suffix}.hex.txt",
@@ -792,26 +811,48 @@ def load_approved_look04_plus_sparkle_frame_sequences(
                         chunk_height,
                         f"{layer_id}_f{frame_index:03d}_{source_suffix}",
                     )
-            planes.append(
-                _plane_from_chunk_rows(
-                    pyxel_module,
+                    chunks.append(
+                        WaterStudyChunk(
+                            _image_from_rows(pyxel_module, rows, chunk_width, chunk_height),
+                            col * chunk_width,
+                            row * chunk_height,
+                            chunk_width,
+                            chunk_height,
+                        )
+                    )
+                    layer_work[layer_id] += timer() - chunk_started_at
+                    yield None
+            planes_by_layer[layer_id].append(
+                WaterStudyPlane(
                     layer_id=f"{layer_id}_t{frame_index:02d}",
                     logical_width=logical_width,
                     logical_height=logical_height,
                     chunk_width=chunk_width,
                     chunk_height=chunk_height,
                     colkey=layer_colkeys[layer_id],
-                    chunk_rows=chunk_rows,
+                    chunks=tuple(chunks),
                 )
             )
-        sequences[layer_id] = WaterStudyFrameSequence(
-            layer_id=layer_id,
+        if frame_index == 0:
+            yield {
+                layer: WaterStudyFrameSequence(
+                    layer_id=layer,
+                    planes=tuple(planes),
+                    hold_frames=(APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES,),
+                )
+                for layer, planes in planes_by_layer.items()
+            }
+    if layer_timing_callback is not None:
+        for layer, work in layer_work.items():
+            layer_timing_callback(layer, work)
+    return {
+        layer: WaterStudyFrameSequence(
+            layer_id=layer,
             planes=tuple(planes),
             hold_frames=(APPROVED_LOOK04_PLUS_SPARKLE_HOLD_FRAMES,) * len(planes),
         )
-        if layer_timing_callback is not None:
-            layer_timing_callback(layer_id, timer() - layer_started_at)
-    return {layer_id: sequences[layer_id] for layer_id in layer_ids}
+        for layer, planes in planes_by_layer.items()
+    }
 
 
 def load_water_study_frame_sequences(
@@ -955,6 +996,15 @@ def preload_water_study_cache(
     cache_key = id(pyxel_module)
     if not force and cache_key in _WATER_STUDY_CACHE_BY_PYXEL_ID:
         return _WATER_STUDY_CACHE_BY_PYXEL_ID[cache_key]
+    if not force and cache_key in _WATER_STUDY_LOADERS_BY_PYXEL_ID:
+        loader = _WATER_STUDY_LOADERS_BY_PYXEL_ID[cache_key]
+        while loader.cache is None:
+            loader.advance()
+            if loader.error is not None:
+                raise loader.error
+        return loader.cache
+    if force:
+        _WATER_STUDY_LOADERS_BY_PYXEL_ID.pop(cache_key, None)
 
     layer_timings: dict[str, float] = {}
     preload_started_at = timer()
@@ -1001,5 +1051,89 @@ def preload_water_study_cache(
     return cache
 
 
+class WaterStudyCacheLoader:
+    """Prepare one chunk at a time on the render thread; publish only complete assets."""
+
+    def __init__(self, pyxel_module: Any) -> None:
+        self.pyxel_module = pyxel_module
+        self.cache = _WATER_STUDY_CACHE_BY_PYXEL_ID.get(id(pyxel_module))
+        self.layer_timings: dict[str, float] = {}
+        self.work_sec = 0.0
+        self.error: Exception | None = None
+        self.preview_cache: WaterStudyAssetCache | None = None
+        self.iterator = _iter_approved_look04_plus_sparkle_frame_sequences(
+            pyxel_module,
+            layer_ids=WATER_STUDY_RUNTIME_LAYER_IDS,
+            layer_timing_callback=self.layer_timings.__setitem__,
+        )
+
+    def advance(self, budget_sec: float = 0.002) -> WaterStudyAssetCache | None:
+        if self.cache is not None:
+            return self.cache
+        if self.error is not None:
+            return None
+        started_at = time.perf_counter()
+        while True:
+            try:
+                preview = next(self.iterator)
+                if preview is not None:
+                    self.preview_cache = WaterStudyAssetCache(
+                        static_layers={},
+                        phase_layers={},
+                        frame_sequences=preview,
+                        sparkle_fx_bank=None,
+                        ready=False,
+                        preload_total_sec=self.work_sec,
+                        static_preload_sec=0.0,
+                        phase_preload_sec=0.0,
+                        sequence_preload_sec=self.work_sec,
+                        layer_preload_sec={},
+                        resident_pixel_count=2621440,
+                    )
+            except StopIteration as finished:
+                self.work_sec += time.perf_counter() - started_at
+                sequences = finished.value
+                self.cache = WaterStudyAssetCache(
+                    static_layers={},
+                    phase_layers={},
+                    frame_sequences=sequences,
+                    sparkle_fx_bank=None,
+                    ready=True,
+                    preload_total_sec=self.work_sec,
+                    static_preload_sec=0.0,
+                    phase_preload_sec=0.0,
+                    sequence_preload_sec=self.work_sec,
+                    layer_preload_sec=self.layer_timings,
+                    resident_pixel_count=sum(
+                        chunk.width * chunk.height
+                        for sequence in sequences.values()
+                        for plane in sequence.planes
+                        for chunk in plane.chunks
+                    ),
+                )
+                _WATER_STUDY_CACHE_BY_PYXEL_ID[id(self.pyxel_module)] = self.cache
+                return self.cache
+            except Exception as error:
+                self.work_sec += time.perf_counter() - started_at
+                self.error = error
+                return None
+            if time.perf_counter() - started_at >= budget_sec:
+                self.work_sec += time.perf_counter() - started_at
+                return None
+
+
+_WATER_STUDY_LOADERS_BY_PYXEL_ID: dict[int, WaterStudyCacheLoader] = {}
+
+
+def water_study_cache_loader(pyxel_module: Any) -> WaterStudyCacheLoader:
+    key = id(pyxel_module)
+    if key not in _WATER_STUDY_LOADERS_BY_PYXEL_ID:
+        _WATER_STUDY_LOADERS_BY_PYXEL_ID[key] = WaterStudyCacheLoader(pyxel_module)
+    loader = _WATER_STUDY_LOADERS_BY_PYXEL_ID[key]
+    loader.cache = _WATER_STUDY_CACHE_BY_PYXEL_ID.get(key, loader.cache)
+    return loader
+
+
 def clear_water_study_cache_for_tests() -> None:
     _WATER_STUDY_CACHE_BY_PYXEL_ID.clear()
+    _WATER_STUDY_LOADERS_BY_PYXEL_ID.clear()

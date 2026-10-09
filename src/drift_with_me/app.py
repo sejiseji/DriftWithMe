@@ -51,7 +51,9 @@ from drift_with_me.water_study_assets import (
     WaterStudyAssetCache,
     WaterStudyPlane,
     preload_water_study_cache,
+    water_study_cache_loader,
 )
+from drift_with_me.water_study_layout import water_study_visible_chunks
 from drift_with_me.week_cycle import WeekTransition, WorkWeek, load_week_office
 from drift_with_me.world import load_world_data
 
@@ -514,6 +516,8 @@ class DriftWithMeApp:
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.screen in (AppScreen.START, AppScreen.PLAY):
+            self.prepare_water_study_assets()
         if self.update_field_transition(elapsed):
             return
         if self.update_week_transition(elapsed):
@@ -1388,7 +1392,15 @@ class DriftWithMeApp:
         if not self.can_open_water_study():
             return False
         started_at = time.perf_counter()
-        self.ensure_water_study_planes()
+        cache = getattr(self, "water_study_asset_cache", None)
+        if cache is not None and cache.ready:
+            self.water_study_planes = cache.static_layers
+            self.water_study_phase_planes = cache.phase_layers
+        else:
+            self.water_study_loader = water_study_cache_loader(self.pyxel)
+            self.water_study_asset_cache = (
+                self.water_study_loader.cache or self.water_study_loader.preview_cache
+            )
         self.clear_world_input_latches()
         self.water_study_clock = 0.0
         self.reset_water_specular_flash()
@@ -1396,6 +1408,15 @@ class DriftWithMeApp:
         self.screen = AppScreen.WATER_STUDY
         self.water_study_open_latency_ms = (time.perf_counter() - started_at) * 1000.0
         return True
+
+    def prepare_water_study_assets(self) -> None:
+        cache = getattr(self, "water_study_asset_cache", None)
+        if cache is not None and cache.ready:
+            return
+        self.water_study_loader = water_study_cache_loader(self.pyxel)
+        self.water_study_asset_cache = (
+            self.water_study_loader.advance() or self.water_study_loader.preview_cache
+        )
 
     def ensure_water_study_planes(self) -> None:
         cache = getattr(self, "water_study_asset_cache", None)
@@ -1441,6 +1462,23 @@ class DriftWithMeApp:
         return False
 
     def update_water_study_screen(self, elapsed: float) -> None:
+        if self.mouse_pressed_in(self.water_study_close_rect()):
+            self.exit_water_study()
+            return
+        loader = getattr(self, "water_study_loader", None)
+        if loader is not None and (
+            self.water_study_asset_cache is None or not self.water_study_asset_cache.ready
+        ):
+            # The world is stopped here. Use most of one frame for preparation,
+            # while keeping CLOSE ahead of the work and a bounded input delay.
+            foreground_budget = min(0.014, 0.8 / self.runtime.target_fps)
+            self.water_study_asset_cache = loader.advance(foreground_budget) or loader.preview_cache
+            if self.water_study_asset_cache is None or not self.water_study_asset_cache.ready:
+                self.clear_world_input_latches()
+                return
+            # Start the complete sequence at frame zero, without carrying a
+            # preparation frame's elapsed time into the animation.
+            elapsed = 0.0
         self.water_study_clock += max(0.0, elapsed)
         self.clear_world_input_latches()
         self.handle_water_study_profile_shortcuts()
@@ -4122,7 +4160,8 @@ class DriftWithMeApp:
         profile = self.water_study_profile()
         layer_count = 0
         wrap_calls = 0
-        for layer_id in profile.layer_ids:
+        preparing = getattr(self, "water_study_asset_cache", None) is None
+        for layer_id in () if preparing else profile.layer_ids:
             calls = self.draw_water_study_plane(layer_id, t)
             if calls > 0:
                 layer_count += 1
@@ -4130,9 +4169,10 @@ class DriftWithMeApp:
         if profile.name == "FULL_SIX_OBSERVE":
             self.draw_water_study_simple_bubbles(t, 10)
             layer_count += 1
-        self.draw_water_specular_flash()
-        self.draw_water_study_jack(profile)
-        self.draw_water_micro_glints()
+        if not preparing:
+            self.draw_water_specular_flash()
+            self.draw_water_study_jack(profile)
+            self.draw_water_micro_glints()
         self.water_study_last_draw_ms = (time.perf_counter() - started_at) * 1000.0
         self.water_study_last_layer_count = layer_count
         self.water_study_last_wrap_calls = wrap_calls
@@ -4293,54 +4333,32 @@ class DriftWithMeApp:
             for source_color, target_color in palette_remaps:
                 pyxel.pal(source_color, target_color)
         try:
-            calls = 0
-            for plane_y in range(
-                start_y, self.runtime.screen_height + plane.logical_height, plane.logical_height
-            ):
-                for plane_x in range(
-                    start_x, self.runtime.screen_width + plane.logical_width, plane.logical_width
-                ):
-                    for chunk in plane.chunks:
-                        x = plane_x + chunk.origin_x
-                        y = plane_y + chunk.origin_y
-                        if (
-                            x >= self.runtime.screen_width
-                            or y >= self.runtime.screen_height
-                            or x + chunk.width <= 0
-                            or y + chunk.height <= 0
-                        ):
-                            continue
-                        if cull_rect is not None:
-                            cull_x, cull_y, cull_width, cull_height = cull_rect
-                            if (
-                                x >= cull_x + cull_width
-                                or y >= cull_y + cull_height
-                                or x + chunk.width <= cull_x
-                                or y + chunk.height <= cull_y
-                            ):
-                                continue
-                        if plane.colkey is None:
-                            pyxel.blt(x, y, chunk.image, 0, 0, chunk.width, chunk.height)
-                        else:
-                            pyxel.blt(
-                                x,
-                                y,
-                                chunk.image,
-                                0,
-                                0,
-                                chunk.width,
-                                chunk.height,
-                                colkey=plane.colkey,
-                            )
-                        calls += 1
-            return calls
+            placements = water_study_visible_chunks(
+                self.runtime.screen_width,
+                self.runtime.screen_height,
+                plane.logical_width,
+                plane.logical_height,
+                start_x,
+                start_y,
+                tuple((c.origin_x, c.origin_y, c.width, c.height) for c in plane.chunks),
+                cull_rect,
+            )
+            for x, y, index in placements:
+                chunk = plane.chunks[index]
+                if plane.colkey is None:
+                    pyxel.blt(x, y, chunk.image, 0, 0, chunk.width, chunk.height)
+                else:
+                    pyxel.blt(
+                        x, y, chunk.image, 0, 0, chunk.width, chunk.height, colkey=plane.colkey
+                    )
+            return len(placements)
         finally:
             if is_approved_production_layer or palette_remaps:
                 pyxel.pal()
 
     def water_study_plane_for_frame(self, layer_id: str, t: float) -> WaterStudyPlane | None:
         cache = getattr(self, "water_study_asset_cache", None)
-        if cache is not None and cache.ready:
+        if cache is not None:
             return cache.plane_for_frame(layer_id, t, self.runtime.target_fps)
         phases = self.water_study_phase_planes.get(layer_id)
         if not phases:

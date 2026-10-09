@@ -3915,7 +3915,9 @@ class Renderer:
         screen_points = [
             self.abnormal_urchin_local_to_screen(placement, *point) for point in points
         ]
-        for index, (start, end) in enumerate(zip(screen_points, screen_points[1:], strict=True)):
+        for index, (start, end) in enumerate(
+            zip(screen_points[:-1], screen_points[1:], strict=True)
+        ):
             self.pyxel.line(
                 int(round(start[0])),
                 int(round(start[1])),
@@ -3948,7 +3950,7 @@ class Renderer:
                 self.abnormal_urchin_local_to_screen(placement, *point) for point in arm.joints
             ]
             for start, end in zip(
-                joint_screen_points,
+                joint_screen_points[:-1],
                 joint_screen_points[1:],
                 strict=True,
             ):

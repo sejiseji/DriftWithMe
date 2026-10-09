@@ -29,6 +29,7 @@ SUPPORTED_ANIMATIONS = {
     FRAME_LOOP_ANIMATION,
 }
 HEX_DIGITS = "0123456789ABCDEF"
+_HEX_VALIDATION_DELETE = str.maketrans("", "", HEX_DIGITS + "\n")
 
 
 class HexAssetError(ValueError):
@@ -146,12 +147,14 @@ def parse_hex_rows(text: str, width: int, height: int, source_label: str) -> tup
     rows = tuple(normalized.split("\n")) if normalized else ()
     if len(rows) != height:
         raise HexAssetError(f"{source_label}: expected {height} rows, got {len(rows)}")
+    colors_valid = not normalized.translate(_HEX_VALIDATION_DELETE)
     for index, row in enumerate(rows, start=1):
         if len(row) != width:
             raise HexAssetError(f"{source_label}:{index}: expected {width} columns, got {len(row)}")
-        for char in row:
-            if char not in HEX_DIGITS:
-                raise HexAssetError(f"{source_label}:{index}: invalid HEX color {char!r}")
+        if not colors_valid:
+            invalid = row.translate(_HEX_VALIDATION_DELETE)
+            if invalid:
+                raise HexAssetError(f"{source_label}:{index}: invalid HEX color {invalid[0]!r}")
     return rows
 
 
