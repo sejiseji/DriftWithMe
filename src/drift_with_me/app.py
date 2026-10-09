@@ -765,7 +765,12 @@ class DriftWithMeApp:
             return
 
         for index, question in enumerate(case.questions[:visible_question_count]):
-            if self.mouse_pressed_in(self.office_question_rect(index, len(case.questions))):
+            rect = self.office_question_rect(index, len(case.questions))
+            if (
+                self.mouse_pressed_in(rect)
+                and self.pointer_snapshot.x < rect.x + rect.width
+                and self.pointer_snapshot.y < rect.y + rect.height
+            ):
                 self.office_focus = "questions"
                 self.office_question_index = index
                 self.ask_or_select_office_question(question)
@@ -2962,6 +2967,8 @@ class DriftWithMeApp:
         )
 
     def office_questions_panel_rect(self) -> Rect:
+        if self.runtime.profile.name == "low":
+            return self.office_rect(132, 128, 240, 79)
         return self.office_rect(132, 131, 240, 73)
 
     def office_classification_panel_rect(self) -> Rect:
@@ -2975,22 +2982,26 @@ class DriftWithMeApp:
 
     def office_question_rect(self, index: int, count: int) -> Rect:
         panel = self.office_questions_panel_rect()
-        heading_height = self.office_rect(0, 0, 0, 20).height
-        inset_x = self.office_rect(3, 0, 0, 0).x
-        gap_x = self.office_rect(3, 0, 0, 0).x
-        gap_y = self.office_rect(0, 0, 0, 1).height
-        columns = 2
+        heading_height = round(self.office_rect(0, 0, 0, 20).height)
+        # Match the rendered frame and leave one pixel inside its inner border.
+        inset = 5 if self.runtime.profile.name == "high" else 4
+        gap_x = max(1, round(self.office_rect(3, 0, 0, 0).x))
+        gap_y = max(1, round(self.office_rect(0, 0, 0, 1).height))
+        columns = 1 if count == 1 else 2
         rows = max(1, (count + columns - 1) // columns)
-        column_width = (panel.width - inset_x * 2 - gap_x) / columns
-        available_height = max(1.0, panel.height - heading_height - gap_y * (rows - 1))
-        row_height = available_height / rows
+        available_width = int(panel.width) - inset * 2 - gap_x * (columns - 1)
+        available_height = int(panel.height) - heading_height - inset - gap_y * (rows - 1)
         column = index % columns
         row = index // columns
+        left = available_width * column // columns
+        right = available_width * (column + 1) // columns
+        top = available_height * row // rows
+        bottom = available_height * (row + 1) // rows
         return Rect(
-            panel.x + inset_x + column * (column_width + gap_x),
-            panel.y + heading_height + row * (row_height + gap_y),
-            column_width,
-            row_height,
+            int(panel.x) + inset + left + column * gap_x,
+            int(panel.y) + heading_height + top + row * gap_y,
+            right - left,
+            bottom - top,
         )
 
     def office_classification_rect(self, index: int) -> Rect:
