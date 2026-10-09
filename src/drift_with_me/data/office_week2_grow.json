@@ -83,7 +83,7 @@
         "task_id": "FIELD-JUN-W2-EAST",
         "location_id": "east_canal",
         "title": "東側の水路沿い",
-        "objective": "岸、木陰、古い点検口を確認する",
+        "objective": "水源近くの陥没した地面、木陰、古い点検口を確認する",
         "completion_condition_id": "inspect_east_site"
       }
     },
@@ -102,7 +102,7 @@
         {
           "id": "report",
           "label": "報告する",
-          "jack": "岸が崩れてた。木陰は涼しかったけど、座る場所がないんだ。",
+          "jack": "水源の近くで、地面がへこんでた。木陰は涼しかったけど、座る場所がないんだ。",
           "reply": "足元と休憩場所か。点検口はあった？",
           "memo": [
             "現地で見た3か所を建設課へ伝える"
@@ -219,7 +219,7 @@
               "reply": "そうか。頼んだぞ。"
             }
           ],
-          "empty_report_text": "岸、木陰、古い点検口の様子を確認しました。",
+          "empty_report_text": "水源近くの陥没した地面、木陰、古い点検口の様子を確認しました。",
           "closing": []
         }
       },
@@ -242,7 +242,7 @@
             {
               "turn_id": "construction_hatch",
               "jack": "草に隠れた古い点検口もあった。何につながってるかは分からない。",
-              "reply": "まず図面を調べるよ。岸と休憩場所の整備も考えよう。"
+              "reply": "まず図面を調べるよ。へこんだ地面と休憩場所の整備も考えよう。"
             },
             {
               "turn_id": "construction_close",

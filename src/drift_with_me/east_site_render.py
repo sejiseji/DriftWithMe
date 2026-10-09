@@ -95,3 +95,7 @@ def draw_east_site_ground(renderer, model, camera):
         scale = camera.viewport_width / 512 * getattr(camera, "zoom", 1.0)
         w, h = max(3, round(5 * scale)), max(2, round(3 * scale))
         pyxel.rectb(p.x - w / 2, p.y - h, w, h, 6)
+
+    # A small existing-palette stone on the approach to the shade. No new obstacle.
+    polygon(renderer, camera, [(894, 64), (900, 62), (904, 67), (899, 71), (892, 68)], 13)
+    polygon(renderer, camera, [(894, 64), (900, 62), (901, 66), (896, 67)], 6)

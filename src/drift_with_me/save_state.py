@@ -56,7 +56,7 @@ def integer(value, low, high):
 
 
 def office_snapshot(office):
-    return {
+    data = {
         "index": office.current_index,
         "sessions": {
             key: {
@@ -84,6 +84,15 @@ def office_snapshot(office):
         },
     }
 
+    if hasattr(office, "site_progress"):
+        sites = office.site_progress
+        data["site"] = {
+            "facts": sorted(sites.facts),
+            "positions": dict(sites.positions),
+            "reported": sorted(sites.reported),
+        }
+    return data
+
 
 def snapshot(app):
     offices = dict(app.week_office_history)
@@ -103,8 +112,31 @@ def snapshot(app):
 
 def restore_office(raw, week):
     office = OfficePrototype.load() if week == WorkWeek() else load_week_office(week)
-    if office is None or not isinstance(raw, dict) or set(raw) != {"index", "sessions"}:
+    week3 = week == WorkWeek(6, 3)
+    keys = {"index", "sessions", "site"} if week3 else {"index", "sessions"}
+    if office is None or not isinstance(raw, dict) or set(raw) != keys:
         raise ValueError("unsupported office")
+    if week3:
+        from drift_with_me.week3 import FACTS as W3_FACTS
+        from drift_with_me.week3 import LINES, Week3Progress
+        from drift_with_me.week3 import SITE_FACTS as W3_SITES
+
+        site = raw["site"]
+        if not isinstance(site, dict) or set(site) != {"facts", "positions", "reported"}:
+            raise ValueError("invalid week3 record")
+        facts = string_set(site["facts"], W3_FACTS)
+        reported = string_set(site["reported"], facts)
+        positions = site["positions"]
+        if not isinstance(positions, dict) or any(
+            k not in W3_SITES
+            or type(v) is not int
+            or not 0 <= v < len(LINES[k])
+            or W3_SITES[k] in facts
+            for k, v in positions.items()
+        ):
+            raise ValueError("invalid week3 conversation")
+        office.site_progress = Week3Progress(facts, dict(positions), reported)
+        office.refresh_reports()
     index = integer(raw["index"], 0, len(office.cases))
     if not isinstance(raw["sessions"], dict) or set(raw["sessions"]) != set(office.sessions):
         raise ValueError("case mismatch")
@@ -171,7 +203,18 @@ def restore_office(raw, week):
                 or set(result) != {"code", "facts"}
             ):
                 raise ValueError("invalid report")
-            if case.case_id == "OFF-JUN-W2-HERO":
+            if case.case_id == "OFF-JUN-W3-SAGAN":
+                if (
+                    result["code"] != "WEEK3_CONFIRMED"
+                    or string_set(result["facts"], W3_FACTS) != office.site_progress.facts
+                ):
+                    raise ValueError("invalid week3 report")
+                code, facts, lines = (
+                    "WEEK3_CONFIRMED",
+                    tuple(sorted(office.site_progress.facts)),
+                    (),
+                )
+            elif case.case_id == "OFF-JUN-W2-HERO":
                 if (
                     result["code"] != "EAST_SITE_CONFIRMED"
                     or string_set(result["facts"], FACTS) != FACTS
@@ -235,6 +278,19 @@ def restore_office(raw, week):
         s.state != CaseState.RESOLVED for s in office.sessions.values()
     ):
         raise ValueError("unfinished office")
+    if week3:
+        sites = office.site_progress
+        if any(
+            office.sessions[c.case_id].state != CaseState.RESOLVED
+            for c in office.cases[: min(index, 3)]
+        ):
+            raise ValueError("week3 order mismatch")
+        if index >= 4 and office.sessions["OFF-JUN-W3-SAGAN"].field_result is None:
+            raise ValueError("unconfirmed week3 return")
+        if index == 4 and "hatch_matched" not in sites.facts:
+            raise ValueError("unconfirmed hatch report")
+        if index == 6 and (sites.facts != W3_FACTS or sites.reported != W3_FACTS):
+            raise ValueError("unfinished week3 reports")
     return office
 
 
@@ -262,10 +318,10 @@ def decode(text):
     w = payload["week"]
     if not isinstance(w, list) or len(w) != 2 or integer(w[0], 6, 6) != 6:
         raise ValueError("unsupported week")
-    week = WorkWeek(6, integer(w[1], 1, 2))
+    week = WorkWeek(6, integer(w[1], 1, 3))
     if (
         not isinstance(payload["offices"], dict)
-        or set(payload["offices"]) - {"6:1", "6:2"}
+        or set(payload["offices"]) - {"6:1", "6:2", "6:3"}
         or f"6:{week.number}" not in payload["offices"]
     ):
         raise ValueError("invalid history")

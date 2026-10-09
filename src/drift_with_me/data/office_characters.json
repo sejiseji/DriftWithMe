@@ -12,7 +12,10 @@
       "source_library_version": 0,
       "source_sha256": "c7dd620446d199dfdff8d3144300b8061e7832be812fa96aeba88db1c4451a8c",
       "pixel_source_hash": "060892ae18809b85e8e8a07f232ffa01b80556a68b0c35796064250cb699c940",
-      "implemented_cases": []
+      "implemented_cases": [
+        "OFF-JUN-W3-URA",
+        "OFF-JUN-W3-URA-REPORT"
+      ]
     },
     {
       "id": "takanashi",
@@ -54,7 +57,9 @@
       "source_sha256": "f43aa633fd866a68b1a1ba337e757a8437d76791f8b73445e99671ca5da8671c",
       "pixel_source_hash": "ad47e05e9e04a1995a0bfd3e3534f2d7db07eb0c136f497ed06bf4478b56f7f9",
       "implemented_cases": [
-        "OFF-JUN-W2-CONSTRUCTION"
+        "OFF-JUN-W2-CONSTRUCTION",
+        "OFF-JUN-W3-SAGAN",
+        "OFF-JUN-W3-SAGAN-REPORT"
       ]
     },
     {
@@ -68,7 +73,9 @@
       "source_library_version": 0,
       "source_sha256": "6a2df74074be190f1bebd0c7b63a9839fd0c6629f1e4a8d0d5ce67056f7032ba",
       "pixel_source_hash": "654ae1fa2c88f867224fdc6fa57e52fd3f317b3bf9cf30089dd5b21931c6ad9a",
-      "implemented_cases": []
+      "implemented_cases": [
+        "OFF-JUN-W3-YOAKE"
+      ]
     }
   ]
 }

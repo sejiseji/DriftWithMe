@@ -32,7 +32,11 @@ class WorkWeek:
 
 
 def load_week_office(week: WorkWeek) -> OfficePrototype | None:
-    # Only the explicitly authored return visit exists. Other days stay absent.
+    if week == WorkWeek(6, 3):
+        from drift_with_me.week3 import Week3Office
+
+        return Week3Office()
+    # Unauthored days remain absent.
     if week != WorkWeek(6, 2):
         return None
     raw = config.load_data_json("office_week2_grow.json")

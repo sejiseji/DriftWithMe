@@ -1,0 +1,385 @@
+{
+  "version": "0.1.0",
+  "cases": [
+    {
+      "case_id": "OFF-JUN-W3-YOAKE",
+      "title": "転入のお手続きと買い物の相談",
+      "visitor": {
+        "id": "yoake",
+        "name": "ヨアケ",
+        "kind": "",
+        "portrait_id": "yoake_matte"
+      },
+      "initial_purpose": "転入のお手続きと買い物の相談",
+      "document_status": "持参書類あり",
+      "questions": [
+        {
+          "id": "talk",
+          "label": "話を続ける",
+          "jack": "お車はお持ちですか？",
+          "reply": "食料品と、洗濯かごとか、そういうものを。前は駅の近くで全部済んでいたので……",
+          "memo": [],
+          "visitor_first": true
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-JUN-W3-HALL",
+      "title": "集会所の利用相談",
+      "visitor": {
+        "id": "hall",
+        "name": "来訪者",
+        "kind": "",
+        "portrait_id": "generic_visitor"
+      },
+      "initial_purpose": "集会所の利用相談",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "talk",
+          "label": "話を続ける",
+          "jack": "何人くらいのご予定ですか？",
+          "reply": "来月の最初の日曜日に。近所の手芸仲間で集まろうと思って",
+          "memo": [],
+          "visitor_first": true
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-JUN-W3-URA",
+      "title": "点検口の記録",
+      "visitor": {
+        "id": "ura",
+        "name": "ウラ",
+        "kind": "",
+        "portrait_id": "ura_matte"
+      },
+      "initial_purpose": "点検口の記録",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "talk",
+          "label": "話を続ける",
+          "jack": "はい。何を見てくればいいでしょう",
+          "reply": "記録の場所と合っているかと、ふたの周りが今どうなっているかを。開けなくて大丈夫です",
+          "memo": []
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-JUN-W3-SAGAN",
+      "title": "資材を運ぶ道の確認",
+      "visitor": {
+        "id": "sagan",
+        "name": "サガン",
+        "kind": "",
+        "portrait_id": "sagan_matte"
+      },
+      "initial_purpose": "資材を運ぶ道の確認",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "talk",
+          "label": "話を続ける",
+          "jack": "フジさんね",
+          "reply": "助かる！ 先週、業者がハヤセ造園に決まってな。現場担当はフジさんって人だ",
+          "memo": [],
+          "visitor_first": true
+        }
+      ],
+      "expected_classification": "FIELD_CHECK",
+      "field_task": {
+        "task_id": "FIELD-JUN-W3-EAST",
+        "location_id": "east_canal",
+        "title": "点検口と資材の運搬経路",
+        "objective": "点検口の記録照合、水源近くの陥没面と木陰の通路を確認する",
+        "completion_condition_id": "confirm_week3_site"
+      }
+    },
+    {
+      "case_id": "OFF-JUN-W3-URA-REPORT",
+      "title": "点検口の確認報告",
+      "visitor": {
+        "id": "ura-report",
+        "name": "ウラ",
+        "kind": "",
+        "portrait_id": "ura_matte"
+      },
+      "initial_purpose": "点検口の確認報告",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "talk",
+          "label": "報告する",
+          "jack": "点検口は、記録の場所と合っていました。ふたの縁には草がかかっています",
+          "reply": "ありがとうございます。今の状態を追記しておきますね",
+          "memo": []
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-JUN-W3-SAGAN-REPORT",
+      "title": "資材の運搬経路の報告",
+      "visitor": {
+        "id": "sagan-report",
+        "name": "サガン",
+        "kind": "",
+        "portrait_id": "sagan_matte"
+      },
+      "initial_purpose": "資材の運搬経路の報告",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "talk",
+          "label": "報告する",
+          "jack": "水源の近くで地面がへこんでて、荷物を持つと通りにくそうだった。あと、木陰までの道に石が出てる",
+          "reply": "ああ、あの道か。フジさんに伝えとく。現場を見てもらう場所が絞れたな",
+          "memo": []
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    }
+  ],
+  "counter_scripts": {
+    "cases": [
+      {
+        "case_id": "OFF-JUN-W3-YOAKE",
+        "opening": [
+          {
+            "turn_id": "yoake_papers",
+            "jack": "はい。転入のお手続きですね。拝見します",
+            "reply": "こちら、お願いできますか",
+            "visitor_first": true,
+            "visual_action": "read_document"
+          },
+          {
+            "turn_id": "yoake_check",
+            "jack": "ヨアケさんですね。……はい、こちらで大丈夫です",
+            "reply": "ありがとうございます",
+            "visual_action": "return_document"
+          },
+          {
+            "turn_id": "yoake_shopping",
+            "jack": "もちろんです。何をお探しですか？",
+            "reply": "あの……すみません。買い物のことも、聞いていいですか",
+            "visitor_first": true
+          }
+        ],
+        "after_question": {
+          "talk": [
+            {
+              "turn_id": "yoake_car",
+              "jack": "食料品なら、川沿いの大きな道に出ると「ナギサマート」がありますよ",
+              "reply": "はい。ただ、まだ道がよく分からなくて",
+              "visitor_first": true
+            },
+            {
+              "turn_id": "yoake_goods",
+              "jack": "あります。まとめてそろえるなら、その先の「くらしの店コトリ」も便利です",
+              "reply": "日用品もありますか？",
+              "visitor_first": true
+            },
+            {
+              "turn_id": "yoake_distance",
+              "jack": "少し距離がありますね。荷物も増えますし、お車で回るのがよいと思います。場所を書きますね",
+              "reply": "歩いて行くには、遠いでしょうか",
+              "visitor_first": true
+            }
+          ]
+        },
+        "resolution": {
+          "classification": "COUNTER_COMPLETE",
+          "requires_completed_questions": [
+            "talk"
+          ],
+          "if_requirements_missing": "お話を最後まで確認しましょう。",
+          "turns": [
+            {
+              "turn_id": "yoake_close",
+              "jack": "少しずつ慣れていけば大丈夫ですよ",
+              "reply": "助かります。こういう暮らしは初めてで……聞いてよかったです",
+              "visitor_first": true
+            }
+          ]
+        },
+        "feedback": {
+          "COUNTER_COMPLETE": "受け付けました。"
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W3-HALL",
+        "opening": [
+          {
+            "turn_id": "hall_arrival",
+            "jack": "はい。いつ頃のご利用でしょうか",
+            "reply": "集会所を借りたいんですが、ここで聞けばいいですか？",
+            "visitor_first": true
+          }
+        ],
+        "after_question": {
+          "talk": [
+            {
+              "turn_id": "hall_contact",
+              "jack": "分かりました。空いているお部屋を担当に確認しますので、少々お待ちください",
+              "reply": "十人くらいです。机を囲める部屋があれば",
+              "visitor_first": true,
+              "visual_action": "internal_contact"
+            }
+          ]
+        },
+        "resolution": {
+          "classification": "COUNTER_COMPLETE",
+          "requires_completed_questions": [
+            "talk"
+          ],
+          "if_requirements_missing": "お話を最後まで確認しましょう。",
+          "turns": []
+        },
+        "feedback": {
+          "COUNTER_COMPLETE": "受け付けました。"
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W3-URA",
+        "opening": [
+          {
+            "turn_id": "ura_record",
+            "jack": "先週見つけた点検口のことなんですが、記録はありましたか？",
+            "reply": "はい。東側の水源近くのですね。こちらです"
+          },
+          {
+            "turn_id": "ura_ready",
+            "jack": "もう用意してくださってたんですね",
+            "reply": "場所が分かったので、探しておきました",
+            "visual_action": "receive_document"
+          },
+          {
+            "turn_id": "ura_sagan",
+            "jack": "ありがとうございます。これなら現地で見比べられそうです",
+            "reply": "そうそう、サガンさんが探していましたよ。何かお願いしたいことがあるそうです"
+          },
+          {
+            "turn_id": "ura_request",
+            "jack": "サガンが？",
+            "reply": "建設課の用事なら、外に出るのかもしれませんね。もしあの辺りへ行くなら、こちらもお願いしていいですか？"
+          }
+        ],
+        "after_question": {
+          "talk": []
+        },
+        "resolution": {
+          "classification": "COUNTER_COMPLETE",
+          "requires_completed_questions": [
+            "talk"
+          ],
+          "if_requirements_missing": "お話を最後まで確認しましょう。",
+          "turns": [
+            {
+              "turn_id": "ura_close",
+              "jack": "分かりました。まず、サガンに聞いてきます",
+              "reply": ""
+            }
+          ]
+        },
+        "feedback": {
+          "COUNTER_COMPLETE": "受け付けました。"
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W3-SAGAN",
+        "opening": [
+          {
+            "turn_id": "sagan_arrival",
+            "jack": "探してたって？ ウラさんから聞いたよ",
+            "reply": "おう、ジャック！ ちょうどよかった",
+            "visitor_first": true
+          },
+          {
+            "turn_id": "sagan_path",
+            "jack": "水源の近くの陥没した地面から、木陰までの辺り？",
+            "reply": "例の造園の件。資材を運ぶのに邪魔になりそうな所を、見てきてほしいんだ",
+            "visitor_first": true
+          },
+          {
+            "turn_id": "sagan_hatch",
+            "jack": "点検口も頼まれたから、一緒に回れるよ",
+            "reply": "そうそう。足元だけじゃなく、途中で狭くなってる所とかもな",
+            "visitor_first": true
+          }
+        ],
+        "after_question": {
+          "talk": [
+            {
+              "turn_id": "sagan_plan",
+              "jack": "なるほど。気になった所、まとめてくるよ",
+              "reply": "来週、作業計画を持って来てくれる。先に様子が分かってりゃ、話が早いだろ",
+              "visitor_first": true
+            }
+          ]
+        },
+        "resolution": {
+          "classification": "FIELD_CHECK",
+          "requires_completed_questions": [
+            "talk"
+          ],
+          "if_requirements_missing": "お話を最後まで確認しましょう。",
+          "turns": []
+        },
+        "feedback": {
+          "FIELD_CHECK": "受け付けました。"
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W3-URA-REPORT",
+        "opening": [],
+        "after_question": {
+          "talk": []
+        },
+        "resolution": {
+          "classification": "COUNTER_COMPLETE",
+          "requires_completed_questions": [
+            "talk"
+          ],
+          "if_requirements_missing": "お話を最後まで確認しましょう。",
+          "turns": []
+        },
+        "feedback": {
+          "COUNTER_COMPLETE": "確認した内容を記録しました。"
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W3-SAGAN-REPORT",
+        "opening": [],
+        "after_question": {
+          "talk": []
+        },
+        "resolution": {
+          "classification": "COUNTER_COMPLETE",
+          "requires_completed_questions": [
+            "talk"
+          ],
+          "if_requirements_missing": "お話を最後まで確認しましょう。",
+          "turns": [
+            {
+              "turn_id": "sagan_report_close",
+              "jack": "ほかにも必要なら、声かけて",
+              "reply": "おう、頼りにしてる！"
+            }
+          ]
+        },
+        "feedback": {
+          "COUNTER_COMPLETE": "確認した内容を記録しました。"
+        }
+      }
+    ]
+  }
+}

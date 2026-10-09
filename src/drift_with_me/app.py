@@ -54,6 +54,8 @@ from drift_with_me.water_study_assets import (
     water_study_cache_loader,
 )
 from drift_with_me.water_study_layout import water_study_visible_chunks
+from drift_with_me.week3 import LABELS as WEEK3_LABELS
+from drift_with_me.week3 import TASK_CASE as WEEK3_TASK_CASE
 from drift_with_me.week_cycle import WeekTransition, WorkWeek, load_week_office
 from drift_with_me.world import load_world_data
 
@@ -567,7 +569,14 @@ class DriftWithMeApp:
             or self.screen == AppScreen.START
             or self.field_transition is not None
             or self.week_transition is not None
-            or self.model.world_paused
+            or (
+                self.model.world_paused
+                and not (
+                    self.work_week == WorkWeek(6, 3)
+                    and self.model.interaction is not None
+                    and self.model.interaction.kind == "inspect"
+                )
+            )
             or self.model.combat_session is not None
             or getattr(self, "first_sight_conversation", None) is not None
         ):
@@ -1198,6 +1207,12 @@ class DriftWithMeApp:
                 ("ヒューズ", "ええ。足元を確かめながらね。"),
             )
 
+        if (
+            self.office.active_field_task
+            and self.office.active_field_task.case_id == WEEK3_TASK_CASE
+        ):
+            self.field_transition.lines = self.office.site_progress.travel_lines("out")
+
     def complete_office_field_task(self) -> bool:
         if getattr(self, "field_transition", None) is not None:
             return False
@@ -1248,6 +1263,12 @@ class DriftWithMeApp:
                     if complete
                     else "いいわよ。続きは、また来ましょう。",
                 ),
+            )
+        if task.case_id == WEEK3_TASK_CASE:
+            sites = self.office.site_progress
+            lines = sites.travel_lines("back")
+            result = FieldResult(
+                task.task_id, task.case_id, "WEEK3_CONFIRMED", tuple(sorted(sites.facts)), ()
             )
         self.field_transition = FieldTransition("back", lines, report=result)
         self.clear_world_input_latches()
@@ -2366,13 +2387,13 @@ class DriftWithMeApp:
             elif event.kind == "inspection_completed":
                 self.show_location_label()
                 if event.target_id in SITE_FACTS:
-                    self.east_site_progress.complete(event.target_id)
+                    self.current_east_site_progress().complete(event.target_id)
                 else:
                     self.record_office_field_event(event)
                 self.field_conversation = None
             elif event.kind == "interaction_cancelled":
                 if event.target_id in SITE_FACTS:
-                    self.east_site_progress.pending_completion = None
+                    self.current_east_site_progress().pending_completion = None
                 self.field_conversation = None
             elif event.kind == "interaction_started" and event.target_id is not None:
                 target = self.world.object_by_id(event.target_id)
@@ -2410,6 +2431,11 @@ class DriftWithMeApp:
         )
         self.audio.play_events(events)
 
+    def current_east_site_progress(self):
+        if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3):
+            return self.office.site_progress
+        return self.east_site_progress
+
     def begin_field_conversation(self, target_id: str) -> None:
         self.field_conversation = None
         interaction = self.model.interaction
@@ -2421,7 +2447,7 @@ class DriftWithMeApp:
         ):
             if not hasattr(self, "east_site_progress"):
                 self.east_site_progress = EastSiteProgress()
-            lines, index = self.east_site_progress.begin(target_id)
+            lines, index = self.current_east_site_progress().begin(target_id)
             self.field_conversation = FieldConversation(target_id, lines, index)
             return
         office = getattr(self, "office", None)
@@ -2462,7 +2488,7 @@ class DriftWithMeApp:
         if conversation.target_id in SITE_FACTS:
             if self.model.interaction.object_id != conversation.target_id:
                 return False
-            progress = self.east_site_progress
+            progress = self.current_east_site_progress()
             if conversation.index + 1 < len(conversation.lines):
                 conversation.index += 1
                 progress.positions[conversation.target_id] = conversation.index
@@ -3581,7 +3607,7 @@ class DriftWithMeApp:
     def draw_office_complete(self) -> None:
         panel = self.office_rect(106, 68, 300, 96)
         self.draw_panel_frame(panel, fill=0, inner=11)
-        partial_week = getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 2)
+        partial_week = getattr(self, "work_week", WorkWeek()).number > 1
         self.draw_office_text_in_rect(
             self.office_rect(116, 78, 280, 34),
             "今週の用件はここまでです" if partial_week else "本日の試行案件は完了しました",
@@ -3591,7 +3617,13 @@ class DriftWithMeApp:
         )
         self.draw_office_text_in_rect(
             self.office_rect(116, 116, 280, 24),
-            "建設課へ確認したことを伝えました" if partial_week else "4件の処理結果を記録しました",
+            (
+                "第4週は準備中です"
+                if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3)
+                else "建設課へ確認したことを伝えました"
+            )
+            if partial_week
+            else "4件の処理結果を記録しました",
             13,
             preferred_styles=("office_japanese_button", "office_japanese"),
             align="center",
@@ -3618,7 +3650,7 @@ class DriftWithMeApp:
         week = getattr(self, "work_week", WorkWeek())
         return (
             self.screen == AppScreen.OFFICE
-            and week == WorkWeek()
+            and week in {WorkWeek(), WorkWeek(6, 2)}
             and getattr(self, "week_transition", None) is None
             and not getattr(self, "week_input_wait_for_release", False)
             and getattr(self, "office_consultation", None) is None
@@ -3813,10 +3845,11 @@ class DriftWithMeApp:
         case = self.office.current_case
         return bool(
             page
-            and page[0].speaker == "Jack"
-            and page[0].visual_action == "read_document"
+            and any(
+                line.speaker == "Jack" and line.visual_action == "read_document" for line in page
+            )
             and case is not None
-            and case.case_id in {"OFF-JUN-W2-GROW", "OFF-JUN-W2-RECEIPT"}
+            and case.case_id in {"OFF-JUN-W2-GROW", "OFF-JUN-W2-RECEIPT", "OFF-JUN-W3-YOAKE"}
             and getattr(self, "office_consultation", None) is None
         )
 
@@ -4941,7 +4974,11 @@ class DriftWithMeApp:
             return
         rect = self.field_task_hud_rect()
         self.draw_panel_frame(rect, fill=0, inner=12)
-        self.draw_office_text_in_rect(self.office_rect(154, 10, 98, 16), "北側浅瀬", 12)
+        self.draw_office_text_in_rect(
+            self.office_rect(154, 10, 98, 16),
+            "東側の水路" if task.case_id in {"OFF-JUN-W2-HERO", WEEK3_TASK_CASE} else "北側浅瀬",
+            12,
+        )
         status = (
             "記録あり" if self.office.current_session.field_progress.can_report else "近くを調べる"
         )
@@ -5232,13 +5269,20 @@ class DriftWithMeApp:
         ):
             return
         target = self.model.interaction_candidate(self.scene_camera(self.camera()))
-        label = SITE_LABELS.get(target.id, "東側の水路") if target else "東側の水路"
+        labels = (
+            WEEK3_LABELS
+            if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3)
+            else SITE_LABELS
+        )
+        label = labels.get(target.id, "東側の水路") if target else "東側の水路"
         panel = self.office_rect(148, 57, 164, 34)
         self.draw_panel_frame(panel, 0, 12)
         self.draw_office_text_in_rect(self.office_rect(154, 59, 150, 14), label, 7)
         self.draw_office_text_in_rect(
             self.office_rect(154, 74, 150, 14),
-            f"見た場所 {len(self.east_site_progress.facts)}/3",
+            f"確認 {len(self.current_east_site_progress().facts)}/3"
+            if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3)
+            else f"見た場所 {len(self.east_site_progress.facts)}/3",
             12,
         )
 
