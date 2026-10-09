@@ -4673,6 +4673,186 @@
       "render_mode": "ground_decal_prop",
       "source_policy": "imagegen_palette_import_v1",
       "environment_role": "static_ground_patch"
+    },
+    {
+      "schema_version": 1,
+      "id": "ura_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "060892ae18809b85e8e8a07f232ffa01b80556a68b0c35796064250cb699c940",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Ura_116_matte_normal.hex",
+          "source_hash": "060892ae18809b85e8e8a07f232ffa01b80556a68b0c35796064250cb699c940"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "matte_normal_adopted_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_27dc630a0098819184bcf8fde196e14e",
+        "source_library_version": 0,
+        "source_sha256": "c7dd620446d199dfdff8d3144300b8061e7832be812fa96aeba88db1c4451a8c",
+        "png_sha256": "09c222f0252acfc1778b1b5f339c7d0955fb700c5b2a2a4614bac0433b851c58"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "takanashi_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "6d0e11b520892fe07fbfd5a7315c6cc072be91dd3a91fd6015366df509124392",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Takanashi_116_matte_normal.hex",
+          "source_hash": "6d0e11b520892fe07fbfd5a7315c6cc072be91dd3a91fd6015366df509124392"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "matte_normal_adopted_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_1c2443d7f17c8191960a50147a9287fe",
+        "source_library_version": 0,
+        "source_sha256": "dbf007a8d45bdfacf3f5fc34621aa12abd41c75872be3ffb930ea67c9289b024",
+        "png_sha256": "244b9f67b3f24e064b15055fe8f457e9c19441dab1346d9fbc26752e1d5adf3a"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "fuji_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "c76a115f7fa388538c489fbeacae326498df82a06823d66919093819d5135b4e",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Fuji_116_matte_normal.hex",
+          "source_hash": "c76a115f7fa388538c489fbeacae326498df82a06823d66919093819d5135b4e"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "matte_normal_adopted_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_f1c4afe9a93481918d4b6074c541c49b",
+        "source_library_version": 1,
+        "source_sha256": "81ae6e3dcd4488f9c53cfa73dbeb42256a4666f80de7cbc6d79f8677a3e01e8a",
+        "png_sha256": "a5c2f343a4e3be825b6ef6539b06d36ec5a205a17fb899317f7f11e203ec5077"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "sagan_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "ad47e05e9e04a1995a0bfd3e3534f2d7db07eb0c136f497ed06bf4478b56f7f9",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Sagan_116_matte_normal.hex",
+          "source_hash": "ad47e05e9e04a1995a0bfd3e3534f2d7db07eb0c136f497ed06bf4478b56f7f9"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "matte_normal_adopted_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_38427c5cd7708191bb6758b26deb9603",
+        "source_library_version": 0,
+        "source_sha256": "f43aa633fd866a68b1a1ba337e757a8437d76791f8b73445e99671ca5da8671c",
+        "png_sha256": "3603c3f14a8e1b12be11767ab4211a8135f6a9fcc131c611135fe68f1291c855"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "yoake_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "654ae1fa2c88f867224fdc6fa57e52fd3f317b3bf9cf30089dd5b21931c6ad9a",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Yoake_116_matte_normal.hex",
+          "source_hash": "654ae1fa2c88f867224fdc6fa57e52fd3f317b3bf9cf30089dd5b21931c6ad9a"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "matte_normal_adopted_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_39fab1b67d1c8191a0f183359733a563",
+        "source_library_version": 0,
+        "source_sha256": "6a2df74074be190f1bebd0c7b63a9839fd0c6629f1e4a8d0d5ce67056f7032ba",
+        "png_sha256": "6fd31f57c374a09eb6d2531207fac64d3532ffdb4050822276332d2fe90adc21"
+      }
     }
   ],
   "notes": [

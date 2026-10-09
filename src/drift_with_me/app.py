@@ -320,6 +320,10 @@ OFFICE_PORTRAIT_SMILE_IDS = {
     "nervous_elf_woodsman": "nervous_elf_woodsman_smile",
     "smug_blond_hero": "smug_blond_hero_smile",
 }
+OFFICE_STATIC_PORTRAIT_IDS = frozenset(
+    {"ura_matte", "takanashi_matte", "fuji_matte", "sagan_matte", "yoake_matte"}
+)
+OFFICE_VISITOR_PORTRAIT_IDS = frozenset(OFFICE_PORTRAIT_SMILE_IDS) | OFFICE_STATIC_PORTRAIT_IDS
 OFFICE_PORTRAIT_SMILE_STATES = frozenset(
     {
         CaseState.CLOSED_COUNTER,
@@ -3812,7 +3816,7 @@ class DriftWithMeApp:
             and page[0].speaker == "Jack"
             and page[0].visual_action == "read_document"
             and case is not None
-            and case.case_id == "OFF-JUN-W2-GROW"
+            and case.case_id in {"OFF-JUN-W2-GROW", "OFF-JUN-W2-RECEIPT"}
             and getattr(self, "office_consultation", None) is None
         )
 
@@ -4037,17 +4041,17 @@ class DriftWithMeApp:
             else:
                 frame = asset.frame()
             scale = min(width / frame.width, height / frame.height)
-            if portrait_id in OFFICE_PORTRAIT_SMILE_IDS:
+            if portrait_id in OFFICE_VISITOR_PORTRAIT_IDS:
                 scale = self.office_visitor_portrait_scale(frame.width, frame.height, rect)
             draw_width = frame.width * scale
             draw_height = frame.height * scale
             draw_x = round(x + (width - draw_width) / 2)
             draw_y = round(y + (height - draw_height) / 2)
-            if portrait_id == "office_supervisor" or portrait_id in OFFICE_PORTRAIT_SMILE_IDS:
+            if portrait_id == "office_supervisor" or portrait_id in OFFICE_VISITOR_PORTRAIT_IDS:
                 # Pyxel scales around the unscaled source center.
                 draw_x = round(x + (width - frame.width) / 2)
                 draw_y = round(y + (height - frame.height) / 2)
-                if portrait_id in OFFICE_PORTRAIT_SMILE_IDS:
+                if portrait_id in OFFICE_VISITOR_PORTRAIT_IDS:
                     draw_x = math.floor(x + (width - frame.width) / 2)
                     draw_y = math.floor(y + (height - frame.height) / 2)
             pyxel.blt(

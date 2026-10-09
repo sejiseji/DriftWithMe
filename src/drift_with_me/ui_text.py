@@ -137,6 +137,8 @@ def load_ui_text_renderer(pyxel: Any, runtime: RuntimeConfig) -> UITextRenderer:
     }
     font_path = str(font_config.get("path", ""))
     office_font_path = str(font_config.get("office_japanese_path", font_path))
+    if office_font_path == "assets/fonts/umplus_j12r_office.bdf":
+        office_font_path = "assets/fonts/umplus_j12r_office_current.bdf"
     styles: dict[str, FontStyle] = {}
     for style_name, size_px in style_sizes.items():
         style_path = office_font_path if style_name.startswith("office_japanese") else font_path

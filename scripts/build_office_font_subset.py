@@ -8,7 +8,7 @@ import pyxel
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_BDF = Path(pyxel.__file__).resolve().parent / "examples/assets/umplus_j12r.bdf"
-TARGET_BDF = ROOT / "src/drift_with_me/assets/fonts/umplus_j12r_office.bdf"
+TARGET_BDF = ROOT / "src/drift_with_me/assets/fonts/umplus_j12r_office_current.bdf"
 SOURCE_SUFFIXES = {".json", ".py"}
 ASCII_PRINTABLE = "".join(
     char for char in string.printable if char not in {"\t", "\n", "\r", "\x0b", "\x0c"}

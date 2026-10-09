@@ -30,25 +30,26 @@
     },
     {
       "case_id": "OFF-JUN-W2-RECEIPT",
-      "title": "証明書の受け取り",
+      "title": "納税証明書の受け取り",
       "visitor": {
         "id": "off-jun-w2-receipt",
-        "name": "受取の来訪者",
+        "name": "タカナシ",
         "kind": "",
-        "portrait_id": "generic_receipt_placeholder"
+        "portrait_id": "takanashi_matte"
       },
-      "initial_purpose": "できあがった証明書を受け取る",
-      "document_status": "確認済み",
+      "initial_purpose": "預かり済みの納税証明書を受け取る",
+      "document_status": "受取のための持参書類あり",
       "questions": [
         {
           "id": "receipt",
           "label": "受取の確認",
-          "jack": "お名前と受取の控えを見せていただけますか？",
-          "reply": "はい。こちらです。",
+          "jack": "ありがとうございます。担当に連絡して確認しますので、少しお待ちください。",
+          "reply": "はい。",
           "memo": [
-            "できあがった証明書を受け取る"
+            "持参書類を確認し、担当へ受取の連絡"
           ],
-          "answer_summary": "はい。こちらです。"
+          "answer_summary": "担当へ受取の連絡",
+          "visual_action": "internal_contact"
         }
       ],
       "expected_classification": "COUNTER_COMPLETE",
@@ -91,9 +92,9 @@
       "title": "水路沿いの確認報告",
       "visitor": {
         "id": "off-jun-w2-construction",
-        "name": "建設課担当",
+        "name": "サガン",
         "kind": "",
-        "portrait_id": "generic_construction_placeholder"
+        "portrait_id": "sagan_matte"
       },
       "initial_purpose": "現地で見た3か所を建設課へ伝える",
       "document_status": "なし",
@@ -101,12 +102,12 @@
         {
           "id": "report",
           "label": "報告する",
-          "jack": "岸は崩れていました。木陰は涼しいですが、座る場所がありません。",
-          "reply": "足元と休憩場所ですね。点検口はありましたか？",
+          "jack": "岸が崩れてた。木陰は涼しかったけど、座る場所がないんだ。",
+          "reply": "足元と休憩場所か。点検口はあった？",
           "memo": [
             "現地で見た3か所を建設課へ伝える"
           ],
-          "answer_summary": "足元と休憩場所ですね。点検口はありましたか？"
+          "answer_summary": "足元と休憩場所か。点検口はあった？"
         }
       ],
       "expected_classification": "COUNTER_COMPLETE",
@@ -156,8 +157,14 @@
         "opening": [
           {
             "turn_id": "receipt_arrival",
-            "jack": "お待たせしました。証明書のお受け取りですね。",
-            "reply": "はい。受け取りに来ました。"
+            "jack": "タカナシさん、お待たせしました。",
+            "reply": "納税証明書を受け取りに来ました。"
+          },
+          {
+            "turn_id": "receipt_documents",
+            "jack": "お持ちの書類を拝見しますね。",
+            "reply": "はい、どうぞ。",
+            "visual_action": "read_document"
           }
         ],
         "resolution": {
@@ -169,13 +176,13 @@
           "turns": [
             {
               "turn_id": "receipt_handover",
-              "jack": "こちらです。お確かめください。",
+              "jack": "確認できました。お預かりしていた納税証明書です。お確かめください。",
               "reply": "ありがとうございます。"
             }
           ]
         },
         "feedback": {
-          "COUNTER_COMPLETE": "受け付けました。"
+          "COUNTER_COMPLETE": "証明書をお渡ししました。"
         }
       },
       {
@@ -221,8 +228,8 @@
         "opening": [
           {
             "turn_id": "construction_arrival",
-            "jack": "水路沿いの様子を見てきました。",
-            "reply": "ありがとうございます。聞かせてください。"
+            "jack": "サガン、水路沿いを見てきたよ。",
+            "reply": "おう、ジャック！ どうだった？"
           }
         ],
         "resolution": {
@@ -234,13 +241,13 @@
           "turns": [
             {
               "turn_id": "construction_hatch",
-              "jack": "はい。草に隠れた古い点検口もありました。何につながるかは分かりません。",
-              "reply": "まず図面を調べます。岸と休憩場所の整備も検討します。"
+              "jack": "草に隠れた古い点検口もあった。何につながってるかは分からない。",
+              "reply": "まず図面を調べるよ。岸と休憩場所の整備も考えよう。"
             },
             {
               "turn_id": "construction_close",
-              "jack": "よろしくお願いします。",
-              "reply": "見てきてくれて助かりました。"
+              "jack": "よろしく頼む。",
+              "reply": "任せてくれ！ 見てきてくれて助かったよ。"
             }
           ]
         },
