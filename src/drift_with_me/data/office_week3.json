@@ -30,9 +30,9 @@
       "title": "集会所の利用相談",
       "visitor": {
         "id": "hall",
-        "name": "来訪者",
-        "kind": "",
-        "portrait_id": "generic_visitor"
+        "name": "メリル",
+        "kind": "魔族（羊族）",
+        "portrait_id": "merrill_matte"
       },
       "initial_purpose": "集会所の利用相談",
       "document_status": "なし",
@@ -221,7 +221,7 @@
           {
             "turn_id": "hall_arrival",
             "jack": "はい。いつ頃のご利用でしょうか",
-            "reply": "集会所を借りたいんですが、ここで聞けばいいですか？",
+            "reply": "メリルと申します。集会所を借りたいんですが、ここで聞けばいいですか？",
             "visitor_first": true
           }
         ],

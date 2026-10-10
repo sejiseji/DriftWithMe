@@ -6,9 +6,9 @@
       "title": "エアコン清掃の取次ぎ",
       "visitor": {
         "id": "cleaner",
-        "name": "清掃業者",
-        "kind": "",
-        "portrait_id": ""
+        "name": "ミズノ",
+        "kind": "人間",
+        "portrait_id": "mizuno_matte"
       },
       "initial_purpose": "エアコン清掃の取次ぎ",
       "document_status": "なし",
@@ -16,7 +16,7 @@
         {
           "id": "talk",
           "label": "話を続ける",
-          "jack": "ウラさん、エアコン清掃の方がお見えです。作業予定を確認したいとのことです",
+          "jack": "ウラさん、清掃のミズノさんがお見えです。作業予定を確認したいとのことです",
           "reply": "ああ、はい。こちらでお話ししますね。総務課までお願いできますか",
           "jack_speaker": "ジャック",
           "reply_speaker": "ウラ",
@@ -91,9 +91,9 @@
         "opening": [
           {
             "turn_id": "cleaner_open_0",
-            "jack": "おはようございます。エアコン清掃の件で伺いました。作業の予定を確認したくて",
+            "jack": "おはようございます。清掃のミズノです。エアコンの作業予定を確認したくて",
             "reply": "",
-            "jack_speaker": "清掃業者"
+            "jack_speaker": "ミズノ"
           },
           {
             "turn_id": "cleaner_open_1",
@@ -105,7 +105,7 @@
             "turn_id": "cleaner_open_2",
             "jack": "はい、こちらの名刺です",
             "reply": "",
-            "jack_speaker": "清掃業者"
+            "jack_speaker": "ミズノ"
           },
           {
             "turn_id": "cleaner_open_3",
@@ -132,7 +132,7 @@
               "turn_id": "cleaner_talk_2",
               "jack": "ありがとうございます。お願いします",
               "reply": "",
-              "jack_speaker": "清掃業者"
+              "jack_speaker": "ミズノ"
             }
           ]
         },

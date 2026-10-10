@@ -149,13 +149,13 @@ def test_cancel_resume_repeat_and_forged_inspection_do_not_add_facts(target):
     assert app.office.site_progress.facts == before
 
 
-def test_order_visitor_first_and_generic_portrait():
+def test_order_visitor_first_and_merrill_portrait():
     office = load_week_office(WorkWeek(6, 3))
     assert [line.speaker for line in office.active_dialogue_lines()] == ["ヨアケ", "Jack"]
     assert office.active_dialogue_lines()[1].visual_action == "read_document"
-    assert office.cases[1].visitor.portrait_id == "generic_visitor"
+    assert office.cases[1].visitor.portrait_id == "merrill_matte"
     assert not office.advance_case()
-    for expected in ["ヨアケ", "来訪者", "ウラ", "サガン"]:
+    for expected in ["ヨアケ", "メリル", "ウラ", "サガン"]:
         assert office.current_case.visitor.name == expected and not office.prepare_field_task()
         resolve(office)
         if expected != "サガン":

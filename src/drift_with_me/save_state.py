@@ -148,6 +148,25 @@ def restore_counter(office, raw):
         allowed.add((q.jack_speaker, q.jack_text, q.visual_action))
         allowed.add((q.reply_speaker or case.visitor.name, q.visitor_reply, None))
     lines = raw["lines"]
+    if case.case_id == "OFF-JUN-W4-CLEANER" and isinstance(lines, list):
+        legacy_text = {
+            ("おはようございます。エアコン清掃の件で伺いました。作業の予定を確認したくて"): (
+                "おはようございます。清掃のミズノです。エアコンの作業予定を確認したくて"
+            ),
+            ("ウラさん、エアコン清掃の方がお見えです。作業予定を確認したいとのことです"): (
+                "ウラさん、清掃のミズノさんがお見えです。作業予定を確認したいとのことです"
+            ),
+        }
+        lines = [
+            [
+                "ミズノ" if line[0] == "清掃業者" else line[0],
+                legacy_text.get(line[1], line[1]) if isinstance(line[1], str) else line[1],
+                line[2],
+            ]
+            if isinstance(line, list) and len(line) == 3
+            else line
+            for line in lines
+        ]
     if (
         not isinstance(lines, list)
         or len(lines) > 100

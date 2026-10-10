@@ -5069,6 +5069,76 @@
           "source_hash": "1be395568e4fe5f0f3c401e22e9791a42f026d47fb85019c20da70b39fce47ad"
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "id": "mizuno_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "5d43af68c723f5d949005e869e8bc8414c7965e005375e06596942ff1cb1425e",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Mizuno_116_normal.hex",
+          "source_hash": "5d43af68c723f5d949005e869e8bc8414c7965e005375e06596942ff1cb1425e"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "approved_june_visitor_baseline_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_d4bafa359f148191b3b279743bf7e1bd",
+        "source_library_version": 0,
+        "png_sha256": "480ca2047d028fa150a560557ab5fcd0507b7a0a54ecf5b046381d34d31c1f8d"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "merrill_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "5dfbc2f2f4a739b649843d72b77e4ea022ded5bfdf43aeec72548036b0edcd2c",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Merrill_116_normal.hex",
+          "source_hash": "5dfbc2f2f4a739b649843d72b77e4ea022ded5bfdf43aeec72548036b0edcd2c"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "approved_june_visitor_baseline_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_32c75a5b26908191b8ffdf47595c2620",
+        "source_library_version": 0,
+        "png_sha256": "57bd9df54c5bc85dc1575f8ca5329bce2b30e5ed2c9ca6f2dc01df9445209b25"
+      }
     }
   ],
   "notes": [

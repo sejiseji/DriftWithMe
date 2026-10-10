@@ -343,6 +343,8 @@ OFFICE_STATIC_PORTRAIT_IDS = frozenset(
         "yoake_matte",
         "morris_matte",
         "ruby_matte",
+        "mizuno_matte",
+        "merrill_matte",
     }
 )
 OFFICE_VISITOR_PORTRAIT_IDS = frozenset(OFFICE_PORTRAIT_SMILE_IDS) | OFFICE_STATIC_PORTRAIT_IDS
@@ -4152,6 +4154,7 @@ class DriftWithMeApp(WeekDebugMixin):
         if getattr(self, "work_week", WorkWeek()) != WorkWeek(6, 4):
             return case.visitor.portrait_id, case.visitor.name
         portraits = {
+            "ミズノ": "mizuno_matte",
             "モリス": "morris_matte",
             "ルビィ": "ruby_matte",
             "フジ": "fuji_matte",
@@ -4164,7 +4167,7 @@ class DriftWithMeApp(WeekDebugMixin):
             if line.speaker in portraits:
                 return portraits[line.speaker], line.speaker
             if line.speaker == "清掃業者":
-                return "", "清掃業者"
+                return "mizuno_matte", "ミズノ"
         return case.visitor.portrait_id, case.visitor.name
 
     def draw_office_portrait(self, rect: Rect, portrait_id: str, *, smile: bool = False) -> None:
