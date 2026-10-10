@@ -68,6 +68,7 @@ from drift_with_me.week4 import (
     TASK_CASE as W4_TASK_CASE,
 )
 from drift_with_me.week_cycle import WeekTransition, WorkWeek, load_week_office
+from drift_with_me.week_debug import WeekDebugMixin, debug_launch_requested
 from drift_with_me.world import load_world_data
 
 
@@ -363,12 +364,13 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 }
 
 
-class DriftWithMeApp:
+class DriftWithMeApp(WeekDebugMixin):
     def __init__(
         self,
         profile: str | None = None,
         headless: bool = False,
         smoke_frames: int | None = None,
+        week_debug: bool | None = None,
     ) -> None:
         import pyxel
 
@@ -388,8 +390,10 @@ class DriftWithMeApp:
         self.first_sight_seen = set()
         self.first_sight_queue = FirstSightQueue()
         self.first_sight_conversation = None
+        debug_requested = debug_launch_requested() if week_debug is None else week_debug
         self.progress_store = ProgressStore(enabled=not headless)
-        self.saved_progress = self.progress_store.load()
+        self.saved_progress = None if debug_requested else self.progress_store.load()
+        self.initialize_week_debug(debug_requested)
         self.session_started = False
         self.new_game_confirmation = False
         self.last_checkpoint = None
@@ -541,6 +545,8 @@ class DriftWithMeApp:
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.update_week_debug():
+            return
         if self.screen in (AppScreen.START, AppScreen.PLAY):
             self.prepare_water_study_assets()
         if self.update_field_transition(elapsed):
@@ -581,6 +587,8 @@ class DriftWithMeApp:
             pyxel.quit()
 
     def checkpoint_progress(self) -> bool:
+        if getattr(self, "week_debug_active", False):
+            return False
         store = getattr(self, "progress_store", None)
         if (
             store is None
@@ -3352,6 +3360,9 @@ class DriftWithMeApp:
         )
 
     def draw(self) -> None:
+        if getattr(self, "week_debug_menu_open", False):
+            self.draw_week_debug_menu()
+            return
         if self.screen != AppScreen.OFFICE or self.office.complete:
             self._office_reading_key = None
         if self.screen == AppScreen.START:
@@ -3374,6 +3385,8 @@ class DriftWithMeApp:
         if self.build_label_visible():
             self.draw_build_label()
         self.draw_field_transition()
+        if getattr(self, "week_debug_active", False):
+            self.draw_week_debug_button(self.week_debug_badge_rect(), "週選択・保存なし")
 
     def build_label_visible(self) -> bool:
         if getattr(self, "screen", AppScreen.PLAY) == AppScreen.OFFICE:
@@ -6095,7 +6108,9 @@ def _lerp_vec3(origin: Vec3, target: Vec3, amount: float) -> Vec3:
 
 
 def main() -> None:
-    DriftWithMeApp()
+    import sys
+
+    DriftWithMeApp(week_debug=True if "--week-debug" in sys.argv else None)
 
 
 if __name__ == "__main__":
