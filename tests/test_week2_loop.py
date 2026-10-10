@@ -71,7 +71,7 @@ def test_week2_free_order_partial_return_and_construction_report(order):
     assert app.office.advance_case() and app.office.complete
     assert not app.office.advance_case()
     assert app.work_week == WorkWeek(6, 2)
-    assert load_week_office(WorkWeek(6, 4)) is None
+    assert load_week_office(WorkWeek(6, 4)) is not None
     assert not app.world.east_site_access_ready
     assert "図面" in "".join(
         line.text for line in app.office.sessions["OFF-JUN-W2-CONSTRUCTION"].dialogue

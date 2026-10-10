@@ -1,0 +1,375 @@
+{
+  "version": "0.1.0",
+  "cases": [
+    {
+      "case_id": "OFF-JUN-W4-CLEANER",
+      "title": "エアコン清掃の取次ぎ",
+      "visitor": {
+        "id": "cleaner",
+        "name": "清掃業者",
+        "kind": "",
+        "portrait_id": ""
+      },
+      "initial_purpose": "エアコン清掃の取次ぎ",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "talk",
+          "label": "話を続ける",
+          "jack": "ウラさん、エアコン清掃の方がお見えです。作業予定を確認したいとのことです",
+          "reply": "ああ、はい。こちらでお話ししますね。総務課までお願いできますか",
+          "jack_speaker": "ジャック",
+          "reply_speaker": "ウラ",
+          "memo": []
+        }
+      ],
+      "expected_classification": "REFER_OTHER",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-JUN-W4-SIBLINGS",
+      "title": "ルビィの忘れた傘",
+      "visitor": {
+        "id": "siblings",
+        "name": "モリス",
+        "kind": "",
+        "portrait_id": "morris_matte"
+      },
+      "initial_purpose": "ルビィの忘れた傘",
+      "document_status": "なし",
+      "questions": [
+        {
+          "id": "talk",
+          "label": "話を続ける",
+          "jack": "では、今日は傘を探す係ですよ。どんな傘か教えてもらえますか？",
+          "reply": "うすい青！ お魚とか、海の生きものがいっぱいなの",
+          "jack_speaker": "ジャック",
+          "reply_speaker": "ルビィ",
+          "memo": []
+        }
+      ],
+      "expected_classification": "COUNTER_COMPLETE",
+      "field_task": null
+    },
+    {
+      "case_id": "OFF-JUN-W4-FUJI",
+      "title": "作業計画と現地のお手伝い",
+      "visitor": {
+        "id": "fuji",
+        "name": "フジ",
+        "kind": "",
+        "portrait_id": "fuji_matte"
+      },
+      "initial_purpose": "作業計画と現地のお手伝い",
+      "document_status": "作業計画あり",
+      "questions": [
+        {
+          "id": "talk",
+          "label": "話を続ける",
+          "jack": "現地の配置と作業の順序ですね。お持ちいただいたことを、サガンに伝えます",
+          "reply": "サガン、ハヤセ造園のフジさんがいらしてる。作業計画を持ってきてくださったよ",
+          "jack_speaker": "ジャック",
+          "reply_speaker": "ジャック",
+          "memo": [],
+          "visual_action": "read_document"
+        }
+      ],
+      "expected_classification": "FIELD_CHECK",
+      "field_task": {
+        "task_id": "FIELD-JUN-W4-PLANTS",
+        "location_id": "wildflower_survey",
+        "title": "フジの測量と野草の移植",
+        "objective": "フジに話し、印のある5種類の小株を土ごと1株ずつ集めて渡す",
+        "completion_condition_id": "deliver_week4_plants"
+      }
+    }
+  ],
+  "counter_scripts": {
+    "cases": [
+      {
+        "case_id": "OFF-JUN-W4-CLEANER",
+        "opening": [
+          {
+            "turn_id": "cleaner_open_0",
+            "jack": "おはようございます。エアコン清掃の件で伺いました。作業の予定を確認したくて",
+            "reply": "",
+            "jack_speaker": "清掃業者"
+          },
+          {
+            "turn_id": "cleaner_open_1",
+            "jack": "おはようございます。恐れ入ります。会社のお名前を伺ってもよろしいですか",
+            "reply": "",
+            "jack_speaker": "ジャック"
+          },
+          {
+            "turn_id": "cleaner_open_2",
+            "jack": "はい、こちらの名刺です",
+            "reply": "",
+            "jack_speaker": "清掃業者"
+          },
+          {
+            "turn_id": "cleaner_open_3",
+            "jack": "ありがとうございます。総務課に確認しますので、少々お待ちください",
+            "reply": "",
+            "jack_speaker": "ジャック"
+          }
+        ],
+        "after_question": {
+          "talk": [
+            {
+              "turn_id": "cleaner_talk_0",
+              "jack": "承知しました",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "cleaner_talk_1",
+              "jack": "担当のウラがお待ちしています。総務課へご案内しますね",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "cleaner_talk_2",
+              "jack": "ありがとうございます。お願いします",
+              "reply": "",
+              "jack_speaker": "清掃業者"
+            }
+          ]
+        },
+        "resolution": {
+          "classification": "REFER_OTHER",
+          "requires_completed_questions": [
+            "talk"
+          ],
+          "if_requirements_missing": "お話を最後まで確認しましょう。",
+          "turns": []
+        },
+        "feedback": {
+          "REFER_OTHER": "総務課へご案内しました。"
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W4-SIBLINGS",
+        "opening": [
+          {
+            "turn_id": "siblings_open_0",
+            "jack": "お兄ちゃん！ タコのおしごとしてるひとだ！",
+            "reply": "",
+            "jack_speaker": "ルビィ"
+          },
+          {
+            "turn_id": "siblings_open_1",
+            "jack": "ルビィ、先にごあいさつ。……こんにちは",
+            "reply": "",
+            "jack_speaker": "モリス"
+          },
+          {
+            "turn_id": "siblings_open_2",
+            "jack": "こんにちは。はーい、タコのお仕事中です",
+            "reply": "",
+            "jack_speaker": "ジャック"
+          },
+          {
+            "turn_id": "siblings_open_3",
+            "jack": "ほんとに！",
+            "reply": "",
+            "jack_speaker": "ルビィ"
+          },
+          {
+            "turn_id": "siblings_open_4",
+            "jack": "妹が昨日、近くのバス乗り場に傘を忘れたんです。見に行ったら、もうなくて。ここに届いていませんか？",
+            "reply": "",
+            "jack_speaker": "モリス"
+          }
+        ],
+        "after_question": {
+          "talk": [
+            {
+              "turn_id": "siblings_talk_0",
+              "jack": "持つところに、タコの形の名札がついています。「ルビィ・ガダン」って書いてあります",
+              "reply": "",
+              "jack_speaker": "モリス"
+            },
+            {
+              "turn_id": "siblings_talk_1",
+              "jack": "タコの名札……お仲間ですね",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "siblings_talk_2",
+              "jack": "うん！",
+              "reply": "",
+              "jack_speaker": "ルビィ"
+            },
+            {
+              "turn_id": "siblings_talk_3",
+              "jack": "こちらでしょうか？",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "siblings_talk_4",
+              "jack": "あっ、わたしの！",
+              "reply": "",
+              "jack_speaker": "ルビィ"
+            },
+            {
+              "turn_id": "siblings_talk_5",
+              "jack": "はい、それです",
+              "reply": "",
+              "jack_speaker": "モリス"
+            },
+            {
+              "turn_id": "siblings_talk_6",
+              "jack": "お名前も合っていますね。どうぞ",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "siblings_talk_7",
+              "jack": "ありがとう！",
+              "reply": "",
+              "jack_speaker": "ルビィ"
+            },
+            {
+              "turn_id": "siblings_talk_8",
+              "jack": "お迎えが来てよかった。今度は一緒に帰ってあげてくださいね",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "siblings_talk_9",
+              "jack": "うん。今日はずっと持ってる！",
+              "reply": "",
+              "jack_speaker": "ルビィ"
+            },
+            {
+              "turn_id": "siblings_talk_10",
+              "jack": "ありがとうございました",
+              "reply": "",
+              "jack_speaker": "モリス"
+            },
+            {
+              "turn_id": "siblings_talk_11",
+              "jack": "すっかり傘探し係だったわね",
+              "reply": "",
+              "jack_speaker": "ヒューズ"
+            },
+            {
+              "turn_id": "siblings_talk_12",
+              "jack": "ご指名だったからね",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "siblings_talk_13",
+              "jack": "ふふ。タコのお仕事、好評で何より",
+              "reply": "",
+              "jack_speaker": "ヒューズ"
+            }
+          ]
+        },
+        "resolution": {
+          "classification": "COUNTER_COMPLETE",
+          "requires_completed_questions": [
+            "talk"
+          ],
+          "if_requirements_missing": "お話を最後まで確認しましょう。",
+          "turns": []
+        },
+        "feedback": {
+          "COUNTER_COMPLETE": "傘をお返ししました。"
+        }
+      },
+      {
+        "case_id": "OFF-JUN-W4-FUJI",
+        "opening": [
+          {
+            "turn_id": "fuji_open_0",
+            "jack": "ハヤセ造園のフジです。サガンさんに、作業計画を",
+            "reply": "",
+            "jack_speaker": "フジ"
+          },
+          {
+            "turn_id": "fuji_open_1",
+            "jack": "住民課のジャックです。計画書を拝見してもよろしいですか",
+            "reply": "",
+            "jack_speaker": "ジャック"
+          },
+          {
+            "turn_id": "fuji_open_2",
+            "jack": "どうぞ",
+            "reply": "",
+            "jack_speaker": "フジ"
+          }
+        ],
+        "after_question": {
+          "talk": [
+            {
+              "turn_id": "fuji_talk_0",
+              "jack": "おっ、来てくれたか！ こっちは大丈夫だ。案内頼む！",
+              "reply": "",
+              "jack_speaker": "サガン",
+              "visual_action": "internal_contact"
+            },
+            {
+              "turn_id": "fuji_talk_1",
+              "jack": "わかった",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "fuji_talk_2",
+              "jack": "サガンがお待ちしています。建設課へご案内します",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "fuji_talk_3",
+              "jack": "ありがとう",
+              "reply": "",
+              "jack_speaker": "フジ"
+            },
+            {
+              "turn_id": "fuji_talk_4",
+              "jack": "現地確認のお手伝いに、私が伺うこともあると思います。その際はよろしくお願いします",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            },
+            {
+              "turn_id": "fuji_talk_5",
+              "jack": "……ああ。こちらこそ",
+              "reply": "",
+              "jack_speaker": "フジ"
+            },
+            {
+              "turn_id": "fuji_talk_6",
+              "jack": "このあとフジさんが測量するんだ。手が空いたら、手伝いに行ってくれるか？",
+              "reply": "",
+              "jack_speaker": "サガン",
+              "visual_action": "internal_contact"
+            },
+            {
+              "turn_id": "fuji_talk_7",
+              "jack": "うん。窓口が落ち着いたら、行ってみるよ",
+              "reply": "",
+              "jack_speaker": "ジャック"
+            }
+          ]
+        },
+        "resolution": {
+          "classification": "FIELD_CHECK",
+          "requires_completed_questions": [
+            "talk"
+          ],
+          "if_requirements_missing": "お話を最後まで確認しましょう。",
+          "turns": []
+        },
+        "feedback": {
+          "FIELD_CHECK": "窓口が落ち着いたら、フジさんのところへ向かいます。"
+        }
+      }
+    ]
+  }
+}

@@ -58,6 +58,8 @@ class QuestionDefinition:
     memo_updates: tuple[MemoFact, ...]
     visual_action: str | None = None
     visitor_first: bool = False
+    jack_speaker: str = "Jack"
+    reply_speaker: str | None = None
 
 
 @dataclass(frozen=True)
@@ -68,6 +70,8 @@ class CounterDialogueTurn:
     required_question_ids: tuple[str, ...] = ()
     visual_action: str | None = None
     visitor_first: bool = False
+    jack_speaker: str = "Jack"
+    reply_speaker: str | None = None
 
 
 @dataclass(frozen=True)
@@ -274,13 +278,13 @@ class OfficePrototype:
                 line
                 for line in (
                     (
-                        DialogueLine(visitor_name, turn.visitor_reply),
-                        DialogueLine("Jack", turn.jack_text, turn.visual_action),
+                        DialogueLine(turn.reply_speaker or visitor_name, turn.visitor_reply),
+                        DialogueLine(turn.jack_speaker, turn.jack_text, turn.visual_action),
                     )
                     if turn.visitor_first
                     else (
-                        DialogueLine("Jack", turn.jack_text, turn.visual_action),
-                        DialogueLine(visitor_name, turn.visitor_reply),
+                        DialogueLine(turn.jack_speaker, turn.jack_text, turn.visual_action),
+                        DialogueLine(turn.reply_speaker or visitor_name, turn.visitor_reply),
                     )
                 )
                 if line.text
@@ -389,8 +393,8 @@ class OfficePrototype:
         session.selected_question_id = question_id
         session.pending_question_id = question_id
         pair = (
-            DialogueLine("Jack", question.jack_text, question.visual_action),
-            DialogueLine(case.visitor.name, question.visitor_reply),
+            DialogueLine(question.jack_speaker, question.jack_text, question.visual_action),
+            DialogueLine(question.reply_speaker or case.visitor.name, question.visitor_reply),
         )
         session.dialogue.extend(reversed(pair) if question.visitor_first else pair)
         session.active_dialogue_line_count = 2
@@ -684,6 +688,8 @@ def parse_case_definitions(raw: dict[str, Any]) -> tuple[CaseDefinition, ...]:
                     memo_updates=memo_updates,
                     visual_action=question.get("visual_action"),
                     visitor_first=bool(question.get("visitor_first", False)),
+                    jack_speaker=str(question.get("jack_speaker", "Jack")),
+                    reply_speaker=question.get("reply_speaker"),
                 )
             )
         visitor = item["visitor"]
@@ -802,6 +808,8 @@ def parse_counter_dialogue_turns(
                 visitor_reply=str(raw["reply"]),
                 visual_action=raw.get("visual_action"),
                 visitor_first=bool(raw.get("visitor_first", False)),
+                jack_speaker=str(raw.get("jack_speaker", "Jack")),
+                reply_speaker=raw.get("reply_speaker"),
                 required_question_ids=tuple(
                     str(value) for value in raw.get("requires_completed_questions", ())
                 ),

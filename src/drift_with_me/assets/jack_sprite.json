@@ -4853,6 +4853,222 @@
         "source_sha256": "6a2df74074be190f1bebd0c7b63a9839fd0c6629f1e4a8d0d5ce67056f7032ba",
         "png_sha256": "6fd31f57c374a09eb6d2531207fac64d3532ffdb4050822276332d2fe90adc21"
       }
+    },
+    {
+      "schema_version": 1,
+      "id": "morris_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "7676c36e5e88f5c7c08dba52fbbbc08e4e2fcaef4306ed5a36a859ffb05c23a4",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Morris_116_normal.hex",
+          "source_hash": "7676c36e5e88f5c7c08dba52fbbbc08e4e2fcaef4306ed5a36a859ffb05c23a4"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "ruby_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "eefe839711e6fac41cb6a36a7377f4baa9ca8f384a9fb1823820e22c21662cba",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Ruby_116_normal.hex",
+          "source_hash": "eefe839711e6fac41cb6a36a7377f4baa9ca8f384a9fb1823820e22c21662cba"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "jun_w4_fuji",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "9729e461b8d829dbab4bd4c0e9b28351b30ce8e8b68702c8adf627721f4896d3",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Fuji_32_normal.hex",
+          "source_hash": "9729e461b8d829dbab4bd4c0e9b28351b30ce8e8b68702c8adf627721f4896d3"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "jun_w4_north",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "b879f8d18d120984654ec1e79e397c94104071f01161e0ee8c9653f5fd420618",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jun_w4_north.hex",
+          "source_hash": "b879f8d18d120984654ec1e79e397c94104071f01161e0ee8c9653f5fd420618"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "jun_w4_east",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "0ca59230772772247def940648a879239cfc01915362794c6393d0594c073f2f",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jun_w4_east.hex",
+          "source_hash": "0ca59230772772247def940648a879239cfc01915362794c6393d0594c073f2f"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "jun_w4_south",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "12f3f617bdb90959fe2d2b15eb1b82f32f125455251b96481c3b82f708182867",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jun_w4_south.hex",
+          "source_hash": "12f3f617bdb90959fe2d2b15eb1b82f32f125455251b96481c3b82f708182867"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "jun_w4_west",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "dac5701fca1a604933ed617d7f312ff0a07c7ea0f30b18d66d5a2a1db264ebfe",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jun_w4_west.hex",
+          "source_hash": "dac5701fca1a604933ed617d7f312ff0a07c7ea0f30b18d66d5a2a1db264ebfe"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "jun_w4_tree",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "1be395568e4fe5f0f3c401e22e9791a42f026d47fb85019c20da70b39fce47ad",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jun_w4_tree.hex",
+          "source_hash": "1be395568e4fe5f0f3c401e22e9791a42f026d47fb85019c20da70b39fce47ad"
+        }
+      ]
     }
   ],
   "notes": [

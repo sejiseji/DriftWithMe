@@ -91,7 +91,93 @@ def office_snapshot(office):
             "positions": dict(sites.positions),
             "reported": sorted(sites.reported),
         }
+    if hasattr(office, "plant_progress"):
+        plants = office.plant_progress
+        data["flowers"] = {
+            "instructed": plants.instructed,
+            "carried": sorted(plants.carried),
+            "delivered": sorted(plants.delivered),
+            "positions": dict(plants.positions),
+            "departed": plants.departed,
+        }
+        session = office.current_session
+        data["counter"] = (
+            {
+                "lines": [
+                    [line.speaker, line.text, line.visual_action] for line in session.dialogue
+                ],
+                "count": session.active_dialogue_line_count,
+                "pending": [step.step_id for step in session.pending_dialogue_steps],
+                "completed": sorted(session.completed_dialogue_turn_ids),
+                "question": session.pending_question_id,
+            }
+            if session
+            else None
+        )
     return data
+
+
+def restore_counter(office, raw):
+    from drift_with_me.office import DialogueLine
+
+    session = office.current_session
+    if session is None:
+        if raw is not None:
+            raise ValueError("foreign counter cursor")
+        return
+    if not isinstance(raw, dict) or set(raw) != {
+        "lines",
+        "count",
+        "pending",
+        "completed",
+        "question",
+    }:
+        raise ValueError("invalid counter cursor")
+    case = office.current_case
+    script = office.current_counter_script
+    turns = list(script.opening) + list(script.resolution.turns)
+    for after in script.after_question.values():
+        turns.extend(after)
+    steps = {turn.turn_id: office._step_from_turn(turn, case.visitor.name) for turn in turns}
+    allowed = {
+        (line.speaker, line.text, line.visual_action)
+        for step in steps.values()
+        for line in step.lines
+    }
+    for q in case.questions:
+        allowed.add((q.jack_speaker, q.jack_text, q.visual_action))
+        allowed.add((q.reply_speaker or case.visitor.name, q.visitor_reply, None))
+    lines = raw["lines"]
+    if (
+        not isinstance(lines, list)
+        or len(lines) > 100
+        or any(
+            not isinstance(line, list) or len(line) != 3 or tuple(line) not in allowed
+            for line in lines
+        )
+    ):
+        raise ValueError("unknown counter dialogue")
+    count = integer(raw["count"], 0, len(lines))
+    pending = raw["pending"]
+    if (
+        not isinstance(pending, list)
+        or len(pending) != len(set(pending))
+        or any(k not in steps for k in pending)
+    ):
+        raise ValueError("unknown counter step")
+    completed = string_set(raw["completed"], set(steps))
+    if set(pending) & completed:
+        raise ValueError("repeated counter step")
+    qid = raw["question"]
+    if qid is not None and (
+        qid not in {q.question_id for q in case.questions} or qid in session.asked_question_ids
+    ):
+        raise ValueError("invalid pending question")
+    session.dialogue = [DialogueLine(*line) for line in lines]
+    session.active_dialogue_line_count = count
+    session.pending_dialogue_steps = [steps[k] for k in pending]
+    session.completed_dialogue_turn_ids = completed
+    session.pending_question_id = qid
 
 
 def snapshot(app):
@@ -113,7 +199,12 @@ def snapshot(app):
 def restore_office(raw, week):
     office = OfficePrototype.load() if week == WorkWeek() else load_week_office(week)
     week3 = week == WorkWeek(6, 3)
-    keys = {"index", "sessions", "site"} if week3 else {"index", "sessions"}
+    week4 = week == WorkWeek(6, 4)
+    keys = (
+        {"index", "sessions", "flowers", "counter"}
+        if week4
+        else ({"index", "sessions", "site"} if week3 else {"index", "sessions"})
+    )
     if office is None or not isinstance(raw, dict) or set(raw) != keys:
         raise ValueError("unsupported office")
     if week3:
@@ -137,6 +228,32 @@ def restore_office(raw, week):
             raise ValueError("invalid week3 conversation")
         office.site_progress = Week3Progress(facts, dict(positions), reported)
         office.refresh_reports()
+    if week4:
+        from drift_with_me.week4 import FLOWER_IDS, TARGET_IDS, Week4Progress
+
+        flowers = raw["flowers"]
+        if (
+            not isinstance(flowers, dict)
+            or set(flowers) != {"instructed", "carried", "delivered", "positions", "departed"}
+            or type(flowers["instructed"]) is not bool
+            or type(flowers["departed"]) is not bool
+        ):
+            raise ValueError("invalid flower record")
+        carried = string_set(flowers["carried"], FLOWER_IDS)
+        delivered = string_set(flowers["delivered"], FLOWER_IDS)
+        if carried & delivered or ((carried or delivered) and not flowers["instructed"]):
+            raise ValueError("invalid flower ownership")
+        plants = Week4Progress(
+            flowers["instructed"], carried, delivered, departed=flowers["departed"]
+        )
+        positions = flowers["positions"]
+        if not isinstance(positions, dict) or any(
+            k not in TARGET_IDS or type(v) is not int or not 0 <= v < len(plants.lines_for(k))
+            for k, v in positions.items()
+        ):
+            raise ValueError("invalid flower conversation")
+        plants.positions = dict(positions)
+        office.plant_progress = plants
     index = integer(raw["index"], 0, len(office.cases))
     if not isinstance(raw["sessions"], dict) or set(raw["sessions"]) != set(office.sessions):
         raise ValueError("case mismatch")
@@ -203,7 +320,15 @@ def restore_office(raw, week):
                 or set(result) != {"code", "facts"}
             ):
                 raise ValueError("invalid report")
-            if case.case_id == "OFF-JUN-W3-SAGAN":
+            if case.case_id == "OFF-JUN-W4-FUJI":
+                if (
+                    result["code"] != "WEEK4_DELIVERED"
+                    or string_set(result["facts"], FLOWER_IDS) != FLOWER_IDS
+                    or not office.plant_progress.complete
+                ):
+                    raise ValueError("incomplete flower delivery")
+                code, facts, lines = "WEEK4_DELIVERED", tuple(sorted(FLOWER_IDS)), ()
+            elif case.case_id == "OFF-JUN-W3-SAGAN":
                 if (
                     result["code"] != "WEEK3_CONFIRMED"
                     or string_set(result["facts"], W3_FACTS) != office.site_progress.facts
@@ -291,6 +416,20 @@ def restore_office(raw, week):
             raise ValueError("unconfirmed hatch report")
         if index == 6 and (sites.facts != W3_FACTS or sites.reported != W3_FACTS):
             raise ValueError("unfinished week3 reports")
+    if week4:
+        if any(
+            office.sessions[c.case_id].state != CaseState.RESOLVED
+            for c in office.cases[: min(index, 2)]
+        ):
+            raise ValueError("week4 order mismatch")
+        if index == len(office.cases) and (
+            not office.plant_progress.complete
+            or office.sessions["OFF-JUN-W4-FUJI"].field_result is None
+        ):
+            raise ValueError("unfinished week4 delivery")
+        if office.plant_progress.collected and index < 2:
+            raise ValueError("premature flower collection")
+        restore_counter(office, raw["counter"])
     return office
 
 
@@ -318,10 +457,10 @@ def decode(text):
     w = payload["week"]
     if not isinstance(w, list) or len(w) != 2 or integer(w[0], 6, 6) != 6:
         raise ValueError("unsupported week")
-    week = WorkWeek(6, integer(w[1], 1, 3))
+    week = WorkWeek(6, integer(w[1], 1, 4))
     if (
         not isinstance(payload["offices"], dict)
-        or set(payload["offices"]) - {"6:1", "6:2", "6:3"}
+        or set(payload["offices"]) - {"6:1", "6:2", "6:3", "6:4"}
         or f"6:{week.number}" not in payload["offices"]
     ):
         raise ValueError("invalid history")

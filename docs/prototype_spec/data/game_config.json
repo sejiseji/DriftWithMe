@@ -71,8 +71,18 @@
     "blink": {
       "enabled": true,
       "closed_sec": 0.11,
-      "interval_pattern_sec": [3.1, 4.6, 5.2, 2.9, 6.0, 3.8],
-      "double_blink_indices": [1, 4],
+      "interval_pattern_sec": [
+        3.1,
+        4.6,
+        5.2,
+        2.9,
+        6.0,
+        3.8
+      ],
+      "double_blink_indices": [
+        1,
+        4
+      ],
       "double_gap_sec": 0.15
     }
   },
@@ -218,7 +228,7 @@
       ],
       "reference_depth": 480.0,
       "debug_grid_world": 32.0,
-      "ground_epsilon": 1e-9
+      "ground_epsilon": 1e-09
     }
   },
   "atmosphere": {
@@ -606,7 +616,13 @@
     "shore_corner_outer_nw_64_asset": "shore_corner_outer_nw_64",
     "shore_corner_outer_ne_64_asset": "shore_corner_outer_ne_64",
     "shore_corner_outer_sw_64_asset": "shore_corner_outer_sw_64",
-    "shore_corner_outer_se_64_asset": "shore_corner_outer_se_64"
+    "shore_corner_outer_se_64_asset": "shore_corner_outer_se_64",
+    "jun_w4_fuji_asset": "jun_w4_fuji",
+    "jun_w4_north_asset": "jun_w4_north",
+    "jun_w4_east_asset": "jun_w4_east",
+    "jun_w4_south_asset": "jun_w4_south",
+    "jun_w4_west_asset": "jun_w4_west",
+    "jun_w4_tree_asset": "jun_w4_tree"
   },
   "ui": {
     "office_portrait_blink_interval_frames": {
@@ -1180,7 +1196,7 @@
         ],
         "enter_radius_factor": 1.6,
         "exit_radius_extra_factor": 0.3,
-        "push_sec": 0.10,
+        "push_sec": 0.1,
         "release_hold_sec": 0.08,
         "recover_bend1_sec": 0.12,
         "recover_near_idle_sec": 0.24,
@@ -1245,6 +1261,10 @@
     "clear_lead_sec": 70.0,
     "travel_sec": 144.0,
     "strength": 0.14,
-    "track_z_world": [500.0, 760.0, 260.0]
+    "track_z_world": [
+      500.0,
+      760.0,
+      260.0
+    ]
   }
 }

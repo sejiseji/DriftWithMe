@@ -81,7 +81,7 @@ def test_free_order_only_full_read_records_then_both_reports_complete(order):
     app.office.advance_case()
     assert app.office.complete and app.office.site_progress.reported == FACTS
     restored(app)
-    assert app.office.complete and load_week_office(WorkWeek(6, 4)) is None
+    assert app.office.complete and load_week_office(WorkWeek(6, 4)) is not None
 
 
 SUBSETS = [set(c) for n in range(4) for c in combinations(SITE_FACTS, n)]
@@ -229,7 +229,7 @@ def test_invalid_save_confirmation_and_report_order():
         decode(encode(p))
 
 
-def test_week2_to_week3_once_and_week4_remains_absent():
+def test_week2_to_week3_once_and_week4_available():
     from test_week_cycle import completed_app
 
     app = completed_app()

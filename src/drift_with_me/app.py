@@ -56,6 +56,17 @@ from drift_with_me.water_study_assets import (
 from drift_with_me.water_study_layout import water_study_visible_chunks
 from drift_with_me.week3 import LABELS as WEEK3_LABELS
 from drift_with_me.week3 import TASK_CASE as WEEK3_TASK_CASE
+from drift_with_me.week4 import (
+    FLOWER_LABELS,
+    FUJI_ID,
+    install_week4_world,
+)
+from drift_with_me.week4 import (
+    TARGET_IDS as W4_TARGETS,
+)
+from drift_with_me.week4 import (
+    TASK_CASE as W4_TASK_CASE,
+)
 from drift_with_me.week_cycle import WeekTransition, WorkWeek, load_week_office
 from drift_with_me.world import load_world_data
 
@@ -323,7 +334,15 @@ OFFICE_PORTRAIT_SMILE_IDS = {
     "smug_blond_hero": "smug_blond_hero_smile",
 }
 OFFICE_STATIC_PORTRAIT_IDS = frozenset(
-    {"ura_matte", "takanashi_matte", "fuji_matte", "sagan_matte", "yoake_matte"}
+    {
+        "ura_matte",
+        "takanashi_matte",
+        "fuji_matte",
+        "sagan_matte",
+        "yoake_matte",
+        "morris_matte",
+        "ruby_matte",
+    }
 )
 OFFICE_VISITOR_PORTRAIT_IDS = frozenset(OFFICE_PORTRAIT_SMILE_IDS) | OFFICE_STATIC_PORTRAIT_IDS
 OFFICE_PORTRAIT_SMILE_STATES = frozenset(
@@ -572,7 +591,7 @@ class DriftWithMeApp:
             or (
                 self.model.world_paused
                 and not (
-                    self.work_week == WorkWeek(6, 3)
+                    self.work_week in {WorkWeek(6, 3), WorkWeek(6, 4)}
                     and self.model.interaction is not None
                     and self.model.interaction.kind == "inspect"
                 )
@@ -644,6 +663,7 @@ class DriftWithMeApp:
             self.east_site_progress = sites
             self.first_sight_seen = seen
             self.field_transition = self.week_transition = self.field_conversation = None
+            install_week4_world(self, enabled=self.work_week == WorkWeek(6, 4))
             self.model.reset_scene()
             self.model.water = resources["water"]
             self.model.energy = resources["energy"]
@@ -659,6 +679,7 @@ class DriftWithMeApp:
             self.east_site_progress = EastSiteProgress()
             self.first_sight_seen = set()
             self.saved_progress = None
+            install_week4_world(self, enabled=False)
             self.model.reset_scene()
             self.field_transition = self.week_transition = self.field_conversation = None
         self.first_sight_queue = FirstSightQueue()
@@ -1213,6 +1234,9 @@ class DriftWithMeApp:
         ):
             self.field_transition.lines = self.office.site_progress.travel_lines("out")
 
+        if self.office.active_field_task and self.office.active_field_task.case_id == W4_TASK_CASE:
+            self.field_transition.lines = self.office.plant_progress.travel_lines("out")
+
     def complete_office_field_task(self) -> bool:
         if getattr(self, "field_transition", None) is not None:
             return False
@@ -1270,6 +1294,20 @@ class DriftWithMeApp:
             result = FieldResult(
                 task.task_id, task.case_id, "WEEK3_CONFIRMED", tuple(sorted(sites.facts)), ()
             )
+        if task.case_id == W4_TASK_CASE:
+            plants = self.office.plant_progress
+            lines = plants.travel_lines("back")
+            result = (
+                FieldResult(
+                    task.task_id,
+                    task.case_id,
+                    "WEEK4_DELIVERED",
+                    tuple(sorted(plants.delivered)),
+                    (),
+                )
+                if plants.complete
+                else None
+            )
         self.field_transition = FieldTransition("back", lines, report=result)
         self.clear_world_input_latches()
         self.model.cancel_auto_move()
@@ -1281,6 +1319,8 @@ class DriftWithMeApp:
             return
         if transition.direction == "out":
             self.screen = AppScreen.PLAY
+            if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4):
+                self.office.plant_progress.departed = True
             session = self.office.current_session
             if (
                 self.office.active_field_task
@@ -2244,7 +2284,7 @@ class DriftWithMeApp:
                     return
             elif interaction is not None and interaction.kind == "inspect":
                 if getattr(self, "field_conversation", None) is not None:
-                    if self.field_conversation.target_id in SITE_FACTS and (
+                    if self.field_conversation.target_id in (set(SITE_FACTS) | W4_TARGETS) and (
                         self.key_pressed("KEY_X") or self.mouse_pressed_in(self.site_cancel_rect())
                     ):
                         self.process_events(self.model.cancel_interaction())
@@ -2386,12 +2426,21 @@ class DriftWithMeApp:
                 self.set_denied_reason(str(event.payload.get("reason", "denied")))
             elif event.kind == "inspection_completed":
                 self.show_location_label()
-                if event.target_id in SITE_FACTS:
+                if event.target_id in W4_TARGETS and getattr(
+                    self, "work_week", WorkWeek()
+                ) == WorkWeek(6, 4):
+                    self.office.plant_progress.complete_target(event.target_id)
+                elif event.target_id in SITE_FACTS:
                     self.current_east_site_progress().complete(event.target_id)
                 else:
                     self.record_office_field_event(event)
                 self.field_conversation = None
             elif event.kind == "interaction_cancelled":
+                if event.target_id in W4_TARGETS and getattr(
+                    self, "work_week", WorkWeek()
+                ) == WorkWeek(6, 4):
+                    self.office.plant_progress.pending_completion = None
+                    self.office.plant_progress.pending_delivery = None
                 if event.target_id in SITE_FACTS:
                     self.current_east_site_progress().pending_completion = None
                 self.field_conversation = None
@@ -2440,6 +2489,16 @@ class DriftWithMeApp:
         self.field_conversation = None
         interaction = self.model.interaction
         if (
+            target_id in W4_TARGETS
+            and getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4)
+            and interaction is not None
+            and interaction.kind == "inspect"
+            and interaction.object_id == target_id
+        ):
+            lines, index = self.office.plant_progress.begin(target_id)
+            self.field_conversation = FieldConversation(target_id, lines, index)
+            return
+        if (
             target_id in SITE_FACTS
             and interaction is not None
             and interaction.kind == "inspect"
@@ -2485,6 +2544,21 @@ class DriftWithMeApp:
         session = self.office.current_session
         if conversation is None or self.model.interaction is None:
             return False
+        if conversation.target_id in W4_TARGETS and getattr(
+            self, "work_week", WorkWeek()
+        ) == WorkWeek(6, 4):
+            if self.model.interaction.object_id != conversation.target_id:
+                return False
+            progress = self.office.plant_progress
+            if conversation.index + 1 < len(conversation.lines):
+                conversation.index += 1
+                progress.positions[conversation.target_id] = conversation.index
+            else:
+                progress.pending_completion = conversation.target_id
+                self.process_events(self.model.complete_interaction())
+                self.camera_controller.cancel_focus()
+                self.field_conversation = None
+            return True
         if conversation.target_id in SITE_FACTS:
             if self.model.interaction.object_id != conversation.target_id:
                 return False
@@ -3304,6 +3378,9 @@ class DriftWithMeApp:
     def build_label_visible(self) -> bool:
         if getattr(self, "screen", AppScreen.PLAY) == AppScreen.OFFICE:
             return False
+        conversation = getattr(self, "field_conversation", None)
+        if conversation is not None and conversation.target_id == FUJI_ID:
+            return False
         mode = str(self.runtime.raw.get("ui", {}).get("build_label_mode", "always"))
         if mode == "hidden":
             return False
@@ -3484,16 +3561,21 @@ class DriftWithMeApp:
         else:
             self.draw_office_section_title(visitor_rect, "来訪者")
             portrait = self.office_visitor_portrait_rect()
+            portrait_id, displayed_name = self.office_current_visitor_identity(case)
             self.draw_office_portrait(
                 portrait,
-                case.visitor.portrait_id,
+                portrait_id,
                 smile=session.state in OFFICE_PORTRAIT_SMILE_STATES
                 and not (
                     session.field_result is not None
                     and session.field_result.result_code == "INTERRUPTED"
                 ),
             )
-            visitor_lines = self.office_visitor_info_lines(case)
+            visitor_lines = (
+                (displayed_name,)
+                if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4)
+                else self.office_visitor_info_lines(case)
+            )
             self.draw_office_wrapped_lines(
                 self.office_visitor_info_rect(),
                 visitor_lines,
@@ -3618,9 +3700,9 @@ class DriftWithMeApp:
         self.draw_office_text_in_rect(
             self.office_rect(116, 116, 280, 24),
             (
-                "第4週は準備中です"
-                if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3)
-                else "建設課へ確認したことを伝えました"
+                "7月分は準備中です"
+                if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4)
+                else "今週の確認を終えました"
             )
             if partial_week
             else "4件の処理結果を記録しました",
@@ -3650,7 +3732,7 @@ class DriftWithMeApp:
         week = getattr(self, "work_week", WorkWeek())
         return (
             self.screen == AppScreen.OFFICE
-            and week in {WorkWeek(), WorkWeek(6, 2)}
+            and week in {WorkWeek(), WorkWeek(6, 2), WorkWeek(6, 3)}
             and getattr(self, "week_transition", None) is None
             and not getattr(self, "week_input_wait_for_release", False)
             and getattr(self, "office_consultation", None) is None
@@ -3690,6 +3772,8 @@ class DriftWithMeApp:
             self.pending_week_office,
             transition.target,
         )
+        if self.work_week == WorkWeek(6, 4):
+            install_week4_world(self)
         self.week_office_history[self.work_week] = self.office
         self.pending_week_office = None
         self.end_office_consultation()
@@ -3809,7 +3893,7 @@ class DriftWithMeApp:
         reading = self.office_document_reading_active(page)
         if not reading:
             self._office_reading_key = None
-        if not page or page[0].speaker != "Jack":
+        if not page or page[0].speaker not in {"Jack", "ジャック"}:
             return
         assets = getattr(self, "sprite_assets", None)
         if assets is None:
@@ -3846,10 +3930,12 @@ class DriftWithMeApp:
         return bool(
             page
             and any(
-                line.speaker == "Jack" and line.visual_action == "read_document" for line in page
+                line.speaker in {"Jack", "ジャック"} and line.visual_action == "read_document"
+                for line in page
             )
             and case is not None
-            and case.case_id in {"OFF-JUN-W2-GROW", "OFF-JUN-W2-RECEIPT", "OFF-JUN-W3-YOAKE"}
+            and case.case_id
+            in {"OFF-JUN-W2-GROW", "OFF-JUN-W2-RECEIPT", "OFF-JUN-W3-YOAKE", W4_TASK_CASE}
             and getattr(self, "office_consultation", None) is None
         )
 
@@ -4049,7 +4135,28 @@ class DriftWithMeApp:
                 align=align,
             )
 
+    def office_current_visitor_identity(self, case):
+        if getattr(self, "work_week", WorkWeek()) != WorkWeek(6, 4):
+            return case.visitor.portrait_id, case.visitor.name
+        portraits = {
+            "モリス": "morris_matte",
+            "ルビィ": "ruby_matte",
+            "フジ": "fuji_matte",
+            "ウラ": "ura_matte",
+            "サガン": "sagan_matte",
+            "ヒューズ": "",
+        }
+        session = self.office.current_session
+        for line in reversed(session.dialogue if session else ()):
+            if line.speaker in portraits:
+                return portraits[line.speaker], line.speaker
+            if line.speaker == "清掃業者":
+                return "", "清掃業者"
+        return case.visitor.portrait_id, case.visitor.name
+
     def draw_office_portrait(self, rect: Rect, portrait_id: str, *, smile: bool = False) -> None:
+        if not portrait_id:
+            return
         pyxel = self.pyxel
         x = int(rect.x)
         y = int(rect.y)
@@ -5263,6 +5370,28 @@ class DriftWithMeApp:
         return self.office_rect(112, 202, 96, 20)
 
     def draw_east_site_hint(self) -> None:
+        if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4):
+            p = self.office.plant_progress
+            if not self.model.world_paused:
+                target = self.model.interaction_candidate(self.scene_camera(self.camera()))
+                label = (
+                    FLOWER_LABELS.get(
+                        target.id,
+                        "フジに声をかける"
+                        if target and target.id == FUJI_ID
+                        else "印のある小株を探す",
+                    )
+                    if target
+                    else "印のある小株を探す"
+                )
+                self.draw_panel_frame(self.office_rect(148, 57, 210, 48), 0, 12)
+                self.draw_office_text_in_rect(self.office_rect(154, 59, 198, 18), label, 7)
+                self.draw_office_text_in_rect(
+                    self.office_rect(154, 80, 198, 18),
+                    f"手元 {len(p.carried)}  引き渡し {len(p.delivered)}/5",
+                    12,
+                )
+            return
         if (
             self.model.world_paused
             or math.hypot(self.model.player.x - 928, self.model.player.z - 144) > 200
@@ -5300,13 +5429,27 @@ class DriftWithMeApp:
             f"{conversation.index + 1}/{len(conversation.lines)}",
             13,
         )
-        if conversation.target_id in SITE_FACTS or hasattr(conversation, "kind"):
+        if conversation.target_id in (set(SITE_FACTS) | W4_TARGETS) or hasattr(
+            conversation, "kind"
+        ):
             self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
         label = (
             "次へ"
             if conversation.index + 1 < len(conversation.lines)
             else ("閉じる" if hasattr(conversation, "kind") else "記録する")
         )
+        if conversation.target_id in W4_TARGETS and getattr(
+            self, "work_week", WorkWeek()
+        ) == WorkWeek(6, 4):
+            if conversation.target_id == FUJI_ID:
+                self.draw_office_portrait(self.office_rect(380, 6, 124, 116), "fuji_matte")
+            elif conversation.index + 1 == len(conversation.lines):
+                progress = self.office.plant_progress
+                label = (
+                    "小株を採る"
+                    if progress.instructed and conversation.target_id not in progress.collected
+                    else "閉じる"
+                )
         self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
 
     def draw_inspect_panel(self, interaction) -> None:
