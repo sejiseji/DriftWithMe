@@ -234,14 +234,76 @@ class WeekDebugMixin:
             for i, name in enumerate(("next", "auto", "pause", "terrain", "menu", "normal"))
         }
 
-    def update_nudibranch_preview(self) -> None:
+    def focus_laser_rects(self):
+        return {
+            name: self.office_rect(8 + i * 126, 164, 122, 28)
+            for i, name in enumerate(("mode", "fire", "kind", "cancel"))
+        }
+
+    def place_nudibranch_preview_actors(self) -> None:
+        from drift_with_me.camera import camera_ground_axes
         from drift_with_me.math3d import Vec3
 
         state = self.nudibranch_preview
-        for action, rect in self.nudibranch_preview_rects().items():
+        state.focus_action = None
+        x, z = state.center
+        if state.mode == "laser" and state.terrain == "water":
+            x += 48  # Keep Jack clear of the shoreline column in this fixed test staging.
+        self.camera_controller.reset(Vec3(x, 0, z))
+        if state.mode == "laser":
+            right, forward = camera_ground_axes(self.camera())
+            state.target_anchor = (x + right.x * 28, z + right.y * 28)
+            self.model.player.x = x - right.x * 38 - forward.x * 10
+            self.model.player.z = z - right.y * 38 - forward.y * 10
+            self.model.buddy.x = x - right.x * 14 + forward.x * 12
+            self.model.buddy.z = z - right.y * 14 + forward.y * 12
+            self.model.player.last_move_x, self.model.player.last_move_z = right.x, right.y
+        else:
+            state.target_anchor = None
+            self.model.player.x, self.model.player.z = x, z
+            self.model.snap_buddy(self.camera_controller.current)
+
+    def start_focus_laser(self) -> bool:
+        if not getattr(self, "week_debug_active", False) or self.nudibranch_preview is None:
+            return False
+        from drift_with_me.camera import camera_ground_axes
+        from drift_with_me.focus_laser import FocusLaserAction
+        from drift_with_me.math3d import Vec3
+
+        state = self.nudibranch_preview
+        if state.mode != "laser":
+            return False
+        state.freeze_direction()
+        state.paused = False
+        state.previous_time = self.presentation_time
+        right, _ = camera_ground_axes(self.camera())
+        x, z = state.target_anchor
+        state.focus_action = FocusLaserAction.create(
+            Vec3(self.model.player.x + right.x * 3, 8, self.model.player.z + right.y * 3),
+            Vec3(
+                self.model.buddy.x + right.x * 4,
+                self.model.buddy.y + 5,
+                self.model.buddy.z + right.y * 4,
+            ),
+            Vec3(x, 6.5, z),
+            right,
+            state.target_kind,
+            f"{state.direction_name}_{state.frame_index:02d}",
+        )
+        return True
+
+    def update_nudibranch_preview(self) -> None:
+
+        state = self.nudibranch_preview
+        extra = self.focus_laser_rects()
+        if state.mode == "sprites":
+            extra = {"mode": extra["mode"]}
+        actions = {**self.nudibranch_preview_rects(), **extra}
+        for action, rect in actions.items():
             if not self.mouse_pressed_in(rect):
                 continue
             if action == "next":
+                state.focus_action = None
                 state.freeze_direction()
                 state.direction = (state.direction + 1) % 8
             elif action == "auto":
@@ -253,10 +315,20 @@ class WeekDebugMixin:
                 state.paused = not state.paused
             elif action == "terrain":
                 state.terrain = "grass" if state.terrain == "water" else "water"
-                x, z = state.center
-                self.model.player.x, self.model.player.z = x, z
-                self.camera_controller.reset(Vec3(x, 0.0, z))
-                self.model.snap_buddy(self.camera_controller.current)
+                self.place_nudibranch_preview_actors()
+            elif action == "mode":
+                state.mode = "laser" if state.mode == "sprites" else "sprites"
+                if state.mode == "laser":
+                    state.terrain = "grass"  # Clear default staging; water remains selectable.
+                state.freeze_direction()
+                self.place_nudibranch_preview_actors()
+            elif action == "fire":
+                self.start_focus_laser()
+            elif action == "kind" and state.mode == "laser":
+                state.target_kind = "normal" if state.target_kind == "abnormal" else "abnormal"
+                state.focus_action = None
+            elif action == "cancel":
+                state.focus_action = None
             elif action == "menu":
                 self.jump_to_debug_week(WorkWeek(6, self.week_debug_selection))
                 self.week_debug_menu_open = True
@@ -274,11 +346,27 @@ class WeekDebugMixin:
             False,
             self.effects,
         )
+        title = f"SPRITE TEST / NO SAVE / {state.direction_name} / {state.frame_index + 1}/4 / 6fps"
+        if state.mode == "laser":
+            phase = "READY" if state.focus_action is None else state.focus_action.phase
+            title = f"LASER / NO SAVE / {state.target_kind.upper()} / {phase}"
         self.draw_week_debug_button(
             self.office_rect(8, 4, 496, 24),
-            f"SPRITE TEST / NO SAVE / {state.direction_name} / {state.frame_index + 1}/4 / 6fps",
+            title,
         )
-        self.draw_week_debug_button(self.office_rect(8, 32, 496, 24), "NORMAL / ABNORMAL")
+        self.draw_week_debug_button(
+            self.office_rect(8, 32, 496, 24),
+            "NORMAL / ABNORMAL"
+            if state.mode == "sprites"
+            else "FUSE > JACK BITS > CURVE > STRAIGHT > PIXEL BURN",
+        )
+        extra = {"mode": "Laser test" if state.mode == "sprites" else "Sprite test"}
+        if state.mode == "laser":
+            extra.update(
+                {"fire": "Fire / Replay", "kind": state.target_kind.upper(), "cancel": "Cancel"}
+            )
+        for name, text in extra.items():
+            self.draw_week_debug_button(self.focus_laser_rects()[name], text)
         labels = {
             "next": "Next dir",
             "auto": "Auto ON" if state.automatic else "Auto OFF",

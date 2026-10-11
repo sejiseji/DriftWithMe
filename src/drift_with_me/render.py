@@ -34,7 +34,7 @@ from drift_with_me.math3d import (
     screen_to_world_direction,
 )
 from drift_with_me.model import GameModel
-from drift_with_me.nudibranch_preview import preview_draw_commands
+from drift_with_me.nudibranch_preview import preview_attack_direction, preview_draw_commands
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.world import (
     BakedGroundPatch,
@@ -4176,6 +4176,9 @@ class Renderer:
         return asset.frame(frames[frame_index].frame_id)
 
     def player_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        preview_view = preview_attack_direction(model)
+        if preview_view is not None:
+            return preview_view
         spin_view = self.combat_victory_spin_view_name(model, "player")
         if spin_view is not None:
             self.player_sprite_view_name = spin_view
@@ -4254,6 +4257,9 @@ class Renderer:
         return asset
 
     def buddy_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        preview_view = preview_attack_direction(model)
+        if preview_view is not None:
+            return preview_view
         spin_view = self.combat_zap_spin_view_name(model)
         if spin_view is not None:
             self.buddy_sprite_view_name = spin_view
