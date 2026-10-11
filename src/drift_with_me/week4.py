@@ -16,6 +16,7 @@ from drift_with_me.world import WorldData
 
 TASK_CASE = "OFF-JUN-W4-FUJI"
 FUJI_ID = "jun_w4_fuji"
+NPC_SPEAKERS = {FUJI_ID: "フジ"}
 FLOWER_LABELS = {
     "jun_w4_north": "北：白い小花の房",
     "jun_w4_east": "東：黄色い丸い花",

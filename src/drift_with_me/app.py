@@ -60,6 +60,7 @@ from drift_with_me.week3 import TASK_CASE as WEEK3_TASK_CASE
 from drift_with_me.week4 import (
     FLOWER_LABELS,
     FUJI_ID,
+    NPC_SPEAKERS,
     install_week4_world,
 )
 from drift_with_me.week4 import (
@@ -2532,7 +2533,9 @@ class DriftWithMeApp(WeekDebugMixin):
             and interaction.object_id == target_id
         ):
             lines, index = self.office.plant_progress.begin(target_id)
-            self.field_conversation = FieldConversation(target_id, lines, index)
+            self.field_conversation = FieldConversation(
+                target_id, lines, index, target_speaker=NPC_SPEAKERS.get(target_id)
+            )
             return
         if (
             self.is_site_target(target_id)
@@ -5490,10 +5493,18 @@ class DriftWithMeApp(WeekDebugMixin):
         if conversation is None:
             return
         panel = self.office_rect(40, 126, 432, 100)
+        fuji_portrait = conversation.target_id == FUJI_ID and getattr(
+            self, "work_week", WorkWeek()
+        ) == WorkWeek(6, 4)
+        if fuji_portrait:
+            self.draw_field_fuji_portrait()
         self.draw_panel_frame(panel, fill=0, inner=12)
         speaker, text = conversation.lines[conversation.index]
         self.draw_office_text_in_rect(self.office_rect(50, 133, 400, 18), speaker, 12)
-        self.draw_office_wrapped_lines(self.office_rect(50, 154, 400, 48), (text,), 7)
+        text_width = 306 if fuji_portrait else 400
+        target_speaker = getattr(conversation, "target_speaker", None)
+        color = 10 if target_speaker and speaker == target_speaker else 7
+        self.draw_office_wrapped_lines(self.office_rect(50, 154, text_width, 48), (text,), color)
         self.draw_office_text_in_rect(
             self.office_rect(50, 204, 50, 16),
             f"{conversation.index + 1}/{len(conversation.lines)}",
@@ -5508,21 +5519,42 @@ class DriftWithMeApp(WeekDebugMixin):
             if conversation.index + 1 < len(conversation.lines)
             else ("閉じる" if hasattr(conversation, "kind") else "記録する")
         )
-        if conversation.target_id in W4_TARGETS and getattr(
-            self, "work_week", WorkWeek()
-        ) == WorkWeek(6, 4):
-            if conversation.target_id == FUJI_ID:
-                self.draw_office_portrait(self.office_rect(380, 6, 124, 116), "fuji_matte")
-            elif conversation.index + 1 == len(conversation.lines):
-                progress = self.office.plant_progress
-                label = (
-                    "小株を採る"
-                    if progress.instructed and conversation.target_id not in progress.collected
-                    else "閉じる"
-                )
+        if (
+            conversation.target_id in W4_TARGETS
+            and getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4)
+            and conversation.target_id != FUJI_ID
+            and conversation.index + 1 == len(conversation.lines)
+        ):
+            progress = self.office.plant_progress
+            label = (
+                "小株を採る"
+                if progress.instructed and conversation.target_id not in progress.collected
+                else "閉じる"
+            )
         if conversation.target_id == KEY_ID and conversation.index + 1 == len(conversation.lines):
             label = "閉じる" if self.office.site_progress.key_collected else "拾う"
         self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
+
+    def draw_field_fuji_portrait(self) -> None:
+        assets = getattr(self, "sprite_assets", None)
+        asset = assets.get("fuji_map_knees") if assets is not None else None
+        if asset is None:
+            return
+        frame = asset.frame()
+        rect = self.office_rect(360, 6, 132, 196)
+        scale = min(rect.width / frame.width, rect.height / frame.height)
+        # Pyxel scales about the unscaled source center, on both axes equally.
+        self.pyxel.blt(
+            round(rect.x + (rect.width - frame.width) / 2),
+            round(rect.y + (rect.height - frame.height) / 2),
+            frame.image,
+            frame.u,
+            frame.v,
+            frame.width,
+            frame.height,
+            colkey=asset.definition.colkey,
+            scale=scale,
+        )
 
     def draw_inspect_panel(self, interaction) -> None:
         if getattr(self, "field_conversation", None) is not None:

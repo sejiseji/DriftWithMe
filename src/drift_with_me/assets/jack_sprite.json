@@ -5314,6 +5314,44 @@
         "source_library_version": 1,
         "png_sha256": "47427dc54ed51c908e20b54fe8480a04c143b32baf1db0d89e70bb0ae9d66699"
       }
+    },
+    {
+      "schema_version": 1,
+      "id": "fuji_map_knees",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 100,
+      "hex_height": 216,
+      "colkey": 8,
+      "anchor_px": [
+        50,
+        108
+      ],
+      "world_size": [
+        100,
+        216
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "4dac8794ffa77097db33a946cbabda769d109d8c93b135132fafb50d8cf2cea6",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Fuji_map_knees_normal.hex",
+          "source_hash": "4dac8794ffa77097db33a946cbabda769d109d8c93b135132fafb50d8cf2cea6"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "matte_normal_adopted_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_f1c4afe9a93481918d4b6074c541c49b",
+        "source_library_version": 1,
+        "source_sha256": "81ae6e3dcd4488f9c53cfa73dbeb42256a4666f80de7cbc6d79f8677a3e01e8a",
+        "png_sha256": "a5c2f343a4e3be825b6ef6539b06d36ec5a205a17fb899317f7f11e203ec5077"
+      },
+      "source_library_id": "libfile_55decb3c84148191a42eb0ad1d44e1b4",
+      "source_library_version": 0
     }
   ],
   "notes": [

@@ -67,6 +67,7 @@ class FieldConversation:
     target_id: str
     lines: tuple[tuple[str, str], ...]
     index: int = 0
+    target_speaker: str | None = None
 
 
 def observation_conversation(
