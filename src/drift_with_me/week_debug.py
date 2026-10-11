@@ -41,6 +41,8 @@ class WeekDebugMixin:
         self.week_debug_month = 6
         self.week_debug_selection = 1
         self.nudibranch_preview = None
+        self.garden_props_preview = None
+        self.garden_props_previous_projection = None
         self.normal_progress_store = self.progress_store
         if enabled:
             self.progress_store = TemporaryProgressStore()
@@ -59,7 +61,8 @@ class WeekDebugMixin:
                 for n in range(1, 5)
             },
             "start": self.office_rect(32, 158, 220, 30),
-            "sprites": self.office_rect(260, 158, 220, 30),
+            "sprites": self.office_rect(260, 158, 106, 30),
+            "garden": self.office_rect(374, 158, 106, 30),
             "cancel": self.office_rect(32, 196, 220, 30),
             "normal": self.office_rect(260, 196, 220, 30),
         }
@@ -80,6 +83,11 @@ class WeekDebugMixin:
         # A fresh world/model removes map flags, combat, interactions and enemy state.
         self.world = load_world_data()
         self.nudibranch_preview = None
+        self.garden_props_preview = None
+        previous_projection = getattr(self, "garden_props_previous_projection", None)
+        if previous_projection is not None:
+            self.projection_mode = previous_projection
+        self.garden_props_previous_projection = None
         self.model = GameModel(self.runtime.raw, self.world)
         self.camera_controller = CameraController(
             self.runtime.raw,
@@ -145,6 +153,9 @@ class WeekDebugMixin:
             return True
         if not getattr(self, "week_debug_active", False):
             return False
+        if getattr(self, "garden_props_preview", None) is not None:
+            self.update_garden_props_preview()
+            return True
         if preview is not None:
             self.update_nudibranch_preview()
             return True
@@ -165,6 +176,8 @@ class WeekDebugMixin:
                 self.jump_to_debug_week(WorkWeek(6, self.week_debug_selection))
             elif action == "sprites":
                 self.start_nudibranch_preview()
+            elif action == "garden":
+                self.start_garden_props_preview()
             elif action == "cancel" and self.session_started:
                 self.week_debug_menu_open = False
             elif action == "normal":
@@ -209,11 +222,167 @@ class WeekDebugMixin:
         self.draw_week_debug_button(
             rects["start"], "選んだ週の最初から始める", disabled=self.week_debug_month != 6
         )
-        self.draw_week_debug_button(rects["sprites"], "Nudibranch sprite test")
+        self.draw_week_debug_button(rects["sprites"], "Sprite test")
+        self.draw_week_debug_button(rects["garden"], "Garden test")
         self.draw_week_debug_button(
             rects["cancel"], "取消・テストに戻る", disabled=not self.session_started
         )
         self.draw_week_debug_button(rects["normal"], "通常プレイへ戻る")
+
+    def start_garden_props_preview(self) -> bool:
+        if not getattr(self, "week_debug_active", False):
+            return False
+        from drift_with_me.app import AppScreen
+        from drift_with_me.garden_props_preview import GardenPropsPreview
+        from drift_with_me.math3d import AffineProjectionProfile, Vec3
+
+        self.jump_to_debug_week(WorkWeek())
+        self.garden_props_previous_projection = getattr(self, "projection_mode", "affine")
+        self.projection_mode = "affine"
+        self.affine_projection_profile = AffineProjectionProfile.from_config(self.runtime.raw)
+        self.model.player.x, self.model.player.z = 400, 600
+        self.camera_controller.reset(Vec3(400, 0, 600))
+        self.model.snap_buddy(self.camera_controller.current)
+        state = GardenPropsPreview.for_camera(
+            self.affine_scene_camera(self.camera()), getattr(self, "presentation_time", 0.0)
+        )
+        self.garden_props_preview = self.model.garden_props_preview = state
+        self.screen = AppScreen.PLAY
+        return True
+
+    def garden_props_preview_rects(self):
+        return {
+            name: self.office_rect(8 + i * 84, 202, 80, 26)
+            for i, name in enumerate(("layout", "less", "overlap", "parts", "menu", "normal"))
+        }
+
+    def update_garden_props_preview(self) -> None:
+        from drift_with_me.math3d import Vec3, screen_to_world_direction
+
+        state = self.garden_props_preview
+        for action, rect in self.garden_props_preview_rects().items():
+            if not self.mouse_pressed_in(rect):
+                continue
+            if action == "layout":
+                state.layout = 1 - state.layout
+                state.rebuild()
+            elif action == "less":
+                state.amount = (state.amount + 1) % 4
+                state.rebuild()
+            elif action == "parts":
+                state.parts = not state.parts
+            elif action == "overlap":
+                state.overlap = (state.overlap + 1) % 3
+                x, z = state.actor_start if state.overlap == 0 else state.trays[0]
+                if state.overlap:
+                    z += 8 if state.overlap == 1 else -8
+                self.model.player.x, self.model.player.z = x, z
+                self.model.snap_buddy(self.camera())
+                self.camera_controller.reset(Vec3(x, 0, z))
+            elif action == "menu":
+                self.jump_to_debug_week(WorkWeek(6, self.week_debug_selection))
+                self.week_debug_menu_open = True
+            elif action == "normal":
+                self.return_from_week_debug()
+            self.week_debug_wait_release = True
+            return
+        elapsed = state.elapsed(self.presentation_time)
+        if state.parts:
+            return
+        # Move presentation actors only. No model.step, interactions, combat,
+        # field-task events, day clock or save payload is advanced in this view.
+        intent = self.keyboard_intent()
+        direction = screen_to_world_direction(
+            self.scene_camera(self.camera()),
+            self.model.player.x,
+            self.model.player.z,
+            intent.screen_x,
+            intent.screen_y,
+        )
+        if intent.strength:
+            self.model.player.x += direction.x * 64 * elapsed
+            self.model.player.z += direction.y * 64 * elapsed
+            self.model.player.last_move_x, self.model.player.last_move_z = direction.x, direction.y
+            self.model.snap_buddy(self.camera())
+        self.update_camera_controller(elapsed)
+
+    def draw_garden_props_preview(self) -> None:
+        from drift_with_me.garden_props_preview import ASSET_IDS
+
+        state = self.garden_props_preview
+        if state.parts:
+            self.pyxel.cls(1)
+            for i, asset_id in enumerate(ASSET_IDS):
+                asset = self.sprite_assets.get(asset_id)
+                if asset is None:
+                    continue
+                col, row = i % 6, i // 6
+                rect = self.office_rect(8 + col * 84, 66 + row * 42, 80, 28)
+                frame = asset.frame()
+                scale = min(rect.width / frame.width, rect.height / frame.height, 1.0)
+                self.pyxel.blt(
+                    rect.x + rect.width / 2 - frame.width / 2,
+                    rect.y + rect.height / 2 - frame.height / 2,
+                    frame.image,
+                    0,
+                    0,
+                    frame.width,
+                    frame.height,
+                    colkey=asset.definition.colkey,
+                    scale=scale,
+                )
+                label = (
+                    asset_id.removeprefix("jlp1_")
+                    .replace("seedling_", "sd_")
+                    .replace("tray_", "tr_")
+                    .replace("stake_short", "short")
+                    .replace("stake_tall", "tall")
+                )
+                label = (
+                    label.replace("string_projected_layer", "string")
+                    .replace("stakes_string_assembly", "assembly")
+                    .replace("string_ground_source", "raw string")
+                    .replace("material_", "")
+                    .replace("redorange", "red")
+                    .replace("bluebell", "blue")
+                )
+                self.draw_office_text_in_rect(
+                    self.office_rect(8 + col * 84, 94 + row * 42, 80, 13),
+                    label,
+                    7,
+                    align="center",
+                )
+        else:
+            self.renderer.draw_scene(
+                self.model,
+                self.scene_camera(self.camera()),
+                self.presentation_time,
+                False,
+                self.effects,
+            )
+        self.draw_week_debug_button(
+            self.office_rect(8, 4, 496, 24), "GARDEN PROPS / DRAFT / NO SAVE"
+        )
+        layout = "RECTANGLE" if state.layout == 0 else "CORNER"
+        overlap = ("FREE", "BEHIND", "FRONT")[state.overlap]
+        self.draw_week_debug_button(
+            self.office_rect(8, 32, 496, 24),
+            "18 ASSETS / SD=SEED / TR=TRAY / RAW=TOP-DOWN"
+            if state.parts
+            else f"{layout} / MATERIALS {3 - state.amount}/3 / {overlap} / COLLISION OFF",
+        )
+        for action, rect in self.garden_props_preview_rects().items():
+            self.draw_week_debug_button(
+                rect,
+                {
+                    "layout": "Layout",
+                    "less": "Less",
+                    "overlap": "Overlap",
+                    "parts": "Map" if state.parts else "Parts",
+                    "menu": "Week menu",
+                    "normal": "Normal play",
+                }[action],
+            )
 
     def start_nudibranch_preview(self) -> bool:
         if not getattr(self, "week_debug_active", False):

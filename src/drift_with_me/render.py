@@ -15,6 +15,7 @@ from drift_with_me.cloud_shadow import CloudShadowLayer
 from drift_with_me.east_site import SITE_FACTS
 from drift_with_me.east_site_render import draw_east_site_ground
 from drift_with_me.effects import EffectSystem, EnemySnapshot, ReactiveEnvironmentState
+from drift_with_me.garden_props_preview import garden_preview_draw_commands
 from drift_with_me.grass_sway import bend_angle, rotate_tip, sample_gust
 from drift_with_me.hex_assets import (
     FRAME_LOOP_ANIMATION,
@@ -641,6 +642,7 @@ class Renderer:
                 )
             )
         commands.extend(preview_draw_commands(self, model, camera))
+        commands.extend(garden_preview_draw_commands(self, model, camera))
         self.last_stats = RenderStats(
             total_static_objects=len(model.world.objects),
             candidate_chunks=visible_query.candidate_chunk_count,

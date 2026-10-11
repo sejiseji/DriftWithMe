@@ -3391,6 +3391,9 @@ class DriftWithMeApp(WeekDebugMixin):
         )
 
     def draw(self) -> None:
+        if getattr(self, "garden_props_preview", None) is not None:
+            self.draw_garden_props_preview()
+            return
         if getattr(self, "nudibranch_preview", None) is not None:
             self.draw_nudibranch_preview()
             return

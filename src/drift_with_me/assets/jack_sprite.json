@@ -5317,6 +5317,528 @@
     },
     {
       "schema_version": 1,
+      "id": "jlp1_stake_short",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 8,
+      "hex_height": 16,
+      "colkey": 0,
+      "anchor_px": [
+        4.0,
+        16
+      ],
+      "world_size": [
+        4.0,
+        8.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "d7b1c4e7572006842376f353f4f7e83e259023bc8a6d7ce871250db508aa3b74",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_stake_short.hex",
+          "source_hash": "d7b1c4e7572006842376f353f4f7e83e259023bc8a6d7ce871250db508aa3b74"
+        }
+      ],
+      "draft_group": "stakes_string",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_stake_tall",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 8,
+      "hex_height": 20,
+      "colkey": 0,
+      "anchor_px": [
+        4.0,
+        20
+      ],
+      "world_size": [
+        4.0,
+        10.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "a3e6d1a30a94ebfdae123272cee44dee09b3b45e8e53d8fa35322a17e6909493",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_stake_tall.hex",
+          "source_hash": "a3e6d1a30a94ebfdae123272cee44dee09b3b45e8e53d8fa35322a17e6909493"
+        }
+      ],
+      "draft_group": "stakes_string",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_string_projected_layer",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 88,
+      "hex_height": 52,
+      "colkey": 0,
+      "anchor_px": [
+        44,
+        50
+      ],
+      "world_size": [
+        44.0,
+        26.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "b75198baf03b21760d9f4a53765e0d42db2394a703176033ecc8dd87d8c346a5",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_string_projected_layer.hex",
+          "source_hash": "b75198baf03b21760d9f4a53765e0d42db2394a703176033ecc8dd87d8c346a5"
+        }
+      ],
+      "draft_group": "stakes_string",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_stakes_string_assembly",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 88,
+      "hex_height": 52,
+      "colkey": 0,
+      "anchor_px": [
+        44,
+        50
+      ],
+      "world_size": [
+        44.0,
+        26.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "c27f01bdc02765fc09b55283cb1509487ac441c044bfbbbfc0b9cbc9f2ee074f",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_stakes_string_assembly.hex",
+          "source_hash": "c27f01bdc02765fc09b55283cb1509487ac441c044bfbbbfc0b9cbc9f2ee074f"
+        }
+      ],
+      "draft_group": "stakes_string",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_string_ground_source",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        32,
+        16
+      ],
+      "world_size": [
+        30,
+        16
+      ],
+      "projection_mode": "ground_decal_source_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "1d7c6f2983ded62475c7bcbd36de41915063c33fe446786a32727bfc77d49a38",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_string_ground_source.hex",
+          "source_hash": "1d7c6f2983ded62475c7bcbd36de41915063c33fe446786a32727bfc77d49a38"
+        }
+      ],
+      "draft_group": "stakes_string",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_material_soil",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 40,
+      "hex_height": 28,
+      "colkey": 0,
+      "anchor_px": [
+        20,
+        25
+      ],
+      "world_size": [
+        20.0,
+        14.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "89c548372c3049d8e88e85599f0bf80b429f1db7b50127e744a045ac3236a715",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_material_soil.hex",
+          "source_hash": "89c548372c3049d8e88e85599f0bf80b429f1db7b50127e744a045ac3236a715"
+        }
+      ],
+      "draft_group": "materials",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_material_gravel",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 40,
+      "hex_height": 28,
+      "colkey": 0,
+      "anchor_px": [
+        20,
+        25
+      ],
+      "world_size": [
+        20.0,
+        14.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "4cfd8ecea44d649996dcf679dc841e8771883a2fc4b0027b227b823001b5ec4e",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_material_gravel.hex",
+          "source_hash": "4cfd8ecea44d649996dcf679dc841e8771883a2fc4b0027b227b823001b5ec4e"
+        }
+      ],
+      "draft_group": "materials",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_material_curbs",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 40,
+      "hex_height": 28,
+      "colkey": 0,
+      "anchor_px": [
+        20,
+        25
+      ],
+      "world_size": [
+        20.0,
+        14.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "eb9f356ec1bc8f2f81b19768cb1c8eb8e734187b22daeb9765e1aba2cdb09ec4",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_material_curbs.hex",
+          "source_hash": "eb9f356ec1bc8f2f81b19768cb1c8eb8e734187b22daeb9765e1aba2cdb09ec4"
+        }
+      ],
+      "draft_group": "materials",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_seedling_white",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 12,
+      "hex_height": 16,
+      "colkey": 0,
+      "anchor_px": [
+        6,
+        15
+      ],
+      "world_size": [
+        6.0,
+        8.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "20a56a2e7238b9c18443b86bb928f1c59a684114f39bf6dc665df2d28e2ad088",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_seedling_white.hex",
+          "source_hash": "20a56a2e7238b9c18443b86bb928f1c59a684114f39bf6dc665df2d28e2ad088"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_tray_white",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 44,
+      "hex_height": 40,
+      "colkey": 0,
+      "anchor_px": [
+        22,
+        35
+      ],
+      "world_size": [
+        22.0,
+        20.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "5462aaf32278596afb505cb2cc9c43aa8866213cb933935ad18ec940c4b4f8d1",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_tray_white.hex",
+          "source_hash": "5462aaf32278596afb505cb2cc9c43aa8866213cb933935ad18ec940c4b4f8d1"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_seedling_yellow",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 12,
+      "hex_height": 16,
+      "colkey": 0,
+      "anchor_px": [
+        6,
+        15
+      ],
+      "world_size": [
+        6.0,
+        8.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "fca21ea8b8fd6eab64d98a693fc9686d6860f55658ac1575841fe6db5cfbc059",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_seedling_yellow.hex",
+          "source_hash": "fca21ea8b8fd6eab64d98a693fc9686d6860f55658ac1575841fe6db5cfbc059"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_tray_yellow",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 44,
+      "hex_height": 40,
+      "colkey": 0,
+      "anchor_px": [
+        22,
+        35
+      ],
+      "world_size": [
+        22.0,
+        20.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "21e7e7060b67a7417c3d34c526836abc6a857c07fb8e1d02514c0c882d6daa56",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_tray_yellow.hex",
+          "source_hash": "21e7e7060b67a7417c3d34c526836abc6a857c07fb8e1d02514c0c882d6daa56"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_seedling_redorange",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 12,
+      "hex_height": 16,
+      "colkey": 0,
+      "anchor_px": [
+        6,
+        15
+      ],
+      "world_size": [
+        6.0,
+        8.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "b40e1e91ae3e3153fd89a67db4a0cfa921c50832a1475d63f5f21fe6b5bdad0e",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_seedling_redorange.hex",
+          "source_hash": "b40e1e91ae3e3153fd89a67db4a0cfa921c50832a1475d63f5f21fe6b5bdad0e"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_tray_redorange",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 44,
+      "hex_height": 40,
+      "colkey": 0,
+      "anchor_px": [
+        22,
+        35
+      ],
+      "world_size": [
+        22.0,
+        20.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "62f4b14347d4c19c1483e4199db9972249c0148000a0fb4a5e459a7b2939e1a8",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_tray_redorange.hex",
+          "source_hash": "62f4b14347d4c19c1483e4199db9972249c0148000a0fb4a5e459a7b2939e1a8"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_seedling_purple",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 12,
+      "hex_height": 16,
+      "colkey": 0,
+      "anchor_px": [
+        6,
+        15
+      ],
+      "world_size": [
+        6.0,
+        8.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "b95a5ab884416e71f7575cff49068ce85cbc50366d73ebd873b0e184d943a9b1",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_seedling_purple.hex",
+          "source_hash": "b95a5ab884416e71f7575cff49068ce85cbc50366d73ebd873b0e184d943a9b1"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_tray_purple",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 44,
+      "hex_height": 40,
+      "colkey": 0,
+      "anchor_px": [
+        22,
+        35
+      ],
+      "world_size": [
+        22.0,
+        20.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "1be8fe17067ba173a8d20b12b6fb7e8ba293e6fb69bd5398bb725680b23fd62b",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_tray_purple.hex",
+          "source_hash": "1be8fe17067ba173a8d20b12b6fb7e8ba293e6fb69bd5398bb725680b23fd62b"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_seedling_bluebell",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 12,
+      "hex_height": 16,
+      "colkey": 0,
+      "anchor_px": [
+        6,
+        15
+      ],
+      "world_size": [
+        6.0,
+        8.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "bff0e5bea46ea14d541a319ae60b9dfbe6757761fd24956dede0977b255163ea",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_seedling_bluebell.hex",
+          "source_hash": "bff0e5bea46ea14d541a319ae60b9dfbe6757761fd24956dede0977b255163ea"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
+      "id": "jlp1_tray_bluebell",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 44,
+      "hex_height": 40,
+      "colkey": 0,
+      "anchor_px": [
+        22,
+        35
+      ],
+      "world_size": [
+        22.0,
+        20.0
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "31fab7d5a187e15cb6d93d3f65b1e8adc7d44b033e312d805636dd50be6eb328",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "jlp1_tray_bluebell.hex",
+          "source_hash": "31fab7d5a187e15cb6d93d3f65b1e8adc7d44b033e312d805636dd50be6eb328"
+        }
+      ],
+      "draft_group": "seedling_trays",
+      "integration_scope": "week_debug_preview_only"
+    },
+    {
+      "schema_version": 1,
       "id": "fuji_map_knees",
       "palette_id": "pyxel_default_16",
       "hex_width": 100,
