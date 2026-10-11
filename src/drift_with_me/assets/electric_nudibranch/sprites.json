@@ -1,0 +1,369 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "schema_version": 1,
+      "id": "electric_nudibranch_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        58
+      ],
+      "world_size": [
+        20,
+        20
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "frames": [
+        {
+          "id": "N_00",
+          "path": "normal/electric_nudibranch_normal_N_00.hex",
+          "source_hash": "fef22824a7495bbdb5239ff95f55c61df616d53a694fd21e5998cb551240e62c"
+        },
+        {
+          "id": "N_01",
+          "path": "normal/electric_nudibranch_normal_N_01.hex",
+          "source_hash": "a7e16f048e71ab8080689430e9768ddfac8581225f98480302ca3bb6c0f83263"
+        },
+        {
+          "id": "N_02",
+          "path": "normal/electric_nudibranch_normal_N_02.hex",
+          "source_hash": "6166073d2145bca798d8a12f78a1aeb55aca1ff8b640bcf25e23d596ed674f83"
+        },
+        {
+          "id": "N_03",
+          "path": "normal/electric_nudibranch_normal_N_03.hex",
+          "source_hash": "d56375b32dcd4fd348880e25a969abeeeaac8b4c34dfd2e4a7112ae96e67ed9a"
+        },
+        {
+          "id": "NE_00",
+          "path": "normal/electric_nudibranch_normal_NE_00.hex",
+          "source_hash": "800113bbb83b47f195b460372a2fe336f19cef8f3c04528aaba98bc99cf2699c"
+        },
+        {
+          "id": "NE_01",
+          "path": "normal/electric_nudibranch_normal_NE_01.hex",
+          "source_hash": "577fb445b86426d2ed5354899e8df3d6afea10cb0b00f6e0883852b4d00b3f3e"
+        },
+        {
+          "id": "NE_02",
+          "path": "normal/electric_nudibranch_normal_NE_02.hex",
+          "source_hash": "7fcbae7cee97ef9b2537db207c1556772bf426097c28d273437bda774048ea07"
+        },
+        {
+          "id": "NE_03",
+          "path": "normal/electric_nudibranch_normal_NE_03.hex",
+          "source_hash": "e5005d8ae23be62763fde52afff2b401f65a740629c62001ae90173aa18f2998"
+        },
+        {
+          "id": "E_00",
+          "path": "normal/electric_nudibranch_normal_E_00.hex",
+          "source_hash": "2b72996b505d64966ba174dda4999be819a44e31cbc6e54b6b5e1fb637006bd3"
+        },
+        {
+          "id": "E_01",
+          "path": "normal/electric_nudibranch_normal_E_01.hex",
+          "source_hash": "d5ec75b358fa972ea77a6876ef7121e3a7992d791324e883e59b7368269440a9"
+        },
+        {
+          "id": "E_02",
+          "path": "normal/electric_nudibranch_normal_E_02.hex",
+          "source_hash": "21daa17c232d9ccb8f0f627962a10a5446c96c0284d61b66020ba1fe02155a48"
+        },
+        {
+          "id": "E_03",
+          "path": "normal/electric_nudibranch_normal_E_03.hex",
+          "source_hash": "881ce9f5d4ec901dfe1f05a23d8c8590c8332fd0a4d77c4ab2bad91de880f0c9"
+        },
+        {
+          "id": "SE_00",
+          "path": "normal/electric_nudibranch_normal_SE_00.hex",
+          "source_hash": "3bd8300aa603446af7c2ddf29052d915b5254b86bf4d07f9137d300634945a8b"
+        },
+        {
+          "id": "SE_01",
+          "path": "normal/electric_nudibranch_normal_SE_01.hex",
+          "source_hash": "98ebd6cb9ffaa78ffb4f5b03e5cb1acdfba6f09871a481939d440559591f7fb5"
+        },
+        {
+          "id": "SE_02",
+          "path": "normal/electric_nudibranch_normal_SE_02.hex",
+          "source_hash": "fb53ebbc4824d1019132ae9d3552966ee11eef0c90afa965a729d5a58ab829de"
+        },
+        {
+          "id": "SE_03",
+          "path": "normal/electric_nudibranch_normal_SE_03.hex",
+          "source_hash": "513d9ec1e9514cc99cf49eed93ef95f6a174a2d6e1294e103e3d5b592b2e44d6"
+        },
+        {
+          "id": "S_00",
+          "path": "normal/electric_nudibranch_normal_S_00.hex",
+          "source_hash": "0506ca8c393a9b71d71ba383677a3d831932752322e98c1d561db9652d310ae3"
+        },
+        {
+          "id": "S_01",
+          "path": "normal/electric_nudibranch_normal_S_01.hex",
+          "source_hash": "19f8418f6885bb8572f17d5f5a9333b6b026575b2908aa994ed161f733f5560c"
+        },
+        {
+          "id": "S_02",
+          "path": "normal/electric_nudibranch_normal_S_02.hex",
+          "source_hash": "3b2015fdc56cfd6058e5fd6fe6aa175ce539bf93c3d3d7d30499da36e27c256a"
+        },
+        {
+          "id": "S_03",
+          "path": "normal/electric_nudibranch_normal_S_03.hex",
+          "source_hash": "4692557700a3e52f5bedf484b6511599ee7842fedd3ab7864d00b8facce1cef1"
+        },
+        {
+          "id": "SW_00",
+          "path": "normal/electric_nudibranch_normal_SW_00.hex",
+          "source_hash": "86e174a341ad6726233ba4b61b2aeea57aeeba8af04f60957e634aefb855d751"
+        },
+        {
+          "id": "SW_01",
+          "path": "normal/electric_nudibranch_normal_SW_01.hex",
+          "source_hash": "7c38f63d2c1fc8dcdd6cdbbb04065e5e8f59955b7f7ff32028ad9985e7380beb"
+        },
+        {
+          "id": "SW_02",
+          "path": "normal/electric_nudibranch_normal_SW_02.hex",
+          "source_hash": "95332a2029c15044956c8c331e664a0fba63e7934113e890769146d950925878"
+        },
+        {
+          "id": "SW_03",
+          "path": "normal/electric_nudibranch_normal_SW_03.hex",
+          "source_hash": "3de2564d6c642d9987f003da1bc652ba8fcf6ace64b08caa89a45a2c7975930a"
+        },
+        {
+          "id": "W_00",
+          "path": "normal/electric_nudibranch_normal_W_00.hex",
+          "source_hash": "b9c21043bbfdbeeab2b302cc7e4248c670b9aab6ecaaf48f4b270ffaaf35f6bf"
+        },
+        {
+          "id": "W_01",
+          "path": "normal/electric_nudibranch_normal_W_01.hex",
+          "source_hash": "476acfacf032d10b2149913a0de90c6d95fe6be8c3bce61f0ece7a68d3c43b99"
+        },
+        {
+          "id": "W_02",
+          "path": "normal/electric_nudibranch_normal_W_02.hex",
+          "source_hash": "5a9df1bd55174f2fe703e98c3523a282d6d3ab40bd41ffe5d1ffaac047ee3703"
+        },
+        {
+          "id": "W_03",
+          "path": "normal/electric_nudibranch_normal_W_03.hex",
+          "source_hash": "8711fe877306a0d33cf6a03ef49a8ec6576f2503e94328fdca9b83f37941933c"
+        },
+        {
+          "id": "NW_00",
+          "path": "normal/electric_nudibranch_normal_NW_00.hex",
+          "source_hash": "9e8d2a9c91df64ab0f8bdfab6925839172eb1f7ef4cb447f6aa251eed56d65df"
+        },
+        {
+          "id": "NW_01",
+          "path": "normal/electric_nudibranch_normal_NW_01.hex",
+          "source_hash": "f16959cb26d26ed1e5062a5fd28b5575bc1f4b9827b30ab194ee3e85edcf82cd"
+        },
+        {
+          "id": "NW_02",
+          "path": "normal/electric_nudibranch_normal_NW_02.hex",
+          "source_hash": "e09317885d8ded5ded2d47a8e1e0794013b1e252a98c2a777e63ab670f880f26"
+        },
+        {
+          "id": "NW_03",
+          "path": "normal/electric_nudibranch_normal_NW_03.hex",
+          "source_hash": "f32c7c5ab8ad247622f8ef5642f4c40f6ed9bca8dd164dd98c7d29a5e2b8c6b1"
+        }
+      ],
+      "source_hash": "434805fcfbafa511ea48bc0f49098376e3158d566d934f5cb3e09cbb69f04a4a"
+    },
+    {
+      "schema_version": 1,
+      "id": "electric_nudibranch_abnormal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 8,
+      "anchor_px": [
+        32,
+        58
+      ],
+      "world_size": [
+        20,
+        20
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "frames": [
+        {
+          "id": "N_00",
+          "path": "abnormal/electric_nudibranch_abnormal_N_00.hex",
+          "source_hash": "dfd2656b331e5a91f66ac863213fcbb85a4635961c43e52c668fe95345eba0a1"
+        },
+        {
+          "id": "N_01",
+          "path": "abnormal/electric_nudibranch_abnormal_N_01.hex",
+          "source_hash": "e01e292ffec533c549d8bb23336510776398714078b214208e3e665979045d81"
+        },
+        {
+          "id": "N_02",
+          "path": "abnormal/electric_nudibranch_abnormal_N_02.hex",
+          "source_hash": "a586e091b8facdf8d53982cea565a2ae895b1ebaa3ef947066e753f962b6fef6"
+        },
+        {
+          "id": "N_03",
+          "path": "abnormal/electric_nudibranch_abnormal_N_03.hex",
+          "source_hash": "6f8bfc9605cd1dafaf0627a7f38ec768865859356ca939c1459c2892ee876b51"
+        },
+        {
+          "id": "NE_00",
+          "path": "abnormal/electric_nudibranch_abnormal_NE_00.hex",
+          "source_hash": "825fc6766879780df3f2b8951d57d5af92ba2a41f1c17d4534b38d73f9e9996e"
+        },
+        {
+          "id": "NE_01",
+          "path": "abnormal/electric_nudibranch_abnormal_NE_01.hex",
+          "source_hash": "eb9734f0dbc7c64613aa7ea8164937e66de57d1f0638a89e7c0f073abbcea3e5"
+        },
+        {
+          "id": "NE_02",
+          "path": "abnormal/electric_nudibranch_abnormal_NE_02.hex",
+          "source_hash": "e137f1145f0e6319b3d860addc54e2204a22faebe7dc654c3cb64bf53df69b01"
+        },
+        {
+          "id": "NE_03",
+          "path": "abnormal/electric_nudibranch_abnormal_NE_03.hex",
+          "source_hash": "728768b677cdfb77aa08868f117659b85c4209a1232559b3ac66949cd992783e"
+        },
+        {
+          "id": "E_00",
+          "path": "abnormal/electric_nudibranch_abnormal_E_00.hex",
+          "source_hash": "e1daa79ccd3f7459149ee5f1179227a9218ca2e306936a5ab18bcca25dc7b6e9"
+        },
+        {
+          "id": "E_01",
+          "path": "abnormal/electric_nudibranch_abnormal_E_01.hex",
+          "source_hash": "fb42de0e9140b05e0bd4eac84f726b928abcd55abf9bb1c8d49c7c1bf70b3dd8"
+        },
+        {
+          "id": "E_02",
+          "path": "abnormal/electric_nudibranch_abnormal_E_02.hex",
+          "source_hash": "f524db4d455daa83f22ac502c70d55603cc51e642be7403d90c0fd54bfe33a7b"
+        },
+        {
+          "id": "E_03",
+          "path": "abnormal/electric_nudibranch_abnormal_E_03.hex",
+          "source_hash": "1ec8f4acae3f5a5d0f4c6cc87aeb5cdc8795de2c462925b35bef673717a00502"
+        },
+        {
+          "id": "SE_00",
+          "path": "abnormal/electric_nudibranch_abnormal_SE_00.hex",
+          "source_hash": "b34beb0e2ee7784cf6f6640306ad35c9464c09d2043332a171e107afff614cd3"
+        },
+        {
+          "id": "SE_01",
+          "path": "abnormal/electric_nudibranch_abnormal_SE_01.hex",
+          "source_hash": "d8c9ee4803ead80829c19136756c1f455c6ba24a45f8c63f00fe2358fadbfce9"
+        },
+        {
+          "id": "SE_02",
+          "path": "abnormal/electric_nudibranch_abnormal_SE_02.hex",
+          "source_hash": "b9042507047c5aa5cbecbe7289fb0eb9aa04a64be3d7d67e5c37536d01a527d1"
+        },
+        {
+          "id": "SE_03",
+          "path": "abnormal/electric_nudibranch_abnormal_SE_03.hex",
+          "source_hash": "eac13bf5ae7651e877633c1b93c3daa4eb68fcf5e8ca11c0152ebee9fd4fc2f1"
+        },
+        {
+          "id": "S_00",
+          "path": "abnormal/electric_nudibranch_abnormal_S_00.hex",
+          "source_hash": "51a5437e771276efbfa9064d4fbd2bcb4e3a71bf352eac5df20aee82f1ab124c"
+        },
+        {
+          "id": "S_01",
+          "path": "abnormal/electric_nudibranch_abnormal_S_01.hex",
+          "source_hash": "588749730a26a450d025f8bede4305e68f6cf13b5acfbd723c48718c68a84608"
+        },
+        {
+          "id": "S_02",
+          "path": "abnormal/electric_nudibranch_abnormal_S_02.hex",
+          "source_hash": "b1810bf097eba1739a6094a6b1e11698330a4339341833f61daafe2125853f23"
+        },
+        {
+          "id": "S_03",
+          "path": "abnormal/electric_nudibranch_abnormal_S_03.hex",
+          "source_hash": "390e351c508ecbfe9bfbdd630bca096ec29f004b975090c62498cc5c9774ee9e"
+        },
+        {
+          "id": "SW_00",
+          "path": "abnormal/electric_nudibranch_abnormal_SW_00.hex",
+          "source_hash": "95bddecc871056226c068a4614998405bf22b8a175618a69b8ddec678408d084"
+        },
+        {
+          "id": "SW_01",
+          "path": "abnormal/electric_nudibranch_abnormal_SW_01.hex",
+          "source_hash": "fefadd07a80b2f34ec5b9f6f0250910fcae0f553caed0a22768e9920c5ff921e"
+        },
+        {
+          "id": "SW_02",
+          "path": "abnormal/electric_nudibranch_abnormal_SW_02.hex",
+          "source_hash": "36792ea0d5f3e7114e807c8529e5652aa690e9b124f598c43391c96b4e1f7640"
+        },
+        {
+          "id": "SW_03",
+          "path": "abnormal/electric_nudibranch_abnormal_SW_03.hex",
+          "source_hash": "dfb24cbf14da4b0441d871282af6ba390dae6668ad90a93ba5e42547cc9f70d9"
+        },
+        {
+          "id": "W_00",
+          "path": "abnormal/electric_nudibranch_abnormal_W_00.hex",
+          "source_hash": "023b780fbc6cba7c84cbf490f26e7e042785a59b6d7e51f0986faa404df69076"
+        },
+        {
+          "id": "W_01",
+          "path": "abnormal/electric_nudibranch_abnormal_W_01.hex",
+          "source_hash": "7c67404497698e6057ce40b05c14d04d0100b7b5418ddcb812a62dd63cc73c5d"
+        },
+        {
+          "id": "W_02",
+          "path": "abnormal/electric_nudibranch_abnormal_W_02.hex",
+          "source_hash": "5150c3018acbe1684c6d248a43560ddfac2f2ff836296100832caf54c0cf8c8e"
+        },
+        {
+          "id": "W_03",
+          "path": "abnormal/electric_nudibranch_abnormal_W_03.hex",
+          "source_hash": "f28da986e04b18dfb80aba3f850b040d86a8d6b7f91f39aaa923b655cf47c561"
+        },
+        {
+          "id": "NW_00",
+          "path": "abnormal/electric_nudibranch_abnormal_NW_00.hex",
+          "source_hash": "ecca9cb7dd236890aa12bdc90d3c1766f5c4d4d97e736fd66f8324a6eca8503c"
+        },
+        {
+          "id": "NW_01",
+          "path": "abnormal/electric_nudibranch_abnormal_NW_01.hex",
+          "source_hash": "16afe5eed1a12d4e4856ad9767e9b83180eb856593c75a27133b96518462ed1e"
+        },
+        {
+          "id": "NW_02",
+          "path": "abnormal/electric_nudibranch_abnormal_NW_02.hex",
+          "source_hash": "8d40f0689f48b128a42867393d9cfbefa4041e6a8e3a6369b6cb62b703a8e74c"
+        },
+        {
+          "id": "NW_03",
+          "path": "abnormal/electric_nudibranch_abnormal_NW_03.hex",
+          "source_hash": "3fd2e3dfed031cf6f01e1f8f865a94ccd0b7657ca27d43b2c84f81c3ed826188"
+        }
+      ],
+      "source_hash": "a334af768ee4fec488493417ae88552f0bc847869441c5892f755a06ebd59bfb"
+    }
+  ]
+}

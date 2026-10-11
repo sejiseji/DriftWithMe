@@ -1,0 +1,29 @@
+{
+  "library_zip": "libfile_89f3ff23a0488191afcc4d9b25f7ab00",
+  "static_reference_zip": "libfile_f25dbd6da7948191bbc8bd992c1989ab",
+  "static_reference_version": 1,
+  "fps": 6,
+  "directions": [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S",
+    "SW",
+    "W",
+    "NW"
+  ],
+  "frame_order": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "abnormal_tentacles": 4,
+  "composition_order": [
+    "back",
+    "body",
+    "front"
+  ],
+  "purpose": "temporary sprite preview only; not July scenario or combat"
+}

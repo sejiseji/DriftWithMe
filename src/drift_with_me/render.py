@@ -34,6 +34,7 @@ from drift_with_me.math3d import (
     screen_to_world_direction,
 )
 from drift_with_me.model import GameModel
+from drift_with_me.nudibranch_preview import preview_draw_commands
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.world import (
     BakedGroundPatch,
@@ -638,6 +639,7 @@ class Renderer:
                     ),
                 )
             )
+        commands.extend(preview_draw_commands(self, model, camera))
         self.last_stats = RenderStats(
             total_static_objects=len(model.world.objects),
             candidate_chunks=visible_query.candidate_chunk_count,

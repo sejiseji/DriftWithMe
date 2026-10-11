@@ -30,6 +30,8 @@ drift_with_me = [
     "assets/*.json",
     "assets/*.hex",
     "assets/*.pyxres",
+    "assets/electric_nudibranch/*.json",
+    "assets/electric_nudibranch/*/*.hex",
     "assets/tree_foliage_ripple/*.json",
     "assets/tree_foliage_ripple/tree_leafy_a/*.hex",
     "assets/tree_foliage_ripple/tree_thin_b/*.hex",

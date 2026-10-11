@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from urllib.parse import parse_qs
 
+from drift_with_me.nudibranch_preview import NudibranchPreview
 from drift_with_me.week_cycle import WorkWeek, load_week_office
 
 
@@ -39,6 +40,7 @@ class WeekDebugMixin:
         self.week_debug_wait_release = False
         self.week_debug_month = 6
         self.week_debug_selection = 1
+        self.nudibranch_preview = None
         self.normal_progress_store = self.progress_store
         if enabled:
             self.progress_store = TemporaryProgressStore()
@@ -56,7 +58,8 @@ class WeekDebugMixin:
                 )
                 for n in range(1, 5)
             },
-            "start": self.office_rect(32, 158, 448, 30),
+            "start": self.office_rect(32, 158, 220, 30),
+            "sprites": self.office_rect(260, 158, 220, 30),
             "cancel": self.office_rect(32, 196, 220, 30),
             "normal": self.office_rect(260, 196, 220, 30),
         }
@@ -76,6 +79,7 @@ class WeekDebugMixin:
 
         # A fresh world/model removes map flags, combat, interactions and enemy state.
         self.world = load_world_data()
+        self.nudibranch_preview = None
         self.model = GameModel(self.runtime.raw, self.world)
         self.camera_controller = CameraController(
             self.runtime.raw,
@@ -129,12 +133,18 @@ class WeekDebugMixin:
             js.history.replaceState(None, "", str(url.href))
 
     def update_week_debug(self) -> bool:
+        preview = getattr(self, "nudibranch_preview", None)
+        if preview is not None:
+            preview.tick(self.presentation_time)
         if getattr(self, "week_debug_wait_release", False):
             if not self.pointer_snapshot.down:
                 self.week_debug_wait_release = False
             return True
         if not getattr(self, "week_debug_active", False):
             return False
+        if preview is not None:
+            self.update_nudibranch_preview()
+            return True
         if not self.week_debug_menu_open:
             if self.mouse_pressed_in(self.week_debug_badge_rect()):
                 self.week_debug_menu_open = True
@@ -150,6 +160,8 @@ class WeekDebugMixin:
                 self.week_debug_selection = int(action[-1])
             elif action == "start" and self.week_debug_month == 6:
                 self.jump_to_debug_week(WorkWeek(6, self.week_debug_selection))
+            elif action == "sprites":
+                self.start_nudibranch_preview()
             elif action == "cancel" and self.session_started:
                 self.week_debug_menu_open = False
             elif action == "normal":
@@ -194,7 +206,86 @@ class WeekDebugMixin:
         self.draw_week_debug_button(
             rects["start"], "選んだ週の最初から始める", disabled=self.week_debug_month != 6
         )
+        self.draw_week_debug_button(rects["sprites"], "Nudibranch sprite test")
         self.draw_week_debug_button(
             rects["cancel"], "取消・テストに戻る", disabled=not self.session_started
         )
         self.draw_week_debug_button(rects["normal"], "通常プレイへ戻る")
+
+    def start_nudibranch_preview(self) -> bool:
+        if not getattr(self, "week_debug_active", False):
+            return False
+        from drift_with_me.app import AppScreen
+        from drift_with_me.math3d import Vec3
+
+        self.jump_to_debug_week(WorkWeek())
+        self.nudibranch_preview = NudibranchPreview(previous_time=self.presentation_time)
+        self.model.nudibranch_preview = self.nudibranch_preview
+        x, z = self.nudibranch_preview.center
+        self.model.player.x, self.model.player.z = x, z
+        self.camera_controller.reset(Vec3(x, 0.0, z))
+        self.model.snap_buddy(self.camera_controller.current)
+        self.screen = AppScreen.PLAY
+        return True
+
+    def nudibranch_preview_rects(self):
+        return {
+            name: self.office_rect(8 + i * 84, 200, 80, 28)
+            for i, name in enumerate(("next", "auto", "pause", "terrain", "menu", "normal"))
+        }
+
+    def update_nudibranch_preview(self) -> None:
+        from drift_with_me.math3d import Vec3
+
+        state = self.nudibranch_preview
+        for action, rect in self.nudibranch_preview_rects().items():
+            if not self.mouse_pressed_in(rect):
+                continue
+            if action == "next":
+                state.freeze_direction()
+                state.direction = (state.direction + 1) % 8
+            elif action == "auto":
+                if state.automatic:
+                    state.freeze_direction()
+                else:
+                    state.automatic = True
+            elif action == "pause":
+                state.paused = not state.paused
+            elif action == "terrain":
+                state.terrain = "grass" if state.terrain == "water" else "water"
+                x, z = state.center
+                self.model.player.x, self.model.player.z = x, z
+                self.camera_controller.reset(Vec3(x, 0.0, z))
+                self.model.snap_buddy(self.camera_controller.current)
+            elif action == "menu":
+                self.jump_to_debug_week(WorkWeek(6, self.week_debug_selection))
+                self.week_debug_menu_open = True
+            elif action == "normal":
+                self.return_from_week_debug()
+            self.week_debug_wait_release = True
+            break
+
+    def draw_nudibranch_preview(self) -> None:
+        state = self.nudibranch_preview
+        self.renderer.draw_scene(
+            self.model,
+            self.scene_camera(self.camera()),
+            self.presentation_time,
+            False,
+            self.effects,
+        )
+        self.draw_week_debug_button(
+            self.office_rect(8, 4, 496, 24),
+            f"SPRITE TEST / NO SAVE / {state.direction_name} / {state.frame_index + 1}/4 / 6fps",
+        )
+        self.draw_week_debug_button(self.office_rect(8, 32, 496, 24), "NORMAL / ABNORMAL")
+        labels = {
+            "next": "Next dir",
+            "auto": "Auto ON" if state.automatic else "Auto OFF",
+            "pause": "Resume" if state.paused else "Pause",
+            "terrain": state.terrain.upper(),
+            "menu": "Week menu",
+            "normal": "Normal play",
+        }
+        for name, rect in self.nudibranch_preview_rects().items():
+            self.draw_week_debug_button(rect, labels[name])

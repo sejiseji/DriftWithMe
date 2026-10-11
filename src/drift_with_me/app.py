@@ -3362,6 +3362,9 @@ class DriftWithMeApp(WeekDebugMixin):
         )
 
     def draw(self) -> None:
+        if getattr(self, "nudibranch_preview", None) is not None:
+            self.draw_nudibranch_preview()
+            return
         if getattr(self, "week_debug_menu_open", False):
             self.draw_week_debug_menu()
             return
