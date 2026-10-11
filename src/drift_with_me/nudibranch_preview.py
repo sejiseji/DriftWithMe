@@ -41,7 +41,7 @@ class NudibranchPreview:
 
     @property
     def center(self) -> tuple[float, float]:
-        return (160.0, 240.0) if self.terrain == "water" else (512.0, 400.0)
+        return (256.0, 104.0) if self.terrain == "water" else (512.0, 400.0)
 
 
 def preview_assets(pyxel):
