@@ -36,6 +36,7 @@ from drift_with_me.math3d import (
 from drift_with_me.model import GameModel
 from drift_with_me.nudibranch_preview import preview_attack_direction, preview_draw_commands
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
+from drift_with_me.week3 import KEY_ID
 from drift_with_me.world import (
     BakedGroundPatch,
     GroundDetail,
@@ -2419,7 +2420,7 @@ class Renderer:
         camera: CameraState,
         effects: EffectSystem | None = None,
     ) -> None:
-        if obj.id in SITE_FACTS:
+        if obj.id in SITE_FACTS or obj.id == KEY_ID:
             return
         if obj.id == "maintenance_unit":
             self.draw_maintenance_robot(model, obj, camera)

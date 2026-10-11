@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
+from drift_with_me.hex_assets import placement_for_upright_height_billboard
 from drift_with_me.math3d import Vec3
 
 
@@ -88,7 +91,7 @@ def draw_east_site_ground(renderer, model, camera):
     polygon(renderer, camera, [(x - 5, z - 5), (x + 6, z - 5), (x + 9, z + 3), (x - 7, z + 5)], 1)
     grass = renderer.configured_sprite_asset(model, "grass_patch_low_a_asset")
     if grass is not None:
-        renderer.draw_ground_source_asset(grass, camera, 948, 154)
+        draw_hatch_grass(renderer, grass, camera, 948, 154)
     # Keep the small handle legible above the fringe of grass.
     p = camera.project(Vec3(x + 1, 2, z - 1))
     if p:
@@ -99,3 +102,23 @@ def draw_east_site_ground(renderer, model, camera):
     # A small existing-palette stone on the approach to the shade. No new obstacle.
     polygon(renderer, camera, [(894, 64), (900, 62), (904, 67), (899, 71), (892, 68)], 13)
     polygon(renderer, camera, [(894, 64), (900, 62), (901, 66), (896, 67)], 6)
+
+
+def hatch_grass_placement(asset, camera, x=948, z=154):
+    # This source depicts standing blades. Ground decals flatten its 64x64 art
+    # into 42x20 world dimensions, then foreshorten it a second time.
+    # Keep the original root anchor and source pixels; use one scale on both axes.
+    definition = asset.definition
+    full_height = definition.world_size[0] * definition.hex_height / definition.hex_width
+    upright = replace(
+        definition,
+        world_size=(definition.world_size[0], full_height),
+        projection_mode="upright_height_billboard_v1",
+    )
+    return placement_for_upright_height_billboard(camera, upright, Vec3(x, 0, z))
+
+
+def draw_hatch_grass(renderer, asset, camera, x, z):
+    placement = hatch_grass_placement(asset, camera, x, z)
+    if placement is not None:
+        renderer.draw_atmospheric_scaled_sprite(asset, placement)

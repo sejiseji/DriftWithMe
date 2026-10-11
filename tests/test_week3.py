@@ -7,7 +7,7 @@ from drift_with_me.east_site import EastSiteProgress
 from drift_with_me.events import GameEvent
 from drift_with_me.office import CaseState, Classification, FieldResult
 from drift_with_me.save_state import decode, encode, snapshot
-from drift_with_me.week3 import FACTS, LABELS, LINES, SITE_FACTS
+from drift_with_me.week3 import FACTS, KEY_ID, LABELS, LINES, SITE_FACTS
 from drift_with_me.week_cycle import WorkWeek, load_week_office
 from field_transition_helpers import finish_travel
 from test_field_visit import drain, inspect, make_visit
@@ -69,6 +69,7 @@ def test_free_order_only_full_read_records_then_both_reports_complete(order):
         assert SITE_FACTS[target] in app.office.site_progress.facts
         restored(app)
     assert not app.office.complete and not app.office.site_progress.reported
+    read_site(app, KEY_ID)
     app.complete_office_field_task()
     finish_travel(app)
     assert app.office.current_index == 4
@@ -115,13 +116,14 @@ def test_every_partial_return_reports_only_known_then_redeploy(targets):
         resolve(app.office)
         app.office.advance_case()
         restored(app)
-    if facts != FACTS:
+    if not app.office.complete:
         assert not app.office.complete and app.office.active_field_task
         assert app.office.current_session.state == CaseState.FIELD_ACTIVE
         app.activate_office_footer_action()
         finish_travel(app)
         for t in set(SITE_FACTS) - targets:
             read_site(app, t)
+        read_site(app, KEY_ID)
         report(app)
     assert app.office.complete and app.office.site_progress.reported == FACTS
 
@@ -220,7 +222,7 @@ def test_invalid_save_confirmation_and_report_order():
     with pytest.raises(ValueError):
         decode(encode(p))
     p = snapshot(app)
-    p["offices"]["6:3"]["site"]["positions"] = {"jun_w2_old_hatch": 3}
+    p["offices"]["6:3"]["site"]["positions"] = {"jun_w2_old_hatch": len(LINES["jun_w2_old_hatch"])}
     with pytest.raises(ValueError):
         decode(encode(p))
     p = snapshot(app)
@@ -289,3 +291,111 @@ def test_save_at_report_after_read_but_before_acknowledgement_is_not_complete():
     drain(app.office)
     app.office.advance_case()
     assert app.office.site_progress.reported == {"hatch_matched"}
+
+
+@pytest.mark.parametrize("hatch_first", [False, True])
+def test_key_pickup_cancel_restore_consult_and_week_completion(hatch_first):
+    app = app3()
+    if hatch_first:
+        read_site(app, "jun_w2_old_hatch")
+    inspect(app, KEY_ID)
+    assert app.office.site_progress.key_seen
+    assert ("番号が同じ" in app.field_conversation.lines[1][1]) == hatch_first
+    app.advance_field_conversation()
+    app.process_events(app.model.cancel_interaction())
+    assert not app.office.site_progress.key_collected
+    restored(app)
+    inspect(app, KEY_ID)
+    assert app.field_conversation.index == 1
+    app.advance_field_conversation()
+    assert app.office.site_progress.key_collected
+    assert not app.advance_field_conversation()
+    read_site(app, KEY_ID)
+    assert app.office.site_progress.key_collected
+    app.complete_office_field_task()
+    finish_travel(app)
+    assert app.office.current_index == 4
+    app.office.ask_question("talk")
+    drain(app.office)
+    assert not app.office.site_progress.key_consulted
+    restored(app)
+    assert not app.office.site_progress.key_consulted
+    assert app.office.classify(Classification.COUNTER_COMPLETE)
+    drain(app.office)
+    assert app.office.advance_case()
+    assert app.office.site_progress.key_consulted
+    assert app.office.current_index == 5
+    resolve(app.office)
+    app.office.advance_case()
+    assert not app.office.complete
+    app.activate_office_footer_action()
+    finish_travel(app)
+    for target in SITE_FACTS:
+        read_site(app, target)
+    report(app)
+    assert app.office.complete
+    restored(app)
+    assert app.office.site_progress.key_consulted
+
+
+def test_three_sites_without_key_return_for_search_and_old_completed_save_stays_complete():
+    app = app3()
+    for target in SITE_FACTS:
+        read_site(app, target)
+    report(app)
+    assert not app.office.complete
+    app.activate_office_footer_action()
+    finish_travel(app)
+    read_site(app, KEY_ID)
+    report(app)
+    assert app.office.complete
+    saved = snapshot(app)
+    del saved["offices"]["6:3"]["site"]["key"]
+    week, offices, *_ = decode(encode(saved))
+    assert offices[week].complete and offices[week].site_progress.legacy_complete
+    assert not offices[week].site_progress.key_collected
+    saved = snapshot(app3())
+    del saved["offices"]["6:3"]["site"]["key"]
+    week, offices, *_ = decode(encode(saved))
+    assert not offices[week].site_progress.key_seen
+    assert not offices[week].site_progress.legacy_complete
+
+
+def test_forged_key_completion_and_invalid_key_ownership_are_rejected():
+    app = app3()
+    app.process_events([GameEvent(900, 0, "inspection_completed", "player", KEY_ID, (0, 0, 0))])
+    assert not app.office.site_progress.key_collected
+    saved = snapshot(app)
+    saved["offices"]["6:3"]["site"]["key"]["consulted"] = True
+    with pytest.raises(ValueError):
+        decode(encode(saved))
+
+
+@pytest.mark.parametrize("order", list(permutations((*SITE_FACTS, KEY_ID))))
+def test_key_and_all_three_sites_in_every_order_save_then_report(order):
+    app = app3()
+    for target in order:
+        read_site(app, target)
+        restored(app)
+    lines = app.office.site_progress.travel_lines("back")
+    assert "まだ見てない" not in "".join(text for _, text in lines)
+    report(app)
+    assert app.office.complete and app.office.site_progress.key_consulted
+    assert app.office.site_progress.facts == FACTS
+
+
+def test_key_world_install_preserves_access_and_week4_removes_target():
+    from drift_with_me.week3 import install_week3_world
+    from drift_with_me.week4 import install_week4_world
+
+    app = app3()
+    app.world.east_site_access_ready = True
+    original_enemies = app.model.enemies
+    original_objects = [o for o in app.world.objects if o.id != KEY_ID]
+    install_week3_world(app)
+    assert app.world.east_site_access_ready
+    assert [o for o in app.world.objects if o.id != KEY_ID] == original_objects
+    assert app.model.enemies is original_enemies
+    install_week3_world(app, enabled=False)
+    install_week4_world(app)
+    assert app.world.object_by_id(KEY_ID) is None

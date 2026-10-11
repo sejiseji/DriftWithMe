@@ -54,6 +54,7 @@ from drift_with_me.water_study_assets import (
     water_study_cache_loader,
 )
 from drift_with_me.water_study_layout import water_study_visible_chunks
+from drift_with_me.week3 import KEY_ID, draw_week3_key, install_week3_world
 from drift_with_me.week3 import LABELS as WEEK3_LABELS
 from drift_with_me.week3 import TASK_CASE as WEEK3_TASK_CASE
 from drift_with_me.week4 import (
@@ -673,6 +674,7 @@ class DriftWithMeApp(WeekDebugMixin):
             self.east_site_progress = sites
             self.first_sight_seen = seen
             self.field_transition = self.week_transition = self.field_conversation = None
+            install_week3_world(self, enabled=self.work_week == WorkWeek(6, 3))
             install_week4_world(self, enabled=self.work_week == WorkWeek(6, 4))
             self.model.reset_scene()
             self.model.water = resources["water"]
@@ -689,6 +691,7 @@ class DriftWithMeApp(WeekDebugMixin):
             self.east_site_progress = EastSiteProgress()
             self.first_sight_seen = set()
             self.saved_progress = None
+            install_week3_world(self, enabled=False)
             install_week4_world(self, enabled=False)
             self.model.reset_scene()
             self.field_transition = self.week_transition = self.field_conversation = None
@@ -1211,6 +1214,8 @@ class DriftWithMeApp(WeekDebugMixin):
         )
 
     def enter_exploration_from_office(self) -> None:
+        if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3):
+            install_week3_world(self)
         if getattr(self, "field_transition", None) is not None:
             return
         self.end_office_consultation()
@@ -2294,7 +2299,9 @@ class DriftWithMeApp(WeekDebugMixin):
                     return
             elif interaction is not None and interaction.kind == "inspect":
                 if getattr(self, "field_conversation", None) is not None:
-                    if self.field_conversation.target_id in (set(SITE_FACTS) | W4_TARGETS) and (
+                    if self.field_conversation.target_id in (
+                        set(SITE_FACTS) | W4_TARGETS | {KEY_ID}
+                    ) and (
                         self.key_pressed("KEY_X") or self.mouse_pressed_in(self.site_cancel_rect())
                     ):
                         self.process_events(self.model.cancel_interaction())
@@ -2440,7 +2447,7 @@ class DriftWithMeApp(WeekDebugMixin):
                     self, "work_week", WorkWeek()
                 ) == WorkWeek(6, 4):
                     self.office.plant_progress.complete_target(event.target_id)
-                elif event.target_id in SITE_FACTS:
+                elif self.is_site_target(event.target_id):
                     self.current_east_site_progress().complete(event.target_id)
                 else:
                     self.record_office_field_event(event)
@@ -2451,7 +2458,7 @@ class DriftWithMeApp(WeekDebugMixin):
                 ) == WorkWeek(6, 4):
                     self.office.plant_progress.pending_completion = None
                     self.office.plant_progress.pending_delivery = None
-                if event.target_id in SITE_FACTS:
+                if self.is_site_target(event.target_id):
                     self.current_east_site_progress().pending_completion = None
                 self.field_conversation = None
             elif event.kind == "interaction_started" and event.target_id is not None:
@@ -2490,6 +2497,11 @@ class DriftWithMeApp(WeekDebugMixin):
         )
         self.audio.play_events(events)
 
+    def is_site_target(self, target):
+        return target in SITE_FACTS or (
+            target == KEY_ID and getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3)
+        )
+
     def current_east_site_progress(self):
         if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3):
             return self.office.site_progress
@@ -2509,7 +2521,7 @@ class DriftWithMeApp(WeekDebugMixin):
             self.field_conversation = FieldConversation(target_id, lines, index)
             return
         if (
-            target_id in SITE_FACTS
+            self.is_site_target(target_id)
             and interaction is not None
             and interaction.kind == "inspect"
             and interaction.object_id == target_id
@@ -2569,7 +2581,7 @@ class DriftWithMeApp(WeekDebugMixin):
                 self.camera_controller.cancel_focus()
                 self.field_conversation = None
             return True
-        if conversation.target_id in SITE_FACTS:
+        if self.is_site_target(conversation.target_id):
             if self.model.interaction.object_id != conversation.target_id:
                 return False
             progress = self.current_east_site_progress()
@@ -2601,7 +2613,7 @@ class DriftWithMeApp(WeekDebugMixin):
         office = getattr(self, "office", None)
         if office is None:
             return
-        if event.target_id in SITE_FACTS:
+        if self.is_site_target(event.target_id):
             return
         session = office.current_session
         if (
@@ -3790,6 +3802,7 @@ class DriftWithMeApp(WeekDebugMixin):
             self.pending_week_office,
             transition.target,
         )
+        install_week3_world(self, enabled=self.work_week == WorkWeek(6, 3))
         if self.work_week == WorkWeek(6, 4):
             install_week4_world(self)
         self.week_office_history[self.work_week] = self.office
@@ -4630,6 +4643,7 @@ class DriftWithMeApp(WeekDebugMixin):
         self.renderer.draw_scene(
             self.model, scene_camera, self.presentation_time, self.debug_enabled, self.effects
         )
+        draw_week3_key(self, scene_camera)
         self.draw_hud()
         self.draw_east_site_hint()
         if self.model.interaction is not None:
@@ -5429,6 +5443,7 @@ class DriftWithMeApp(WeekDebugMixin):
         self.draw_office_text_in_rect(
             self.office_rect(154, 74, 150, 14),
             f"確認 {len(self.current_east_site_progress().facts)}/3"
+            + (" 鍵あり" if self.office.site_progress.key_collected else "")
             if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3)
             else f"見た場所 {len(self.east_site_progress.facts)}/3",
             12,
@@ -5448,7 +5463,7 @@ class DriftWithMeApp(WeekDebugMixin):
             f"{conversation.index + 1}/{len(conversation.lines)}",
             13,
         )
-        if conversation.target_id in (set(SITE_FACTS) | W4_TARGETS) or hasattr(
+        if conversation.target_id in (set(SITE_FACTS) | W4_TARGETS | {KEY_ID}) or hasattr(
             conversation, "kind"
         ):
             self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
@@ -5469,6 +5484,8 @@ class DriftWithMeApp(WeekDebugMixin):
                     if progress.instructed and conversation.target_id not in progress.collected
                     else "閉じる"
                 )
+        if conversation.target_id == KEY_ID and conversation.index + 1 == len(conversation.lines):
+            label = "閉じる" if self.office.site_progress.key_collected else "拾う"
         self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
 
     def draw_inspect_panel(self, interaction) -> None:

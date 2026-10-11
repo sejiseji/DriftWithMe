@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field, replace
 
 from drift_with_me import config
@@ -13,6 +14,17 @@ from drift_with_me.office import (
     parse_counter_script_definitions,
 )
 
+KEY_ID = "jun_w3_old_key"
+KEY_POSITION = (954, 170)
+KEY_LINES = (
+    ("ジャック", "これ、鍵じゃない？ さっきのふたのかな"),
+    ("ヒューズ", "番号が同じね。ウラさんに見せてみましょうか"),
+)
+KEY_FIRST_LINES = (
+    ("ジャック", "これ、鍵じゃない？ 札に番号がついてる"),
+    ("ヒューズ", "古そうね。ウラさんに見せてみましょうか"),
+)
+
 TASK_CASE = "OFF-JUN-W3-SAGAN"
 SITE_FACTS = {
     "jun_w2_canal_bank": "route_bank",
@@ -21,6 +33,7 @@ SITE_FACTS = {
 }
 FACTS = frozenset(SITE_FACTS.values())
 LABELS = {
+    KEY_ID: "点検口そばの草むら",
     "jun_w2_canal_bank": "水源近くの陥没面",
     "jun_w2_shade": "木陰の通路",
     "jun_w2_old_hatch": "点検口",
@@ -33,7 +46,8 @@ LINES = {
     "jun_w2_old_hatch": (
         ("ジャック", "水源から見て、この位置……うん、記録と合ってる"),
         ("ヒューズ", "ふたの縁に草がかかってるわね。開けるなら、先に周りを片づけることになりそう"),
-        ("ジャック", "そこもウラさんに伝えよう。今日は開けない約束だしね"),
+        ("ジャック", "鍵穴がある。横には管理番号……記録しておこう"),
+        ("ヒューズ", "ええ。今日は開けずに、ウラさんに伝えましょう"),
     ),
     "jun_w2_shade": (
         ("ジャック", "この石、荷車だと引っかかりそうじゃない？"),
@@ -49,16 +63,46 @@ class Week3Progress:
     reported: set[str] = field(default_factory=set)
     pending_completion: str | None = None
 
+    key_seen: bool = False
+    key_collected: bool = False
+    key_consulted: bool = False
+    legacy_complete: bool = False
+
+    @property
+    def ready(self):
+        return self.facts == FACTS and (self.key_consulted or self.legacy_complete)
+
+    def lines_for(self, target):
+        if target == KEY_ID:
+            if self.key_collected:
+                return (("ジャック", "ここにあった鍵は、もう持ってるね"),)
+            return KEY_LINES if "hatch_matched" in self.facts else KEY_FIRST_LINES
+        if SITE_FACTS[target] in self.facts:
+            return (("ジャック", "ここは、さっき確認したとおりだね。"),)
+        if target == "jun_w2_old_hatch" and self.key_collected:
+            return LINES[target][:2] + (
+                ("ジャック", "鍵穴がある。ここにも、鍵の札と同じ管理番号だ"),
+                ("ヒューズ", "このふたの鍵かもしれないわね。ウラさんに確かめましょう"),
+            )
+        return LINES[target]
+
     def begin(self, target):
         self.pending_completion = None
-        if SITE_FACTS[target] in self.facts:
-            return (("ジャック", "ここは、さっき確認したとおりだね。"),), 0
-        return LINES[target], self.positions.get(target, 0)
+        if target == KEY_ID:
+            self.key_seen = True
+        lines = self.lines_for(target)
+        return lines, min(self.positions.get(target, 0), len(lines) - 1)
 
     def complete(self, target):
-        if target != self.pending_completion or target not in SITE_FACTS:
+        if target != self.pending_completion or target not in (set(SITE_FACTS) | {KEY_ID}):
             return False
-        self.facts.add(SITE_FACTS[target])
+        if target == KEY_ID:
+            if self.key_collected:
+                self.pending_completion = None
+                return False
+            self.key_seen = self.key_collected = True
+        else:
+            self.facts.add(SITE_FACTS[target])
         self.positions.pop(target, None)
         self.pending_completion = None
         return True
@@ -68,6 +112,21 @@ class Week3Progress:
             return (
                 ("ジャック", "点検口と、資材を運ぶ道。今日は二つだね"),
                 ("ヒューズ", "ええ。近い所でよかったわ。順に見ていきましょう"),
+            )
+        if self.key_collected and not self.key_consulted:
+            return (
+                (
+                    "ジャック",
+                    "この鍵、ウラさんに見せよう。道で気になった所も伝えないとね"
+                    if self.facts == FACTS
+                    else "この鍵、ウラさんに見せよう。まだ見てない所は、また来てからだね",
+                ),
+                ("ヒューズ", "ええ。まずは札の番号を確かめてもらいましょう"),
+            )
+        if self.facts == FACTS and not self.key_collected:
+            return (
+                ("ジャック", "点検口と道は見られた。鍵はまだ見つかってないね"),
+                ("ヒューズ", "一度戻りましょう。続きは、また来てからでいいわ"),
             )
         if self.facts == FACTS:
             return (
@@ -105,6 +164,31 @@ class Week3Office(OfficePrototype):
     def refresh_reports(self):
         facts = self.site_progress.facts
         cases = list(self.full_report_cases)
+        progress = self.site_progress
+        if progress.key_collected:
+            text = (
+                "点検口の近くで鍵を拾いました。札には、ふたと同じ管理番号がついています"
+                if "hatch_matched" in facts
+                else "古い鍵を拾いました。札の番号を、記録で見てもらえますか？"
+            )
+            reply = (
+                "ああ、この番号ですね。記録の続きに、点検の控えがあります。そちらも探しておきますね"
+                if "hatch_matched" in facts
+                else "記録では、あの点検口の番号ですね。現地の番号も確かめてもらえますか？"
+            )
+            if progress.key_consulted:
+                reply = "はい。その番号の控えは、こちらでも引き続き探しておきますね"
+            cases[4] = replace(
+                cases[4],
+                questions=(
+                    replace(
+                        cases[4].questions[0],
+                        jack_text=text,
+                        visitor_reply=reply,
+                        answer_summary="鍵の札の番号を照会",
+                    ),
+                ),
+            )
         if not {"route_bank", "route_stone"} <= facts:
             parts = []
             if "route_bank" in facts:
@@ -127,7 +211,7 @@ class Week3Office(OfficePrototype):
             q = replace(cases[5].questions[0], visitor_reply="了解。残りも、見られたら教えてくれ")
             cases[5] = replace(cases[5], questions=(q,))
         script = self.full_report_scripts[cases[5].case_id]
-        if facts != FACTS:
+        if not progress.ready:
             script = replace(script, resolution=replace(script.resolution, turns=()))
         self.counter_scripts[cases[5].case_id] = script
         self.cases = tuple(cases)
@@ -151,7 +235,11 @@ class Week3Office(OfficePrototype):
         for case in self.cases[4:]:
             self.sessions[case.case_id] = CaseSession(case.case_id)
         self.refresh_reports()
-        self.current_index = 4 if "hatch_matched" in self.site_progress.facts else 5
+        self.current_index = (
+            4
+            if ("hatch_matched" in self.site_progress.facts or self.site_progress.key_collected)
+            else 5
+        )
         if self.current_index == 5:
             self.sessions[self.cases[4].case_id].state = CaseState.RESOLVED
         self.begin_current_case()
@@ -161,7 +249,9 @@ class Week3Office(OfficePrototype):
         if self.current_index in (4, 5):
             if self.sessions[TASK_CASE].field_result is None:
                 return False
-            if self.current_index == 4 and "hatch_matched" not in self.site_progress.facts:
+            if self.current_index == 4 and not (
+                "hatch_matched" in self.site_progress.facts or self.site_progress.key_collected
+            ):
                 return False
         return super().classify(classification)
 
@@ -170,12 +260,16 @@ class Week3Office(OfficePrototype):
         if not super().advance_case():
             return False
         if index == 4:
-            self.site_progress.reported.add("hatch_matched")
+            if "hatch_matched" in self.site_progress.facts:
+                self.site_progress.reported.add("hatch_matched")
+            if self.site_progress.key_collected:
+                self.site_progress.key_consulted = True
+            self.refresh_reports()
         elif index == 5:
             self.site_progress.reported.update(
                 self.site_progress.facts & {"route_bank", "route_stone"}
             )
-            if self.site_progress.facts != FACTS or self.site_progress.reported != FACTS:
+            if not self.site_progress.ready or self.site_progress.reported != FACTS:
                 self.current_index = 3
                 session = self.current_session
                 session.state = CaseState.FIELD_CHECK_REQUIRED
@@ -185,3 +279,66 @@ class Week3Office(OfficePrototype):
                 session.pending_dialogue_steps.clear()
                 self.prepare_field_task()
         return True
+
+
+def install_week3_world(app, *, enabled=True):
+    """A non-solid inspection target; authored terrain and enemies stay intact."""
+    from drift_with_me.world import WorldData
+
+    if not hasattr(app, "world"):
+        return
+    if not enabled and app.world.object_by_id(KEY_ID) is None:
+        return
+    access_ready = app.world.east_site_access_ready
+    raw = deepcopy(app.world.raw)
+    raw["objects"] = [o for o in raw["objects"] if o["id"] != KEY_ID]
+    if enabled:
+        x, z = KEY_POSITION
+        raw["objects"].append(
+            {
+                "id": KEY_ID,
+                "kind": "sprite_prop",
+                "position": [x, 0, z],
+                "visual": KEY_ID,
+                "solid": False,
+                "inspectable": True,
+                "height": 4,
+                "sprite_world_size": [8, 8],
+                "text_key": KEY_ID,
+            }
+        )
+        raw["texts"][KEY_ID] = {"title": "点検口そばの草むら", "lines": ["草むらを調べる"]}
+    else:
+        raw["texts"].pop(KEY_ID, None)
+    app.world = WorldData(
+        raw,
+        app.world.chunk_size,
+        app.world.static_visual_max_height,
+        app.world.visual_detail_per_chunk,
+    )
+    app.world.east_site_access_ready = access_ready
+    app.model.world = app.world
+
+
+def draw_week3_key(app, camera):
+    """Reuse palette primitives, with a quiet cue only while approaching."""
+    from drift_with_me.math3d import Vec3
+
+    if app.work_week != app.map_work_week or app.work_week.month != 6 or app.work_week.number != 3:
+        return
+    if app.office.site_progress.key_collected:
+        return
+    x, z = KEY_POSITION
+    point = camera.project(Vec3(x, 1, z))
+    if point is None:
+        return
+    pyxel = app.pyxel
+    px, py = round(point.x), round(point.y)
+    player = app.model.player
+    if (player.x - x) ** 2 + (player.z - z) ** 2 <= 72**2:
+        pyxel.circb(px, py, 6, 6)
+        pyxel.pset(px - 8, py - 2, 7)
+    pyxel.circb(px - 2, py, 2, 9)
+    pyxel.line(px, py, px + 4, py, 9)
+    pyxel.line(px + 3, py, px + 3, py + 2, 9)
+    pyxel.rect(px + 4, py - 3, 3, 2, 6)

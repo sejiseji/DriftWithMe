@@ -90,6 +90,12 @@ def office_snapshot(office):
             "facts": sorted(sites.facts),
             "positions": dict(sites.positions),
             "reported": sorted(sites.reported),
+            "key": {
+                "seen": sites.key_seen,
+                "collected": sites.key_collected,
+                "consulted": sites.key_consulted,
+                "legacy_complete": sites.legacy_complete,
+            },
         }
     if hasattr(office, "plant_progress"):
         plants = office.plant_progress
@@ -228,24 +234,55 @@ def restore_office(raw, week):
         raise ValueError("unsupported office")
     if week3:
         from drift_with_me.week3 import FACTS as W3_FACTS
-        from drift_with_me.week3 import LINES, Week3Progress
+        from drift_with_me.week3 import KEY_ID, Week3Progress
         from drift_with_me.week3 import SITE_FACTS as W3_SITES
 
         site = raw["site"]
-        if not isinstance(site, dict) or set(site) != {"facts", "positions", "reported"}:
+        if not isinstance(site, dict) or set(site) not in (
+            {"facts", "positions", "reported"},
+            {"facts", "positions", "reported", "key"},
+        ):
             raise ValueError("invalid week3 record")
         facts = string_set(site["facts"], W3_FACTS)
         reported = string_set(site["reported"], facts)
+        key = site.get(
+            "key",
+            {
+                "seen": False,
+                "collected": False,
+                "consulted": False,
+                "legacy_complete": raw["index"] == 6,
+            },
+        )
+        if (
+            not isinstance(key, dict)
+            or set(key) != {"seen", "collected", "consulted", "legacy_complete"}
+            or any(type(v) is not bool for v in key.values())
+            or (key["collected"] and not key["seen"])
+            or (key["consulted"] and not key["collected"])
+            or (key["legacy_complete"] and raw["index"] != 6)
+        ):
+            raise ValueError("invalid week3 key")
+        progress = Week3Progress(
+            facts,
+            reported=reported,
+            key_seen=key["seen"],
+            key_collected=key["collected"],
+            key_consulted=key["consulted"],
+            legacy_complete=key["legacy_complete"],
+        )
         positions = site["positions"]
         if not isinstance(positions, dict) or any(
-            k not in W3_SITES
+            k not in (set(W3_SITES) | {KEY_ID})
             or type(v) is not int
-            or not 0 <= v < len(LINES[k])
-            or W3_SITES[k] in facts
+            or not 0 <= v < len(progress.lines_for(k))
+            or (k == KEY_ID and (progress.key_collected or not progress.key_seen))
+            or (k in W3_SITES and W3_SITES[k] in facts)
             for k, v in positions.items()
         ):
             raise ValueError("invalid week3 conversation")
-        office.site_progress = Week3Progress(facts, dict(positions), reported)
+        progress.positions = dict(positions)
+        office.site_progress = progress
         office.refresh_reports()
     if week4:
         from drift_with_me.week4 import FLOWER_IDS, TARGET_IDS, Week4Progress
@@ -431,9 +468,9 @@ def restore_office(raw, week):
             raise ValueError("week3 order mismatch")
         if index >= 4 and office.sessions["OFF-JUN-W3-SAGAN"].field_result is None:
             raise ValueError("unconfirmed week3 return")
-        if index == 4 and "hatch_matched" not in sites.facts:
+        if index == 4 and not ("hatch_matched" in sites.facts or sites.key_collected):
             raise ValueError("unconfirmed hatch report")
-        if index == 6 and (sites.facts != W3_FACTS or sites.reported != W3_FACTS):
+        if index == 6 and (not sites.ready or sites.reported != W3_FACTS):
             raise ValueError("unfinished week3 reports")
     if week4:
         if any(

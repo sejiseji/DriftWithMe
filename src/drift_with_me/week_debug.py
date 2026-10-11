@@ -97,6 +97,9 @@ class WeekDebugMixin:
         if week.number >= 3:
             self.east_site_progress.facts = set(SITE_FACTS.values())
             self.world.east_site_access_ready = True
+        from drift_with_me.week3 import install_week3_world
+
+        install_week3_world(self, enabled=week.number == 3)
         install_week4_world(self, enabled=week.number == 4)
         self.pending_week_office = None
         self.week_input_wait_for_release = self.field_input_wait_for_release = False
