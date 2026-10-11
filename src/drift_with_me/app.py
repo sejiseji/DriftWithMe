@@ -348,7 +348,21 @@ OFFICE_STATIC_PORTRAIT_IDS = frozenset(
         "merrill_matte",
     }
 )
-OFFICE_VISITOR_PORTRAIT_IDS = frozenset(OFFICE_PORTRAIT_SMILE_IDS) | OFFICE_STATIC_PORTRAIT_IDS
+FUSE_OFFICE_PORTRAIT_IDS = {
+    "normal": "fuse_matte",
+    "smile": "fuse_matte_smile",
+    "care": "fuse_matte_care",
+    "surprise": "fuse_matte_surprise",
+    "thinking": "fuse_matte_thinking",
+}
+# Presentation metadata stays separate from dialogue/save data.
+FUSE_OFFICE_EXPRESSIONS = {
+    "すっかり傘探し係だったわね": "thinking",
+    "ふふ。タコのお仕事、好評で何より": "smile",
+}
+OFFICE_VISITOR_PORTRAIT_IDS = (
+    frozenset(OFFICE_PORTRAIT_SMILE_IDS) | OFFICE_STATIC_PORTRAIT_IDS | {"fuse_matte"}
+)
 OFFICE_PORTRAIT_SMILE_STATES = frozenset(
     {
         CaseState.CLOSED_COUNTER,
@@ -4176,7 +4190,7 @@ class DriftWithMeApp(WeekDebugMixin):
             "フジ": "fuji_matte",
             "ウラ": "ura_matte",
             "サガン": "sagan_matte",
-            "ヒューズ": "",
+            "ヒューズ": "fuse_matte",
         }
         session = self.office.current_session
         for line in reversed(session.dialogue if session else ()):
@@ -4185,6 +4199,20 @@ class DriftWithMeApp(WeekDebugMixin):
             if line.speaker == "清掃業者":
                 return "mizuno_matte", "ミズノ"
         return case.visitor.portrait_id, case.visitor.name
+
+    def office_fuse_portrait_expression(self) -> str:
+        office = getattr(self, "office", None)
+        session = None if office is None else office.current_session
+        for line in reversed(session.dialogue if session else ()):
+            if line.speaker == "ヒューズ":
+                return FUSE_OFFICE_EXPRESSIONS.get(line.text, "normal")
+            if line.speaker not in {"ジャック", "Jack"}:
+                break
+        return "normal"
+
+    def office_fuse_portrait_hover(self) -> int:
+        seconds = float(getattr(self, "presentation_time", 0.0))
+        return round(2 * math.sin(math.tau * seconds / 4.8))
 
     def draw_office_portrait(self, rect: Rect, portrait_id: str, *, smile: bool = False) -> None:
         if not portrait_id:
@@ -4200,8 +4228,14 @@ class DriftWithMeApp(WeekDebugMixin):
         smile_asset_id = OFFICE_PORTRAIT_SMILE_IDS.get(portrait_id)
         using_smile = smile and smile_asset_id is not None
         asset_id = smile_asset_id if using_smile else portrait_id
+        if portrait_id == "fuse_matte":
+            asset_id = FUSE_OFFICE_PORTRAIT_IDS[self.office_fuse_portrait_expression()]
         asset = sprite_assets.get(asset_id) if sprite_assets is not None else None
-        if asset is None and using_smile and sprite_assets is not None:
+        if (
+            asset is None
+            and (using_smile or portrait_id == "fuse_matte")
+            and sprite_assets is not None
+        ):
             asset = sprite_assets.get(portrait_id)
             using_smile = False
         if asset is not None:
@@ -4226,6 +4260,8 @@ class DriftWithMeApp(WeekDebugMixin):
                 if portrait_id in OFFICE_VISITOR_PORTRAIT_IDS:
                     draw_x = math.floor(x + (width - frame.width) / 2)
                     draw_y = math.floor(y + (height - frame.height) / 2)
+            if portrait_id == "fuse_matte":
+                draw_y += self.office_fuse_portrait_hover()
             pyxel.blt(
                 draw_x,
                 draw_y,

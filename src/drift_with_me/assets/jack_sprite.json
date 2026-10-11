@@ -5139,6 +5139,181 @@
         "source_library_version": 0,
         "png_sha256": "57bd9df54c5bc85dc1575f8ca5329bce2b30e5ed2c9ca6f2dc01df9445209b25"
       }
+    },
+    {
+      "schema_version": 1,
+      "id": "fuse_matte",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 2,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "d3556faf19df606b8bc9804625308c4b4900d22b19bef153d1de49f7a59d5b2a",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Fuse_116_normal.hex",
+          "source_hash": "d3556faf19df606b8bc9804625308c4b4900d22b19bef153d1de49f7a59d5b2a"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "approved_fuse_office_clean_contour_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_6326f9533ba48191b1a262d4ea0b772b",
+        "source_library_version": 1,
+        "png_sha256": "0ac11943ceea50afe42b4ccea974319b32233cb03970249015be5ef4144a3029"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "fuse_matte_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 2,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "675f0f5a9442eb49e36af593753fe60278d8a082633ab0b0c275f26668563b1a",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Fuse_116_smile.hex",
+          "source_hash": "675f0f5a9442eb49e36af593753fe60278d8a082633ab0b0c275f26668563b1a"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "approved_fuse_office_clean_contour_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_6326f9533ba48191b1a262d4ea0b772b",
+        "source_library_version": 1,
+        "png_sha256": "90f24e600f116ce64e21fcc2ea89881ec411a8216034b983214affc665393280"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "fuse_matte_care",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 2,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "f12e7df9655ba5bf17f4d6338c3ba5e1a56970a1e9874c5e181f4b725979824f",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Fuse_116_care.hex",
+          "source_hash": "f12e7df9655ba5bf17f4d6338c3ba5e1a56970a1e9874c5e181f4b725979824f"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "approved_fuse_office_clean_contour_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_6326f9533ba48191b1a262d4ea0b772b",
+        "source_library_version": 1,
+        "png_sha256": "6e03df71866df9c83a291d3cedf4becf9bb7572a0483086cb1c81fd83bfaa5d3"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "fuse_matte_surprise",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 2,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "15b320847e378f0bcc6cb30892db6019bf0b798b366260be67eea7f1fc5ae966",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Fuse_116_surprise.hex",
+          "source_hash": "15b320847e378f0bcc6cb30892db6019bf0b798b366260be67eea7f1fc5ae966"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "approved_fuse_office_clean_contour_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_6326f9533ba48191b1a262d4ea0b772b",
+        "source_library_version": 1,
+        "png_sha256": "5a6430e04e1e3a10b820a33394478351803b9183c3f294fe820cceb6e5846f17"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "fuse_matte_thinking",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 2,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "4271902993ed0d4296da86eda490c2646885254504785b6441b6e6927a9729e3",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Fuse_116_thinking.hex",
+          "source_hash": "4271902993ed0d4296da86eda490c2646885254504785b6441b6e6927a9729e3"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "approved_fuse_office_clean_contour_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_library_id": "libfile_6326f9533ba48191b1a262d4ea0b772b",
+        "source_library_version": 1,
+        "png_sha256": "47427dc54ed51c908e20b54fe8480a04c143b32baf1db0d89e70bb0ae9d66699"
+      }
     }
   ],
   "notes": [
