@@ -2663,6 +2663,12 @@ class GameModel:
             return False
         return self.water + 1e-9 >= self.combat_bubble_water_cost()
 
+    def combat_counter_finisher(self, enemy: EnemyState) -> tuple[str, float]:
+        """Select without spending: July focus is free; discharge uses the counter cost."""
+        if is_nudibranch(enemy):
+            return "focus", 0.0
+        return "discharge", self.combat_zap_energy_cost()
+
     def combat_zap_counter_available(self, session: CombatSession | None = None) -> bool:
         session = self.combat_session if session is None else session
         if session is None or session.zap_used:
@@ -2670,7 +2676,8 @@ class GameModel:
         enemy = self.combat_counter_enemy(session)
         if enemy is None or enemy.state == "DEFEATED":
             return False
-        return is_nudibranch(enemy) or self.energy + 1e-9 >= self.combat_zap_energy_cost()
+        route, cost = self.combat_counter_finisher(enemy)
+        return route == "focus" or self.energy + 1e-9 >= cost
 
     def combat_counter_action_mode(self) -> str:
         session = self.combat_session
@@ -2723,15 +2730,15 @@ class GameModel:
             session.outcome = "capture"
             self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
             return
-        if not is_nudibranch(enemy) and self.energy + 1e-9 < self.combat_zap_energy_cost():
+        route, cost = self.combat_counter_finisher(enemy)
+        if route != "focus" and self.energy + 1e-9 < cost:
             session.outcome = "capture"
             self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
             return
 
-        if is_nudibranch(enemy):
+        if route == "focus":
             start_focus(self, enemy, self._july_combat_camera, events, session)
             return
-        cost = self.combat_zap_energy_cost()
         self.energy = clamp_resource(self.energy - cost, self.energy_max)
         session.zap_used = True
         session.outcome = "defeat"
@@ -2946,6 +2953,20 @@ class GameModel:
             )
         )
 
+    def apply_combat_enemy_outcome(self, enemy: EnemyState, outcome: str, stun_sec: float) -> None:
+        """Apply the resolved state only; resource charges and presentation stay outside."""
+        if outcome == "defeat":
+            enemy.state = "DEFEATED"
+            enemy.state_timer = 0.0
+        elif outcome == "capture":
+            enemy.state = "CAPTURED"
+            enemy.state_timer = max(
+                enemy.state_timer, float(self.config["bubble"]["capture_duration_sec"])
+            )
+        else:
+            enemy.state = "REST"
+            enemy.state_timer = stun_sec
+
     def restore_combat_session(self, events: list[GameEvent]) -> None:
         session = self.combat_session
         if session is None:
@@ -2978,18 +2999,7 @@ class GameModel:
                 )
             enemy.x = enemy_x
             enemy.z = enemy_z
-            if session.outcome == "defeat":
-                enemy.state = "DEFEATED"
-                enemy.state_timer = 0.0
-            elif session.outcome == "capture":
-                enemy.state = "CAPTURED"
-                enemy.state_timer = max(
-                    enemy.state_timer,
-                    float(self.config["bubble"]["capture_duration_sec"]),
-                )
-            else:
-                enemy.state = "REST"
-                enemy.state_timer = enemy_stun_sec
+            self.apply_combat_enemy_outcome(enemy, session.outcome, enemy_stun_sec)
             enemy.push_x_per_sec = 0.0
             enemy.push_z_per_sec = 0.0
             enemy.dash_x = 0.0
