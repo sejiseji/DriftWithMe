@@ -40,6 +40,7 @@ class WeekDebugMixin:
         self.week_debug_wait_release = False
         self.week_debug_month = 6
         self.week_debug_selection = 1
+        self.portrait_preview = None
         self.nudibranch_preview = None
         self.garden_props_preview = None
         self.garden_props_previous_projection = None
@@ -61,14 +62,17 @@ class WeekDebugMixin:
                 for n in range(1, 5)
             },
             "start": self.office_rect(32, 158, 220, 30),
-            "sprites": self.office_rect(260, 158, 106, 30),
-            "garden": self.office_rect(374, 158, 106, 30),
+            "sprites": self.office_rect(260, 158, 70, 30),
+            "garden": self.office_rect(334, 158, 70, 30),
+            "portraits": self.office_rect(408, 158, 72, 30),
             "cancel": self.office_rect(32, 196, 220, 30),
             "normal": self.office_rect(260, 196, 220, 30),
         }
 
     def jump_to_debug_week(self, week: WorkWeek) -> bool:
-        if not getattr(self, "week_debug_active", False) or week.month != 6:
+        if not getattr(self, "week_debug_active", False) or week not in {
+            WorkWeek(6, n) for n in range(1, 5)
+        } | {WorkWeek(7, 1)}:
             return False
         from drift_with_me.app import (
             CameraController,
@@ -82,6 +86,7 @@ class WeekDebugMixin:
 
         # A fresh world/model removes map flags, combat, interactions and enemy state.
         self.world = load_world_data()
+        self.portrait_preview = None
         self.nudibranch_preview = None
         self.garden_props_preview = None
         previous_projection = getattr(self, "garden_props_previous_projection", None)
@@ -99,7 +104,7 @@ class WeekDebugMixin:
         self.effects = EffectSystem(self.runtime.raw)
         self.start_game(new_game=True)
         self.work_week = self.map_work_week = week
-        if week.number > 1:
+        if week != WorkWeek():
             self.office = load_week_office(week)
         self.week_office_history = {week: self.office}
         if week.number >= 3:
@@ -115,6 +120,11 @@ class WeekDebugMixin:
         self.office_question_index = self.office_classification_index = 0
         self._processed_hitstop_event_ids.clear()
         self.clear_world_input_latches()
+        from drift_with_me.july_week1 import install_july_world
+
+        install_july_world(self, enabled=week == WorkWeek(7, 1))
+        self.july_wait_release = True
+        self.july_fade_elapsed = 0.0
         self.week_debug_menu_open = False
         self.week_debug_wait_release = True
         return True
@@ -153,6 +163,9 @@ class WeekDebugMixin:
             return True
         if not getattr(self, "week_debug_active", False):
             return False
+        if getattr(self, "portrait_preview", None) is not None:
+            self.update_portrait_preview()
+            return True
         if getattr(self, "garden_props_preview", None) is not None:
             self.update_garden_props_preview()
             return True
@@ -170,10 +183,20 @@ class WeekDebugMixin:
                 continue
             if action.startswith("month"):
                 self.week_debug_month = int(action[-1])
-            elif action.startswith("week") and self.week_debug_month == 6:
+                if self.week_debug_month == 7:
+                    self.week_debug_selection = 1
+            elif action.startswith("week") and (
+                self.week_debug_month == 6 or self.week_debug_month == 7 and action == "week1"
+            ):
                 self.week_debug_selection = int(action[-1])
-            elif action == "start" and self.week_debug_month == 6:
-                self.jump_to_debug_week(WorkWeek(6, self.week_debug_selection))
+            elif action == "start" and (
+                self.week_debug_month == 6
+                or self.week_debug_month == 7
+                and self.week_debug_selection == 1
+            ):
+                self.jump_to_debug_week(WorkWeek(self.week_debug_month, self.week_debug_selection))
+            elif action == "portraits":
+                self.start_portrait_preview("ユメサキ")
             elif action == "sprites":
                 self.start_nudibranch_preview()
             elif action == "garden":
@@ -215,15 +238,22 @@ class WeekDebugMixin:
         for week in range(1, 5):
             self.draw_week_debug_button(
                 rects[f"week{week}"],
-                f"第{week}週" if self.week_debug_month == 6 else "準備中",
+                f"第{week}週"
+                if self.week_debug_month == 6 or (self.week_debug_month == 7 and week == 1)
+                else "準備中",
                 selected=week == self.week_debug_selection,
-                disabled=self.week_debug_month != 6,
+                disabled=self.week_debug_month != 6
+                and not (self.week_debug_month == 7 and week == 1),
             )
         self.draw_week_debug_button(
-            rects["start"], "選んだ週の最初から始める", disabled=self.week_debug_month != 6
+            rects["start"],
+            "選んだ週の最初から始める",
+            disabled=self.week_debug_month != 6
+            and not (self.week_debug_month == 7 and self.week_debug_selection == 1),
         )
         self.draw_week_debug_button(rects["sprites"], "Sprite test")
         self.draw_week_debug_button(rects["garden"], "Garden test")
+        self.draw_week_debug_button(rects["portraits"], "立ち絵")
         self.draw_week_debug_button(
             rects["cancel"], "取消・テストに戻る", disabled=not self.session_started
         )
@@ -549,3 +579,57 @@ class WeekDebugMixin:
         }
         for name, rect in self.nudibranch_preview_rects().items():
             self.draw_week_debug_button(rect, labels[name])
+
+    def start_portrait_preview(self, speaker: str) -> bool:
+        if not getattr(self, "week_debug_active", False) or speaker not in ("ユメサキ", "ミヤノ"):
+            return False
+        from drift_with_me.app import AppScreen, FieldConversation
+
+        self.jump_to_debug_week(WorkWeek())
+        self.screen = AppScreen.PLAY
+        self.portrait_preview = FieldConversation(
+            "portrait_preview",
+            (
+                (speaker, "立ち絵・本文色の表示確認です。"),
+                ("ジャック", "話者切替の表示確認です。"),
+                ("ヒューズ", "話者切替の表示確認です。"),
+                (speaker, "立ち絵の復帰を確認します。"),
+            ),
+            target_speaker=speaker,
+        )
+        return True
+
+    def portrait_preview_rects(self):
+        return {
+            name: self.office_rect(8 + i * 74, 6, 70, 20)
+            for i, name in enumerate(("yumesaki", "miyano", "next", "close", "menu"))
+        }
+
+    def update_portrait_preview(self) -> None:
+        rects = {
+            **self.portrait_preview_rects(),
+            "advance": self.office_rect(356, 204, 96, 16),
+        }
+        for action, rect in rects.items():
+            if not self.mouse_pressed_in(rect):
+                continue
+            if action in ("yumesaki", "miyano"):
+                self.start_portrait_preview("ユメサキ" if action == "yumesaki" else "ミヤノ")
+            elif action in ("next", "advance"):
+                conversation = self.portrait_preview
+                if conversation.index + 1 < len(conversation.lines):
+                    conversation.index += 1
+                else:
+                    self.portrait_preview = None
+            else:
+                self.portrait_preview = None
+                self.week_debug_menu_open = action == "menu"
+            self.week_debug_wait_release = True
+            return
+
+    def draw_portrait_preview(self) -> None:
+        self.draw_play()
+        self.draw_field_conversation(self.portrait_preview)
+        labels = ("ユメサキ", "ミヤノ", "次へ", "閉じる", "週選択")
+        for rect, label in zip(self.portrait_preview_rects().values(), labels, strict=True):
+            self.draw_week_debug_button(rect, label)

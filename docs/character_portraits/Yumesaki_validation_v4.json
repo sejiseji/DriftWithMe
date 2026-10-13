@@ -1,0 +1,45 @@
+{
+  "status": "pass",
+  "asset_id": "yumesaki_map_knees",
+  "build_key": "2a6a81afe7f4832e9a82ae32461c298689caa4794d25701bc8ebfccaad0eff3e",
+  "pixel_hash": "98f55da8581b5b2fc6098eb794634c89ca3e299749c7db476680de8e32f5167c",
+  "checks": {
+    "disk_hex": true,
+    "palette": true,
+    "visibility_mask": true,
+    "metadata": true,
+    "preview_rgba": true,
+    "current_inputs": true,
+    "patch_replay": true,
+    "foreground_replay": false
+  },
+  "statistics": {
+    "visible_pixels": 9526,
+    "transparent_pixels": 12074,
+    "visible_bbox_xyxy": [
+      10,
+      11,
+      90,
+      187
+    ],
+    "connected_components": 3,
+    "component_sizes": [
+      9523,
+      2,
+      1
+    ],
+    "neighbors": 4,
+    "edge_contact": false
+  },
+  "warnings": [
+    "multiple visible components; report only, no automatic repair"
+  ],
+  "approval_status": "candidate",
+  "patch": {
+    "base_pixel_hash": "521cd9e1a0ab884327463f54f16891982655845b66807757d701127e2fcf52c4",
+    "result_pixel_hash": "98f55da8581b5b2fc6098eb794634c89ca3e299749c7db476680de8e32f5167c",
+    "operation_count": 172,
+    "changed_pixel_count": 172,
+    "net_visibility_changes": []
+  }
+}

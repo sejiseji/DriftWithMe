@@ -17,6 +17,16 @@ from drift_with_me.field_visit import ANOMALY_ID, FieldConversation, observation
 from drift_with_me.first_sight import FirstSightQueue
 from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
 from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput, Rect
+from drift_with_me.july_story import JulyStoryMixin
+from drift_with_me.july_week1 import (
+    TARGET_IDS as JULY_TARGETS,
+)
+from drift_with_me.july_week1 import (
+    TASK_CASE as JULY_TASK_CASE,
+)
+from drift_with_me.july_week1 import (
+    install_july_world,
+)
 from drift_with_me.math3d import (
     AffineCameraState,
     AffineProjectionProfile,
@@ -382,7 +392,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 }
 
 
-class DriftWithMeApp(WeekDebugMixin):
+class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin):
     def __init__(
         self,
         profile: str | None = None,
@@ -587,6 +597,8 @@ class DriftWithMeApp(WeekDebugMixin):
         if pyxel.btnp(pyxel.KEY_M):
             self.audio.toggle_mute()
 
+        if self.screen == AppScreen.PLAY and self.update_july_story(elapsed):
+            return
         if self.screen == AppScreen.PLAY and self.update_first_sight(elapsed):
             return
         if self.screen == AppScreen.START:
@@ -617,7 +629,7 @@ class DriftWithMeApp(WeekDebugMixin):
             or (
                 self.model.world_paused
                 and not (
-                    self.work_week in {WorkWeek(6, 3), WorkWeek(6, 4)}
+                    self.work_week in {WorkWeek(6, 3), WorkWeek(6, 4), WorkWeek(7, 1)}
                     and self.model.interaction is not None
                     and self.model.interaction.kind == "inspect"
                 )
@@ -626,6 +638,7 @@ class DriftWithMeApp(WeekDebugMixin):
             or getattr(self, "first_sight_conversation", None) is not None
         ):
             return False
+        self.sync_july_progress()
         data = snapshot(self)
         if data == self.last_checkpoint:
             return False
@@ -699,6 +712,9 @@ class DriftWithMeApp(WeekDebugMixin):
                     enemy.state = "DEFEATED"
             self.camera_controller.reset(Vec3(self.model.player.x, 0.0, self.model.player.z))
         elif new_game:
+            from drift_with_me.july_combat import clear_july_enemies
+
+            clear_july_enemies(self.model)
             self.progress_store.authorize_new_game()
             self.office = OfficePrototype.load()
             self.work_week = self.map_work_week = WorkWeek()
@@ -710,6 +726,9 @@ class DriftWithMeApp(WeekDebugMixin):
             install_week4_world(self, enabled=False)
             self.model.reset_scene()
             self.field_transition = self.week_transition = self.field_conversation = None
+        install_july_world(self, enabled=self.july_active(), combat=self.july_active())
+        self.july_wait_release = True
+        self.july_fade_elapsed = 0.0
         self.first_sight_queue = FirstSightQueue()
         self.first_sight_conversation = None
         self.session_started = True
@@ -1229,6 +1248,8 @@ class DriftWithMeApp(WeekDebugMixin):
         )
 
     def enter_exploration_from_office(self) -> None:
+        if self.july_active():
+            install_july_world(self, combat=True)
         if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3):
             install_week3_world(self)
         if getattr(self, "field_transition", None) is not None:
@@ -1266,6 +1287,8 @@ class DriftWithMeApp(WeekDebugMixin):
 
         if self.office.active_field_task and self.office.active_field_task.case_id == W4_TASK_CASE:
             self.field_transition.lines = self.office.plant_progress.travel_lines("out")
+        if self.july_active() and self.office.active_field_task:
+            self.field_transition.lines = self.office.july_progress.travel_lines("out")
 
     def complete_office_field_task(self) -> bool:
         if getattr(self, "field_transition", None) is not None:
@@ -1338,6 +1361,10 @@ class DriftWithMeApp(WeekDebugMixin):
                 if plants.complete
                 else None
             )
+        if task.case_id == JULY_TASK_CASE:
+            self.sync_july_progress()
+            lines = self.office.july_progress.travel_lines("back")
+            result = self.july_field_result()
         self.field_transition = FieldTransition("back", lines, report=result)
         self.clear_world_input_latches()
         self.model.cancel_auto_move()
@@ -1349,6 +1376,8 @@ class DriftWithMeApp(WeekDebugMixin):
             return
         if transition.direction == "out":
             self.screen = AppScreen.PLAY
+            if self.july_active():
+                self.office.july_progress.departed = True
             if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4):
                 self.office.plant_progress.departed = True
             session = self.office.current_session
@@ -2197,6 +2226,9 @@ class DriftWithMeApp(WeekDebugMixin):
         return y >= self.office_rect(0, 48, 0, 0).y and y + h < panel.y
 
     def update_first_sight(self, elapsed: float) -> bool:
+        if self.july_active():
+            self.first_sight_conversation = None
+            return False
         queue = getattr(self, "first_sight_queue", None)
         if queue is None:
             return False
@@ -2315,7 +2347,7 @@ class DriftWithMeApp(WeekDebugMixin):
             elif interaction is not None and interaction.kind == "inspect":
                 if getattr(self, "field_conversation", None) is not None:
                     if self.field_conversation.target_id in (
-                        set(SITE_FACTS) | W4_TARGETS | {KEY_ID}
+                        set(SITE_FACTS) | W4_TARGETS | JULY_TARGETS | {KEY_ID}
                     ) and (
                         self.key_pressed("KEY_X") or self.mouse_pressed_in(self.site_cancel_rect())
                     ):
@@ -2412,7 +2444,11 @@ class DriftWithMeApp(WeekDebugMixin):
                 if self.model.combat_session is not None
                 else input_camera
             )
-            events = self.model.step(step_intent, model_camera, fixed_dt)
+            events = self.model.step(
+                step_intent,
+                model_camera,
+                fixed_dt,
+            )
             if self.renderer is not None:
                 self.renderer.update_abnormal_urchin_arms(
                     self.model,
@@ -2425,7 +2461,10 @@ class DriftWithMeApp(WeekDebugMixin):
             all_events.extend(events)
             self.accumulator -= fixed_dt
             steps += 1
-            if self.model.world_paused:
+            if (
+                self.model.world_paused
+                or getattr(self, "first_sight_conversation", None) is not None
+            ):
                 self.accumulator = 0.0
                 break
 
@@ -2462,6 +2501,8 @@ class DriftWithMeApp(WeekDebugMixin):
                     self, "work_week", WorkWeek()
                 ) == WorkWeek(6, 4):
                     self.office.plant_progress.complete_target(event.target_id)
+                elif self.july_active() and event.target_id in JULY_TARGETS:
+                    self.office.july_progress.complete_target(event.target_id)
                 elif self.is_site_target(event.target_id):
                     self.current_east_site_progress().complete(event.target_id)
                 else:
@@ -2473,6 +2514,8 @@ class DriftWithMeApp(WeekDebugMixin):
                 ) == WorkWeek(6, 4):
                     self.office.plant_progress.pending_completion = None
                     self.office.plant_progress.pending_delivery = None
+                if self.july_active() and event.target_id in JULY_TARGETS:
+                    self.office.july_progress.pending_completion = None
                 if self.is_site_target(event.target_id):
                     self.current_east_site_progress().pending_completion = None
                 self.field_conversation = None
@@ -2525,6 +2568,12 @@ class DriftWithMeApp(WeekDebugMixin):
     def begin_field_conversation(self, target_id: str) -> None:
         self.field_conversation = None
         interaction = self.model.interaction
+        if self.july_active() and target_id in JULY_TARGETS and interaction is not None:
+            lines, index = self.office.july_progress.begin(target_id)
+            self.field_conversation = FieldConversation(
+                target_id, lines, index, target_speaker=self.july_target_speaker(target_id)
+            )
+            return
         if (
             target_id in W4_TARGETS
             and getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4)
@@ -2583,6 +2632,19 @@ class DriftWithMeApp(WeekDebugMixin):
         session = self.office.current_session
         if conversation is None or self.model.interaction is None:
             return False
+        if self.july_active() and conversation.target_id in JULY_TARGETS:
+            if self.model.interaction.object_id != conversation.target_id:
+                return False
+            progress = self.office.july_progress
+            if conversation.index + 1 < len(conversation.lines):
+                conversation.index += 1
+                progress.positions[conversation.target_id] = conversation.index
+            else:
+                progress.pending_completion = conversation.target_id
+                self.process_events(self.model.complete_interaction())
+                self.camera_controller.cancel_focus()
+                self.field_conversation = None
+            return True
         if conversation.target_id in W4_TARGETS and getattr(
             self, "work_week", WorkWeek()
         ) == WorkWeek(6, 4):
@@ -3391,6 +3453,9 @@ class DriftWithMeApp(WeekDebugMixin):
         )
 
     def draw(self) -> None:
+        if getattr(self, "portrait_preview", None) is not None:
+            self.draw_portrait_preview()
+            return
         if getattr(self, "garden_props_preview", None) is not None:
             self.draw_garden_props_preview()
             return
@@ -3739,7 +3804,7 @@ class DriftWithMeApp(WeekDebugMixin):
     def draw_office_complete(self) -> None:
         panel = self.office_rect(106, 68, 300, 96)
         self.draw_panel_frame(panel, fill=0, inner=11)
-        partial_week = getattr(self, "work_week", WorkWeek()).number > 1
+        partial_week = getattr(self, "work_week", WorkWeek()) != WorkWeek()
         self.draw_office_text_in_rect(
             self.office_rect(116, 78, 280, 34),
             "今週の用件はここまでです" if partial_week else "本日の試行案件は完了しました",
@@ -3749,13 +3814,9 @@ class DriftWithMeApp(WeekDebugMixin):
         )
         self.draw_office_text_in_rect(
             self.office_rect(116, 116, 280, 24),
-            (
-                "7月分は準備中です"
-                if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4)
-                else "今週の確認を終えました"
-            )
+            "今週の確認を終えました"
             if partial_week
-            else "4件の処理結果を記録しました",
+            else f"{len(self.office.cases)}件の処理結果を記録しました",
             13,
             preferred_styles=("office_japanese_button", "office_japanese"),
             align="center",
@@ -3823,8 +3884,9 @@ class DriftWithMeApp(WeekDebugMixin):
             transition.target,
         )
         install_week3_world(self, enabled=self.work_week == WorkWeek(6, 3))
-        if self.work_week == WorkWeek(6, 4):
-            install_week4_world(self)
+        if hasattr(self, "world"):
+            install_week4_world(self, enabled=self.work_week == WorkWeek(6, 4))
+            install_july_world(self, enabled=self.july_active())
         self.week_office_history[self.work_week] = self.office
         self.pending_week_office = None
         self.end_office_consultation()
@@ -4686,6 +4748,7 @@ class DriftWithMeApp(WeekDebugMixin):
             self.model, scene_camera, self.presentation_time, self.debug_enabled, self.effects
         )
         draw_week3_key(self, scene_camera)
+        self.draw_july_markers()
         self.draw_hud()
         self.draw_east_site_hint()
         if self.model.interaction is not None:
@@ -4693,6 +4756,7 @@ class DriftWithMeApp(WeekDebugMixin):
         self.draw_combat_chance_cues()
         if getattr(self, "first_sight_conversation", None) is not None:
             self.draw_field_conversation(self.first_sight_conversation)
+        self.draw_july_story()
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
         camera = self.combat_scene_camera(camera)
@@ -5211,6 +5275,7 @@ class DriftWithMeApp(WeekDebugMixin):
                 "COMBAT_READY",
                 "PARRY_RESOLVE",
                 "PERFECT_FREEZE",
+                "FOCUS_LASER",
                 "COMBAT_EXIT_DEFLECT",
                 "COMBAT_EXIT_PLAYER_KNOCKBACK",
                 "COMBAT_EXIT_COUNTER",
@@ -5499,12 +5564,19 @@ class DriftWithMeApp(WeekDebugMixin):
         fuji_portrait = conversation.target_id == FUJI_ID and getattr(
             self, "work_week", WorkWeek()
         ) == WorkWeek(6, 4)
+        speaker, text = conversation.lines[conversation.index]
+        portrait_id = {
+            "ユメサキ": "yumesaki_map_knees",
+            "ミヤノ": "miyano_map_knees",
+        }.get(speaker) or self.july_portrait_id(conversation)
         if fuji_portrait:
             self.draw_field_fuji_portrait()
+        elif portrait_id is not None:
+            self.draw_field_character_portrait(portrait_id)
         self.draw_panel_frame(panel, fill=0, inner=12)
         speaker, text = conversation.lines[conversation.index]
         self.draw_office_text_in_rect(self.office_rect(50, 133, 400, 18), speaker, 12)
-        text_width = 306 if fuji_portrait else 400
+        text_width = 306 if fuji_portrait or portrait_id is not None else 400
         target_speaker = getattr(conversation, "target_speaker", None)
         color = 10 if target_speaker and speaker == target_speaker else 7
         self.draw_office_wrapped_lines(self.office_rect(50, 154, text_width, 48), (text,), color)
@@ -5513,14 +5585,20 @@ class DriftWithMeApp(WeekDebugMixin):
             f"{conversation.index + 1}/{len(conversation.lines)}",
             13,
         )
-        if conversation.target_id in (set(SITE_FACTS) | W4_TARGETS | {KEY_ID}) or hasattr(
-            conversation, "kind"
-        ):
+        if conversation.target_id in (
+            set(SITE_FACTS) | W4_TARGETS | JULY_TARGETS | {KEY_ID}
+        ) or hasattr(conversation, "kind"):
             self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
         label = (
             "次へ"
             if conversation.index + 1 < len(conversation.lines)
-            else ("閉じる" if hasattr(conversation, "kind") else "記録する")
+            else (
+                "閉じる"
+                if hasattr(conversation, "kind")
+                or conversation.target_id in {"portrait_preview", "july_story"}
+                or conversation.target_id in JULY_TARGETS
+                else "記録する"
+            )
         )
         if (
             conversation.target_id in W4_TARGETS
@@ -5539,8 +5617,11 @@ class DriftWithMeApp(WeekDebugMixin):
         self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
 
     def draw_field_fuji_portrait(self) -> None:
+        self.draw_field_character_portrait("fuji_map_knees")
+
+    def draw_field_character_portrait(self, asset_id: str) -> None:
         assets = getattr(self, "sprite_assets", None)
-        asset = assets.get("fuji_map_knees") if assets is not None else None
+        asset = assets.get(asset_id) if assets is not None else None
         if asset is None:
             return
         frame = asset.frame()
@@ -6105,6 +6186,8 @@ class DriftWithMeApp(WeekDebugMixin):
         return self.ui_renderer.resources.text(key)
 
     def ui_token(self, token: str) -> str:
+        if token == "ZAP" and self.july_active():
+            return "集中"
         return self.ui_renderer.resources.token(token)
 
     def denied_reason_text(self, reason: str) -> str:

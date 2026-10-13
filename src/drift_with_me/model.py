@@ -7,6 +7,14 @@ from typing import Any
 
 from drift_with_me.camera import camera_ground_axes, smoothing_alpha
 from drift_with_me.events import EventQueue, GameEvent
+from drift_with_me.july_combat import (
+    freeze_zigzag,
+    is_nudibranch,
+    prepare_combat_zigzag,
+    start_focus,
+    tick_focus,
+    update_zigzag,
+)
 from drift_with_me.maintenance_robot import MaintenanceRobot
 from drift_with_me.math3d import (
     AffineCameraState,
@@ -939,6 +947,18 @@ class GameModel:
         events: list[GameEvent],
         camera: CameraState,
     ) -> None:
+        if is_nudibranch(enemy):
+            if enemy.state != "CAPTURED":
+                return
+            distance = math.hypot(enemy.x - self.player.x, enemy.z - self.player.z)
+            if distance > float(self.config["discharge"]["range_from_player"]):
+                self.emit_denied(events, "out_of_range", target_id=enemy.id, scope="focus")
+                return
+            if not self.enemy_visible(enemy, camera):
+                self.emit_denied(events, "target_changed", target_id=enemy.id, scope="focus")
+                return
+            start_focus(self, enemy, camera, events)
+            return
         cost = float(self.config["resources"]["discharge_energy_cost"])
         if self.energy < cost:
             self.emit_denied(events, "insufficient_energy", target_id=enemy.id, scope="discharge")
@@ -1042,7 +1062,11 @@ class GameModel:
         select_range = float(self.config["bubble"]["target_select_range"])
         candidates = []
         for enemy in self.enemies:
-            if enemy.kind != "abnormal" or enemy.state in {"CAPTURED", "DEFEATED"}:
+            if (enemy.kind != "abnormal" and not is_nudibranch(enemy)) or enemy.state in {
+                "CAPTURED",
+                "DEFEATED",
+                "FOCUS",
+            }:
                 continue
             distance = math.hypot(enemy.x - self.player.x, enemy.z - self.player.z)
             if distance > select_range:
@@ -1164,7 +1188,11 @@ class GameModel:
     ) -> tuple[float, EnemyState] | None:
         hits = []
         for enemy in self.enemies:
-            if enemy.kind != "abnormal" or enemy.state in {"CAPTURED", "DEFEATED"}:
+            if (enemy.kind != "abnormal" and not is_nudibranch(enemy)) or enemy.state in {
+                "CAPTURED",
+                "DEFEATED",
+                "FOCUS",
+            }:
                 continue
             hit = segment_circle_time(
                 start_x,
@@ -1492,7 +1520,7 @@ class GameModel:
         )
 
     def enemy_can_be_inspected(self, enemy: EnemyState) -> bool:
-        return enemy.state not in {"DEFEATED", "REPELLED", "REST", "CAPTURED"}
+        return enemy.state not in {"DEFEATED", "REPELLED", "REST", "CAPTURED", "FOCUS"}
 
     def enemy_interaction_range(self, enemy: EnemyState) -> float:
         return float(self.config["barrier"]["radius"]) + self.enemy_radius(enemy)
@@ -1526,6 +1554,9 @@ class GameModel:
     def update_enemies(self, dt: float, events: list[GameEvent]) -> None:
         for enemy in self.enemies:
             if enemy.state == "DEFEATED":
+                continue
+            if enemy.state == "FOCUS":
+                tick_focus(self, enemy, dt, events)
                 continue
             if self.culling_enabled and enemy.id not in self.active_enemy_ids:
                 continue
@@ -1591,6 +1622,9 @@ class GameModel:
                 enemy.state_timer = float(self.config["enemy"]["abnormal"]["dash_duration_sec"])
             return
 
+        if enemy.state == "DASH" and is_nudibranch(enemy):
+            update_zigzag(self, enemy, dt)
+            return
         if enemy.state == "DASH":
             dash_speed = float(self.config["enemy"]["abnormal"]["dash_speed"])
             expected = dash_speed * dt
@@ -1644,6 +1678,8 @@ class GameModel:
             dz /= length
         enemy.dash_x = dx
         enemy.dash_z = dz
+        if is_nudibranch(enemy):
+            freeze_zigzag(enemy)
         enemy.state = "WINDUP"
         enemy.state_timer = float(self.config["enemy"]["abnormal"]["windup_sec"])
         events.append(
@@ -1691,14 +1727,17 @@ class GameModel:
             enemy.state = "IDLE"
 
     def should_normal_approach(self, enemy: EnemyState) -> bool:
-        if enemy.kind != "normal":
+        return enemy.kind == "normal" and self.enemy_in_approach_range(enemy)
+
+    def enemy_in_approach_range(self, enemy: EnemyState) -> bool:
+        if enemy.kind not in {"normal", "abnormal"}:
             return False
         if self.world.point_in_safe_zone(self.player.x, self.player.z):
             return False
         if self.enemy_home_distance(enemy) > self.enemy_leash(enemy):
             return False
         return math.hypot(enemy.x - self.player.x, enemy.z - self.player.z) <= float(
-            self.config["enemy"]["normal"]["aggro_radius"]
+            self.config["enemy"][enemy.kind]["aggro_radius"]
         )
 
     def move_enemy_towards(
@@ -1713,6 +1752,8 @@ class GameModel:
         return self.move_enemy(enemy, dx / distance * amount, dz / distance * amount)
 
     def move_enemy(self, enemy: EnemyState, delta_x: float, delta_z: float) -> float:
+        if is_nudibranch(enemy) and math.hypot(delta_x, delta_z) > 1e-6:
+            enemy.sprite_heading = (delta_x, delta_z)
         before_x = enemy.x
         before_z = enemy.z
         enemy.x, enemy.z = self.world.move_enemy_circle_sliding(
@@ -1727,7 +1768,7 @@ class GameModel:
     def resolve_barrier_contacts(self, events: list[GameEvent]) -> None:
         barrier_radius = float(self.config["barrier"]["radius"])
         for enemy in self.enemies:
-            if enemy.state in {"DEFEATED", "REPELLED", "REST", "CAPTURED"}:
+            if enemy.state in {"DEFEATED", "REPELLED", "REST", "CAPTURED", "FOCUS"}:
                 continue
             if math.hypot(enemy.x - self.player.x, enemy.z - self.player.z) <= (
                 barrier_radius + self.enemy_radius(enemy)
@@ -1801,6 +1842,7 @@ class GameModel:
         dt: float,
         events: list[GameEvent],
     ) -> None:
+        self._july_combat_camera = camera
         session = self.combat_session
         if session is None:
             return
@@ -1815,11 +1857,19 @@ class GameModel:
         )
         session.defense_was_down = intent.barrier
 
+        if session.phase == "FOCUS_LASER":
+            enemy = self.enemy_by_id(session.enemy_id)
+            if enemy is not None and tick_focus(self, enemy, elapsed, events):
+                self.start_combat_victory_cue(session, events)
+            return
         if session.phase == "COMBAT_ENTRY":
             if session.phase_elapsed_sec >= self.combat_duration_sec():
                 self.advance_combat_phase(session, "COMBAT_READY", events)
             return
         if session.phase == "COMBAT_READY":
+            enemy = self.enemy_by_id(session.enemy_id)
+            if enemy is not None:
+                prepare_combat_zigzag(self, enemy, session, camera)
             if session.phase_elapsed_sec >= self.combat_ready_total_sec():
                 self.advance_combat_phase(session, "PARRY_TIMING", events)
             return
@@ -2620,7 +2670,7 @@ class GameModel:
         enemy = self.combat_counter_enemy(session)
         if enemy is None or enemy.state == "DEFEATED":
             return False
-        return self.energy + 1e-9 >= self.combat_zap_energy_cost()
+        return is_nudibranch(enemy) or self.energy + 1e-9 >= self.combat_zap_energy_cost()
 
     def combat_counter_action_mode(self) -> str:
         session = self.combat_session
@@ -2673,11 +2723,14 @@ class GameModel:
             session.outcome = "capture"
             self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
             return
-        if self.energy + 1e-9 < self.combat_zap_energy_cost():
+        if not is_nudibranch(enemy) and self.energy + 1e-9 < self.combat_zap_energy_cost():
             session.outcome = "capture"
             self.advance_combat_phase(session, "COMBAT_EXIT_COUNTER", events)
             return
 
+        if is_nudibranch(enemy):
+            start_focus(self, enemy, self._july_combat_camera, events, session)
+            return
         cost = self.combat_zap_energy_cost()
         self.energy = clamp_resource(self.energy - cost, self.energy_max)
         session.zap_used = True
@@ -3184,7 +3237,7 @@ class GameModel:
         if self.world.point_in_safe_zone(self.player.x, self.player.z):
             return
         for enemy in self.enemies:
-            if enemy.state in {"DEFEATED", "REPELLED", "REST", "CAPTURED"}:
+            if enemy.state in {"DEFEATED", "REPELLED", "REST", "CAPTURED", "FOCUS"}:
                 continue
             if self.player_overlaps_enemy(enemy):
                 if self.combat_v1_enabled() and enemy.kind in {"normal", "abnormal"}:

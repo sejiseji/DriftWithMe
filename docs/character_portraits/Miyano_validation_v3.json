@@ -1,0 +1,49 @@
+{
+  "status": "pass",
+  "asset_id": "miyano_map_knees",
+  "build_key": "062f396614883c1b5b83b30248058548f460973263e4068e9b7e1faa83c96ed9",
+  "pixel_hash": "8667493776a37ff1fecc92130608a17425eb06fafdb4f030742fb71a926a9a77",
+  "checks": {
+    "disk_hex": true,
+    "palette": true,
+    "visibility_mask": true,
+    "metadata": true,
+    "preview_rgba": true,
+    "current_inputs": true,
+    "patch_replay": true,
+    "foreground_replay": false
+  },
+  "statistics": {
+    "visible_pixels": 9715,
+    "transparent_pixels": 11885,
+    "visible_bbox_xyxy": [
+      1,
+      1,
+      98,
+      177
+    ],
+    "connected_components": 7,
+    "component_sizes": [
+      9706,
+      3,
+      2,
+      1,
+      1,
+      1,
+      1
+    ],
+    "neighbors": 4,
+    "edge_contact": false
+  },
+  "warnings": [
+    "multiple visible components; report only, no automatic repair"
+  ],
+  "approval_status": "candidate",
+  "patch": {
+    "base_pixel_hash": "5a7326da5876f4f35cddb6c4f8f95912f823a6bcc6b025fdad05aee2eeca8e68",
+    "result_pixel_hash": "8667493776a37ff1fecc92130608a17425eb06fafdb4f030742fb71a926a9a77",
+    "operation_count": 1172,
+    "changed_pixel_count": 1172,
+    "net_visibility_changes": []
+  }
+}

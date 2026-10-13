@@ -5874,6 +5874,80 @@
       },
       "source_library_id": "libfile_55decb3c84148191a42eb0ad1d44e1b4",
       "source_library_version": 0
+    },
+    {
+      "schema_version": 1,
+      "id": "yumesaki_map_knees",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 100,
+      "hex_height": 216,
+      "colkey": 8,
+      "anchor_px": [
+        50,
+        108
+      ],
+      "world_size": [
+        100,
+        216
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "c4dbafefe6c9ca9ddf4d66901deb944f91095fdf25b499123fd03c0099303f98",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Yumesaki_map_knees_normal.hex",
+          "source_hash": "c4dbafefe6c9ca9ddf4d66901deb944f91095fdf25b499123fd03c0099303f98"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "matte_normal_adopted_v1",
+      "ui_role": "field_conversation_portrait",
+      "provenance": {
+        "source_library_id": "libfile_d41a2597f42c81918839e0013d87c829",
+        "source_library_version": 1,
+        "hex_file_sha256": "bf3f702bbae54b4766a16bcd582a0409de99d550c191992c64a932e7e2ca0d71"
+      },
+      "source_library_id": "libfile_d41a2597f42c81918839e0013d87c829",
+      "source_library_version": 1
+    },
+    {
+      "schema_version": 1,
+      "id": "miyano_map_knees",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 100,
+      "hex_height": 216,
+      "colkey": 8,
+      "anchor_px": [
+        50,
+        108
+      ],
+      "world_size": [
+        100,
+        216
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "e122170777ee3bc767ad2dd2203bba75b29eb177a3e0f0d35ea9b6b9c2d23232",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Miyano_map_knees_normal.hex",
+          "source_hash": "e122170777ee3bc767ad2dd2203bba75b29eb177a3e0f0d35ea9b6b9c2d23232"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "matte_normal_adopted_v1",
+      "ui_role": "field_conversation_portrait",
+      "provenance": {
+        "source_library_id": "libfile_53996f844e8c8191b91d029420398969",
+        "source_library_version": 0,
+        "hex_file_sha256": "3268f1f6e30d46febfb255d31396f44a10c89342a2c711638f91b59f84834c62"
+      },
+      "source_library_id": "libfile_53996f844e8c8191b91d029420398969",
+      "source_library_version": 0
     }
   ],
   "notes": [

@@ -120,6 +120,8 @@ def office_snapshot(office):
             if session
             else None
         )
+    if hasattr(office, "july_progress"):
+        data["july"] = office.july_progress.snapshot()
     return data
 
 
@@ -211,7 +213,19 @@ def snapshot(app):
     return {
         "version": SAVE_VERSION,
         "resources": {"water": app.model.water, "energy": app.model.energy},
-        "defeated": sorted(e.id for e in app.model.enemies if e.state == "DEFEATED"),
+        "defeated": sorted(
+            {
+                e.id
+                for e in [*app.model.enemies, *getattr(app.model, "_pre_july_enemies", [])]
+                if e.state == "DEFEATED" and e.id in model_save_limits()[1]
+            }
+            | {
+                target
+                for office in offices.values()
+                for session in office.sessions.values()
+                for target in session.field_progress.dealt_target_ids
+            }
+        ),
         "week": [app.work_week.month, app.work_week.number],
         "offices": {f"{w.month}:{w.number}": office_snapshot(o) for w, o in offices.items()},
         "facts": sorted(app.east_site_progress.facts),
@@ -225,13 +239,22 @@ def restore_office(raw, week):
     office = OfficePrototype.load() if week == WorkWeek() else load_week_office(week)
     week3 = week == WorkWeek(6, 3)
     week4 = week == WorkWeek(6, 4)
+    july = week == WorkWeek(7, 1)
     keys = (
         {"index", "sessions", "flowers", "counter"}
         if week4
-        else ({"index", "sessions", "site"} if week3 else {"index", "sessions"})
+        else (
+            {"index", "sessions", "site"}
+            if week3
+            else ({"index", "sessions", "july"} if july else {"index", "sessions"})
+        )
     )
     if office is None or not isinstance(raw, dict) or set(raw) != keys:
         raise ValueError("unsupported office")
+    if july:
+        from drift_with_me.july_week1 import JulyWeek1Progress
+
+        office.july_progress = JulyWeek1Progress.from_snapshot(raw["july"])
     if week3:
         from drift_with_me.week3 import FACTS as W3_FACTS
         from drift_with_me.week3 import KEY_ID, Week3Progress
@@ -376,7 +399,17 @@ def restore_office(raw, week):
                 or set(result) != {"code", "facts"}
             ):
                 raise ValueError("invalid report")
-            if case.case_id == "OFF-JUN-W4-FUJI":
+            if case.case_id == "OFF-JUL-W1-PEST":
+                from drift_with_me.july_week1 import JULY_FACTS
+
+                if (
+                    result["code"] != "JULY1_COMPLETED"
+                    or string_set(result["facts"], set(JULY_FACTS)) != set(JULY_FACTS)
+                    or not office.july_progress.complete
+                ):
+                    raise ValueError("incomplete July patrol")
+                code, facts, lines = "JULY1_COMPLETED", tuple(sorted(JULY_FACTS)), ()
+            elif case.case_id == "OFF-JUN-W4-FUJI":
                 if (
                     result["code"] != "WEEK4_DELIVERED"
                     or string_set(result["facts"], FLOWER_IDS) != FLOWER_IDS
@@ -486,6 +519,15 @@ def restore_office(raw, week):
         if office.plant_progress.collected and index < 2:
             raise ValueError("premature flower collection")
         restore_counter(office, raw["counter"])
+    if (
+        july
+        and index == len(office.cases)
+        and (
+            not office.july_progress.complete
+            or office.sessions["OFF-JUL-W1-PEST"].field_result is None
+        )
+    ):
+        raise ValueError("unfinished July patrol")
     return office
 
 
@@ -511,17 +553,20 @@ def decode(text):
     if set(payload) != expected_keys:
         raise ValueError("unknown schema")
     w = payload["week"]
-    if not isinstance(w, list) or len(w) != 2 or integer(w[0], 6, 6) != 6:
+    authored_weeks = {WorkWeek(6, n) for n in range(1, 5)} | {WorkWeek(7, 1)}
+    if not isinstance(w, list) or len(w) != 2:
         raise ValueError("unsupported week")
-    week = WorkWeek(6, integer(w[1], 1, 4))
+    week = WorkWeek(integer(w[0], 6, 7), integer(w[1], 1, 4))
+    if week not in authored_weeks:
+        raise ValueError("unsupported week")
     if (
         not isinstance(payload["offices"], dict)
-        or set(payload["offices"]) - {"6:1", "6:2", "6:3", "6:4"}
-        or f"6:{week.number}" not in payload["offices"]
+        or set(payload["offices"]) - {f"{w.month}:{w.number}" for w in authored_weeks}
+        or f"{week.month}:{week.number}" not in payload["offices"]
     ):
         raise ValueError("invalid history")
     offices = {
-        WorkWeek(6, int(k[-1])): restore_office(v, WorkWeek(6, int(k[-1])))
+        WorkWeek(*map(int, k.split(":"))): restore_office(v, WorkWeek(*map(int, k.split(":"))))
         for k, v in payload["offices"].items()
     }
     facts = string_set(payload["facts"], FACTS)

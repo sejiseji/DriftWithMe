@@ -1,0 +1,23 @@
+{
+  "scope": "color only; original transformed alpha and all pixel positions preserved",
+  "Yumesaki": {
+    "y_max_exclusive": 112,
+    "B_minus_R_min": 18,
+    "R_minus_G_min": 12,
+    "B_minus_G_min": 32,
+    "index": 2
+  },
+  "Miyano": {
+    "rect_inclusive": [
+      27,
+      38,
+      74,
+      99
+    ],
+    "B_minus_R_min": 12,
+    "G_minus_R_min": 15,
+    "luma_min": 66,
+    "index": 3
+  },
+  "tool": "existing guarded set_pixel patches with baseline pixel hash"
+}

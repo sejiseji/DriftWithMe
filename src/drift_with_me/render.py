@@ -26,6 +26,13 @@ from drift_with_me.hex_assets import (
     draw_scaled_sprite,
     placement_for_upright_height_billboard,
 )
+from drift_with_me.july_combat import (
+    combat_zigzag_position,
+    focus_attack_direction,
+    focus_draw_commands,
+    is_nudibranch,
+)
+from drift_with_me.july_combat import draw_sprite as draw_nudibranch
 from drift_with_me.math3d import (
     CameraState,
     ProjectedPoint,
@@ -641,6 +648,7 @@ class Renderer:
                     ),
                 )
             )
+        commands.extend(focus_draw_commands(self, model, camera))
         commands.extend(preview_draw_commands(self, model, camera))
         commands.extend(garden_preview_draw_commands(self, model, camera))
         self.last_stats = RenderStats(
@@ -768,6 +776,14 @@ class Renderer:
                     end_z = player_z + dz / distance * closest
                     target_x = _lerp(target_x, end_x, charge_progress)
                     target_z = _lerp(target_z, end_z, charge_progress)
+        if (
+            is_nudibranch(enemy)
+            and enemy.kind == "abnormal"
+            and session.phase in {"PARRY_TIMING", "PARRY_RESOLVE"}
+        ):
+            zigzag = combat_zigzag_position(session, charge_progress)
+            if zigzag is not None:
+                target_x, target_z = zigzag
         offset_x, offset_z = model.combat_enemy_presentation_offset(enemy)
         return ActorPresentation(target_x + offset_x, target_z + offset_z)
 
@@ -3733,11 +3749,25 @@ class Renderer:
                     7,
                 )
         if not show_exploration_state:
+            session = model.combat_session
+            if (
+                is_nudibranch(enemy)
+                and enemy.kind == "abnormal"
+                and session.phase in {"COMBAT_READY", "ENEMY_WINDUP"}
+            ):
+                path = getattr(session, "july_charge_path", ())
+                for a, b in zip(path, path[1:], strict=False):
+                    self.draw_world_line(camera, Vec3(a[0], 0.0, a[1]), Vec3(b[0], 0.0, b[1]), 8)
             return
         if enemy.state == "REST":
             pyxel.line(x - radius, y - radius - 3, x + radius, y - radius - 3, 7)
         elif enemy.state == "APPROACH":
             pyxel.circb(x, y, radius + 4, 8)
+        elif enemy.state == "WINDUP" and is_nudibranch(enemy):
+            path = enemy.zigzag_path
+            for a, b in zip(path, path[1:], strict=False):
+                self.draw_world_line(camera, Vec3(a[0], 0.0, a[1]), Vec3(b[0], 0.0, b[1]), 8)
+            pyxel.circb(x, y, radius + 5, 8)
         elif enemy.state == "WINDUP":
             self.draw_world_line(
                 camera,
@@ -3793,6 +3823,16 @@ class Renderer:
         z: float | None = None,
         y: float = 0.0,
     ):
+        if is_nudibranch(enemy):
+            return draw_nudibranch(
+                self,
+                model,
+                enemy,
+                camera,
+                enemy.x if x is None else x,
+                enemy.z if z is None else z,
+                y,
+            )
         if enemy.kind == "abnormal" and self.abnormal_urchin_ik_enabled(model):
             placement = self.draw_abnormal_urchin_ik_sprite(model, enemy, camera, x, z, y)
             if placement is not None:
@@ -4179,7 +4219,7 @@ class Renderer:
         return asset.frame(frames[frame_index].frame_id)
 
     def player_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
-        preview_view = preview_attack_direction(model)
+        preview_view = focus_attack_direction(model) or preview_attack_direction(model)
         if preview_view is not None:
             return preview_view
         spin_view = self.combat_victory_spin_view_name(model, "player")
@@ -4260,7 +4300,7 @@ class Renderer:
         return asset
 
     def buddy_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
-        preview_view = preview_attack_direction(model)
+        preview_view = focus_attack_direction(model) or preview_attack_direction(model)
         if preview_view is not None:
             return preview_view
         spin_view = self.combat_zap_spin_view_name(model)

@@ -185,10 +185,11 @@ def test_progress_subset_roundtrip(size):
         assert restored.carried == set(group) and not restored.delivered
 
 
-def test_fourth_week_stops_before_unauthored_july():
-    assert load_week_office(WorkWeek(7, 1)) is None
+def test_fourth_week_can_load_authored_july_but_not_second_week():
+    assert load_week_office(WorkWeek(7, 1)) is not None
+    assert load_week_office(WorkWeek(7, 2)) is None
     app = app4()
-    assert not app.begin_next_week()
+    assert not app.begin_next_week()  # unfinished June field work stays guarded
 
 
 @pytest.mark.parametrize(
