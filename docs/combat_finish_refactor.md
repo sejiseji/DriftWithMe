@@ -11,3 +11,7 @@
 新規回帰テスト `tests/test_combat_finish_contract.py` は連打、表示照会、資源不足、通常放電、無料集中、捕縛／離脱を実phase machineで検証します。整理版は作業ツリー1171テストとcheck_all PASSです。
 
 別件として、従来の集中開始がAffineCameraStateをPerspective専用のcamera_ground_axesへ渡す例外を発見しました。整理前にも再現するため、互換修正はこの整理から独立させます。
+
+Affine互換の独立修正では、既存のscreen_to_world_directionで画面右方向を求め、Perspective経路は従来camera_ground_axesを維持しました。標準カメラの実マウス操作（泡→集中→復帰）で水は一度だけ12消費、エネルギー0のまま撃破・ページエラー0を確認。3サイズ×通常/異常の6回帰テストを追加し、最終作業版1177テストとcheck_all PASSです。
+
+履歴比較: 開始HEADは6d97e206、ローカルorigin/mainは8ff3c56（同じ6d97e206を親に持つ公開済み目的UI）。本作業は履歴を書き換えず、6d97e206から関連差分を分離してローカルコミットしました。作業ツリーには公開済み目的UI・復帰ボタン・Webホストと別作業の初回遭遇/文言等を保持し、それを含む実動作を比較しています。未統合のorigin/mainを取り込む履歴操作は未実施です。

@@ -7,7 +7,7 @@ import math
 from drift_with_me.camera import camera_ground_axes
 from drift_with_me.focus_laser import BURN_STEPS, FocusLaserAction, draw_focus_laser
 from drift_with_me.hex_assets import draw_scaled_sprite, placement_for_upright_height_billboard
-from drift_with_me.math3d import Vec3
+from drift_with_me.math3d import AffineCameraState, Vec3, screen_to_world_direction
 from drift_with_me.nudibranch_preview import DIRECTIONS, preview_assets
 
 JULY_ENEMY_IDS = tuple(
@@ -93,7 +93,10 @@ def update_zigzag(model, enemy, dt):
 def start_focus(model, enemy, camera, events, session=None):
     if getattr(enemy, "focus_action", None) is not None:
         return
-    right, _ = camera_ground_axes(camera)
+    if isinstance(camera, AffineCameraState):
+        right = screen_to_world_direction(camera, model.player.x, model.player.z, 1.0, 0.0)
+    else:
+        right, _ = camera_ground_axes(camera)
 
     def ground(actor, fallback):
         anchor = model.combat_actor_anchor_ground(camera, actor) if session else None
