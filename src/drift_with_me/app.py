@@ -2196,7 +2196,11 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
         camera = self.scene_camera(self.camera())
         visible = {}
         for enemy in self.model.enemies:
-            if enemy.kind not in {"normal", "abnormal"} or enemy.state == "DEFEATED":
+            if (
+                enemy.kind not in {"normal", "abnormal"}
+                or enemy.state not in {"IDLE", "APPROACH", "WINDUP", "DASH"}
+                or not self.model.enemy_in_approach_range(enemy)
+            ):
                 continue
             placement = (
                 self.renderer.enemy_sprite_placement(self.model, enemy, camera)
@@ -2246,26 +2250,10 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             and self.field_transition is None
             and self.week_transition is None
             and not self.camera_controller.freezes_world
-            and not self.model.danger_blocks_interaction()
-            and all(
-                math.hypot(e.x - self.model.player.x, e.z - self.model.player.z)
-                > float(self.runtime.raw["interaction"]["danger_block_radius"]) + 16
-                for e in self.model.enemies
-                if e.state != "DEFEATED"
-            )
-            and not any(
-                e.state in {"DASH", "WINDUP", "CAPTURED"}
-                for e in self.model.enemies
-                if e.id in visible.values()
-            )
         )
         if conversation is not None:
             # Do not continue pointing at a target that has left the frame.
-            if (
-                not safe
-                or visible.get(conversation.kind) != conversation.target_id
-                or not self.first_sight_subject_clear(conversation.target_id)
-            ):
+            if not safe or visible.get(conversation.kind) != conversation.target_id:
                 self.first_sight_conversation = None
                 queue.finish()
                 return False
@@ -2294,10 +2282,13 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
                     self.checkpoint_progress()
                 return True
             return True
-        eligible = {target for target in visible.values() if self.first_sight_subject_clear(target)}
+        eligible = set(visible.values())
         conversation = queue.begin(self.first_sight_seen, safe, eligible)
         if conversation is not None:
             self.first_sight_conversation = conversation
+            enemy = self.model.enemy_by_id(conversation.target_id)
+            if enemy.state == "IDLE":
+                enemy.state = "APPROACH"
             self.clear_world_input_latches()
             self.model.cancel_auto_move()
             return True
@@ -2452,6 +2443,7 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
                 step_intent,
                 model_camera,
                 fixed_dt,
+                before_enemy_update=lambda: self.update_first_sight(0.0),
             )
             if self.renderer is not None:
                 self.renderer.update_abnormal_urchin_arms(

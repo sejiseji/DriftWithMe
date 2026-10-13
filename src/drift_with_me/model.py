@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import heapq
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -393,7 +394,14 @@ class GameModel:
             return None
         return moved.x - root.x, moved.y - root.y
 
-    def step(self, intent: InputIntent, camera: CameraState, dt: float) -> list[GameEvent]:
+    def step(
+        self,
+        intent: InputIntent,
+        camera: CameraState,
+        dt: float,
+        *,
+        before_enemy_update: Callable[[], bool] | None = None,
+    ) -> list[GameEvent]:
         events: list[GameEvent] = []
         if self.world_paused:
             self.cancel_auto_move()
@@ -487,6 +495,12 @@ class GameModel:
             self.reset_manual_velocity()
 
         self.refresh_active_enemies()
+        # A newly entered encounter can pause before AI, dash and contact damage.
+        if before_enemy_update is not None and before_enemy_update():
+            self.player.barrier_active = False
+            self.reset_manual_velocity()
+            self.last_events = events
+            return events
         self.update_enemies(dt, events)
         self.update_bubble(dt, events)
         if self.player.barrier_active:

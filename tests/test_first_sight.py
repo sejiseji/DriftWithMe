@@ -36,8 +36,10 @@ def app_with_viewport():
             rect=rects.get(e.id, (900, 900, 32, 32))
         )
     )
+    app.model.player.x, app.model.player.z = 288, 384
     for e in app.model.enemies:
-        e.x, e.z = 700, 700
+        e.x, e.z = app.model.player.x + 60, app.model.player.z
+        e.home_x, e.home_z = e.x, e.z
         e.state = "IDLE"
     return app, rects
 
@@ -57,7 +59,7 @@ def test_only_drawn_viewport_intersection_can_start_and_abnormal_has_priority():
     assert app.office.current_session.field_progress == original
 
 
-@pytest.mark.parametrize("blocked", ["combat", "inspection", "camera", "danger", "fade", "week"])
+@pytest.mark.parametrize("blocked", ["combat", "inspection", "camera", "fade", "week"])
 def test_queue_waits_for_safe_scene_and_discards_a_lost_subject(blocked):
     app, rects = app_with_viewport()
     e = app.model.enemies[0]
@@ -218,3 +220,66 @@ def test_actual_dialogue_pages_record_once_and_cancel_keeps_occurrence(order):
         advance()
         assert app.first_sight_conversation is None and kind in app.first_sight_seen
     assert app.first_sight_seen == {"normal", "abnormal"}
+
+
+@pytest.mark.parametrize("kind", ["normal", "abnormal"])
+@pytest.mark.parametrize("offset, starts", [(0.001, False), (0, True), (-0.001, True)])
+def test_intro_uses_exact_existing_aggro_boundary(kind, offset, starts):
+    app, rects = app_with_viewport()
+    enemy = next(e for e in app.model.enemies if e.kind == kind)
+    radius = app.model.config["enemy"][kind]["aggro_radius"]
+    enemy.x, enemy.z = app.model.player.x + radius + offset, app.model.player.z
+    enemy.home_x, enemy.home_z = enemy.x, enemy.z
+    rects[enemy.id] = (180, 130, 32, 32)  # Close subject may be behind the dialogue panel.
+    assert app.update_first_sight(0.01) == starts
+    if starts:
+        assert enemy.state == "APPROACH"
+        assert app.first_sight_conversation.kind == kind
+
+
+def test_far_abnormal_does_not_block_near_normal_and_far_same_kind_does_not_hide_near():
+    app, rects = app_with_viewport()
+    normal = [e for e in app.model.enemies if e.kind == "normal"]
+    abnormal = next(e for e in app.model.enemies if e.kind == "abnormal")
+    abnormal.x = app.model.player.x + 200
+    for e in [*normal, abnormal]:
+        rects[e.id] = (100, 70, 32, 32)
+    normal[0].x = app.model.player.x + 200
+    assert app.update_first_sight(0.01)
+    assert app.first_sight_conversation.kind == "normal"
+    assert app.first_sight_conversation.target_id != normal[0].id
+
+
+@pytest.mark.parametrize("remaining", [127.9, 0.1])
+def test_boundary_crossing_callback_precedes_enemy_dash_contact_and_other_fixed_steps(remaining):
+    from drift_with_me.math3d import CameraState, Vec3
+    from drift_with_me.model import InputIntent
+
+    app, rects = app_with_viewport()
+    enemy = next(e for e in app.model.enemies if e.kind == "abnormal")
+    rects[enemy.id] = (100, 70, 32, 32)
+    enemy.x, enemy.z = app.model.player.x + 128.01, app.model.player.z
+    enemy.home_x, enemy.home_z = enemy.x, enemy.z
+    enemy.state = "WINDUP"
+    enemy.state_timer = 0.0001
+    assert not app.update_first_sight(0.01)
+    # Model movement crosses the threshold before the enemy update of this tick.
+    app.model.move_player_by_delta = lambda x, z: setattr(
+        app.model.player, "x", enemy.x - remaining
+    )
+    camera = CameraState.from_config(app.runtime.raw, Vec3(288, 0, 384), 512, 236)
+    hp = app.model.water
+    events = app.model.step(
+        InputIntent(screen_x=1, strength=1),
+        camera,
+        0.05,
+        before_enemy_update=lambda: app.update_first_sight(0),
+    )
+    assert app.first_sight_conversation.kind == "abnormal"
+    assert enemy.state == "WINDUP" and enemy.state_timer == 0.0001
+    assert app.model.water == hp and app.model.combat_session is None
+    assert not any(e.kind in {"combat_started", "player_damaged"} for e in events)
+    positions = [(e.x, e.z, e.state_timer) for e in app.model.enemies]
+    for _ in range(3):
+        assert app.update_first_sight(0.1)
+    assert positions == [(e.x, e.z, e.state_timer) for e in app.model.enemies]
