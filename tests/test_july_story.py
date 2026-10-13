@@ -54,6 +54,7 @@ def arrival_and_talk(app):
         enemy.state = "DEFEATED"
     assert app.update_july_story(0)
     assert app.office.july_progress.stage == "after_clear"
+    assert app.map_objectives_blocked()
     confirm(app)
     confirm(app)
     assert app.office.july_progress.stage == "arrival_fade"

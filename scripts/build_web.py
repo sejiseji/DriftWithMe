@@ -85,6 +85,26 @@ body.drift-portrait #orientation-message {
 
 
 HOST_JS = """(() => {
+  if (window === window.top) {
+    const frame = document.createElement("iframe");
+    frame.src = window.location.href;
+    frame.title = "DriftWithMe";
+    frame.style.cssText = "border:0;position:absolute;left:0;top:0;transform-origin:top left";
+    const fitFrame = () => {
+      const viewport = window.visualViewport;
+      const width = viewport ? viewport.width : window.innerWidth;
+      const height = viewport ? viewport.height : window.innerHeight;
+      const logical = window.__driftWithMeLogicalSize;
+      const scale = Math.min(1, width / logical.width, height / logical.height);
+      frame.style.width = `${Math.ceil(width / scale)}px`;
+      frame.style.height = `${Math.ceil(height / scale)}px`;
+      frame.style.transform = `scale(${scale})`;
+    };
+    fitFrame();document.body.appendChild(frame);
+    window.addEventListener("resize", fitFrame);
+    window.visualViewport?.addEventListener("resize", fitFrame);
+    return;
+  }
   const root = document.documentElement;
   const body = document.body;
   const pointer = {
@@ -409,7 +429,7 @@ def write_html(root: Path, pyxapp: Path, output: Path, web_manifest: str) -> Non
         f"<script>window.__driftWithMeLogicalSize = {logical_size};</script>\n"
         f'<script src="./host.js?v={js_version}"></script>\n'
         "<script>\n"
-        f'launchPyxel({{ command: "play", name: {pyxapp_name}, '
+        f'if (window !== window.top) launchPyxel({{ command: "play", name: {pyxapp_name}, '
         f'{DISABLED_GAMEPAD}, base64: "{base64_string}" }});\n'
         "</script>\n"
         "</body>\n"

@@ -27,6 +27,7 @@ from drift_with_me.july_week1 import (
 from drift_with_me.july_week1 import (
     install_july_world,
 )
+from drift_with_me.map_objectives import MapObjectivesMixin
 from drift_with_me.math3d import (
     AffineCameraState,
     AffineProjectionProfile,
@@ -392,7 +393,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 }
 
 
-class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin):
+class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
     def __init__(
         self,
         profile: str | None = None,
@@ -597,6 +598,8 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin):
         if pyxel.btnp(pyxel.KEY_M):
             self.audio.toggle_mute()
 
+        if self.screen == AppScreen.PLAY and self.update_map_objectives():
+            return
         if self.screen == AppScreen.PLAY and self.update_july_story(elapsed):
             return
         if self.screen == AppScreen.PLAY and self.update_first_sight(elapsed):
@@ -694,6 +697,7 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin):
             self.audio.toggle_mute()
 
     def start_game(self, *, new_game: bool = False) -> None:
+        self.map_objective_open = False
         if getattr(self, "saved_progress", None) is not None and not new_game:
             week, offices, sites, seen, resources, defeated = self.saved_progress
             self.work_week = self.map_work_week = week
@@ -3109,6 +3113,10 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin):
             rects.append(self.tooltip_rect(two_lines=False))
         if getattr(self, "office", None) is not None and self.office.active_field_task is not None:
             rects.append(self.field_return_button_rect())
+        if self.map_objectives_available() and not self.map_objectives_blocked():
+            rects.append(self.map_objective_button_rect())
+            if getattr(self, "map_objective_open", False):
+                rects.append(self.map_objective_panel_rect())
         return tuple(rects)
 
     def office_rect(self, x: float, y: float, width: float, height: float) -> Rect:
@@ -4750,7 +4758,7 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin):
         draw_week3_key(self, scene_camera)
         self.draw_july_markers()
         self.draw_hud()
-        self.draw_east_site_hint()
+        self.draw_map_objectives()
         if self.model.interaction is not None:
             self.draw_interaction_chip()
         self.draw_combat_chance_cues()
@@ -5209,7 +5217,7 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin):
         return self.office_rect(148, 7, 164, 42)
 
     def field_return_button_rect(self) -> Rect:
-        return self.office_rect(258, 12, 48, 32)
+        return self.office_rect(8, 60, 56, 54)
 
     def can_return_from_field(self) -> bool:
         return bool(self.office.active_field_task and self.office.current_session)
@@ -5218,19 +5226,8 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin):
         task = self.office.active_field_task
         if task is None:
             return
-        rect = self.field_task_hud_rect()
-        self.draw_panel_frame(rect, fill=0, inner=12)
-        self.draw_office_text_in_rect(
-            self.office_rect(154, 10, 98, 16),
-            "東側の水路" if task.case_id in {"OFF-JUN-W2-HERO", WEEK3_TASK_CASE} else "北側浅瀬",
-            12,
-        )
-        status = (
-            "記録あり" if self.office.current_session.field_progress.can_report else "近くを調べる"
-        )
-        self.draw_office_text_in_rect(self.office_rect(154, 29, 98, 16), status, 7)
         ready = self.can_return_from_field()
-        self.draw_office_button(self.field_return_button_rect(), "帰庁", 10 if ready else 5)
+        self.draw_office_button(self.office_rect(12, 72, 48, 26), "帰庁", 10 if ready else 5)
 
     def draw_meter(
         self, x: int, y: int, width: int, height: int, value: float, maximum: float, color: int
