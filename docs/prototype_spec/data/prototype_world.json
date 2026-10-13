@@ -3086,10 +3086,10 @@
     },
     "maintenance_unit": {
       "ja": [
-        "同じ箇所の保守を繰り返している。"
+        "水の入った容器と小さな測定器を備えたロボ。"
       ],
       "ascii": [
-        "Repeating the same maintenance work."
+        "A small robot carrying a water sample and measuring equipment."
       ]
     },
     "observation_post": {
