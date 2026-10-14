@@ -220,6 +220,8 @@ class GameModel:
         self.auto_move_goal: tuple[float, float] | None = None
         self.auto_move_path: list[tuple[float, float]] = []
         self.auto_move_stuck_elapsed = 0.0
+        self.auto_move_replans_remaining = 0
+        self.auto_move_world = None
         self.manual_velocity_x = 0.0
         self.manual_velocity_z = 0.0
         self.combat_session: CombatSession | None = None
@@ -545,6 +547,8 @@ class GameModel:
         self.auto_move_goal = None
         self.auto_move_path = []
         self.auto_move_stuck_elapsed = 0.0
+        self.auto_move_replans_remaining = 0
+        self.auto_move_world = None
 
     def manual_screen_speed_scale(self, camera: Any, direction: Any) -> float:
         player_config = self.config.get("player", {})
@@ -595,36 +599,77 @@ class GameModel:
         return max(1.0, min(scale, max_scale))
 
     def request_auto_move_goal(self, goal_x: float, goal_z: float, events: list[GameEvent]) -> None:
-        auto_move = self.config.get("auto_move", {})
-        if not bool(auto_move.get("enabled", False)):
+        self.cancel_auto_move()
+        if not bool(self.config.get("auto_move", {}).get("enabled", False)):
             return
         if not math.isfinite(goal_x) or not math.isfinite(goal_z):
             self.emit_denied(events, "auto_move_blocked", scope="auto_move")
             return
-        if self.world.collides_player(
-            goal_x,
-            goal_z,
-            self.player_solid_half_x,
-            self.player_solid_half_z,
-        ):
-            self.emit_denied(events, "auto_move_blocked", scope="auto_move")
+        plan = self.plan_auto_move_goal(goal_x, goal_z)
+        if plan is None:
+            self.emit_denied(events, "auto_move_no_path", scope="auto_move")
             return
-        if not self.auto_move_path_clear(goal_x, goal_z):
-            path = self.find_auto_move_path(goal_x, goal_z)
-            if path is None:
-                self.emit_denied(events, "auto_move_no_path", scope="auto_move")
-                return
-        else:
-            path = [(goal_x, goal_z)]
-        self.auto_move_goal = (goal_x, goal_z)
-        self.auto_move_path = path
-        self.auto_move_stuck_elapsed = 0.0
+        self.auto_move_goal, self.auto_move_path = plan
+        self.auto_move_world = self.world
+        self.auto_move_replans_remaining = 1
+
+    def plan_auto_move_goal(self, x: float, z: float):
+        for goal in self.auto_move_goal_candidates(x, z):
+            path = [goal] if self.auto_move_path_clear(*goal) else self.find_auto_move_path(*goal)
+            if path:
+                return goal, path
+        return None
+
+    def auto_move_goal_candidates(self, x: float, z: float) -> list[tuple[float, float]]:
+        hx, hz = self.player_solid_half_x, self.player_solid_half_z
+        if not self.world.collides_player(x, z, hx, hz):
+            return [(x, z)]
+        # Only blocked targets are corrected, within a small bounded neighborhood.
+        radius, epsilon = 48.0, 0.05
+        candidates = []
+        for obj in self.world.query_solids(x - hx, z - hz, x + hx, z + hz):
+            left, right = obj.min_x - hx - epsilon, obj.max_x + hx + epsilon
+            top, bottom = obj.min_z - hz - epsilon, obj.max_z + hz + epsilon
+            candidates.extend(((left, z), (right, z), (x, top), (x, bottom)))
+        for distance in range(8, 49, 8):
+            for i in range(16):
+                angle = i * math.tau / 16
+                candidates.append((x + math.cos(angle) * distance, z + math.sin(angle) * distance))
+        bounds = self.world.walkable_rect
+        candidates = [
+            (bounds.clamp_x(a, hx + epsilon), bounds.clamp_z(b, hz + epsilon))
+            for a, b in candidates
+        ]
+        candidates = {
+            point
+            for point in candidates
+            if math.hypot(point[0] - x, point[1] - z) <= radius
+            and not self.world.collides_player(*point, hx, hz)
+        }
+        return sorted(
+            candidates,
+            key=lambda point: (
+                math.hypot(point[0] - x, point[1] - z),
+                math.hypot(point[0] - self.player.x, point[1] - self.player.z),
+                point,
+            ),
+        )[:8]
 
     def auto_move_path_clear(self, goal_x: float, goal_z: float) -> bool:
-        radius = self.auto_move_nav_radius()
-        return self.nav_segment_clear(self.player.x, self.player.z, goal_x, goal_z, radius)
+        return self.nav_segment_clear(self.player.x, self.player.z, goal_x, goal_z)
 
-    def nav_segment_clear(self, x0: float, z0: float, x1: float, z1: float, radius: float) -> bool:
+    def nav_segment_clear(
+        self, x0: float, z0: float, x1: float, z1: float, radius: float | None = None
+    ) -> bool:
+        # The swept body is the same rectangle used by move_player_sliding.
+        hx = self.player_solid_half_x if radius is None else radius
+        hz = self.player_solid_half_z if radius is None else radius
+        bounds = self.world.walkable_rect
+        if any(
+            not bounds.contains_aabb(x - hx, z - hz, x + hx, z + hz)
+            for x, z in ((x0, z0), (x1, z1))
+        ):
+            return False
         landing = self.world.east_site_landing_rect
         if (
             landing is not None
@@ -634,15 +679,23 @@ class GameModel:
                 z0,
                 x1,
                 z1,
-                landing.min_x - radius,
-                landing.min_z - radius,
-                landing.max_x + radius,
-                landing.max_z + radius,
+                landing.min_x - hx,
+                landing.min_z - hz,
+                landing.max_x + hx,
+                landing.max_z + hz,
             )
             is not None
         ):
             return False
-        return self.has_line_of_sight(x0, z0, x1, z1, radius=radius)
+        return not any(
+            segment_aabb_time(
+                x0, z0, x1, z1, obj.min_x - hx, obj.min_z - hz, obj.max_x + hx, obj.max_z + hz
+            )
+            is not None
+            for obj in self.world.query_solids(
+                min(x0, x1) - hx, min(z0, z1) - hz, max(x0, x1) + hx, max(z0, z1) + hz
+            )
+        )
 
     def auto_move_nav_radius(self) -> float:
         auto_move = self.config.get("auto_move", {})
@@ -653,11 +706,20 @@ class GameModel:
         auto_move = self.config.get("auto_move", {})
         if not bool(auto_move.get("astar_enabled", True)):
             return None
-
         grid = float(auto_move.get("nav_grid_world", 16.0))
-        if not math.isfinite(grid) or grid <= 0.0:
+        if not math.isfinite(grid) or grid <= 0:
             return None
-        radius = self.auto_move_nav_radius()
+        preferred = max(0.0, float(auto_move.get("nav_clearance_world", 2.0)))
+        path = self.find_auto_move_grid_path(goal_x, goal_z, grid, preferred)
+        if path is None:
+            path = self.find_auto_move_grid_path(goal_x, goal_z, grid / 2, 0.0)
+        return path
+
+    def find_auto_move_grid_path(
+        self, goal_x: float, goal_z: float, grid: float, padding: float
+    ) -> list[tuple[float, float]] | None:
+        auto_move = self.config.get("auto_move", {})
+        radius = max(self.player_solid_half_x, self.player_solid_half_z) + padding
         walkable = self.world.walkable_rect
         cols = max(1, math.floor((walkable.width - radius * 2.0) / grid) + 1)
         rows = max(1, math.floor((walkable.depth - radius * 2.0) / grid) + 1)
@@ -673,12 +735,14 @@ class GameModel:
             if value is not None:
                 return value
             x, z = node_position(node)
-            value = not self.world.collides_player(x, z, radius, radius)
+            value = not self.world.collides_player(
+                x, z, self.player_solid_half_x + padding, self.player_solid_half_z + padding
+            )
             walkable_cache[node] = value
             return value
 
         def line_clear(a: tuple[float, float], b: tuple[float, float]) -> bool:
-            return self.nav_segment_clear(a[0], a[1], b[0], b[1], radius)
+            return self.nav_segment_clear(a[0], a[1], b[0], b[1])
 
         def link_candidates(x: float, z: float) -> list[tuple[float, tuple[int, int]]]:
             limit = max(1, int(auto_move.get("max_link_candidates", 32)))
@@ -781,21 +845,16 @@ class GameModel:
     ) -> list[tuple[float, float]] | None:
         if len(points) < 2:
             return None
-        radius = self.auto_move_nav_radius()
         result: list[tuple[float, float]] = []
         anchor_index = 0
         while anchor_index < len(points) - 1:
             next_index = len(points) - 1
-            while next_index > anchor_index + 1:
-                if self.has_line_of_sight(
-                    points[anchor_index][0],
-                    points[anchor_index][1],
-                    points[next_index][0],
-                    points[next_index][1],
-                    radius=radius,
-                ):
+            while next_index > anchor_index:
+                if self.nav_segment_clear(*points[anchor_index], *points[next_index]):
                     break
                 next_index -= 1
+            if next_index == anchor_index:
+                return None
             result.append(points[next_index])
             anchor_index = next_index
         return result
@@ -803,6 +862,9 @@ class GameModel:
     def update_auto_move(self, events: list[GameEvent], dt: float) -> None:
         if self.auto_move_goal is None or not self.auto_move_path:
             self.cancel_auto_move()
+            return
+        if self.auto_move_world is not self.world:
+            self.replan_auto_move(events)
             return
         target_x, target_z = self.auto_move_path[0]
         dx = target_x - self.player.x
@@ -812,6 +874,10 @@ class GameModel:
         arrival_radius = float(auto_move.get("arrival_radius_world", 2.0))
         waypoint_radius = float(auto_move.get("waypoint_radius_world", 4.0))
         current_radius = arrival_radius if len(self.auto_move_path) == 1 else waypoint_radius
+        if len(self.auto_move_path) > 1 and not self.nav_segment_clear(
+            self.player.x, self.player.z, *self.auto_move_path[1]
+        ):
+            current_radius = 0.05
         if distance <= current_radius:
             self.auto_move_path.pop(0)
             self.auto_move_stuck_elapsed = 0.0
@@ -831,6 +897,10 @@ class GameModel:
         moved = self.move_player_by_delta(dx / distance * travel, dz / distance * travel)
         remaining = math.hypot(target_x - self.player.x, target_z - self.player.z)
         current_radius = arrival_radius if len(self.auto_move_path) == 1 else waypoint_radius
+        if len(self.auto_move_path) > 1 and not self.nav_segment_clear(
+            self.player.x, self.player.z, *self.auto_move_path[1]
+        ):
+            current_radius = 0.05
         if remaining <= current_radius:
             self.auto_move_path.pop(0)
             self.auto_move_stuck_elapsed = 0.0
@@ -838,14 +908,26 @@ class GameModel:
             self.cancel_auto_move()
             return
 
-        if moved <= max(0.01, travel * 0.1):
+        if min(moved, distance - remaining) <= max(0.01, travel * 0.1):
             self.auto_move_stuck_elapsed += dt
         else:
             self.auto_move_stuck_elapsed = 0.0
 
         if self.auto_move_stuck_elapsed >= float(auto_move.get("stuck_sec", 0.5)):
-            self.cancel_auto_move()
-            self.emit_denied(events, "auto_move_no_path", scope="auto_move")
+            self.replan_auto_move(events)
+
+    def replan_auto_move(self, events: list[GameEvent]) -> None:
+        goal = self.auto_move_goal
+        if goal is not None and self.auto_move_replans_remaining > 0:
+            self.auto_move_replans_remaining -= 1
+            plan = self.plan_auto_move_goal(*goal)
+            if plan is not None:
+                self.auto_move_goal, self.auto_move_path = plan
+                self.auto_move_world = self.world
+                self.auto_move_stuck_elapsed = 0.0
+                return
+        self.cancel_auto_move()
+        self.emit_denied(events, "auto_move_no_path", scope="auto_move")
 
     def move_player_by_delta(self, delta_x: float, delta_z: float) -> float:
         before_x = self.player.x

@@ -5342,7 +5342,7 @@
         }
       ],
       "draft_group": "stakes_string",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,
@@ -5371,7 +5371,7 @@
         }
       ],
       "draft_group": "stakes_string",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,
@@ -5487,7 +5487,7 @@
         }
       ],
       "draft_group": "materials",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,
@@ -5516,7 +5516,7 @@
         }
       ],
       "draft_group": "materials",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,
@@ -5545,7 +5545,7 @@
         }
       ],
       "draft_group": "materials",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,
@@ -5603,7 +5603,7 @@
         }
       ],
       "draft_group": "seedling_trays",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,
@@ -5661,7 +5661,7 @@
         }
       ],
       "draft_group": "seedling_trays",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,
@@ -5719,7 +5719,7 @@
         }
       ],
       "draft_group": "seedling_trays",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,
@@ -5777,7 +5777,7 @@
         }
       ],
       "draft_group": "seedling_trays",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,
@@ -5835,7 +5835,7 @@
         }
       ],
       "draft_group": "seedling_trays",
-      "integration_scope": "week_debug_preview_only"
+      "integration_scope": "week_debug_preview_and_july_week1"
     },
     {
       "schema_version": 1,

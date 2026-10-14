@@ -2922,6 +2922,8 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             return InputIntent()
         if self.foreground_object_blocks_ground_pick(
             request.camera, request.screen_x, request.screen_y, point.x, point.y
+        ) and not self.world.collides_player(
+            point.x, point.y, self.model.player_solid_half_x, self.model.player_solid_half_z
         ):
             self.reject_auto_move_goal("auto_move_blocked")
             return InputIntent()
@@ -2953,6 +2955,8 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             return False
         margin = self.foreground_pick_margin_px()
         for obj in self.world.objects:
+            if obj.kind == "construction_collision":
+                continue
             if not (obj.solid or obj.occludes_player or obj.inspectable):
                 continue
             obj_depth = renderer.object_occlusion_depth(obj, camera)
@@ -2971,6 +2975,8 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
         return float(auto_move.get("foreground_pick_margin_ref_px", 2.0)) * ui_scale
 
     def reject_auto_move_goal(self, reason: str) -> None:
+        self.model.cancel_auto_move()
+        self.pending_auto_move_goal = None
         self.set_denied_reason(reason)
         self.audio.play_preview("action_denied")
 

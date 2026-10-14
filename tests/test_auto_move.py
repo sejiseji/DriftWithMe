@@ -317,17 +317,19 @@ def test_manual_input_cancels_auto_move_without_resuming() -> None:
     assert model.auto_move_path == []
 
 
-def test_auto_move_rejects_goal_inside_solid_object() -> None:
+def test_auto_move_corrects_goal_inside_solid_object() -> None:
     model, camera = make_model()
 
     events = model.step(
         InputIntent(auto_move_goal_x=320.0, auto_move_goal_z=320.0), camera, 1.0 / 60.0
     )
 
-    assert model.auto_move_goal is None
-    assert [event.payload["reason"] for event in events if event.kind == "action_denied"] == [
-        "auto_move_blocked"
-    ]
+    assert model.auto_move_goal is not None
+    assert model.auto_move_goal != (320.0, 320.0)
+    assert not model.world.collides_player(
+        *model.auto_move_goal, model.player_solid_half_x, model.player_solid_half_z
+    )
+    assert not [event for event in events if event.kind == "action_denied"]
 
 
 def test_auto_move_paths_around_static_wall() -> None:

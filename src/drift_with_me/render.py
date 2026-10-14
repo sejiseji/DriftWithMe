@@ -525,6 +525,8 @@ class Renderer:
                 )
             )
         for obj in visible_objects:
+            if obj.kind == "construction_collision":
+                continue
             object_bounds = self.object_screen_bounds(obj, camera)
             if self.camera_is_affine(camera) and self.object_uses_box_geometry(obj):
                 box_commands = self.solid_box_face_commands(obj, camera)
@@ -651,6 +653,9 @@ class Renderer:
         commands.extend(focus_draw_commands(self, model, camera))
         commands.extend(preview_draw_commands(self, model, camera))
         commands.extend(garden_preview_draw_commands(self, model, camera))
+        construction = getattr(model, "july_construction", None)
+        if construction is not None:
+            commands.extend(garden_preview_draw_commands(self, model, camera, construction))
         self.last_stats = RenderStats(
             total_static_objects=len(model.world.objects),
             candidate_chunks=visible_query.candidate_chunk_count,

@@ -299,8 +299,16 @@ class JulyWeek1Office(OfficePrototype):
 def install_july_world(app, *, enabled=True, combat=False):
     if not hasattr(app, "world") and not enabled:
         return
+    from drift_with_me.july_construction import PREFIX, build_layout
+
     raw = deepcopy(app.world.raw)
-    raw["objects"] = [o for o in raw["objects"] if o["id"] not in TARGET_IDS]
+    raw["objects"] = [
+        o for o in raw["objects"] if o["id"] not in TARGET_IDS and not o["id"].startswith(PREFIX)
+    ]
+    app.model.july_construction = None
+    if enabled:
+        app.model.july_construction, colliders = build_layout()
+        raw["objects"].extend(colliders)
     progress = getattr(app.office, "july_progress", None)
     positions = {FUJI_ID: (288, 384), WATER_ID: (928, 144)} if enabled else {}
     if enabled and progress and progress.researchers_arrived:

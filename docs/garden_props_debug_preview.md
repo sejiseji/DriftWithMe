@@ -1,8 +1,9 @@
 # Gardening props: local debug preview
 
 The 18 approved `jlp1_` assets are registered in `jack_sprite.json`. Their HEX
-pixels match the approved first-version package. This is a temporary placement
-test, not an implemented July scenario or a permanent flowerbed.
+pixels match the approved first-version package. This document describes the temporary placement test. The separate local July W1
+placement in `july_construction_local.md` reuses a subset of these assets without
+adding a planting scenario.
 
 Start the native game with `python main.py --week-debug`, or append
 `?debug=weeks` to a locally rebuilt web game. Choose **Garden test** in the week
@@ -40,8 +41,8 @@ coordinates and stable instance IDs; the template's fence vertices, material
 anchors and tray anchors can be supplied independently of the rendering.
 
 The preview is reachable only in an explicitly launched week-debug session.
-Jumping weeks, reloading or returning to normal discards it. Ordinary weeks
-do not display gardening props. Fuji's existing office and map sprites are
+Jumping weeks, reloading or returning to normal discards it. The debug scene is separate from the deterministic July W1 construction placement;
+June weeks do not display these construction props. Fuji's existing office and map sprites are
 unchanged.
 
 Related validation covers normal-session gating, valid/corrupt/absent save

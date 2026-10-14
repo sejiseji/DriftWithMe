@@ -136,8 +136,9 @@ def bounds_visible(bounds, camera, margin=4):
     )
 
 
-def garden_preview_draw_commands(renderer, model, camera):
-    state = getattr(model, "garden_props_preview", None)
+def garden_preview_draw_commands(renderer, model, camera, state=None):
+    if state is None:
+        state = getattr(model, "garden_props_preview", None)
     if state is None or state.parts:
         return []
     from drift_with_me.render import DrawCommand
@@ -182,7 +183,7 @@ def garden_preview_draw_commands(renderer, model, camera):
             DrawCommand(
                 depth=midpoint.depth,
                 layer_bias=1,
-                stable_id=f"garden:string:{i:03d}",
+                stable_id=f"{getattr(state, 'id_prefix', 'garden:')}string:{i:03d}",
                 draw=lambda a=a, b=b: renderer.pyxel.line(
                     round(a.x), round(a.y), round(b.x), round(b.y), 15
                 ),
