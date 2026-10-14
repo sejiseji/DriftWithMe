@@ -115,10 +115,12 @@ class JulyStoryMixin:
         progress = self.office.july_progress
         # Explicit placeholder markers: no claim that walking sprites are finished.
         camera = self.scene_camera(self.camera())
+        has_placeholders = False
         for target in (PROFESSOR_ID, STUDENT_ID):
             obj = self.world.object_by_id(target)
-            if obj is None:
+            if obj is None or obj.kind != "july_placeholder":
                 continue
+            has_placeholders = True
             p = camera.project(Vec3(obj.x, 24, obj.z))
             if p is None:
                 continue
@@ -126,7 +128,7 @@ class JulyStoryMixin:
             self.pyxel.text(
                 x - 12, y - 8, "YUMESAKI TEMP" if target == PROFESSOR_ID else "MIYANO TEMP", 13
             )
-        if progress.researchers_arrived:
+        if progress.researchers_arrived and has_placeholders:
             self.draw_office_text_in_rect(
                 self.office_rect(8, 30, 240, 16), "研究者のマップ表示は仮素材", 13
             )

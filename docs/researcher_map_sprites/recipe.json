@@ -1,0 +1,7 @@
+{
+  "source_path_rule": "inputs/{name}_map_32.png",
+  "geometry": "identity32x32, no crop/no resize/no patch",
+  "palette_file": "docs/character_portraits/palette.json",
+  "quantizer": "asset_tool.quantize",
+  "alpha": "binary alpha0->index0; opaque candidates1..15"
+}

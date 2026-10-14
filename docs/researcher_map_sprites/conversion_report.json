@@ -1,0 +1,155 @@
+[
+  {
+    "name": "yumesaki",
+    "library_file_id": "libfile_022b2e9247b08191aceab054e22b9ddc",
+    "version": 0,
+    "source": {
+      "format": "PNG",
+      "size_px": [
+        32,
+        32
+      ],
+      "mode": "RGBA",
+      "source_sha256": "3acda689f82fa3c5463528981a2fc89785a834390f7a9965a664c204039dcb0b",
+      "alpha_counts": {
+        "0": 703,
+        "255": 321
+      },
+      "binary_alpha": true,
+      "rgba_color_count": 18,
+      "icc_profile_sha256": null
+    },
+    "algorithm": "existing asset_tool.quantize nearest RGB integer distance, no dithering",
+    "allowed_opaque_indices": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "transparent_index": 0,
+    "output_palette": "current audited Pyxel16",
+    "visible_bbox": [
+      8,
+      2,
+      22,
+      31
+    ],
+    "foreground_pixels": 321,
+    "alpha_mask_sha256": "d9cb24f156c01eeb58a5be2e802becc832466b1a3595cb1f56d2e6816864b7af",
+    "opaque_mapped_to_transparency": 0,
+    "output_color_indices": [
+      0,
+      1,
+      4,
+      9,
+      15
+    ],
+    "pixel_hash": "50ecf0bf1940fc35bbeb7b9aa3a2a9288ade9a01fe6781dafc7a00e31527a8c5",
+    "asset_id": "jul_w1_yumesaki_map",
+    "frame_file": "Yumesaki_32_normal.hex",
+    "source_rgb_to_index": {
+      "20,19,56": 1,
+      "30,28,58": 1,
+      "41,38,58": 1,
+      "58,39,83": 1,
+      "44,30,81": 1,
+      "106,90,98": 4,
+      "56,49,64": 1,
+      "220,188,170": 15,
+      "76,63,73": 1,
+      "8,8,55": 1,
+      "4,8,54": 1,
+      "148,107,81": 4,
+      "191,141,91": 9
+    }
+  },
+  {
+    "name": "miyano",
+    "library_file_id": "libfile_024939199bdc81919dd01d684d161120",
+    "version": 0,
+    "source": {
+      "format": "PNG",
+      "size_px": [
+        32,
+        32
+      ],
+      "mode": "RGBA",
+      "source_sha256": "e233db2ee968621c19a3a0060a5e7070dfa6a52beba36d62ddb6bb5e50200d1b",
+      "alpha_counts": {
+        "0": 697,
+        "255": 327
+      },
+      "binary_alpha": true,
+      "rgba_color_count": 19,
+      "icc_profile_sha256": null
+    },
+    "algorithm": "existing asset_tool.quantize nearest RGB integer distance, no dithering",
+    "allowed_opaque_indices": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "transparent_index": 0,
+    "output_palette": "current audited Pyxel16",
+    "visible_bbox": [
+      8,
+      2,
+      22,
+      31
+    ],
+    "foreground_pixels": 327,
+    "alpha_mask_sha256": "2405e29d2a7009183cddc7df7e5317869790e5c0026b78e271bb156bb445debc",
+    "opaque_mapped_to_transparency": 0,
+    "output_color_indices": [
+      0,
+      1,
+      4,
+      5,
+      9,
+      10,
+      13
+    ],
+    "pixel_hash": "667ccfedb69394d9491c86456aa9fb9d848da511fcc6258411e8fbe36c88ec66",
+    "asset_id": "jul_w1_miyano_map",
+    "frame_file": "Miyano_32_normal.hex",
+    "source_rgb_to_index": {
+      "11,11,64": 1,
+      "50,41,68": 1,
+      "102,68,67": 4,
+      "123,102,90": 4,
+      "215,140,78": 9,
+      "220,185,118": 10,
+      "149,104,76": 4,
+      "235,204,130": 10,
+      "199,171,125": 13,
+      "55,59,81": 1,
+      "195,109,60": 9,
+      "154,137,122": 13,
+      "0,1,67": 1,
+      "72,89,107": 5
+    }
+  }
+]

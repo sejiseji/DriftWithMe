@@ -16,6 +16,10 @@ FUJI_ID = "jul_w1_fuji"
 WATER_ID = "jul_w1_water"
 PROFESSOR_ID = "jul_w1_yumesaki"
 STUDENT_ID = "jul_w1_miyano"
+RESEARCHER_MAP_SPRITES = {
+    PROFESSOR_ID: "jul_w1_yumesaki_map",
+    STUDENT_ID: "jul_w1_miyano_map",
+}
 TARGET_IDS = frozenset((FUJI_ID, WATER_ID, PROFESSOR_ID, STUDENT_ID))
 ENEMY_IDS = frozenset(
     f"july_nudibranch_{kind}_{n}" for kind in ("normal", "abnormal") for n in (1, 2)
@@ -138,24 +142,22 @@ class JulyWeek1Progress:
     def lines_for(self, target):
         if target == FUJI_ID:
             if self.materials_checked:
-                return (
-                    ("フジ", "追加の資材は出ていない。寄せ植えも、受け取ってくれてありがとう。"),
-                )
-            return (
-                (
-                    "ジャック",
-                    "測量と仮ラインから、見積に追加の資材は出ていますか？ サガンに伝えます。",
-                ),
+                return (("フジ", "追加の資材はない。計画どおり進めているよ。"),)
+            lines = (
+                ("ジャック", "追加の資材は出ていますか？ サガンに伝えます。"),
                 ("フジ", "今のところ追加はない。この計画で進められる。"),
-                (
-                    "フジ",
-                    "それと、6月に集めてもらった野草の小さな寄せ植えだ。記念に、持っていってくれ。",
-                ),
+            )
+            if self.souvenir_received:
+                return lines + (("ジャック", "わかりました。戻って伝えます。"),)
+            return lines + (
+                ("フジ", "6月の野草の寄せ植え鉢だ。手伝ってくれたお礼に、持っていってくれ。"),
                 ("ジャック", "ありがとうございます。大事にします。"),
             )
         if target == WATER_ID:
+            if self.water_checked:
+                return (("ジャック", "水源の様子は変わらず、安定しているね。"),)
             return (
-                ("ジャック", "水源近くから、新たな流入はないね。水の状態も安定している。"),
+                ("ジャック", "新たな流入はないね。水の様子も落ち着いている。"),
                 ("ヒューズ", "ええ。そのままサガンに伝えましょう。"),
             )
         return (
@@ -296,6 +298,27 @@ class JulyWeek1Office(OfficePrototype):
         return True
 
 
+def researcher_map_visual(app, target):
+    """Activate only a supplied, registered map asset; never substitute a portrait."""
+    asset_id = RESEARCHER_MAP_SPRITES[target]
+    assets = getattr(app, "sprite_assets", None)
+    asset = (
+        assets.get(asset_id) if assets is not None and getattr(assets, "enabled", False) else None
+    )
+    if asset is not None:
+        definition = asset.definition
+        if (
+            (definition.hex_width, definition.hex_height) == (32, 32)
+            and tuple(definition.anchor_px) == (16, 32)
+            and tuple(definition.world_size) == (32, 32)
+            and definition.colkey == 0
+            and definition.projection_mode == "upright_height_billboard_v1"
+        ):
+            app.model.config.setdefault("assets", {})[f"{asset_id}_asset"] = asset_id
+            return "sprite_prop", asset_id
+    return "july_placeholder", target
+
+
 def install_july_world(app, *, enabled=True, combat=False):
     if not hasattr(app, "world") and not enabled:
         return
@@ -314,12 +337,17 @@ def install_july_world(app, *, enabled=True, combat=False):
     if enabled and progress and progress.researchers_arrived:
         positions.update({PROFESSOR_ID: (580, 480), STUDENT_ID: (620, 488)})
     for target, (x, z) in positions.items():
+        kind, visual = (
+            ("sprite_prop", "jun_w4_fuji") if target == FUJI_ID else ("july_placeholder", target)
+        )
+        if target in RESEARCHER_MAP_SPRITES:
+            kind, visual = researcher_map_visual(app, target)
         raw["objects"].append(
             {
                 "id": target,
-                "kind": "sprite_prop" if target == FUJI_ID else "july_placeholder",
+                "kind": kind,
                 "position": [x, 0, z],
-                "visual": "jun_w4_fuji" if target == FUJI_ID else target,
+                "visual": visual,
                 "sprite_world_size": [32, 32],
                 "solid": False,
                 "inspectable": True,

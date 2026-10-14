@@ -5948,6 +5948,60 @@
       },
       "source_library_id": "libfile_53996f844e8c8191b91d029420398969",
       "source_library_version": 0
+    },
+    {
+      "schema_version": 1,
+      "id": "jul_w1_yumesaki_map",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "50ecf0bf1940fc35bbeb7b9aa3a2a9288ade9a01fe6781dafc7a00e31527a8c5",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Yumesaki_32_normal.hex",
+          "source_hash": "50ecf0bf1940fc35bbeb7b9aa3a2a9288ade9a01fe6781dafc7a00e31527a8c5"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "jul_w1_miyano_map",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "667ccfedb69394d9491c86456aa9fb9d848da511fcc6258411e8fbe36c88ec66",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "Miyano_32_normal.hex",
+          "source_hash": "667ccfedb69394d9491c86456aa9fb9d848da511fcc6258411e8fbe36c88ec66"
+        }
+      ]
     }
   ],
   "notes": [
