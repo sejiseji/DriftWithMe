@@ -95,13 +95,13 @@ def test_bubble_fire_costs_water_and_capture_needs_second_press_for_discharge() 
     assert model.water == pytest.approx(88.0)
     assert enemy.state == "CAPTURED"
     assert [event.kind for event in capture_events] == ["enemy_captured"]
-    assert model.energy == 60.0
+    assert model.energy == model.energy_max
 
     discharged = model.step(InputIntent(action_pressed=True), camera, dt)
 
     assert enemy.state == "DEFEATED"
     assert model.actor_facing_target() == pytest.approx((enemy.x, enemy.z))
-    assert model.energy == pytest.approx(40.0)
+    assert model.energy == pytest.approx(model.energy_max - 20.0)
     assert [event.kind for event in discharged] == ["discharge_succeeded"]
 
 

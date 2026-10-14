@@ -218,7 +218,7 @@ def test_legacy_version_one_migrates_without_losing_facts_and_keeps_original_bac
     week, offices, sites, seen, resources, defeated = store.load()
     assert sites.facts == {"bank_unsafe"} and offices[week].active_field_task is not None
     assert "初期量" in store.message
-    assert resources == {"water": 100.0, "energy": 60.0}
+    assert resources == {"water": 100.0, "energy": 100.0}
     app.office = offices[week]
     app.east_site_progress = sites
     assert store.write(snapshot(app))

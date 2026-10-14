@@ -318,6 +318,7 @@ class Renderer:
         presentation_time: float,
         debug: bool,
         effects: EffectSystem | None = None,
+        exploration_markers: bool = True,
     ) -> None:
         pyxel = self.pyxel
         self._debug_enabled = debug
@@ -356,7 +357,8 @@ class Renderer:
         self.draw_background_effects(model, camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
         self.draw_safe_zones(model.world, camera)
-        self.draw_auto_move_goal(model, camera, presentation_time)
+        if exploration_markers and model.combat_session is None:
+            self.draw_auto_move_goal(model, camera, presentation_time)
         commands = self.world_commands(model, camera, presentation_time, effects)
         for command in sorted(
             commands, key=lambda item: (-item.depth, item.layer_bias, item.stable_id)
@@ -368,8 +370,9 @@ class Renderer:
             model, camera, presentation_time
         ):
             self.draw_player_outline(model, camera, presentation_time)
-        self.draw_interaction_marker(model, camera)
-        self.draw_action_marker(model, camera)
+        if exploration_markers and model.combat_session is None:
+            self.draw_interaction_marker(model, camera)
+            self.draw_action_marker(model, camera)
         self.draw_effects(model, camera, effects)
         self.draw_combat_bubble_counter(model, camera)
         self.draw_combat_defeat_special(model, camera)
@@ -456,6 +459,8 @@ class Renderer:
     def draw_auto_move_goal(
         self, model: GameModel, camera: CameraState, presentation_time: float
     ) -> None:
+        if model.combat_session is not None:
+            return
         if model.auto_move_goal is None:
             return
         goal_x, goal_z = model.auto_move_goal
@@ -5453,6 +5458,8 @@ class Renderer:
                 self.pyxel.circb(int(point.x), int(point.y), 3, 8 if enemy.kind == "normal" else 2)
 
     def draw_interaction_marker(self, model: GameModel, camera: CameraState) -> None:
+        if model.combat_session is not None:
+            return
         target = model.interaction_candidate(camera)
         if target is None:
             return
@@ -5468,6 +5475,8 @@ class Renderer:
         self.pyxel.line(x - 5, y, x, y - 5, color)
 
     def draw_action_marker(self, model: GameModel, camera: CameraState) -> None:
+        if model.combat_session is not None:
+            return
         enemy = model.captured_enemy(camera) or model.bubble_target(camera)
         if enemy is None:
             return

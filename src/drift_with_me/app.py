@@ -4751,7 +4751,13 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
         assert self.renderer is not None
         scene_camera = self.scene_camera(self.camera())
         self.renderer.draw_scene(
-            self.model, scene_camera, self.presentation_time, self.debug_enabled, self.effects
+            self.model,
+            scene_camera,
+            self.presentation_time,
+            self.debug_enabled,
+            self.effects,
+            exploration_markers=self.model.combat_session is None
+            and self.combat_camera_restore is None,
         )
         draw_week3_key(self, scene_camera)
         self.draw_july_markers()
@@ -5143,8 +5149,6 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             field_task = None if office is None else office.active_field_task
             if field_task is not None and self.model.combat_session is None:
                 self.draw_field_task_hud()
-            else:
-                self.draw_wordmark()
             self.draw_minimap()
             if self.location_label_visible():
                 self.draw_location_label()
@@ -5972,16 +5976,6 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             self.pyxel.line(x + 7, y, x + 2, y + 7, color)
             self.pyxel.line(x + 2, y + 7, x + 7, y + 7, color)
             self.pyxel.line(x + 7, y + 7, x + 4, y + 13, color)
-
-    def draw_wordmark(self) -> None:
-        rect = self.wordmark_rect()
-        if rect.x < self.resource_panel_rect().x + self.resource_panel_rect().width + 8:
-            return
-        self.draw_text_center(
-            int(rect.x + rect.width / 2), int(rect.y + 1), "DRIFTWITHME", 7, scale=2
-        )
-        baseline = int(rect.y + rect.height - 2)
-        self.pyxel.line(int(rect.x + 8), baseline, int(rect.x + rect.width - 8), baseline, 6)
 
     def draw_location_label(self) -> None:
         rect = self.location_rect()
