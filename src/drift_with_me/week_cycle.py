@@ -32,6 +32,10 @@ class WorkWeek:
 
 
 def load_week_office(week: WorkWeek) -> OfficePrototype | None:
+    if week == WorkWeek(7, 2):
+        from drift_with_me.july_week2 import JulyWeek2Office
+
+        return JulyWeek2Office()
     if week == WorkWeek(7, 1):
         from drift_with_me.july_week1 import JulyWeek1Office
 

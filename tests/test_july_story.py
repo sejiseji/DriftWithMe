@@ -88,7 +88,8 @@ def test_both_orders_finish_and_report_once(checks_first):
     assert app.office.complete
     result = app.office.sessions[app.office.cases[0].case_id].field_result
     assert not app.office.complete_field_task(result)
-    assert not app.begin_next_week()
+    assert app.begin_next_week()
+    assert app.week_transition.target == WorkWeek(7, 2)
 
 
 def test_partial_return_reentry_no_respawn_or_duplicate_gift():

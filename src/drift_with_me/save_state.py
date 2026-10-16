@@ -122,6 +122,20 @@ def office_snapshot(office):
         )
     if hasattr(office, "july_progress"):
         data["july"] = office.july_progress.snapshot()
+    if hasattr(office, "week2_progress"):
+        data["week2"] = office.week2_progress.snapshot()
+        s = office.current_session
+        data["counter"] = (
+            dict(
+                lines=[[line.speaker, line.text, line.visual_action] for line in s.dialogue],
+                count=s.active_dialogue_line_count,
+                pending=[x.step_id for x in s.pending_dialogue_steps],
+                completed=sorted(s.completed_dialogue_turn_ids),
+                question=s.pending_question_id,
+            )
+            if s
+            else None
+        )
     return data
 
 
@@ -247,10 +261,10 @@ def snapshot(app):
 
 def restore_office(raw, week):
     office = OfficePrototype.load() if week == WorkWeek() else load_week_office(week)
-    if week == WorkWeek(7, 2):
-        from drift_with_me.flowerbed import FlowerbedPrototypeOffice
-
-        office = FlowerbedPrototypeOffice()
+    week2 = week == WorkWeek(7, 2)
+    if week2 and raw == {"index": 0, "sessions": {}}:
+        office.begin_current_case()
+        return office
     week3 = week == WorkWeek(6, 3)
     week4 = week == WorkWeek(6, 4)
     july = week == WorkWeek(7, 1)
@@ -263,12 +277,18 @@ def restore_office(raw, week):
             else ({"index", "sessions", "july"} if july else {"index", "sessions"})
         )
     )
+    if week2:
+        keys = {"index", "sessions", "week2", "counter"}
     if office is None or not isinstance(raw, dict) or set(raw) != keys:
         raise ValueError("unsupported office")
     if july:
         from drift_with_me.july_week1 import JulyWeek1Progress
 
         office.july_progress = JulyWeek1Progress.from_snapshot(raw["july"])
+    if week2:
+        from drift_with_me.july_week2 import Week2Progress
+
+        office.week2_progress = Week2Progress.restore(raw["week2"])
     if week3:
         from drift_with_me.week3 import FACTS as W3_FACTS
         from drift_with_me.week3 import KEY_ID, Week3Progress
@@ -423,6 +443,16 @@ def restore_office(raw, week):
                 ):
                     raise ValueError("incomplete July patrol")
                 code, facts, lines = "JULY1_COMPLETED", tuple(sorted(JULY_FACTS)), ()
+            elif case.case_id == "OFF-JUL-W2-RESEARCH":
+                from drift_with_me.july_week2 import SITES
+
+                if (
+                    result["code"] != "JULY2_COMPLETED"
+                    or string_set(result["facts"], set(SITES)) != set(SITES)
+                    or office.week2_progress.phase != "done"
+                ):
+                    raise ValueError("incomplete July W2 report")
+                code, facts, lines = "JULY2_COMPLETED", tuple(sorted(SITES)), ()
             elif case.case_id == "OFF-JUN-W4-FUJI":
                 if (
                     result["code"] != "WEEK4_DELIVERED"
@@ -542,6 +572,15 @@ def restore_office(raw, week):
         )
     ):
         raise ValueError("unfinished July patrol")
+    if week2:
+        if (office.week2_progress.phase == "done") != (index == len(office.cases)):
+            raise ValueError("unfinished July W2 week")
+        if (
+            office.week2_progress.phase == "done"
+            and office.sessions["OFF-JUL-W2-RESEARCH"].field_result is None
+        ):
+            raise ValueError("missing July W2 report")
+        restore_counter(office, raw["counter"])
     return office
 
 
@@ -635,6 +674,12 @@ def decode(text):
     visit = FlowerbedVisit.restore(payload.get("flowerbed_visit", {}))
     if visit.stage in {"thanks", "complete"} and not payload.get("flowerbed"):
         raise ValueError("unplanted garden completion")
+    if (
+        week == WorkWeek(7, 2)
+        and offices[week].week2_progress.phase in {"report", "done"}
+        and not visit.complete
+    ):
+        raise ValueError("unfinished July W2 flowerbed")
     sites = EastSiteProgress(
         facts,
         dict(positions),

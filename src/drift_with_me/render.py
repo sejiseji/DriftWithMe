@@ -34,6 +34,7 @@ from drift_with_me.july_combat import (
     is_nudibranch,
 )
 from drift_with_me.july_combat import draw_sprite as draw_nudibranch
+from drift_with_me.july_week2 import draw_week2_ground
 from drift_with_me.math3d import (
     CameraState,
     ProjectedPoint,
@@ -43,6 +44,7 @@ from drift_with_me.math3d import (
     screen_to_world_direction,
 )
 from drift_with_me.model import GameModel
+from drift_with_me.northeast_park import draw_park_ground, park_draw_commands, park_ground_covers
 from drift_with_me.nudibranch_preview import preview_attack_direction, preview_draw_commands
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.week3 import KEY_ID
@@ -355,6 +357,8 @@ class Renderer:
         self.draw_ground_surfaces(model, camera)
         draw_east_site_ground(self, model, camera)
         draw_flowerbed_ground(self, model, camera)
+        draw_park_ground(self, model, camera)
+        draw_week2_ground(self, model, camera)
         self.cloud_shadow.draw(pyxel, model, camera)
         self.draw_background_effects(model, camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
@@ -499,12 +503,23 @@ class Renderer:
             resolved
             for obj in visible_candidates
             if self.object_is_visible(resolved := model.presentation_object(obj), camera, margin)
+            and not (
+                obj.kind == "reactive_prop"
+                and park_ground_covers(getattr(model, "northeast_park", None), obj.x, obj.z, 26)
+            )
+            and not (
+                getattr(model, "week2_scenery_enabled", False)
+                and obj.id in {"grassland_tall_a_01", "grassland_tall_b_07"}
+            )
         ]
         visible_details = [
             detail
             for detail in model.world.ground_details_for_chunks(visible_query.chunk_ids)
             if self.ground_detail_is_visible(detail, camera, margin)
             and not self.point_in_active_baked_ground_patch(detail.x, detail.z)
+            and not park_ground_covers(
+                getattr(model, "northeast_park", None), detail.x, detail.z, 8
+            )
         ]
         for detail in visible_details:
             anchor = camera.project(Vec3(detail.x, 0.0, detail.z))
@@ -661,6 +676,7 @@ class Renderer:
         commands.extend(preview_draw_commands(self, model, camera))
         commands.extend(garden_preview_draw_commands(self, model, camera))
         commands.extend(flowerbed_draw_commands(self, model, camera))
+        commands.extend(park_draw_commands(self, model, camera))
         construction = getattr(model, "july_construction", None)
         if construction is not None:
             commands.extend(garden_preview_draw_commands(self, model, camera, construction))

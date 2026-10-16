@@ -38,6 +38,7 @@ from drift_with_me.july_week1 import (
 from drift_with_me.july_week1 import (
     install_july_world,
 )
+from drift_with_me.july_week2 import JulyWeek2Mixin
 from drift_with_me.map_objectives import MapObjectivesMixin
 from drift_with_me.math3d import (
     AffineCameraState,
@@ -94,6 +95,7 @@ from drift_with_me.week4 import (
 from drift_with_me.week_cycle import WeekTransition, WorkWeek, load_week_office
 from drift_with_me.week_debug import WeekDebugMixin, debug_launch_requested
 from drift_with_me.world import load_world_data
+from drift_with_me.yumesaki_portraits import YUMESAKI_PORTRAITS, yumesaki_office_portrait
 
 
 class AppScreen(Enum):
@@ -365,6 +367,9 @@ OFFICE_STATIC_PORTRAIT_IDS = frozenset(
         "fuji_matte",
         "sagan_matte",
         "yoake_matte",
+        "yumesaki_map_knees",
+        "miyano_map_knees",
+        "miyano_bust_normal",
         "morris_matte",
         "ruby_matte",
         "mizuno_matte",
@@ -384,7 +389,10 @@ FUSE_OFFICE_EXPRESSIONS = {
     "ふふ。タコのお仕事、好評で何より": "smile",
 }
 OFFICE_VISITOR_PORTRAIT_IDS = (
-    frozenset(OFFICE_PORTRAIT_SMILE_IDS) | OFFICE_STATIC_PORTRAIT_IDS | {"fuse_matte"}
+    frozenset(OFFICE_PORTRAIT_SMILE_IDS)
+    | OFFICE_STATIC_PORTRAIT_IDS
+    | frozenset(YUMESAKI_PORTRAITS.values())
+    | {"fuse_matte"}
 )
 OFFICE_PORTRAIT_SMILE_STATES = frozenset(
     {
@@ -405,7 +413,12 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
-    FlowerbedVisitMixin, FlowerbedMixin, WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin
+    FlowerbedVisitMixin,
+    FlowerbedMixin,
+    WeekDebugMixin,
+    JulyStoryMixin,
+    MapObjectivesMixin,
+    JulyWeek2Mixin,
 ):
     def __init__(
         self,
@@ -497,6 +510,8 @@ class DriftWithMeApp(
         self.location_label_remaining = 0.0
         self.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
         self.browser_pointer_sequence_seen = 0
+        # The player launch click must not also activate a title button after reload.
+        self.read_browser_pointer_snapshot()
         self.last_combat_scene_camera: CameraState | None = None
         self.combat_camera_restore: CombatCameraRestore | None = None
         self.combat_camera_snapshot_zoom: float | None = None
@@ -587,6 +602,8 @@ class DriftWithMeApp(
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.update_week2():
+            return
         if self.update_flowerbed_modal():
             return
         if self.update_week_debug():
@@ -779,14 +796,22 @@ class DriftWithMeApp(
             if getattr(self, "work_week", WorkWeek()) == WorkWeek(7, 2)
             else AppScreen.OFFICE
         )
-        if getattr(self, "work_week", WorkWeek()) == WorkWeek(7, 2):
+        if getattr(self, "work_week", WorkWeek()) == WorkWeek(7, 2) and (
+            not self.week2_active() or self.office.week2_progress.phase == "field"
+        ):
             self.model.player.x, self.model.player.z = 184, 424
             self.model.player.last_move_x, self.model.player.last_move_z = 0, -1
             self.camera_controller.reset(Vec3(184, 0, 424))
             self.model.snap_buddy(self.camera())
             self.resume_flowerbed_visit()
+        elif self.week2_active():
+            self.screen = AppScreen.OFFICE
+        self.week2_dialogue = None
+        self.week2_wait_release = False
 
     def update_office_screen(self, elapsed: float) -> None:
+        if self.week2_active() and self.office.week2_progress.phase == "done":
+            return
         self.clear_world_input_latches()
         if getattr(self, "office_consultation", None) is not None:
             self.update_office_dialogue_playback(elapsed)
@@ -1252,6 +1277,18 @@ class DriftWithMeApp(
     def activate_office_field_debug(self) -> bool:
         if getattr(self, "field_transition", None) is not None:
             return False
+        if self.week2_active() and not getattr(self, "week_debug_active", False):
+            session = self.office.current_session
+            if (
+                self.office.current_index != 2
+                or session is None
+                or session.state not in {CaseState.FIELD_CHECK_REQUIRED, CaseState.FIELD_ACTIVE}
+            ):
+                return False
+            if session.state == CaseState.FIELD_CHECK_REQUIRED:
+                self.office.prepare_field_task()
+            self.enter_exploration_from_office()
+            return True
         if self.office.prepare_debug_field_task() is None:
             return False
         self.office_focus = "questions"
@@ -1287,6 +1324,11 @@ class DriftWithMeApp(
     def enter_exploration_from_office(self) -> None:
         if self.july_active():
             install_july_world(self, combat=True)
+        from drift_with_me.northeast_park import install_park_world
+
+        install_park_world(self)
+        if self.week2_active():
+            self.office.week2_progress.phase = "field"
         if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3):
             install_week3_world(self)
         if getattr(self, "field_transition", None) is not None:
@@ -1326,8 +1368,15 @@ class DriftWithMeApp(
             self.field_transition.lines = self.office.plant_progress.travel_lines("out")
         if self.july_active() and self.office.active_field_task:
             self.field_transition.lines = self.office.july_progress.travel_lines("out")
+        if self.week2_active() and self.office.active_field_task:
+            self.field_transition.lines = (
+                ("ジャック", "フジさんの花壇と、四か所の様子を見てこよう"),
+                ("ヒューズ", "ええ。見えたことを、順に記録していきましょう"),
+            )
 
     def complete_office_field_task(self) -> bool:
+        if self.week2_active():
+            return self.return_week2()
         if getattr(self, "field_transition", None) is not None:
             return False
         task = self.office.active_field_task
@@ -2549,6 +2598,12 @@ class DriftWithMeApp(
                     self.current_east_site_progress().pending_completion = None
                 self.field_conversation = None
             elif event.kind == "interaction_started" and event.target_id is not None:
+                from drift_with_me.july_week2 import SITES
+
+                if self.week2_active() and event.target_id in SITES:
+                    self.process_events(self.model.cancel_interaction())
+                    self.begin_week2_observation(event.target_id)
+                    continue
                 if event.target_id in {FLOWERBED_ID, FLOWERBED_FUJI_ID} and getattr(
                     self.model, "flowerbed_visible", False
                 ):
@@ -3490,6 +3545,22 @@ class DriftWithMeApp(
         )
 
     def draw(self) -> None:
+        if getattr(self, "week2_dialogue", None) is not None:
+            if self.screen == AppScreen.OFFICE:
+                self.draw_office()
+            else:
+                self.draw_play()
+            self.draw_field_conversation(self.week2_dialogue)
+            if getattr(self, "week2_save_error", ""):
+                self.draw_office_text_in_rect(
+                    self.office_rect(48, 106, 416, 18), self.week2_save_error, 8
+                )
+            if self.week2_dialogue.target_id != "week2_report":
+                self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
+            return
+        if getattr(self, "park_preview_week", None) is not None:
+            self.draw_park_preview()
+            return
         if getattr(self, "flowerbed_dialogue", None) is not None:
             self.draw_flowerbed_visit_dialogue()
             return
@@ -3650,11 +3721,12 @@ class DriftWithMeApp(
         pyxel.line(0, int(footer.y), self.runtime.screen_width, int(footer.y), 12)
 
         debug_rect = self.office_field_debug_rect()
+        field_enabled = self.week2_field_header_enabled()
         self.draw_office_button(
             debug_rect,
             "現地確認へ",
-            10,
-            text_color=0,
+            10 if field_enabled else 5,
+            text_color=0 if field_enabled else 13,
             horizontal_padding=2,
         )
 
@@ -3732,6 +3804,7 @@ class DriftWithMeApp(
             visitor_lines = (
                 (displayed_name,)
                 if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 4)
+                or (self.week2_active() and case.case_id == "OFF-JUL-W2-RESEARCH")
                 else self.office_visitor_info_lines(case)
             )
             self.draw_office_wrapped_lines(
@@ -3850,7 +3923,11 @@ class DriftWithMeApp(
         partial_week = getattr(self, "work_week", WorkWeek()) != WorkWeek()
         self.draw_office_text_in_rect(
             self.office_rect(116, 78, 280, 34),
-            "今週の用件はここまでです" if partial_week else "本日の試行案件は完了しました",
+            "7月第2週の勤務終了"
+            if self.week2_active()
+            else "今週の用件はここまでです"
+            if partial_week
+            else "本日の試行案件は完了しました",
             7,
             preferred_styles=("office_japanese", "office_japanese_button"),
             align="center",
@@ -3866,7 +3943,7 @@ class DriftWithMeApp(
         )
         self.draw_office_button(
             self.office_footer_action_rect(),
-            "探索へ",
+            "勤務終了・記録済み" if self.week2_active() else "探索へ",
             11,
             text_color=0,
         )
@@ -3886,7 +3963,7 @@ class DriftWithMeApp(
         week = getattr(self, "work_week", WorkWeek())
         return (
             self.screen == AppScreen.OFFICE
-            and week in {WorkWeek(), WorkWeek(6, 2), WorkWeek(6, 3)}
+            and week in {WorkWeek(), WorkWeek(6, 2), WorkWeek(6, 3), WorkWeek(7, 1)}
             and getattr(self, "week_transition", None) is None
             and not getattr(self, "week_input_wait_for_release", False)
             and getattr(self, "office_consultation", None) is None
@@ -3930,6 +4007,8 @@ class DriftWithMeApp(
         if hasattr(self, "world"):
             install_week4_world(self, enabled=self.work_week == WorkWeek(6, 4))
             install_july_world(self, enabled=self.july_active())
+            if self.work_week.month >= 7:
+                install_flowerbed_world(self)
         self.week_office_history[self.work_week] = self.office
         self.pending_week_office = None
         self.end_office_consultation()
@@ -4292,6 +4371,21 @@ class DriftWithMeApp(
             )
 
     def office_current_visitor_identity(self, case):
+        if self.week2_active() and case.case_id == "OFF-JUL-W2-RESEARCH":
+            page = self.office_dialogue_current_page(self.sync_office_dialogue_playback())
+            for line in reversed(page):
+                if line.speaker in {"ユメサキ", "ミヤノ"}:
+                    if line.speaker == "ミヤノ":
+                        return "miyano_bust_normal", line.speaker
+                    # Resolve from the active authored turn, not the wrapped page or history.
+                    text = "".join(
+                        item.text
+                        for item in self.office.active_dialogue_lines()
+                        if item.speaker == "ユメサキ"
+                    )
+                    return yumesaki_office_portrait(text), line.speaker
+            # Jack's page and legacy saves begin with a fresh neutral visitor portrait.
+            return YUMESAKI_PORTRAITS["normal"], case.visitor.name
         if getattr(self, "work_week", WorkWeek()) != WorkWeek(6, 4):
             return case.visitor.portrait_id, case.visitor.name
         portraits = {

@@ -22,7 +22,15 @@ def map_goals(app):
     if task is None or office.current_session is None:
         return None, ()
     session = office.current_session
-    if task.case_id == "OFF-JUL-W1-PEST":
+    if task.case_id == "OFF-JUL-W2-RESEARCH":
+        from drift_with_me.july_week2 import SITES
+
+        p = office.week2_progress
+        small = (Goal("花壇を確認", app.flowerbed_visit_state().complete),) + tuple(
+            Goal(label, ident in p.checked) for ident, (label, _, _) in SITES.items()
+        )
+        done = app.week2_ready()
+    elif task.case_id == "OFF-JUL-W1-PEST":
         p = office.july_progress
         small = (
             Goal(f"ウミウシを駆除 {len(p.defeated)}/4", p.cleared),

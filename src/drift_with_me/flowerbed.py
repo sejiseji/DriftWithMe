@@ -183,6 +183,12 @@ def install_flowerbed_world(app):
         )
     app.world = WorldData(raw)
     app.model.world = app.world
+    from drift_with_me.northeast_park import install_park_world
+
+    install_park_world(app)
+    from drift_with_me.july_week2 import install_week2_world
+
+    install_week2_world(app)
 
 
 def draw_flowerbed_ground(renderer, model, camera):
@@ -242,13 +248,18 @@ class FlowerbedMixin:
             and self.model.interaction is None
             and getattr(self, "flowerbed_dialogue", None) is None
             and self.model.combat_session is None
+            and not self.model.danger_blocks_interaction()
             and self.field_transition is None
             and self.week_transition is None
             and hypot(self.model.player.x - BED_CENTER[0], self.model.player.z - BED_CENTER[1]) < 90
         )
 
     def start_flowerbed_editor(self):
-        if not getattr(self.model, "flowerbed_visible", False) or self.model.combat_session:
+        if (
+            not getattr(self.model, "flowerbed_visible", False)
+            or self.model.combat_session
+            or self.model.danger_blocks_interaction()
+        ):
             return False
         self.flowerbed_editor = FlowerbedEditor()
         self.model.flowerbed_draft = self.flowerbed_editor.draft
@@ -340,7 +351,7 @@ class FlowerbedMixin:
             self.draw_flowerbed_button(self.flowerbed_entry_rect(), "フジと話す")
             self.draw_office_text_in_rect(
                 self.office_rect(8, 140, 144, 24),
-                "花壇配置済み" if self.flowerbed_visit_state().complete else "7月2週・外勤接続試作",
+                "花壇配置済み" if self.flowerbed_visit_state().complete else "花壇の並びを確認",
                 10,
                 align="center",
             )

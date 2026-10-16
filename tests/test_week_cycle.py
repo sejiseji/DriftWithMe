@@ -52,7 +52,8 @@ def test_twelve_workdays_and_month_end_without_invented_vacation():
             WorkWeek(*args)
     assert load_week_office(WorkWeek(6, 4)) is not None
     assert load_week_office(WorkWeek(7, 1)) is not None
-    assert load_week_office(WorkWeek(7, 2)) is None
+    assert load_week_office(WorkWeek(7, 2)) is not None
+    assert load_week_office(WorkWeek(7, 3)) is None
     assert load_week_office(WorkWeek(8, 4)) is None
 
 

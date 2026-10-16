@@ -44,6 +44,7 @@ class WeekDebugMixin:
         self.nudibranch_preview = None
         self.garden_props_preview = None
         self.garden_props_previous_projection = None
+        self.park_preview_week = None
         self.normal_progress_store = self.progress_store
         if enabled:
             self.progress_store = TemporaryProgressStore()
@@ -66,7 +67,8 @@ class WeekDebugMixin:
             "garden": self.office_rect(334, 158, 70, 30),
             "portraits": self.office_rect(408, 158, 72, 30),
             "cancel": self.office_rect(32, 196, 220, 30),
-            "normal": self.office_rect(260, 196, 220, 30),
+            "park": self.office_rect(260, 196, 106, 30),
+            "normal": self.office_rect(374, 196, 106, 30),
         }
 
     def jump_to_debug_week(self, week: WorkWeek) -> bool:
@@ -86,6 +88,7 @@ class WeekDebugMixin:
 
         # A fresh world/model removes map flags, combat, interactions and enemy state.
         self.world = load_world_data()
+        self.park_preview_week = None
         self.portrait_preview = None
         self.nudibranch_preview = None
         self.garden_props_preview = None
@@ -105,9 +108,9 @@ class WeekDebugMixin:
         self.start_game(new_game=True)
         self.work_week = self.map_work_week = week
         if week == WorkWeek(7, 2):
-            from drift_with_me.flowerbed import FlowerbedLayoutStore, FlowerbedPrototypeOffice
+            from drift_with_me.flowerbed import FlowerbedLayoutStore
 
-            self.office = FlowerbedPrototypeOffice()
+            self.office = load_week_office(week)
             if getattr(self, "flowerbed_layout_store", None) is None:
                 self.flowerbed_layout_store = FlowerbedLayoutStore()
             order, visit = self.flowerbed_layout_store.load_state()
@@ -138,12 +141,13 @@ class WeekDebugMixin:
         if week == WorkWeek(7, 2):
             from drift_with_me.app import AppScreen
 
-            self.screen = AppScreen.PLAY
+            self.screen = AppScreen.OFFICE
             self.model.player.x, self.model.player.z = 184, 424
             self.model.player.last_move_x, self.model.player.last_move_z = 0, -1
             self.camera_controller.reset(Vec3(184, 0, 424))
             self.model.snap_buddy(self.camera())
-            self.resume_flowerbed_visit()
+            self.week2_dialogue = None
+            self.week2_wait_release = False
         self.july_wait_release = True
         self.july_fade_elapsed = 0.0
         self.week_debug_menu_open = False
@@ -184,6 +188,9 @@ class WeekDebugMixin:
             return True
         if not getattr(self, "week_debug_active", False):
             return False
+        if getattr(self, "park_preview_week", None) is not None:
+            self.update_park_preview()
+            return True
         if getattr(self, "portrait_preview", None) is not None:
             self.update_portrait_preview()
             return True
@@ -224,6 +231,8 @@ class WeekDebugMixin:
                 self.start_nudibranch_preview()
             elif action == "garden":
                 self.start_garden_props_preview()
+            elif action == "park":
+                self.start_park_preview()
             elif action == "cancel" and self.session_started:
                 self.week_debug_menu_open = False
             elif action == "normal":
@@ -261,7 +270,7 @@ class WeekDebugMixin:
         for week in range(1, 5):
             self.draw_week_debug_button(
                 rects[f"week{week}"],
-                ("第2週・花壇試作" if self.week_debug_month == 7 and week == 2 else f"第{week}週")
+                ("第2週・花壇と調査" if self.week_debug_month == 7 and week == 2 else f"第{week}週")
                 if self.week_debug_month == 6 or (self.week_debug_month == 7 and week in (1, 2))
                 else "準備中",
                 selected=week == self.week_debug_selection,
@@ -277,10 +286,91 @@ class WeekDebugMixin:
         self.draw_week_debug_button(rects["sprites"], "Sprite test")
         self.draw_week_debug_button(rects["garden"], "Garden test")
         self.draw_week_debug_button(rects["portraits"], "立ち絵")
+        self.draw_week_debug_button(rects["park"], "公園比較")
         self.draw_week_debug_button(
             rects["cancel"], "取消・テストに戻る", disabled=not self.session_started
         )
         self.draw_week_debug_button(rects["normal"], "通常プレイへ戻る")
+
+    def start_park_preview(self) -> bool:
+        if not getattr(self, "week_debug_active", False):
+            return False
+        self.jump_to_debug_week(WorkWeek(7, 2))
+        from drift_with_me.app import AppScreen
+
+        self.screen = AppScreen.PLAY
+        self.flowerbed_dialogue = self.flowerbed_editor = None
+        self.flowerbed_input_wait_release = False
+        self.set_park_preview(WorkWeek(7, 1))
+        return True
+
+    def set_park_preview(self, week) -> None:
+        from drift_with_me.northeast_park import install_park_world
+
+        self.park_preview_week = week
+        install_park_world(self, week)
+        self.week_debug_wait_release = True
+
+    def park_preview_rects(self):
+        return {
+            name: self.office_rect(8 + i * 83, 202, 79, 27)
+            for i, name in enumerate(("w1", "w2", "w3", "w4", "aug", "menu"))
+        }
+
+    def update_park_preview(self) -> None:
+        from drift_with_me.northeast_park import PREVIEW_WEEKS
+
+        if self.key_pressed("KEY_ESCAPE"):
+            self.jump_to_debug_week(WorkWeek(7, 2))
+            self.flowerbed_dialogue = None
+            self.week_debug_menu_open = True
+            return
+        for i, (name, rect) in enumerate(self.park_preview_rects().items()):
+            if self.mouse_pressed_in(rect):
+                if name == "menu":
+                    self.jump_to_debug_week(WorkWeek(7, 2))
+                    self.flowerbed_dialogue = None
+                    self.week_debug_menu_open = True
+                else:
+                    self.set_park_preview(PREVIEW_WEEKS[i])
+                return
+
+    def draw_park_preview(self) -> None:
+        from dataclasses import replace
+
+        from drift_with_me.math3d import Vec3
+
+        camera = replace(
+            self.affine_scene_camera(self.camera()),
+            target=Vec3(852, 0, 876),
+            zoom=2.0,
+            anchor_x=0.5,
+            anchor_y=0.48,
+        )
+        self.renderer.draw_scene(
+            self.model,
+            camera,
+            self.presentation_time,
+            False,
+            self.effects,
+            exploration_markers=False,
+        )
+        self.draw_week_debug_button(
+            self.office_rect(8, 4, 496, 24),
+            self.park_preview_week.label + " 公園景観比較・保存なし",
+        )
+        for name, rect in self.park_preview_rects().items():
+            self.draw_week_debug_button(
+                rect,
+                {
+                    "w1": "7月1週",
+                    "w2": "7月2週",
+                    "w3": "7月3週",
+                    "w4": "7月4週",
+                    "aug": "8月",
+                    "menu": "週選択",
+                }[name],
+            )
 
     def start_garden_props_preview(self) -> bool:
         if not getattr(self, "week_debug_active", False):

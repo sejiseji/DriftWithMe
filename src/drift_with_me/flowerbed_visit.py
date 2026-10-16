@@ -13,6 +13,11 @@ REQUEST = (
     ("ジャック", "場所を確認します。近づかず、見かけたら教えてください"),
     ("フジ", "分かった。いざとなりゃ身は守れるが、仕事中に寄って来られても困るからな"),
     ("ジャック", "そちらは住民課で確認します。まず、花の並びを見ていただけますか"),
+    (
+        "フジ",
+        "北東の広場も、木を切って花壇の区画を整えている。そっちの作業でも、ウニやウミウシを見かけた",
+    ),
+    ("ジャック", "北側の作業場所も回って、見えたことを記録します"),
 )
 THANKS = (
     ("フジ", "……ああ、よくまとまったな。ありがとう。あとはこっちで見ておく"),
@@ -88,7 +93,11 @@ class FlowerbedVisitMixin:
         return saved
 
     def start_flowerbed_visit(self, target="jul_w2_fuji"):
-        if not getattr(self.model, "flowerbed_visible", False) or self.model.combat_session:
+        if (
+            not getattr(self.model, "flowerbed_visible", False)
+            or self.model.combat_session
+            or self.model.danger_blocks_interaction()
+        ):
             return False
         state = self.flowerbed_visit_state()
         if state.complete and target == "jul_w2_flowerbed":
@@ -100,6 +109,20 @@ class FlowerbedVisitMixin:
             "thanks": (THANKS, "thanks"),
             "complete": (REPEAT, "repeat"),
         }[state.stage]
+        if self.week2_active() and self.office.week2_progress.checked:
+            if state.stage == "request":
+                lines = tuple(
+                    (
+                        speaker,
+                        "確認した場所もあります。残りを見て、記録をまとめます" if i == 5 else text,
+                    )
+                    for i, (speaker, text) in enumerate(lines)
+                )
+            elif state.stage == "thanks":
+                lines = (
+                    lines[0],
+                    ("ジャック", "よろしくお願いします。確認したことを記録にまとめます"),
+                )
         index = state.index if action in ("request", "thanks") else 0
         self.flowerbed_dialogue = VisitDialogue("jul_w2_fuji", lines, index, "フジ", action=action)
         self.clear_world_input_latches()
@@ -133,6 +156,8 @@ class FlowerbedVisitMixin:
         if dialogue.action in ("request", "edit"):
             self.flowerbed_visit_editing = True
             self.start_flowerbed_editor()
+            if self.week2_active() and self.east_site_progress.flowerbed_order:
+                self.flowerbed_editor.draft = list(self.east_site_progress.flowerbed_order)
         else:
             self.flowerbed_input_wait_release = True
             self.clear_world_input_latches()

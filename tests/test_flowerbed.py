@@ -22,6 +22,10 @@ def garden_app():
     app = debug_app(storage)
     app.flowerbed_layout_store = FlowerbedLayoutStore(ProgressStore(browser_storage=storage))
     assert app.jump_to_debug_week(WorkWeek(7, 2))
+    from drift_with_me.app import AppScreen
+
+    app.office.prepare_debug_field_task()
+    app.screen = AppScreen.PLAY
     return app, storage
 
 
@@ -64,8 +68,8 @@ def test_debug_confirmation_separate_store_cancel_and_reload_leave_progress_slot
     _, old = payload()
     storage.items.update({SAVE_KEY: encode(old), SAVE_KEY + ".backup": encode(old)})
     before = deepcopy(storage.items)
-    assert load_week_office(WorkWeek(7, 2)) is None  # no invented counter story
-    assert app.office.cases == () and app.screen == AppScreen.PLAY
+    assert load_week_office(WorkWeek(7, 2)) is not None
+    assert len(app.office.cases) == 3 and app.screen == AppScreen.PLAY
     camera = app.camera()
     assert app.start_flowerbed_editor()
     for ident in FLOWER_IDS:
