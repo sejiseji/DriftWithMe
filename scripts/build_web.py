@@ -149,8 +149,20 @@ HOST_JS = """(() => {
     if (rect.width <= 0 || rect.height <= 0) {
       return { x: pointer.x, y: pointer.y, inside: false };
     }
-    const rawX = ((event.clientX - rect.left) * size.width) / rect.width;
-    const rawY = ((event.clientY - rect.top) * size.height) / rect.height;
+    // Pyxel preserves the game aspect ratio inside the canvas backing buffer.
+    // Exclude that letterbox before converting CSS/client coordinates to game pixels.
+    const bufferWidth = canvas.width;
+    const bufferHeight = canvas.height;
+    if (bufferWidth <= 0 || bufferHeight <= 0) {
+      return { x: pointer.x, y: pointer.y, inside: false };
+    }
+    const scale = Math.min(bufferWidth / size.width, bufferHeight / size.height);
+    const contentWidth = size.width * scale;
+    const contentHeight = size.height * scale;
+    const bufferX = ((event.clientX - rect.left) * bufferWidth) / rect.width;
+    const bufferY = ((event.clientY - rect.top) * bufferHeight) / rect.height;
+    const rawX = (bufferX - (bufferWidth - contentWidth) / 2) / scale;
+    const rawY = (bufferY - (bufferHeight - contentHeight) / 2) / scale;
     const inside = rawX >= 0 && rawX <= size.width && rawY >= 0 && rawY <= size.height;
     return {
       x: Math.max(0, Math.min(size.width - 1, rawX)),
