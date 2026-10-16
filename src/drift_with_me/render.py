@@ -15,6 +15,7 @@ from drift_with_me.cloud_shadow import CloudShadowLayer
 from drift_with_me.east_site import SITE_FACTS
 from drift_with_me.east_site_render import draw_east_site_ground
 from drift_with_me.effects import EffectSystem, EnemySnapshot, ReactiveEnvironmentState
+from drift_with_me.flowerbed import draw_flowerbed_ground, flowerbed_draw_commands
 from drift_with_me.garden_props_preview import garden_preview_draw_commands
 from drift_with_me.grass_sway import bend_angle, rotate_tip, sample_gust
 from drift_with_me.hex_assets import (
@@ -353,6 +354,7 @@ class Renderer:
         self.draw_shallow_water_symbols(model, camera, presentation_time)
         self.draw_ground_surfaces(model, camera)
         draw_east_site_ground(self, model, camera)
+        draw_flowerbed_ground(self, model, camera)
         self.cloud_shadow.draw(pyxel, model, camera)
         self.draw_background_effects(model, camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
@@ -658,6 +660,7 @@ class Renderer:
         commands.extend(focus_draw_commands(self, model, camera))
         commands.extend(preview_draw_commands(self, model, camera))
         commands.extend(garden_preview_draw_commands(self, model, camera))
+        commands.extend(flowerbed_draw_commands(self, model, camera))
         construction = getattr(model, "july_construction", None)
         if construction is not None:
             commands.extend(garden_preview_draw_commands(self, model, camera, construction))

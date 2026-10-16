@@ -15,6 +15,17 @@ from drift_with_me.effects import EffectSystem
 from drift_with_me.field_transition import FieldTransition, travel_lines
 from drift_with_me.field_visit import ANOMALY_ID, FieldConversation, observation_conversation
 from drift_with_me.first_sight import FirstSightQueue
+from drift_with_me.flowerbed import (
+    BED_ID as FLOWERBED_ID,
+)
+from drift_with_me.flowerbed import (
+    FUJI_ID as FLOWERBED_FUJI_ID,
+)
+from drift_with_me.flowerbed import (
+    FlowerbedMixin,
+    install_flowerbed_world,
+)
+from drift_with_me.flowerbed_visit import FlowerbedVisitMixin
 from drift_with_me.hex_assets import SpriteAssetLibrary, load_runtime_sprite_library
 from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput, Rect
 from drift_with_me.july_story import JulyStoryMixin
@@ -393,7 +404,9 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 }
 
 
-class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
+class DriftWithMeApp(
+    FlowerbedVisitMixin, FlowerbedMixin, WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin
+):
     def __init__(
         self,
         profile: str | None = None,
@@ -574,6 +587,8 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.update_flowerbed_modal():
+            return
         if self.update_week_debug():
             return
         if self.screen in (AppScreen.START, AppScreen.PLAY):
@@ -598,6 +613,8 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
         if pyxel.btnp(pyxel.KEY_M):
             self.audio.toggle_mute()
 
+        if self.screen == AppScreen.PLAY and self.update_flowerbed_entry():
+            return
         if self.screen == AppScreen.PLAY and self.update_map_objectives():
             return
         if self.screen == AppScreen.PLAY and self.update_july_story(elapsed):
@@ -697,6 +714,11 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             self.audio.toggle_mute()
 
     def start_game(self, *, new_game: bool = False) -> None:
+        self.flowerbed_dialogue = None
+        self.flowerbed_visit_editing = False
+        self.flowerbed_editor = None
+        self.model.flowerbed_draft = None
+        self.flowerbed_input_wait_release = False
         self.map_objective_open = False
         if getattr(self, "saved_progress", None) is not None and not new_game:
             week, offices, sites, seen, resources, defeated = self.saved_progress
@@ -731,6 +753,7 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             self.model.reset_scene()
             self.field_transition = self.week_transition = self.field_conversation = None
         install_july_world(self, enabled=self.july_active(), combat=self.july_active())
+        install_flowerbed_world(self)
         self.july_wait_release = True
         self.july_fade_elapsed = 0.0
         self.first_sight_queue = FirstSightQueue()
@@ -751,7 +774,17 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
         self.pending_cancel_auto_move = False
         self.last_combat_scene_camera = None
         self.combat_camera_restore = None
-        self.screen = AppScreen.OFFICE
+        self.screen = (
+            AppScreen.PLAY
+            if getattr(self, "work_week", WorkWeek()) == WorkWeek(7, 2)
+            else AppScreen.OFFICE
+        )
+        if getattr(self, "work_week", WorkWeek()) == WorkWeek(7, 2):
+            self.model.player.x, self.model.player.z = 184, 424
+            self.model.player.last_move_x, self.model.player.last_move_z = 0, -1
+            self.camera_controller.reset(Vec3(184, 0, 424))
+            self.model.snap_buddy(self.camera())
+            self.resume_flowerbed_visit()
 
     def update_office_screen(self, elapsed: float) -> None:
         self.clear_world_input_latches()
@@ -2516,6 +2549,12 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
                     self.current_east_site_progress().pending_completion = None
                 self.field_conversation = None
             elif event.kind == "interaction_started" and event.target_id is not None:
+                if event.target_id in {FLOWERBED_ID, FLOWERBED_FUJI_ID} and getattr(
+                    self.model, "flowerbed_visible", False
+                ):
+                    self.process_events(self.model.cancel_interaction())
+                    self.start_flowerbed_visit(event.target_id)
+                    continue
                 target = self.world.object_by_id(event.target_id)
                 if target is not None:
                     target = self.model.presentation_object(target)
@@ -3103,7 +3142,6 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             self.interact_button_rect(),
             self.pause_button_rect(),
             self.sound_button_rect(),
-            self.minimap_rect(),
         ]
         if interaction is not None and interaction.kind in {"water_refill", "energy_refill"}:
             rects.append(self.interaction_chip_rect())
@@ -3298,12 +3336,6 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
     def resource_panel_rect(self) -> Rect:
         return self.ui_rect("resource")
 
-    def minimap_rect(self) -> Rect:
-        return self.ui_rect("minimap")
-
-    def minimap_visual_rect(self) -> Rect:
-        return self.optional_ui_rect("minimap_visual", "minimap")
-
     def location_rect(self) -> Rect:
         return self.ui_rect("location")
 
@@ -3425,7 +3457,6 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             self.sound_button_rect(),
             self.interact_button_rect(),
             self.action_button_rect(),
-            self.minimap_rect(),
             self.location_rect(),
         )
 
@@ -3459,6 +3490,12 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
         )
 
     def draw(self) -> None:
+        if getattr(self, "flowerbed_dialogue", None) is not None:
+            self.draw_flowerbed_visit_dialogue()
+            return
+        if getattr(self, "flowerbed_editor", None) is not None:
+            self.draw_flowerbed_editor()
+            return
         if getattr(self, "portrait_preview", None) is not None:
             self.draw_portrait_preview()
             return
@@ -4769,6 +4806,7 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
         if getattr(self, "first_sight_conversation", None) is not None:
             self.draw_field_conversation(self.first_sight_conversation)
         self.draw_july_story()
+        self.draw_flowerbed_entry()
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
         camera = self.combat_scene_camera(camera)
@@ -5149,7 +5187,6 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             field_task = None if office is None else office.active_field_task
             if field_task is not None and self.model.combat_session is None:
                 self.draw_field_task_hud()
-            self.draw_minimap()
             if self.location_label_visible():
                 self.draw_location_label()
             self.draw_action_button(
@@ -5568,6 +5605,8 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             "ユメサキ": "yumesaki_map_knees",
             "ミヤノ": "miyano_map_knees",
         }.get(speaker) or self.july_portrait_id(conversation)
+        if conversation.target_id == FLOWERBED_FUJI_ID and speaker == "フジ":
+            portrait_id = "fuji_map_knees"
         if fuji_portrait:
             self.draw_field_fuji_portrait()
         elif portrait_id is not None:
@@ -5613,6 +5652,12 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             )
         if conversation.target_id == KEY_ID and conversation.index + 1 == len(conversation.lines):
             label = "閉じる" if self.office.site_progress.key_collected else "拾う"
+        if (
+            conversation.target_id == FLOWERBED_FUJI_ID
+            and hasattr(conversation, "kind")
+            and conversation.index + 1 == len(conversation.lines)
+        ):
+            label = "花を並べる" if conversation.action in {"request", "edit"} else "閉じる"
         self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
 
     def draw_field_fuji_portrait(self) -> None:
@@ -5988,73 +6033,6 @@ class DriftWithMeApp(WeekDebugMixin, JulyStoryMixin, MapObjectivesMixin):
             7,
             "auxiliary",
         )
-
-    def draw_minimap(self) -> None:
-        rect = self.minimap_visual_rect()
-        x = int(rect.x)
-        y = int(rect.y)
-        size = int(rect.width)
-        radius = size // 2 - 2
-        cx = x + size // 2
-        cy = y + size // 2
-        self.pyxel.circ(cx, cy, radius, 1)
-        self.pyxel.circb(cx, cy, radius, 7)
-        for offset in range(-radius + 6, radius, 8):
-            span = int(math.sqrt(max(0, radius * radius - offset * offset)))
-            self.pyxel.line(cx - span, cy + offset, cx + span, cy + offset, 5)
-            self.pyxel.line(cx + offset, cy - span, cx + offset, cy + span, 5)
-        map_side = max(16, int((size - 12) / math.sqrt(2)))
-        map_x = cx - map_side // 2
-        map_y = cy - map_side // 2
-        for obj in self.world.objects:
-            obj = self.model.presentation_object(obj)
-            px, py = self.minimap_point(obj.x, obj.z, map_x, map_y, map_side)
-            if obj.kind == "water_station":
-                color = 12
-            elif obj.kind == "solar_station":
-                color = 10
-            elif obj.inspectable:
-                color = 7
-            else:
-                color = 5
-            self.pyxel.pset(px, py, color)
-        office = getattr(self, "office", None)
-        task = None if office is None else office.active_field_task
-        if task is not None and task.completion_condition_id == "inspect_anomaly_source":
-            target = self.model.enemy_by_id("urchin_abnormal_04")
-            if target is not None and target.state != "DEFEATED":
-                target_x, target_y = self.minimap_point(
-                    target.x,
-                    target.z,
-                    map_x,
-                    map_y,
-                    map_side,
-                )
-                self.pyxel.circb(target_x, target_y, 3, 10)
-        px, py = self.minimap_point(
-            self.model.player.x,
-            self.model.player.z,
-            map_x,
-            map_y,
-            map_side,
-        )
-        self.pyxel.circ(px, py, 2, 7)
-
-    def minimap_point(
-        self,
-        world_x: float,
-        world_z: float,
-        map_x: int,
-        map_y: int,
-        map_side: int,
-    ) -> tuple[int, int]:
-        rect = self.world.minimap_rect
-        u = 0.0 if rect.width <= 0 else max(0.0, min((world_x - rect.min_x) / rect.width, 1.0))
-        v = 1.0
-        if rect.depth > 0:
-            normalized_z = max(0.0, min((world_z - rect.min_z) / rect.depth, 1.0))
-            v = 1.0 - normalized_z
-        return map_x + round(u * (map_side - 1)), map_y + round(v * (map_side - 1))
 
     def draw_tooltip(self) -> None:
         text = self.current_tooltip_text()

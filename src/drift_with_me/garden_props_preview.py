@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from drift_with_me.hex_assets import draw_scaled_sprite, placement_for_upright_height_billboard
 from drift_with_me.math3d import Vec3, screen_to_ground_affine
@@ -27,6 +27,7 @@ class GardenProp:
     x: float
     z: float
     instance_id: str
+    world_scale: float = 1.0
 
 
 @dataclass
@@ -148,8 +149,16 @@ def garden_preview_draw_commands(renderer, model, camera, state=None):
         asset = renderer.sprite_assets.get(prop.asset_id)
         if asset is None:
             continue
+        definition = (
+            asset.definition
+            if prop.world_scale == 1
+            else replace(
+                asset.definition,
+                world_size=tuple(v * prop.world_scale for v in asset.definition.world_size),
+            )
+        )
         placement = placement_for_upright_height_billboard(
-            camera, asset.definition, Vec3(prop.x, 0, prop.z)
+            camera, definition, Vec3(prop.x, 0, prop.z)
         )
         if placement is None or not bounds_visible(
             (placement.left, placement.top, placement.right, placement.bottom), camera
@@ -160,8 +169,8 @@ def garden_preview_draw_commands(renderer, model, camera, state=None):
                 depth=placement.depth,
                 layer_bias=0,
                 stable_id=prop.instance_id,
-                draw=lambda asset=asset, placement=placement: draw_scaled_sprite(
-                    renderer.pyxel, asset.frame(), asset.definition, placement
+                draw=lambda asset=asset, placement=placement, definition=definition: (
+                    draw_scaled_sprite(renderer.pyxel, asset.frame(), definition, placement)
                 ),
                 atmosphere_strength=0.0,
             )

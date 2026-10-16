@@ -49,7 +49,6 @@ EXPECTED_RECTS = {
         "context_action": (274, 154, 76, 38),
         "primary_action": (350, 154, 76, 38),
         "progress_chip": (274, 126, 148, 24),
-        "minimap": (10, 120, 56, 70),
         "location": (8, 178, 72, 14),
     },
     "medium": {
@@ -59,7 +58,6 @@ EXPECTED_RECTS = {
         "context_action": (356, 192, 76, 40),
         "primary_action": (432, 192, 76, 40),
         "progress_chip": (352, 164, 152, 24),
-        "minimap": (8, 162, 60, 70),
         "location": (8, 218, 72, 14),
     },
     "high": {
@@ -69,7 +67,6 @@ EXPECTED_RECTS = {
         "context_action": (432, 228, 94, 48),
         "primary_action": (536, 228, 94, 48),
         "progress_chip": (432, 190, 198, 30),
-        "minimap": (20, 196, 84, 88),
         "location": (10, 272, 100, 18),
     },
 }
@@ -80,7 +77,6 @@ EXPECTED_VISUAL_RECTS = {
         "pause": (394, 10, 22, 22),
         "context_action": (278, 160, 68, 28),
         "primary_action": (354, 160, 68, 28),
-        "minimap": (14, 124, 48, 48),
         "wordmark": (226, 10, 112, 14),
         "tooltip_one": (274, 126, 148, 24),
         "tooltip_two": (274, 104, 148, 40),
@@ -90,7 +86,6 @@ EXPECTED_VISUAL_RECTS = {
         "pause": (476, 12, 24, 24),
         "context_action": (360, 198, 68, 28),
         "primary_action": (436, 198, 68, 28),
-        "minimap": (12, 166, 52, 52),
         "wordmark": (316, 13, 112, 14),
         "tooltip_one": (352, 164, 152, 24),
         "tooltip_two": (352, 148, 152, 40),
@@ -100,7 +95,6 @@ EXPECTED_VISUAL_RECTS = {
         "pause": (595, 15, 30, 30),
         "context_action": (438, 238, 84, 30),
         "primary_action": (542, 238, 84, 30),
-        "minimap": (28, 208, 64, 64),
         "wordmark": (388, 16, 132, 16),
         "tooltip_one": (432, 190, 198, 30),
         "tooltip_two": (432, 162, 198, 54),
@@ -123,7 +117,6 @@ def test_numeric_hud_rects_match_v02_reference_across_profiles() -> None:
         assert rect_tuple(app.interact_button_rect()) == expected["context_action"]
         assert rect_tuple(app.action_button_rect()) == expected["primary_action"]
         assert rect_tuple(app.interaction_chip_rect()) == expected["progress_chip"]
-        assert rect_tuple(app.minimap_rect()) == expected["minimap"]
         assert rect_tuple(app.location_rect()) == expected["location"]
 
 
@@ -136,7 +129,6 @@ def test_compact_hud_c_visual_rects_match_uic_targets_across_profiles() -> None:
         assert rect_tuple(app.pause_visual_rect()) == expected["pause"]
         assert rect_tuple(app.interact_button_visual_rect()) == expected["context_action"]
         assert rect_tuple(app.action_button_visual_rect()) == expected["primary_action"]
-        assert rect_tuple(app.minimap_visual_rect()) == expected["minimap"]
         assert rect_tuple(app.wordmark_rect()) == expected["wordmark"]
         assert rect_tuple(app.tooltip_rect(two_lines=False)) == expected["tooltip_one"]
         assert rect_tuple(app.tooltip_rect(two_lines=True)) == expected["tooltip_two"]
@@ -145,8 +137,6 @@ def test_compact_hud_c_visual_rects_match_uic_targets_across_profiles() -> None:
         assert app.action_button_rect().height >= app.action_button_visual_rect().height
         assert app.interact_button_rect().width >= app.interact_button_visual_rect().width
         assert app.interact_button_rect().height >= app.interact_button_visual_rect().height
-        assert app.minimap_rect().width >= app.minimap_visual_rect().width
-        assert app.minimap_rect().height >= app.minimap_visual_rect().height
 
 
 def test_numeric_layout_data_keeps_permanent_hud_inside_screen() -> None:
@@ -158,7 +148,6 @@ def test_numeric_layout_data_keeps_permanent_hud_inside_screen() -> None:
         "context_action",
         "primary_action",
         "progress_chip",
-        "minimap",
         "location",
     ]
     for profile in ("low", "medium", "high"):
@@ -168,7 +157,7 @@ def test_numeric_layout_data_keeps_permanent_hud_inside_screen() -> None:
 
         for _rect_id, rect in rects:
             assert contains(screen, rect)
-        allowed_overlaps = {frozenset(("minimap", "location"))}
+        allowed_overlaps = set()
         for index, (rect_id, rect) in enumerate(rects):
             for other_id, other in rects[index + 1 :]:
                 if frozenset((rect_id, other_id)) in allowed_overlaps:
@@ -291,3 +280,17 @@ def test_inspect_panel_closes_on_done_enter_or_outside_press_only() -> None:
     app.pyxel = FakePyxel(return_pressed=True)
     app.pointer_snapshot = PointerSnapshot(False, False, 0.0, 0.0)
     assert app.inspect_completion_requested()
+
+
+def test_former_minimap_area_is_world_input_and_not_a_popup_reservation():
+    for profile, point in (("low", (38, 148)), ("medium", (38, 192)), ("high", (60, 240))):
+        app = make_app_for_profile(profile)
+        app.model = SimpleNamespace(interaction=None, combat_session=None)
+        app.last_denied_reason = ""
+        app.map_objectives_available = lambda: False
+        app.pointer_snapshot = PointerSnapshot(down=True, pressed=True, x=point[0], y=point[1])
+        assert not any(rect.contains(*point) for rect in app.active_ui_rects())
+        assert app.ground_pointer_cancel_intent().cancel_auto_move
+        assert not any(
+            rect.contains(*point) for rect in app.progress_popup_blockers(Rect(200, 80, 8, 8))
+        )

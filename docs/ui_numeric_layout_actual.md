@@ -18,7 +18,7 @@ Added `src/drift_with_me/data/ui_numeric_layout.json` as the UI layout source fo
 - resource panel
 - sound/pause hit and visual rects
 - context and primary action buttons
-- minimap and location label
+- location label (HUD minimap removed by the later map-scope decision)
 - tooltip rects
 - pause modal rects
 - inspect modal rects
@@ -51,7 +51,7 @@ Font changes:
 | Title low/medium/high | `18/18/22` | `20/20/25` | v0.2 modal heading size |
 | Button/resource/tooltip | label style only | `16/16/20` | v0.2 readable Japanese UI |
 | Numeric | hint/label style only | `14/14/18` | fixed-width resource numbers |
-| Auxiliary | hint style | `12/12/15` | minimap label and status text |
+| Auxiliary | hint style | `12/12/15` | status text |
 
 ## Fit corrections after device review
 
@@ -107,8 +107,8 @@ Japanese labels touching the lower window borders. The following UI-only correct
 - The right button remains primary action: `GUARD`, `BUBBLE`, `ZAP`, or disabled `NONE`.
 - The left button remains context: `CHECK`, `REFILL`, `CHARGE`, or `CANCEL_*` during refill/charge.
 - Refill/charge progress uses a compact fixed bottom chip so it does not cover Jack/Fuse during zoomed resource animations.
-- Inspect uses the dedicated bottom modal and hides the normal action group, minimap, and tooltip.
-- Minimap is read-only. It shows stage/object markers and Jack only; enemy radar and tap movement were not added.
+- Inspect uses the dedicated bottom modal and hides the normal action group and tooltip.
+- The HUD minimap and its dedicated hit/popup reservations are removed. See `map_scope_policy.md`; shared world bounds and path finding remain unchanged.
 - Pause uses the v0.2 modal rects for resume/reset/audio/dev. Existing debug hotkeys and direct debug helper methods remain.
 
 ## Safe Area and runtime checks

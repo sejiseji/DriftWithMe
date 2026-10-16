@@ -212,6 +212,16 @@ def snapshot(app):
     offices[app.work_week] = app.office
     return {
         "version": SAVE_VERSION,
+        **(
+            {"flowerbed": list(app.east_site_progress.flowerbed_order)}
+            if getattr(app.east_site_progress, "flowerbed_order", ())
+            else {}
+        ),
+        **(
+            {"flowerbed_visit": dict(app.east_site_progress.flowerbed_visit)}
+            if getattr(app.east_site_progress, "flowerbed_visit", {})
+            else {}
+        ),
         "resources": {"water": app.model.water, "energy": app.model.energy},
         "defeated": sorted(
             {
@@ -237,6 +247,10 @@ def snapshot(app):
 
 def restore_office(raw, week):
     office = OfficePrototype.load() if week == WorkWeek() else load_week_office(week)
+    if week == WorkWeek(7, 2):
+        from drift_with_me.flowerbed import FlowerbedPrototypeOffice
+
+        office = FlowerbedPrototypeOffice()
     week3 = week == WorkWeek(6, 3)
     week4 = week == WorkWeek(6, 4)
     july = week == WorkWeek(7, 1)
@@ -550,10 +564,13 @@ def decode(text):
         raise ValueError("unsupported version")
     version = payload["version"]
     expected_keys = base_keys if version == 1 else base_keys | {"resources", "defeated"}
-    if set(payload) != expected_keys:
+    if not expected_keys <= set(payload) or set(payload) - expected_keys - {
+        "flowerbed",
+        "flowerbed_visit",
+    }:
         raise ValueError("unknown schema")
     w = payload["week"]
-    authored_weeks = {WorkWeek(6, n) for n in range(1, 5)} | {WorkWeek(7, 1)}
+    authored_weeks = {WorkWeek(6, n) for n in range(1, 5)} | {WorkWeek(7, 1), WorkWeek(7, 2)}
     if not isinstance(w, list) or len(w) != 2:
         raise ValueError("unsupported week")
     week = WorkWeek(integer(w[0], 6, 7), integer(w[1], 1, 4))
@@ -612,7 +629,19 @@ def decode(text):
         defeated = string_set(payload["defeated"], known_enemies)
         if not dealt <= defeated:
             raise ValueError("resolved enemy returned")
-    return week, offices, EastSiteProgress(facts, dict(positions)), seen, resources, defeated
+    from drift_with_me.flowerbed import validate_order
+    from drift_with_me.flowerbed_visit import FlowerbedVisit
+
+    visit = FlowerbedVisit.restore(payload.get("flowerbed_visit", {}))
+    if visit.stage in {"thanks", "complete"} and not payload.get("flowerbed"):
+        raise ValueError("unplanted garden completion")
+    sites = EastSiteProgress(
+        facts,
+        dict(positions),
+        flowerbed_order=validate_order(payload.get("flowerbed", [])),
+        flowerbed_visit=visit.snapshot() if "flowerbed_visit" in payload else {},
+    )
+    return week, offices, sites, seen, resources, defeated
 
 
 def encode(payload):

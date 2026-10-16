@@ -72,7 +72,7 @@ class WeekDebugMixin:
     def jump_to_debug_week(self, week: WorkWeek) -> bool:
         if not getattr(self, "week_debug_active", False) or week not in {
             WorkWeek(6, n) for n in range(1, 5)
-        } | {WorkWeek(7, 1)}:
+        } | {WorkWeek(7, 1), WorkWeek(7, 2)}:
             return False
         from drift_with_me.app import (
             CameraController,
@@ -104,7 +104,16 @@ class WeekDebugMixin:
         self.effects = EffectSystem(self.runtime.raw)
         self.start_game(new_game=True)
         self.work_week = self.map_work_week = week
-        if week != WorkWeek():
+        if week == WorkWeek(7, 2):
+            from drift_with_me.flowerbed import FlowerbedLayoutStore, FlowerbedPrototypeOffice
+
+            self.office = FlowerbedPrototypeOffice()
+            if getattr(self, "flowerbed_layout_store", None) is None:
+                self.flowerbed_layout_store = FlowerbedLayoutStore()
+            order, visit = self.flowerbed_layout_store.load_state()
+            self.east_site_progress.flowerbed_order = order
+            self.east_site_progress.flowerbed_visit = visit.snapshot()
+        elif week != WorkWeek():
             self.office = load_week_office(week)
         self.week_office_history = {week: self.office}
         if week.number >= 3:
@@ -123,6 +132,18 @@ class WeekDebugMixin:
         from drift_with_me.july_week1 import install_july_world
 
         install_july_world(self, enabled=week == WorkWeek(7, 1))
+        from drift_with_me.flowerbed import install_flowerbed_world
+
+        install_flowerbed_world(self)
+        if week == WorkWeek(7, 2):
+            from drift_with_me.app import AppScreen
+
+            self.screen = AppScreen.PLAY
+            self.model.player.x, self.model.player.z = 184, 424
+            self.model.player.last_move_x, self.model.player.last_move_z = 0, -1
+            self.camera_controller.reset(Vec3(184, 0, 424))
+            self.model.snap_buddy(self.camera())
+            self.resume_flowerbed_visit()
         self.july_wait_release = True
         self.july_fade_elapsed = 0.0
         self.week_debug_menu_open = False
@@ -186,13 +207,15 @@ class WeekDebugMixin:
                 if self.week_debug_month == 7:
                     self.week_debug_selection = 1
             elif action.startswith("week") and (
-                self.week_debug_month == 6 or self.week_debug_month == 7 and action == "week1"
+                self.week_debug_month == 6
+                or self.week_debug_month == 7
+                and action in {"week1", "week2"}
             ):
                 self.week_debug_selection = int(action[-1])
             elif action == "start" and (
                 self.week_debug_month == 6
                 or self.week_debug_month == 7
-                and self.week_debug_selection == 1
+                and self.week_debug_selection in (1, 2)
             ):
                 self.jump_to_debug_week(WorkWeek(self.week_debug_month, self.week_debug_selection))
             elif action == "portraits":
@@ -238,18 +261,18 @@ class WeekDebugMixin:
         for week in range(1, 5):
             self.draw_week_debug_button(
                 rects[f"week{week}"],
-                f"第{week}週"
-                if self.week_debug_month == 6 or (self.week_debug_month == 7 and week == 1)
+                ("第2週・花壇試作" if self.week_debug_month == 7 and week == 2 else f"第{week}週")
+                if self.week_debug_month == 6 or (self.week_debug_month == 7 and week in (1, 2))
                 else "準備中",
                 selected=week == self.week_debug_selection,
                 disabled=self.week_debug_month != 6
-                and not (self.week_debug_month == 7 and week == 1),
+                and not (self.week_debug_month == 7 and week in (1, 2)),
             )
         self.draw_week_debug_button(
             rects["start"],
             "選んだ週の最初から始める",
             disabled=self.week_debug_month != 6
-            and not (self.week_debug_month == 7 and self.week_debug_selection == 1),
+            and not (self.week_debug_month == 7 and self.week_debug_selection in (1, 2)),
         )
         self.draw_week_debug_button(rects["sprites"], "Sprite test")
         self.draw_week_debug_button(rects["garden"], "Garden test")

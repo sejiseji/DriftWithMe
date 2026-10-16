@@ -108,3 +108,11 @@ python scripts/measure_culling.py --iterations 600
 
 This records Python-side static visibility and draw-command preparation only.
 The latest local JWP007 numbers are in `docs/jwp007_culling_measurement.md`.
+
+## Map scope
+
+The HUD minimap is removed, and further map-area expansion is out of scope. Existing world bounds, path finding and locations are preserved; see [map scope policy](docs/map_scope_policy.md).
+
+## July week2 field preview
+
+Open `?debug=weeks`, choose July week2, then talk to Fuji for the flowerbed field fragment. The counter day, creature investigation, return-to-office and normal week transition are not yet authored; this preview does not complete the whole week. See [the fragment scope](docs/july_week2_field_fragment.md).
