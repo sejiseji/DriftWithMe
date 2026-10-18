@@ -136,6 +136,20 @@ def office_snapshot(office):
             if s
             else None
         )
+    if hasattr(office, "week3_progress"):
+        data["week3"] = office.week3_progress.snapshot()
+        s = office.current_session
+        data["counter"] = (
+            dict(
+                lines=[[line.speaker, line.text, line.visual_action] for line in s.dialogue],
+                count=s.active_dialogue_line_count,
+                pending=[x.step_id for x in s.pending_dialogue_steps],
+                completed=sorted(s.completed_dialogue_turn_ids),
+                question=s.pending_question_id,
+            )
+            if s
+            else None
+        )
     return data
 
 
@@ -261,6 +275,7 @@ def snapshot(app):
 
 def restore_office(raw, week):
     office = OfficePrototype.load() if week == WorkWeek() else load_week_office(week)
+    july3 = week == WorkWeek(7, 3)
     week2 = week == WorkWeek(7, 2)
     if week2 and raw == {"index": 0, "sessions": {}}:
         office.begin_current_case()
@@ -279,6 +294,8 @@ def restore_office(raw, week):
     )
     if week2:
         keys = {"index", "sessions", "week2", "counter"}
+    if july3:
+        keys = {"index", "sessions", "week3", "counter"}
     if office is None or not isinstance(raw, dict) or set(raw) != keys:
         raise ValueError("unsupported office")
     if july:
@@ -289,6 +306,10 @@ def restore_office(raw, week):
         from drift_with_me.july_week2 import Week2Progress
 
         office.week2_progress = Week2Progress.restore(raw["week2"])
+    if july3:
+        from drift_with_me.july_week3 import Week3Progress
+
+        office.week3_progress = Week3Progress.restore(raw["week3"])
     if week3:
         from drift_with_me.week3 import FACTS as W3_FACTS
         from drift_with_me.week3 import KEY_ID, Week3Progress
@@ -581,6 +602,10 @@ def restore_office(raw, week):
         ):
             raise ValueError("missing July W2 report")
         restore_counter(office, raw["counter"])
+    if july3:
+        if index != 0 or office.sessions[next(iter(office.sessions))].field_result is not None:
+            raise ValueError("July W3 reporting is not authored yet")
+        restore_counter(office, raw["counter"])
     return office
 
 
@@ -609,7 +634,11 @@ def decode(text):
     }:
         raise ValueError("unknown schema")
     w = payload["week"]
-    authored_weeks = {WorkWeek(6, n) for n in range(1, 5)} | {WorkWeek(7, 1), WorkWeek(7, 2)}
+    authored_weeks = {WorkWeek(6, n) for n in range(1, 5)} | {
+        WorkWeek(7, 1),
+        WorkWeek(7, 2),
+        WorkWeek(7, 3),
+    }
     if not isinstance(w, list) or len(w) != 2:
         raise ValueError("unsupported week")
     week = WorkWeek(integer(w[0], 6, 7), integer(w[1], 1, 4))

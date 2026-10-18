@@ -101,7 +101,7 @@ def test_finished_july_checkpoint_cannot_repeat_report_or_enter_unauthored_week(
     assert restored.complete and restored.july_progress.souvenir_received
     assert not restored.complete_field_task(result)
     assert load_week_office(WorkWeek(7, 2)) is not None
-    assert load_week_office(WorkWeek(7, 3)) is None
+    assert load_week_office(WorkWeek(7, 3)) is not None
 
 
 def test_researchers_scene_cursor_resumes_without_repeating_arrival():

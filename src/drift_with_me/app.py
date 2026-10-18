@@ -39,6 +39,7 @@ from drift_with_me.july_week1 import (
     install_july_world,
 )
 from drift_with_me.july_week2 import JulyWeek2Mixin
+from drift_with_me.july_week3 import JulyWeek3Mixin
 from drift_with_me.map_objectives import MapObjectivesMixin
 from drift_with_me.math3d import (
     AffineCameraState,
@@ -419,6 +420,7 @@ class DriftWithMeApp(
     JulyStoryMixin,
     MapObjectivesMixin,
     JulyWeek2Mixin,
+    JulyWeek3Mixin,
 ):
     def __init__(
         self,
@@ -602,6 +604,8 @@ class DriftWithMeApp(
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.update_july_week3(elapsed):
+            return
         if self.update_week2():
             return
         if self.update_flowerbed_modal():
@@ -731,6 +735,10 @@ class DriftWithMeApp(
             self.audio.toggle_mute()
 
     def start_game(self, *, new_game: bool = False) -> None:
+        if getattr(self, "ring_preview", None) is not None:
+            self.restore_ring_grid_palette()
+        self.ring_preview = None
+        self.story_ring_active = False
         self.flowerbed_dialogue = None
         self.flowerbed_visit_editing = False
         self.flowerbed_editor = None
@@ -808,9 +816,24 @@ class DriftWithMeApp(
             self.screen = AppScreen.OFFICE
         self.week2_dialogue = None
         self.week2_wait_release = False
+        self.week3_dialogue = None
+        self.week3_scene_elapsed = 0.0
+        if self.week3_active():
+            self.screen = (
+                AppScreen.PLAY if self.office.week3_progress.phase == "field" else AppScreen.OFFICE
+            )
+            if self.screen == AppScreen.PLAY:
+                self.model.player.x, self.model.player.z = 330, 424
+                self.camera_controller.reset(Vec3(330, 0, 424))
+                self.model.snap_buddy(self.camera())
 
     def update_office_screen(self, elapsed: float) -> None:
         if self.week2_active() and self.office.week2_progress.phase == "done":
+            if self.can_begin_next_week() and (
+                self.mouse_pressed_in(self.office_next_week_rect())
+                or self.key_pressed("KEY_RETURN", "KEY_Z")
+            ):
+                self.begin_next_week()
             return
         self.clear_world_input_latches()
         if getattr(self, "office_consultation", None) is not None:
@@ -1334,6 +1357,8 @@ class DriftWithMeApp(
         from drift_with_me.northeast_park import install_park_world
 
         install_park_world(self)
+        if self.week3_active():
+            self.office.week3_progress.phase = "field"
         if self.week2_active():
             self.office.week2_progress.phase = "field"
         if getattr(self, "work_week", WorkWeek()) == WorkWeek(6, 3):
@@ -1382,6 +1407,8 @@ class DriftWithMeApp(
             )
 
     def complete_office_field_task(self) -> bool:
+        if self.week3_active():
+            return self.return_week3()
         if self.week2_active():
             return self.return_week2()
         if getattr(self, "field_transition", None) is not None:
@@ -1465,6 +1492,8 @@ class DriftWithMeApp(
         return True
 
     def apply_field_scene_at_black(self, transition: FieldTransition) -> None:
+        if self.week3_active() and transition.direction == "back":
+            self.office.week3_progress.phase = "office"
         if transition.applied:
             return
         if transition.direction == "out":
@@ -2607,6 +2636,20 @@ class DriftWithMeApp(
             elif event.kind == "interaction_started" and event.target_id is not None:
                 from drift_with_me.july_week2 import SITES
 
+                if self.week3_active() and event.target_id in {
+                    "jul_w3_small_fuji",
+                    "jul_w3_small_nw",
+                    "jul_w3_parent",
+                    FLOWERBED_FUJI_ID,
+                    FLOWERBED_ID,
+                }:
+                    self.process_events(self.model.cancel_interaction())
+                    self.begin_week3_target(
+                        "fuji"
+                        if event.target_id in {FLOWERBED_FUJI_ID, FLOWERBED_ID}
+                        else event.target_id
+                    )
+                    continue
                 if self.week2_active() and event.target_id in SITES:
                     self.process_events(self.model.cancel_interaction())
                     self.begin_week2_observation(event.target_id)
@@ -3552,6 +3595,15 @@ class DriftWithMeApp(
         )
 
     def draw(self) -> None:
+        if self.week3_active() and self.screen == AppScreen.PLAY:
+            if self.office.week3_progress.active_scene:
+                self.draw_week3_scene()
+                return
+            if getattr(self, "week3_dialogue", None) is not None:
+                self.draw_play()
+                self.draw_field_conversation(self.week3_dialogue)
+                self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
+                return
         if getattr(self, "week2_dialogue", None) is not None:
             if self.screen == AppScreen.OFFICE:
                 self.draw_office()
@@ -3980,7 +4032,7 @@ class DriftWithMeApp(
         week = getattr(self, "work_week", WorkWeek())
         return (
             self.screen == AppScreen.OFFICE
-            and week in {WorkWeek(), WorkWeek(6, 2), WorkWeek(6, 3), WorkWeek(7, 1)}
+            and week in {WorkWeek(), WorkWeek(6, 2), WorkWeek(6, 3), WorkWeek(7, 1), WorkWeek(7, 2)}
             and getattr(self, "week_transition", None) is None
             and not getattr(self, "week_input_wait_for_release", False)
             and getattr(self, "office_consultation", None) is None
@@ -4909,6 +4961,7 @@ class DriftWithMeApp(
         )
         draw_week3_key(self, scene_camera)
         self.draw_july_markers()
+        self.draw_week3_devices(scene_camera)
         self.draw_hud()
         self.draw_map_objectives()
         if self.model.interaction is not None:

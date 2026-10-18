@@ -7,6 +7,7 @@ import math
 import random
 import sys
 from bisect import bisect_right
+from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import lru_cache
 
@@ -632,16 +633,21 @@ class RingPuzzlePreviewMixin:
             activity=bool(self.pointer_snapshot.pressed or action is not None),
             eligible=puzzle.mode == "linked" and puzzle.phase == "idle" and not intro,
         )
-        if action == "quit":
+        if action == "quit" and getattr(self, "story_ring_active", False):
+            self.close_story_ring()
+        elif action == "quit":
             self.restore_ring_grid_palette()
             self.ring_preview = None
             self.week_debug_menu_open = True
         elif action == "retry" and puzzle.phase in {"idle", "unlocked"}:
             self.ring_preview = puzzle.retry()
         elif action == "help":
+            before = deepcopy(puzzle)
             if puzzle.assist():
-                self.ring_preview_react(now)
-                self.ring_preview_store.save_progress(puzzle)
+                if self.ring_preview_store.save_progress(puzzle):
+                    self.ring_preview_react(now)
+                else:
+                    self.ring_preview = before
         elif action in {"left", "right"}:
             if puzzle.rotate(-1 if action == "left" else 1):
                 self.ring_preview_react(now)
@@ -656,7 +662,11 @@ class RingPuzzlePreviewMixin:
         puzzle = self.ring_preview
         p.cls(0)
         self.draw_ring_background_grid()
-        self.draw_office_text_in_rect(self.office_rect(8, 5, 114, 20), "5 RINGS / power 0", 7)
+        self.draw_office_text_in_rect(
+            self.office_rect(8, 5, 114, 20),
+            "親機のロック" if getattr(self, "story_ring_active", False) else "5 RINGS / power 0",
+            7,
+        )
 
         # Use the same logical-to-screen transform for geometry and hit testing.
         def point(x, y):
@@ -758,6 +768,11 @@ class RingPuzzlePreviewMixin:
             ("retry", "Retry"),
             ("undo", "UNDO"),
         ):
+            if getattr(self, "story_ring_active", False):
+                if name == "help":
+                    label = "ヒューズに頼む"
+                elif name == "quit" and puzzle.clear_reward_available:
+                    label = "装置へ戻る"
             disabled = name == "help" and (
                 puzzle.mode != "linked" or puzzle.phase != "idle" or len(puzzle.disabled_links) == 5
             )

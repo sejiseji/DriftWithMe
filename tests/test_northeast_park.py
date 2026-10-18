@@ -130,7 +130,7 @@ def test_debug_scenery_does_not_unlock_future_offices_or_write_storage():
         assert app.work_week == WorkWeek(7, 2)
         assert app.model.northeast_park.stage == park_stage(week)
         assert not app.checkpoint_progress()
-    for week in PREVIEW_WEEKS[2:]:
+    for week in PREVIEW_WEEKS[3:]:
         assert load_week_office(week) is None
         assert not app.jump_to_debug_week(week)
     assert storage.items == before

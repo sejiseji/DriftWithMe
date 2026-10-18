@@ -112,7 +112,7 @@ def test_held_pointer_cannot_retrigger_start_or_return(records):
     assert records.items == before
 
 
-@pytest.mark.parametrize("month,number", [(7, 3), (8, 1)])
+@pytest.mark.parametrize("month,number", [(7, 4), (8, 1)])
 def test_unimplemented_month_cannot_jump_or_write(records, month, number):
     app = debug_app(records)
     before = deepcopy(records.items)

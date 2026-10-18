@@ -67,7 +67,7 @@ def test_counter_three_cases_normal_classification_and_exact_mid_dialogue_save()
 
 
 @pytest.mark.parametrize("flower_first", [True, False])
-def test_order_independence_partial_return_resume_final_report_and_no_next_week(flower_first):
+def test_order_independence_partial_return_resume_final_report_and_next_authored_week(flower_first):
     app, _ = app2(True)
     if flower_first:
         app.east_site_progress.flowerbed_order = FLOWER_IDS
@@ -109,7 +109,7 @@ def test_order_independence_partial_return_resume_final_report_and_no_next_week(
         assert app.advance_week2_dialogue()
     assert app.office.complete and app.office.week2_progress.phase == "done"
     assert app.office.sessions[TASK].field_result.result_code == "JULY2_COMPLETED"
-    assert not app.can_begin_next_week() and load_week_office(WorkWeek(7, 3)) is None
+    assert app.can_begin_next_week() and load_week_office(WorkWeek(7, 3)) is not None
     assert decode(encode(snapshot(app)))[1][WorkWeek(7, 2)].week2_progress.phase == "done"
 
 

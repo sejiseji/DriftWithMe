@@ -78,7 +78,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
     def jump_to_debug_week(self, week: WorkWeek) -> bool:
         if not getattr(self, "week_debug_active", False) or week not in {
             WorkWeek(6, n) for n in range(1, 5)
-        } | {WorkWeek(7, 1), WorkWeek(7, 2)}:
+        } | {WorkWeek(7, 1), WorkWeek(7, 2), WorkWeek(7, 3)}:
             return False
         from drift_with_me.app import (
             CameraController,
@@ -128,8 +128,8 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             self.world.east_site_access_ready = True
         from drift_with_me.week3 import install_week3_world
 
-        install_week3_world(self, enabled=week.number == 3)
-        install_week4_world(self, enabled=week.number == 4)
+        install_week3_world(self, enabled=week == WorkWeek(6, 3))
+        install_week4_world(self, enabled=week == WorkWeek(6, 4))
         self.pending_week_office = None
         self.week_input_wait_for_release = self.field_input_wait_for_release = False
         self.office_focus = "questions"
@@ -223,13 +223,13 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             elif action.startswith("week") and (
                 self.week_debug_month == 6
                 or self.week_debug_month == 7
-                and action in {"week1", "week2"}
+                and action in {"week1", "week2", "week3"}
             ):
                 self.week_debug_selection = int(action[-1])
             elif action == "start" and (
                 self.week_debug_month == 6
                 or self.week_debug_month == 7
-                and self.week_debug_selection in (1, 2)
+                and self.week_debug_selection in (1, 2, 3)
             ):
                 self.jump_to_debug_week(WorkWeek(self.week_debug_month, self.week_debug_selection))
             elif action == "portraits":
@@ -282,17 +282,17 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             self.draw_week_debug_button(
                 rects[f"week{week}"],
                 ("第2週・花壇と調査" if self.week_debug_month == 7 and week == 2 else f"第{week}週")
-                if self.week_debug_month == 6 or (self.week_debug_month == 7 and week in (1, 2))
+                if self.week_debug_month == 6 or (self.week_debug_month == 7 and week in (1, 2, 3))
                 else "準備中",
                 selected=week == self.week_debug_selection,
                 disabled=self.week_debug_month != 6
-                and not (self.week_debug_month == 7 and week in (1, 2)),
+                and not (self.week_debug_month == 7 and week in (1, 2, 3)),
             )
         self.draw_week_debug_button(
             rects["start"],
             "選んだ週の最初から始める",
             disabled=self.week_debug_month != 6
-            and not (self.week_debug_month == 7 and self.week_debug_selection in (1, 2)),
+            and not (self.week_debug_month == 7 and self.week_debug_selection in (1, 2, 3)),
         )
         self.draw_week_debug_button(rects["sprites"], "Sprite test")
         self.draw_week_debug_button(rects["garden"], "Garden test")
