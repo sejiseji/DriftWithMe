@@ -12,6 +12,8 @@
 - July W2 explicitly asks for the five flowerbed plots to be finished this week.
   Existing four sites distinguish localized magenta leaves, unchanged roots,
   fallen stems and ground traces; no machine/chemical cause is asserted.
+- Flowerbed/Fuji and Return hit targets are separated so resuming near the bed
+  cannot open Fuji conversation when pressing Return.
 - Completing W2 opens one return/stay choice rather than auto-returning. Stay
   leaves existing return available. A saved optional `return_prompt_seen` bit
   suppresses repeated prompts across re-entry/reload; old saves default false.

@@ -1,4 +1,4 @@
-# July week 3: linked ring difficulty prototype (local, unpublished)
+# July week 3: linked ring debug prototype
 
 Baseline: published `9c10ce1`. Existing `?debug=weeks` -> **5 Rings** opens the
 linked prototype; **Solo rings** replays the approved independent prototype.

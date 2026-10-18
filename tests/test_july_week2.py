@@ -267,3 +267,26 @@ def test_old_week2_cursor_and_counter_after_hearing_migrate_without_classificati
     app.office.complete_pending_question()
     assert app.office.current_session.state == CaseState.CLOSED_COUNTER
     assert app.office.advance_case()
+
+
+@pytest.mark.parametrize("profile", ["low", "medium", "high"])
+def test_return_after_resume_near_flowerbed_is_not_intercepted_by_fuji(profile):
+    from drift_with_me.config import load_runtime_config
+
+    app, _ = app2(True)
+    app.runtime = load_runtime_config(profile)
+    app.model.player.x, app.model.player.z = 184, 424
+    app.east_site_progress.flowerbed_order = FLOWER_IDS
+    app.east_site_progress.flowerbed_visit = FlowerbedVisit("complete").snapshot()
+    app.office.week2_progress.checked = set(SITES)
+    app.office.week2_progress.return_prompt_seen = True
+    button = app.field_return_button_rect()
+    x, y = button.x + button.width / 2, button.y + button.height / 2
+    app.mouse_pressed_in = lambda rect: rect.contains(x, y)
+    assert app.flowerbed_entry_available()
+    assert not app.rects_overlap(button, app.flowerbed_entry_rect())
+    assert not app.update_flowerbed_entry()
+    assert app.flowerbed_dialogue is None
+    assert app.complete_office_field_task()
+    assert app.field_transition is not None
+    assert app.office.week2_progress.phase == "report"

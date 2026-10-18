@@ -237,7 +237,7 @@ class FlowerbedMixin:
         }
 
     def flowerbed_entry_rect(self):
-        return self.office_rect(8, 86, 144, 54)
+        return self.office_rect(8, 120, 144, 54)
 
     def flowerbed_entry_available(self):
         from drift_with_me.app import AppScreen
@@ -350,7 +350,7 @@ class FlowerbedMixin:
         if self.flowerbed_entry_available():
             self.draw_flowerbed_button(self.flowerbed_entry_rect(), "フジと話す")
             self.draw_office_text_in_rect(
-                self.office_rect(8, 140, 144, 24),
+                self.office_rect(8, 174, 144, 24),
                 "花壇配置済み" if self.flowerbed_visit_state().complete else "花壇の並びを確認",
                 10,
                 align="center",
