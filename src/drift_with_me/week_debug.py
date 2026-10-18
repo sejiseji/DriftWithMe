@@ -6,6 +6,7 @@ import sys
 from urllib.parse import parse_qs
 
 from drift_with_me.nudibranch_preview import NudibranchPreview
+from drift_with_me.ring_puzzle import RingPuzzlePreviewMixin
 from drift_with_me.week_cycle import WorkWeek, load_week_office
 
 
@@ -33,13 +34,14 @@ class TemporaryProgressStore:
         pass
 
 
-class WeekDebugMixin:
+class WeekDebugMixin(RingPuzzlePreviewMixin):
     def initialize_week_debug(self, enabled: bool) -> None:
         self.week_debug_active = enabled
         self.week_debug_menu_open = enabled
         self.week_debug_wait_release = False
         self.week_debug_month = 6
         self.week_debug_selection = 1
+        self.ring_preview = None
         self.portrait_preview = None
         self.nudibranch_preview = None
         self.garden_props_preview = None
@@ -69,6 +71,8 @@ class WeekDebugMixin:
             "cancel": self.office_rect(32, 196, 220, 30),
             "park": self.office_rect(260, 196, 106, 30),
             "normal": self.office_rect(374, 196, 106, 30),
+            "rings": self.office_rect(8, 3, 100, 20),
+            "solo_rings": self.office_rect(404, 3, 100, 20),
         }
 
     def jump_to_debug_week(self, week: WorkWeek) -> bool:
@@ -188,6 +192,9 @@ class WeekDebugMixin:
             return True
         if not getattr(self, "week_debug_active", False):
             return False
+        if getattr(self, "ring_preview", None) is not None:
+            self.update_ring_preview()
+            return True
         if getattr(self, "park_preview_week", None) is not None:
             self.update_park_preview()
             return True
@@ -231,6 +238,10 @@ class WeekDebugMixin:
                 self.start_nudibranch_preview()
             elif action == "garden":
                 self.start_garden_props_preview()
+            elif action == "solo_rings":
+                self.start_ring_preview("independent")
+            elif action == "rings":
+                self.start_ring_preview()
             elif action == "park":
                 self.start_park_preview()
             elif action == "cancel" and self.session_started:
@@ -287,6 +298,8 @@ class WeekDebugMixin:
         self.draw_week_debug_button(rects["garden"], "Garden test")
         self.draw_week_debug_button(rects["portraits"], "立ち絵")
         self.draw_week_debug_button(rects["park"], "公園比較")
+        self.draw_week_debug_button(rects["rings"], "5 Rings")
+        self.draw_week_debug_button(rects["solo_rings"], "Solo rings")
         self.draw_week_debug_button(
             rects["cancel"], "取消・テストに戻る", disabled=not self.session_started
         )

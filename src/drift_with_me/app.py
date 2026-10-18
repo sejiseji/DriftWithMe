@@ -3567,6 +3567,9 @@ class DriftWithMeApp(
         if getattr(self, "flowerbed_editor", None) is not None:
             self.draw_flowerbed_editor()
             return
+        if getattr(self, "ring_preview", None) is not None:
+            self.draw_ring_preview()
+            return
         if getattr(self, "portrait_preview", None) is not None:
             self.draw_portrait_preview()
             return
