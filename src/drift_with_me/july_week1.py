@@ -4,6 +4,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 
 from drift_with_me.office import (
+    SUPERVISOR_NAME,
     CaseState,
     OfficePrototype,
     parse_case_definitions,
@@ -239,7 +240,7 @@ def office_data():
         },
     }
     opening = (
-        ("上司", "ジャック、8月末に夏休み取るんじゃろ。申請、早めに出しとけよ。"),
+        (SUPERVISOR_NAME, "ジャック、8月末に夏休み取るんじゃろ。申請、早めに出しとけよ。"),
         (
             "ジャック",
             "はい。ヒューズと夏の担当をやり切って、一人前として任せてもらいたいです。休暇の申請も早めに出します。",

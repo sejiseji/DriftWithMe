@@ -8,6 +8,9 @@ from drift_with_me.field_transition import FieldTransition
 from drift_with_me.field_visit import FieldConversation
 from drift_with_me.math3d import AffineCameraState, Vec3
 from drift_with_me.office import (
+    SUPERVISOR_NAME,
+    CaseState,
+    FieldResult,
     OfficePrototype,
     parse_case_definitions,
     parse_counter_script_definitions,
@@ -26,6 +29,25 @@ DURATIONS = (0.45, 0.9, 0.65, 0.65, 0.45)
 SMALL_LINES = (
     ("ジャック", "黒い面に白い枠の箱だ。葉の色が変わった場所の近くだね"),
     ("ヒューズ", "関係はまだ分からないわ。空中へ投げてくれたら、電撃で止めて回収しましょう"),
+)
+REPORT = (
+    (
+        "ジャック",
+        "小さい装置二つと、大きな装置一つを止めて回収しました。葉の変化との関係は、まだ分かりません",
+    ),
+    (
+        SUPERVISOR_NAME,
+        "システムの担当にも頼んでみるが、専門外じゃろうし、まあ、あまり期待せんでくれ",
+    ),
+    (SUPERVISOR_NAME, "教授さんにも見てもらって、意見を聞く方を並行して進めてくれんか"),
+    (
+        "ジャック",
+        "分かりました。ユメサキ先生に連絡してみます。次週、回収した実物を渡す予定にします",
+    ),
+    (
+        SUPERVISOR_NAME,
+        "ひとまず、動いとった三つを止めて持ち帰れたんじゃ。今日はそこまでで十分じゃろ。お疲れさん",
+    ),
 )
 
 
@@ -46,6 +68,9 @@ class Week3Progress:
     ring_unlocked: bool = False
     ring_forfeited: bool = False
     rewards: RingRewardLedger = field(default_factory=RingRewardLedger)
+    report_index: int = 0
+    return_prompt_seen: bool = False
+    professor_handoff_pending: bool = False
 
     def snapshot(self):
         return {
@@ -58,7 +83,13 @@ class Week3Progress:
     @classmethod
     def restore(cls, raw):
         if isinstance(raw, dict):
-            raw = {"parent_stopped": False, **raw}
+            raw = {
+                "parent_stopped": False,
+                "report_index": 0,
+                "return_prompt_seen": False,
+                "professor_handoff_pending": False,
+                **raw,
+            }
         if not isinstance(raw, dict) or set(raw) != set(cls().snapshot()):
             raise ValueError("invalid July W3 fields")
         p = cls()
@@ -77,7 +108,7 @@ class Week3Progress:
         p.rewards = RingRewardLedger.restore(raw["rewards"])
         if (
             type(p.phase) is not str
-            or p.phase not in {"counter", "field", "office"}
+            or p.phase not in {"counter", "field", "office", "report", "done"}
             or any(
                 type(getattr(p, k)) is not bool
                 for k in (
@@ -87,6 +118,8 @@ class Week3Progress:
                     "parent_stopped",
                     "ring_unlocked",
                     "ring_forfeited",
+                    "return_prompt_seen",
+                    "professor_handoff_pending",
                 )
             )
             or not p.recovered <= p.found
@@ -121,6 +154,16 @@ class Week3Progress:
             or (p.active_scene == PARENT and (p.recovered != set(SMALL) or not p.ring_unlocked))
             or (p.active_scene is not None and p.dialogue_target is not None)
             or (p.dialogue_target in {None, "fuji"} and p.dialogue_index != 0)
+            or type(p.report_index) is not int
+            or not 0 <= p.report_index < len(REPORT)
+            or (p.phase in {"report", "done"} and not p.parent_recovered)
+            or p.professor_handoff_pending != (p.phase == "done")
+            or (p.return_prompt_seen and not p.parent_recovered)
+            or (
+                p.phase != "field" and (p.active_scene is not None or p.dialogue_target is not None)
+            )
+            or (p.phase == "done" and p.report_index != len(REPORT) - 1)
+            or (p.phase not in {"report", "done"} and p.report_index != 0)
         ):
             raise ValueError("inconsistent July W3 progress")
         if p.phase == "counter" and (p.found or p.active_scene or p.parent_seen):
@@ -137,7 +180,7 @@ def office_data():
         case_id=TASK,
         title="保護区の予定調査",
         visitor=dict(
-            id="supervisor", name="上司", kind="予定確認", portrait_id="office_supervisor"
+            id="supervisor", name=SUPERVISOR_NAME, kind="予定確認", portrait_id="office_supervisor"
         ),
         initial_purpose="保護区の予定調査",
         document_status="当日の予定",
@@ -161,7 +204,7 @@ def office_data():
     )
     script = dict(
         case_id=TASK,
-        opening=[dict(turn_id="jul3_open", jack=opening, reply="", jack_speaker="上司")],
+        opening=[dict(turn_id="jul3_open", jack=opening, reply="", jack_speaker=SUPERVISOR_NAME)],
         after_question={"talk": []},
         resolution=dict(
             classification="FIELD_CHECK",
@@ -180,6 +223,26 @@ class JulyWeek3Office(OfficePrototype):
         cases = parse_case_definitions(raw)
         super().__init__(cases, parse_counter_script_definitions(raw["counter_scripts"], cases))
         self.week3_progress = Week3Progress()
+
+    def finish_week(self):
+        p = self.week3_progress
+        if p.phase != "report" or not p.parent_recovered or p.report_index != len(REPORT) - 1:
+            return False
+        session = self.sessions[TASK]
+        session.state = CaseState.RESOLVED
+        session.field_result = FieldResult(
+            self.cases[0].field_task.task_id,
+            TASK,
+            "JULY3_COMPLETED",
+            tuple(sorted([*SMALL, PARENT])),
+            (),
+        )
+        session.pending_dialogue_steps.clear()
+        self.active_field_task = None
+        self.current_index = len(self.cases)
+        p.phase = "done"
+        p.professor_handoff_pending = True
+        return True
 
     def prepare_debug_field_task(self):
         from drift_with_me.office import Classification
@@ -289,6 +352,15 @@ def draw_cube(p, camera, x, z, height=0, half=5, spin=0.0):
 
 
 class JulyWeek3Mixin:
+    def week3_office_report_active(self):
+        from drift_with_me.app import AppScreen
+
+        return (
+            self.week3_active()
+            and self.screen == AppScreen.OFFICE
+            and self.office.week3_progress.phase == "report"
+        )
+
     def week3_active(self):
         return getattr(self, "work_week", None) == WorkWeek(7, 3) and hasattr(
             self.office, "week3_progress"
@@ -339,6 +411,7 @@ class JulyWeek3Mixin:
             not self.week3_active()
             or target not in {*SMALL, PARENT, "fuji"}
             or self.model.combat_session is not None
+            or self.office.week3_progress.phase != "field"
         ):
             return False
         p = self.office.week3_progress
@@ -367,8 +440,30 @@ class JulyWeek3Mixin:
     def advance_week3_dialogue(self):
         p = self.office.week3_progress
         d = self.week3_dialogue
+        if d is None:
+            return False
         before = deepcopy(p)
         last = d.index + 1 == len(d.lines)
+        if d.target_id == "week3_report":
+            office_before = deepcopy(
+                (self.office.sessions, self.office.current_index, self.office.active_field_task)
+            )
+            if last:
+                if not self.office.finish_week():
+                    return False
+            else:
+                p.report_index += 1
+            if not self.save_week3(before):
+                self.office.sessions, self.office.current_index, self.office.active_field_task = (
+                    office_before
+                )
+                return False
+            if last:
+                self.week3_dialogue = None
+            else:
+                d.index += 1
+            self.week3_wait_release = True
+            return True
         if not last:
             p.dialogue_index = d.index + 1
         else:
@@ -395,19 +490,32 @@ class JulyWeek3Mixin:
 
     def return_week3(self):
         if (
-            getattr(self, "week3_dialogue", None)
+            not self.week3_active()
+            or self.office.week3_progress.phase != "field"
+            or getattr(self, "week3_dialogue", None)
             or self.office.week3_progress.active_scene
             or self.model.combat_session
             or self.model.interaction
             or self.field_transition
+            or getattr(self, "flowerbed_dialogue", None)
+            or getattr(self, "flowerbed_editor", None)
+            or self.model.world_paused
         ):
+            return False
+        p = self.office.week3_progress
+        before = deepcopy(p)
+        ready = p.parent_recovered
+        p.phase = "report" if ready else "office"
+        if not self.save_week3(before):
             return False
         self.field_transition = FieldTransition(
             "back",
             (
                 (
                     "ジャック",
-                    "いったん戻ろう。回収した装置と、まだ確認できていないことを記録しておこう",
+                    "三つとも止めて回収できたね。戻って上司に報告しよう"
+                    if ready
+                    else "いったん戻ろう。残りの装置は、また調査に出て確かめよう",
                 ),
                 ("ヒューズ", "ええ。分かったところを分けて残しましょう"),
             ),
@@ -416,14 +524,59 @@ class JulyWeek3Mixin:
         self.model.cancel_auto_move()
         return True
 
+    def cancel_week3_return(self):
+        p = self.office.week3_progress
+        before = deepcopy(p)
+        p.phase = "field"
+        return self.save_week3(before)
+
     def update_july_week3(self, elapsed):
         if not self.week3_active():
             return False
         from drift_with_me.app import AppScreen
 
-        if self.screen != AppScreen.PLAY:
-            return False
         p = self.office.week3_progress
+        if self.field_transition is not None or self.week_transition is not None:
+            return False
+        if self.screen == AppScreen.OFFICE and p.phase == "done":
+            self.clear_world_input_latches()
+            return True
+        if self.screen == AppScreen.OFFICE and p.phase == "office" and p.parent_recovered:
+            before = deepcopy(p)
+            p.phase = "report"
+            if not self.save_week3(before):
+                return True
+        if self.screen == AppScreen.OFFICE and p.phase == "office":
+            self.clear_world_input_latches()
+            if self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(
+                self.office_footer_action_rect()
+            ):
+                self.enter_exploration_from_office()
+            return True
+        if (
+            self.screen == AppScreen.OFFICE
+            and p.phase == "report"
+            and not getattr(self, "week3_dialogue", None)
+        ):
+            self.week3_dialogue = FieldConversation("week3_report", REPORT, p.report_index)
+            self.week3_wait_release = True
+        if self.week3_office_report_active():
+            self.clear_world_input_latches()
+            self.update_office_dialogue_playback(elapsed)
+            if getattr(self, "week3_wait_release", False):
+                if not self.travel_input_held():
+                    self.week3_wait_release = False
+                return True
+            if (
+                self.key_pressed("KEY_RETURN", "KEY_Z")
+                or self.mouse_pressed_in(self.office_dialog_rect())
+                or self.mouse_pressed_in(self.office_footer_action_rect())
+            ):
+                self.advance_office_dialogue_page()
+                self.week3_wait_release = True
+            return True
+        if self.screen not in {AppScreen.PLAY, AppScreen.OFFICE}:
+            return False
         if getattr(self, "story_ring_active", False) and self.ring_preview is not None:
             self.update_ring_preview()
             return True
@@ -455,14 +608,50 @@ class JulyWeek3Mixin:
             )
             self.week3_wait_release = True
         if d is None:
+            if (
+                self.screen == AppScreen.PLAY
+                and p.phase == "field"
+                and p.parent_recovered
+                and not p.return_prompt_seen
+                and self.model.combat_session is None
+                and not self.model.world_paused
+                and not getattr(self, "flowerbed_dialogue", None)
+                and not getattr(self, "flowerbed_editor", None)
+                and not self.travel_input_held()
+            ):
+                before = deepcopy(p)
+                p.return_prompt_seen = True
+                if not self.save_week3(before):
+                    return True
+                self.week3_dialogue = FieldConversation(
+                    "week3_return_choice",
+                    (("ジャック", "三つとも止めて回収できたね。帰庁して報告しようか？"),),
+                )
+                self.week3_wait_release = True
+                self.clear_world_input_latches()
+                self.model.cancel_auto_move()
+                return True
             return False
         if getattr(self, "week3_wait_release", False):
             if not self.travel_input_held():
                 self.week3_wait_release = False
             return True
+        self.clear_world_input_latches()
+        if d.target_id == "week3_return_choice":
+            go, stay = self.week2_return_choice_rects()
+            if self.key_pressed("KEY_ESCAPE", "KEY_X") or self.mouse_pressed_in(stay):
+                self.week3_dialogue = None
+                self.week3_wait_release = True
+            elif self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(go):
+                self.week3_dialogue = None
+                if not self.return_week3():
+                    self.week3_dialogue = d
+            return True
         if self.key_pressed("KEY_ESCAPE", "KEY_X") or self.mouse_pressed_in(
             self.site_cancel_rect()
         ):
+            if d.target_id == "week3_report":
+                return True
             before = deepcopy(p)
             p.dialogue_target = None
             p.dialogue_index = 0

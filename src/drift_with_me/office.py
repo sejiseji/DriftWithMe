@@ -7,6 +7,17 @@ from typing import Any
 from drift_with_me import config
 from drift_with_me.field_visit import RETURN_TURNS, FieldProgress
 
+SUPERVISOR_NAME = next(
+    row["name"]
+    for row in config.load_data_json("office_characters.json")["characters"]
+    if row["id"] == "supervisor"
+)
+
+
+def supervisor_speaker_name(speaker: str) -> str:
+    """Keep published role-labelled saves compatible with the confirmed name."""
+    return SUPERVISOR_NAME if speaker == "上司" else speaker
+
 
 class Classification(StrEnum):
     COUNTER_COMPLETE = "COUNTER_COMPLETE"

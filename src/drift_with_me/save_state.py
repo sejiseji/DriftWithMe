@@ -154,7 +154,7 @@ def office_snapshot(office):
 
 
 def restore_counter(office, raw):
-    from drift_with_me.office import DialogueLine
+    from drift_with_me.office import DialogueLine, supervisor_speaker_name
 
     session = office.current_session
     if session is None:
@@ -184,6 +184,13 @@ def restore_counter(office, raw):
         allowed.add((q.jack_speaker, q.jack_text, q.visual_action))
         allowed.add((q.reply_speaker or case.visitor.name, q.visitor_reply, None))
     lines = raw["lines"]
+    if isinstance(lines, list):
+        lines = [
+            [supervisor_speaker_name(line[0]), line[1], line[2]]
+            if isinstance(line, list) and len(line) == 3 and line[0] == "上司"
+            else line
+            for line in lines
+        ]
     if case.case_id == "OFF-JUN-W4-CLEANER" and isinstance(lines, list):
         legacy_text = {
             ("おはようございます。エアコン清掃の件で伺いました。作業の予定を確認したくて"): (
@@ -464,6 +471,18 @@ def restore_office(raw, week):
                 ):
                     raise ValueError("incomplete July patrol")
                 code, facts, lines = "JULY1_COMPLETED", tuple(sorted(JULY_FACTS)), ()
+            elif case.case_id == "OFF-JUL-W3-SURVEY":
+                from drift_with_me.july_week3 import PARENT, SMALL
+
+                completed = {*SMALL, PARENT}
+                if (
+                    result["code"] != "JULY3_COMPLETED"
+                    or string_set(result["facts"], completed) != completed
+                    or office.week3_progress.phase != "done"
+                    or not office.week3_progress.professor_handoff_pending
+                ):
+                    raise ValueError("incomplete July W3 report")
+                code, facts, lines = "JULY3_COMPLETED", tuple(sorted(completed)), ()
             elif case.case_id == "OFF-JUL-W2-RESEARCH":
                 from drift_with_me.july_week2 import SITES
 
@@ -603,8 +622,14 @@ def restore_office(raw, week):
             raise ValueError("missing July W2 report")
         restore_counter(office, raw["counter"])
     if july3:
-        if index != 0 or office.sessions[next(iter(office.sessions))].field_result is not None:
-            raise ValueError("July W3 reporting is not authored yet")
+        from drift_with_me.july_week3 import TASK
+
+        done = office.week3_progress.phase == "done"
+        session = office.sessions[TASK]
+        if done != (index == len(office.cases)) or done != (session.field_result is not None):
+            raise ValueError("inconsistent July W3 week boundary")
+        if office.week3_progress.phase == "report" and session.state != CaseState.FIELD_ACTIVE:
+            raise ValueError("July W3 report before field dispatch")
         restore_counter(office, raw["counter"])
     return office
 

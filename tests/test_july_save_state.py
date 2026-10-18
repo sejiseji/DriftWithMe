@@ -24,6 +24,16 @@ def july_payload():
     return app, snapshot(app)
 
 
+def test_published_july_opening_save_reconstructs_confirmed_supervisor_name():
+    app, _ = july_payload()
+    app.office.begin_current_case()
+    saved = snapshot(app)
+    # July W1's published schema stores progress, not counter dialogue text.
+    assert "counter" not in saved["offices"]["7:1"]
+    office = decode(encode(saved))[1][WorkWeek(7, 1)]
+    assert office.current_session.dialogue[0].speaker == "エトウ"
+
+
 def test_july_partial_progress_round_trip_keeps_enemy_and_conversation_flags():
     app, _ = july_payload()
     progress = app.office.july_progress

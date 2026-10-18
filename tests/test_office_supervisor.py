@@ -5,7 +5,7 @@ import pytest
 
 from drift_with_me import config
 from drift_with_me.app import DriftWithMeApp
-from drift_with_me.office import OfficePrototype
+from drift_with_me.office import SUPERVISOR_NAME, OfficePrototype
 
 
 class Font:
@@ -75,9 +75,13 @@ def test_every_question_order_advice_and_consultation_restore(profile):
                 p = app.sync_office_dialogue_playback()
                 content = app.office_dialogue_content_rect()
                 assert (
-                    "".join(line.text for page in p.pages for line in page) == "上司: " + expected
+                    "".join(line.text for page in p.pages for line in page)
+                    == SUPERVISOR_NAME + ": " + expected
                 )
-                assert all(line.speaker == "上司" for page in p.pages for line in page)
+                assert all(line.speaker == SUPERVISOR_NAME for page in p.pages for line in page)
+                assert all(
+                    app.office_dialogue_line_color(line) == 10 for page in p.pages for line in page
+                )
                 assert all(len(page) <= 5 for page in p.pages)
                 assert all(
                     app.ui_text.text_width(line.text, "office_japanese")

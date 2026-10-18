@@ -307,3 +307,195 @@ def test_cube_spin_freezes_at_terminal_stop_without_save_fields(ident):
     app.week3_scene_elapsed = 0.4
     assert app.week3_cube_scene_spin() == stopped
     assert not any("spin" in k for k in p.snapshot())
+
+
+def recovered_app():
+    app, storage = app3()
+    p = app.office.week3_progress
+    p.found = set(SMALL)
+    p.recovered = set(SMALL)
+    p.parent_seen = p.parent_stopped = p.parent_recovered = p.ring_unlocked = True
+    p.rewards.sunglasses_received = True
+    return app, storage
+
+
+def start_report(app):
+    assert app.return_week3()
+    assert app.office.week3_progress.phase == "report"
+    app.field_transition = None
+    app.screen = AppScreen.OFFICE
+    app.update_july_week3(0)
+    assert app.week3_dialogue.target_id == "week3_report"
+
+
+def test_incomplete_return_keeps_field_task_and_can_resume_without_false_report():
+    app, _ = app3()
+    assert app.return_week3()
+    assert app.office.week3_progress.phase == "office"
+    office = decode(encode(snapshot(app)))[1][WorkWeek(7, 3)]
+    assert office.active_field_task is not None and not office.complete
+    app.field_transition = None
+    app.screen = AppScreen.OFFICE
+    assert app.update_july_week3(0)
+    assert getattr(app, "week3_dialogue", None) is None
+    app.mouse_pressed_in = lambda r: r == app.office_footer_action_rect()
+    app.enter_exploration_from_office = lambda: setattr(app.office.week3_progress, "phase", "field")
+    assert app.update_july_week3(0)
+    assert app.office.week3_progress.phase == "field"
+    assert app.begin_week3_target(next(iter(SMALL)))
+
+
+def test_cancel_return_restores_field_phase_and_rollback_when_save_fails():
+    app, storage = recovered_app()
+    assert app.return_week3()
+    storage.fail = True
+    assert not app.cancel_week3_return()
+    assert app.office.week3_progress.phase == "report"
+    storage.fail = False
+    app.progress_store = ProgressStore(browser_storage=storage)
+    assert app.cancel_week3_return()
+    assert app.office.week3_progress.phase == "field"
+    assert not app.office.complete
+
+
+def test_return_prompt_stay_is_one_time_across_save_reload():
+    app, _ = recovered_app()
+    assert app.update_july_week3(0)
+    assert app.week3_dialogue.target_id == "week3_return_choice"
+    app.week3_wait_release = False
+    app.mouse_pressed_in = lambda r: r == app.week2_return_choice_rects()[1]
+    assert app.update_july_week3(0)
+    assert app.week3_dialogue is None and app.office.week3_progress.phase == "field"
+    app.office = decode(encode(snapshot(app)))[1][WorkWeek(7, 3)]
+    app.week3_wait_release = False
+    app.mouse_pressed_in = lambda r: False
+    assert not app.update_july_week3(0)
+    assert app.week3_dialogue is None
+    assert app.return_week3()
+
+
+def test_each_report_page_and_week_boundary_roundtrip_keep_inventory_and_do_not_replay():
+    from drift_with_me.july_week3 import REPORT, TASK
+
+    app, _ = recovered_app()
+    start_report(app)
+    for index in range(len(REPORT)):
+        app.office = decode(encode(snapshot(app)))[1][WorkWeek(7, 3)]
+        app.week3_dialogue = None
+        app.update_july_week3(0)
+        assert app.week3_dialogue.index == index
+        assert app.office.week3_progress.rewards.sunglasses_received
+        assert app.advance_week3_dialogue()
+    app.office = decode(encode(snapshot(app)))[1][WorkWeek(7, 3)]
+    p = app.office.week3_progress
+    assert p.phase == "done" and p.professor_handoff_pending
+    assert p.recovered == set(SMALL) and p.parent_recovered
+    assert p.rewards.sunglasses_received
+    assert app.office.complete and app.office.active_field_task is None
+    assert app.office.sessions[TASK].field_result.result_code == "JULY3_COMPLETED"
+    assert app.week3_dialogue is None and app.update_july_week3(0)
+    assert not app.return_week3() and not app.begin_week3_target("fuji")
+    assert not app.office.finish_week() and not app.can_begin_next_week()
+    assert not app.advance_week3_dialogue()
+
+
+@pytest.mark.parametrize("last", [False, True])
+def test_report_save_failure_rolls_back_cursor_session_and_handoff(last):
+    from drift_with_me.july_week3 import REPORT
+
+    app, storage = recovered_app()
+    start_report(app)
+    if last:
+        for _ in REPORT[:-1]:
+            assert app.advance_week3_dialogue()
+    before = encode(snapshot(app))
+    index = app.week3_dialogue.index
+    storage.fail = True
+    assert not app.advance_week3_dialogue()
+    assert encode(snapshot(app)) == before and app.week3_dialogue.index == index
+    assert not app.office.complete and not app.office.week3_progress.professor_handoff_pending
+    storage.fail = False
+    app.progress_store = ProgressStore(browser_storage=storage)
+    assert app.advance_week3_dialogue()
+
+
+def test_old_published_week3_saves_gain_defaults_without_losing_recoveries():
+    app, _ = recovered_app()
+    old = app.office.week3_progress.snapshot()
+    for k in ("report_index", "return_prompt_seen", "professor_handoff_pending"):
+        old.pop(k)
+    p = Week3Progress.restore(old)
+    assert p.parent_recovered and p.rewards.sunglasses_received
+    assert p.report_index == 0 and not p.professor_handoff_pending
+    old["professor_handoff_pending"] = True
+    with pytest.raises(ValueError):
+        Week3Progress.restore(old)
+
+
+@pytest.mark.parametrize("profile", ["low", "medium", "high"])
+def test_office_report_uses_native_pages_without_clipping_and_reveal_before_advance(profile):
+    from drift_with_me.config import load_runtime_config
+    from drift_with_me.july_week3 import REPORT
+    from test_office import make_office_dialogue_app
+
+    app, _ = recovered_app()
+    app.runtime = load_runtime_config(profile)
+    app.ui_text = make_office_dialogue_app().ui_text
+    start_report(app)
+    for i, (speaker, text) in enumerate(REPORT):
+        playback = app.sync_office_dialogue_playback()
+        assert len(playback.pages) == 1
+        assert (
+            "".join(line.text for page in playback.pages for line in page) == f"{speaker}: {text}"
+        )
+        width = app.office_dialogue_content_rect().width
+        for page in playback.pages:
+            for line in page:
+                assert (
+                    app.ui_text.text_width(line.text, "office_japanese") <= width - line.indent_px
+                )
+                assert line.speaker == speaker and not line.visitor
+                assert app.office_dialogue_line_color(line) == (10 if speaker == "エトウ" else 7)
+        assert app.advance_office_dialogue_page()  # Standard first click reveals.
+        assert app.office.week3_progress.report_index == i
+        assert app.advance_office_dialogue_page()  # Second click advances once.
+    assert app.office.complete and app.week3_dialogue is None
+
+
+def test_office_report_draw_never_opens_exploration_dialogue_and_ignores_other_panels():
+    app, _ = recovered_app()
+    start_report(app)
+    drawn = []
+    app.draw_office = lambda: drawn.append("office")
+    app.draw_field_conversation = lambda *a: drawn.append("field")
+    app.draw()
+    assert drawn == ["office"]
+    app.week3_wait_release = False
+    app.mouse_pressed_in = lambda r: r == app.office_rect(40, 126, 432, 100)
+    app.update_july_week3(1.0)
+    assert app.office.week3_progress.report_index == 0
+    app.mouse_pressed_in = lambda r: r == app.office_dialog_rect()
+    app.update_july_week3(1.0)
+    assert app.office.week3_progress.report_index == 1
+    app.travel_input_held = lambda: True
+    app.update_july_week3(1.0)
+    assert app.office.week3_progress.report_index == 1
+
+
+def test_legacy_supervisor_counter_labels_restore_as_etou_with_inventory_intact():
+    from drift_with_me.office import SUPERVISOR_NAME
+
+    app, _ = recovered_app()
+    saved = snapshot(app)
+    lines = saved["offices"]["7:3"]["counter"]["lines"]
+    assert any(line[0] == SUPERVISOR_NAME for line in lines)
+    for line in lines:
+        if line[0] == SUPERVISOR_NAME:
+            line[0] = "上司"
+    office = decode(encode(saved))[1][WorkWeek(7, 3)]
+    assert office.current_case.visitor.name == "エトウ"
+    assert any(line.speaker == "エトウ" for line in office.current_session.dialogue)
+    assert all(line.speaker != "上司" for line in office.current_session.dialogue)
+    assert (
+        office.week3_progress.parent_recovered and office.week3_progress.rewards.sunglasses_received
+    )

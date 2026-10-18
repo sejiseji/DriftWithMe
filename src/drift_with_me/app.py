@@ -54,12 +54,14 @@ from drift_with_me.math3d import (
 from drift_with_me.model import GameModel, InputIntent, merge_intents
 from drift_with_me.office import (
     CLASSIFICATION_ORDER,
+    SUPERVISOR_NAME,
     CaseDefinition,
     CaseState,
     Classification,
     FieldResult,
     OfficePrototype,
     QuestionDefinition,
+    supervisor_speaker_name,
 )
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer, jack_blink_closed, jack_idle_hover
@@ -309,6 +311,7 @@ WATER_STUDY_JACK_DIRECTION_VIEWS = (
     "front_left",
 )
 OFFICE_DIALOGUE_CHARS_PER_SEC = 72.0
+OFFICE_SUPERVISOR_TEXT_COLOR = 10  # Same yellow as visitors; Jack remains white.
 OFFICE_DIALOGUE_LINES_PER_PAGE = 5
 OFFICE_LINE_START_PROHIBITED = "、。！？）"
 OFFICE_QUESTION_NUMBERS = "①②③④⑤"
@@ -817,6 +820,7 @@ class DriftWithMeApp(
         self.week2_dialogue = None
         self.week2_wait_release = False
         self.week3_dialogue = None
+        self.week3_wait_release = False
         self.week3_scene_elapsed = 0.0
         if self.week3_active():
             self.screen = (
@@ -1052,9 +1056,19 @@ class DriftWithMeApp(
             playback.revealed_chars = 0.0
             return playback
 
-        active_lines = self.office.active_dialogue_lines()
-        recent = tuple((line.speaker, line.text, line.visual_action) for line in active_lines)
-        signature = (case.case_id, recent)
+        reporting = self.week3_office_report_active()
+        if reporting:
+            from drift_with_me.july_week3 import REPORT
+
+            speaker, text = REPORT[self.office.week3_progress.report_index]
+            recent = ((speaker, text, None),)
+        else:
+            active_lines = self.office.active_dialogue_lines()
+            recent = tuple(
+                (supervisor_speaker_name(line.speaker), line.text, line.visual_action)
+                for line in active_lines
+            )
+        signature = (case.case_id, recent, reporting)
         if playback.signature == signature:
             return playback
 
@@ -1065,7 +1079,7 @@ class DriftWithMeApp(
             wrapped_lines = tuple(
                 OfficeDialogueLine(
                     text=line.text,
-                    visitor=speaker == case.visitor.name,
+                    visitor=not reporting and speaker == case.visitor.name,
                     indent_px=line.indent_px,
                     speaker=speaker,
                     visual_action=visual_action,
@@ -1095,9 +1109,9 @@ class DriftWithMeApp(
         self.office_consultation_visible_questions = self.office_visible_question_count()
         content = self.office_dialogue_content_rect()
         lines = tuple(
-            OfficeDialogueLine(line.text, False, line.indent_px, speaker="上司")
+            OfficeDialogueLine(line.text, False, line.indent_px, speaker=SUPERVISOR_NAME)
             for line in self.wrap_office_hanging_text(
-                f"上司: {advice}", int(content.width), "office_japanese"
+                f"{SUPERVISOR_NAME}: {advice}", int(content.width), "office_japanese"
             )
         )
         self.office_consultation_started_at = float(getattr(self, "presentation_time", 0.0))
@@ -1210,7 +1224,10 @@ class DriftWithMeApp(
             float(character_count),
             playback.revealed_chars + max(0.0, elapsed) * OFFICE_DIALOGUE_CHARS_PER_SEC,
         )
-        if getattr(self, "office_consultation", None) is not None:
+        if (
+            getattr(self, "office_consultation", None) is not None
+            or self.week3_office_report_active()
+        ):
             return
         if (
             int(playback.revealed_chars) >= character_count
@@ -1245,6 +1262,8 @@ class DriftWithMeApp(
             playback.revealed_chars = float(character_count)
             return True
         if playback.page_index + 1 >= len(playback.pages):
+            if self.week3_office_report_active():
+                return self.advance_week3_dialogue()
             if getattr(self, "office_consultation", None) is not None:
                 self.end_office_consultation()
                 return True
@@ -1263,7 +1282,8 @@ class DriftWithMeApp(
             return False
         character_count = sum(len(line.text) for line in page)
         return (
-            int(playback.revealed_chars) < character_count
+            self.week3_office_report_active()
+            or int(playback.revealed_chars) < character_count
             or playback.page_index + 1 < len(playback.pages)
             or (
                 getattr(self, "office_consultation", None) is None
@@ -1492,8 +1512,6 @@ class DriftWithMeApp(
         return True
 
     def apply_field_scene_at_black(self, transition: FieldTransition) -> None:
-        if self.week3_active() and transition.direction == "back":
-            self.office.week3_progress.phase = "office"
         if transition.applied:
             return
         if transition.direction == "out":
@@ -1546,6 +1564,8 @@ class DriftWithMeApp(
                 self.key_pressed("KEY_ESCAPE", "KEY_X")
                 or self.mouse_pressed_in(self.field_travel_cancel_rect())
             ):
+                if self.week3_active() and not self.cancel_week3_return():
+                    return True
                 self.field_transition = None
                 self.field_input_wait_for_release = True
                 return True
@@ -3595,14 +3615,45 @@ class DriftWithMeApp(
         )
 
     def draw(self) -> None:
-        if self.week3_active() and self.screen == AppScreen.PLAY:
-            if self.office.week3_progress.active_scene:
+        if self.week3_active():
+            if self.week3_office_report_active():
+                self.draw_office()
+                return
+            if self.screen == AppScreen.OFFICE and self.office.week3_progress.phase == "office":
+                self.draw_office()
+                rect = self.office_dialog_rect()
+                self.draw_panel_frame(rect, fill=0, inner=5)
+                self.draw_office_section_title(rect, "調査は継続中")
+                self.draw_office_wrapped_lines(
+                    self.office_rect(144, 84, 208, 64),
+                    (
+                        "まだ回収していない装置があります。記録は残っています。準備ができたら外勤を再開できます",
+                    ),
+                    7,
+                )
+                self.draw_office_button(
+                    self.office_footer_action_rect(), "外勤を再開", 11, text_color=0
+                )
+                return
+            if self.screen == AppScreen.PLAY and self.office.week3_progress.active_scene:
                 self.draw_week3_scene()
                 return
             if getattr(self, "week3_dialogue", None) is not None:
-                self.draw_play()
+                if self.screen == AppScreen.OFFICE:
+                    self.draw_office()
+                else:
+                    self.draw_play()
                 self.draw_field_conversation(self.week3_dialogue)
-                self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
+                if getattr(self, "week3_error", ""):
+                    self.draw_office_text_in_rect(
+                        self.office_rect(48, 106, 416, 18), self.week3_error, 8
+                    )
+                if self.week3_dialogue.target_id == "week3_return_choice":
+                    go, stay = self.week2_return_choice_rects()
+                    self.draw_office_button(go, "帰庁する", 11)
+                    self.draw_office_button(stay, "もう少し見る", 5, text_color=7)
+                elif self.week3_dialogue.target_id != "week3_report":
+                    self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
                 return
         if getattr(self, "week2_dialogue", None) is not None:
             if self.screen == AppScreen.OFFICE:
@@ -3788,13 +3839,17 @@ class DriftWithMeApp(
 
         debug_rect = self.office_field_debug_rect()
         field_enabled = self.week2_field_header_enabled()
-        self.draw_office_button(
-            debug_rect,
-            "現地確認へ",
-            10 if field_enabled else 5,
-            text_color=0 if field_enabled else 13,
-            horizontal_padding=2,
-        )
+        reporting = self.week3_office_report_active()
+        if not reporting and not (
+            self.week3_active() and self.office.week3_progress.phase == "done"
+        ):
+            self.draw_office_button(
+                debug_rect,
+                "現地確認へ",
+                10 if field_enabled else 5,
+                text_color=0 if field_enabled else 13,
+                horizontal_padding=2,
+            )
 
         office = self.office
         case = office.current_case
@@ -3811,7 +3866,9 @@ class DriftWithMeApp(
                 max(1.0, self.office_consultation_button_rect().x - header_pad * 2),
                 header.height,
             ),
-            "相談中"
+            "外勤報告"
+            if reporting
+            else "相談中"
             if getattr(self, "office_consultation", None) is not None
             else "質問・処理区分",
             13,
@@ -3820,15 +3877,20 @@ class DriftWithMeApp(
 
         consulting = getattr(self, "office_consultation", None) is not None
         available = consulting or not self.office_dialogue_requires_advance()
-        self.draw_office_button(
-            self.office_consultation_button_rect(),
-            "戻る" if consulting else "上司に相談",
-            11 if available else 1,
-            text_color=0 if available else 13,
-            horizontal_padding=2,
-        )
+        if not reporting:
+            self.draw_office_button(
+                self.office_consultation_button_rect(),
+                "戻る" if consulting else "上司に相談",
+                11 if available else 1,
+                text_color=0 if available else 13,
+                horizontal_padding=2,
+            )
         status = self.office_state_label(session.state)
         count_text = f"案件 {office.current_index + 1}/{len(office.cases)}  {status}"
+        if reporting:
+            from drift_with_me.july_week3 import REPORT
+
+            count_text = f"報告 {office.week3_progress.report_index + 1}/{len(REPORT)}"
         status_x = debug_rect.x + debug_rect.width + header_pad
         self.draw_office_text_in_rect(
             Rect(
@@ -3851,8 +3913,8 @@ class DriftWithMeApp(
         for rect in (visitor_rect, questions_rect, dialog_rect, classification_rect):
             self.draw_panel_frame(rect, fill=0, inner=5)
 
-        if consulting:
-            self.draw_office_section_title(visitor_rect, "上司")
+        if consulting or reporting:
+            self.draw_office_section_title(visitor_rect, SUPERVISOR_NAME)
             self.draw_office_portrait(self.office_supervisor_portrait_rect(), "office_supervisor")
         else:
             self.draw_office_section_title(visitor_rect, "来訪者")
@@ -3880,8 +3942,33 @@ class DriftWithMeApp(
                 align="center",
             )
 
-        self.draw_office_section_title(dialog_rect, "上司に相談" if consulting else case.title)
+        self.draw_office_section_title(
+            dialog_rect, "外勤報告" if reporting else "上司に相談" if consulting else case.title
+        )
         self.draw_office_dialogue(dialog_rect)
+
+        if reporting:
+            self.draw_office_section_title(questions_rect, "調査の成果")
+            self.draw_office_wrapped_lines(
+                self.office_rect(144, 160, 216, 42),
+                ("装置3台を停止・回収", "原因や葉への影響は未確認"),
+                7,
+            )
+            self.draw_office_section_title(classification_rect, "次週への引継ぎ")
+            self.draw_office_wrapped_lines(
+                self.office_rect(386, 62, 112, 114),
+                ("ユメサキ先生に回収した実物を渡す予定です",),
+                7,
+            )
+            if getattr(self, "week3_error", ""):
+                self.draw_office_text_in_rect(
+                    self.office_rect(144, 187, 216, 16), self.week3_error, 8
+                )
+            label = (
+                "勤務を終える" if office.week3_progress.report_index + 1 == len(REPORT) else "次へ"
+            )
+            self.draw_office_button(self.office_footer_action_rect(), label, 11, text_color=0)
+            return
 
         self.draw_office_section_title(questions_rect, "質問")
         selected_answer = self.selected_office_answer()
@@ -3992,7 +4079,9 @@ class DriftWithMeApp(
         partial_week = getattr(self, "work_week", WorkWeek()) != WorkWeek()
         self.draw_office_text_in_rect(
             self.office_rect(116, 78, 280, 34),
-            "7月第2週の勤務終了"
+            "7月第3週の勤務終了"
+            if self.week3_active()
+            else "7月第2週の勤務終了"
             if self.week2_active()
             else "今週の用件はここまでです"
             if partial_week
@@ -4012,10 +4101,17 @@ class DriftWithMeApp(
         )
         self.draw_office_button(
             self.office_footer_action_rect(),
-            "勤務終了・記録済み" if self.week2_active() else "探索へ",
+            "勤務終了・記録済み" if self.week2_active() or self.week3_active() else "探索へ",
             11,
             text_color=0,
         )
+
+        if self.week3_active():
+            self.draw_office_wrapped_lines(
+                self.office_rect(80, 168, 352, 36),
+                ("次週、ユメサキ先生へ回収した実物を渡す予定です", "引継ぎは記録済みです"),
+                7,
+            )
 
         self.draw_office_text_in_rect(
             self.office_rect(8, 210, 180, 23),
@@ -4150,13 +4246,14 @@ class DriftWithMeApp(
                     line_height,
                 ),
                 line.text[:visible_count],
-                10 if line.visitor else 7,
+                self.office_dialogue_line_color(line),
                 preferred_styles=("office_japanese", "office_japanese_button"),
             )
 
         character_count = sum(len(line.text) for line in page)
         has_next_page = (
-            playback.page_index + 1 < len(playback.pages)
+            self.week3_office_report_active()
+            or playback.page_index + 1 < len(playback.pages)
             or self.office.has_pending_dialogue_step()
             or getattr(self, "office_consultation", None) is not None
         )
@@ -4166,6 +4263,12 @@ class DriftWithMeApp(
             and getattr(self, "frame", 0) % 48 < 36
         ):
             self.draw_office_dialogue_advance_prompt(rect)
+
+    @staticmethod
+    def office_dialogue_line_color(line: OfficeDialogueLine) -> int:
+        if supervisor_speaker_name(line.speaker) == SUPERVISOR_NAME:
+            return OFFICE_SUPERVISOR_TEXT_COLOR
+        return 10 if line.visitor else 7
 
     def office_jack_portrait_rect(self, *, reading: bool = False) -> Rect | None:
         content = self.office_dialogue_content_rect()

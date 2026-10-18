@@ -1,7 +1,7 @@
 # July W3 field connection — local implementation
 
-Base: aea8279. No young system-worker scene, final W3 report/week completion,
-W4/ED implementation, new enemies, map expansion or grass cutting is included.
+Base: b16b4a8. Includes the W3 supervisor report and week completion.
+No young system-worker appearance, W4 dialogue/ED, new enemies, map expansion or grass cutting is included.
 
 ## Route
 
@@ -41,6 +41,30 @@ celebration/re-entry. A story adapter never touches debug ring storage. Week deb
 continues using temporary state and cannot write the normal slot. Save failure
 rolls back assistance before accepting it and prevents leaving an unsaved puzzle.
 
-W3 remains FIELD_ACTIVE after field recovery. Return travel works, but no authored
-young-worker handoff, final report or week-finish result is fabricated. Those
-connections are explicitly reserved for the next stage.
+After all three recoveries, offer Return / Stay once and persist that prompt history.
+Stay leaves the existing Return button available; reload does not repeat the prompt.
+Early return keeps FIELD_ACTIVE and allows redispatch, without a completion report.
+Completed return checkpoints phase=report before travel. Cancelling travel restores
+phase=field transactionally; reloading travel resumes safely in the office.
+
+The five-turn report uses the native office supervisor portrait, central dialogue
+content rectangle, hanging text, typing/reveal and page-advance handlers. No
+exploration conversation window is drawn in the office. Other panels cannot
+advance the report or dispatch field work while reporting. Each
+advance checkpoints report_index. The final advance alone atomically marks the
+case RESOLVED, writes JULY3_COMPLETED with all three recovered IDs, clears the active
+field task, and sets phase=done / professor_handoff_pending=true. Failed saves roll
+back both cursor and office completion. Sunglasses/help/recovery facts remain intact.
+
+Done uses the existing week-completion screen and records the plan to hand the
+three physical devices to Yumesaki next week. W4 remains unauthored, so no Next
+button is shown and repeated footer input cannot return to exploration or replay
+report/rewards. No device is transferred to Yumesaki yet. The W3 office snapshot
+retains the collected IDs and reward ledger for future week history. Older published
+W3 saves gain defaults for the report cursor/prompt/handoff; no schema bump is needed.
+
+The supervisor is formally named エトウ (user decision, 2026-10-18). The office
+character register is the name source. Dialogue and portrait name fields use エトウ;
+role/action labels such as 上司に相談 remain. Supervisor dialogue uses visitor-yellow
+(palette 10); Jack stays white. Published counter saves labelled 上司 normalize the
+speaker name before validation, without altering text, cursors or recovery/rewards.

@@ -76,6 +76,20 @@
       "implemented_cases": [
         "OFF-JUN-W3-YOAKE"
       ]
+    },
+    {
+      "id": "supervisor",
+      "name": "エトウ",
+      "role": "住民課の上司",
+      "portrait_id": "office_supervisor",
+      "expressions": [
+        "normal"
+      ],
+      "implemented_cases": [
+        "OFF-JUL-W1-PEST",
+        "OFF-JUL-W3-SURVEY"
+      ],
+      "note": "既存の全窓口上司相談にも共通で使用。既存上司ポートレートを継続使用。"
     }
   ]
 }
