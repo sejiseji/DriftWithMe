@@ -250,3 +250,60 @@ def test_device_scene_and_ring_do_not_start_during_existing_combat():
     p.found = p.recovered = set(SMALL)
     assert not app.open_story_ring()
     assert p.active_scene is None
+
+
+@pytest.mark.parametrize("projection", ["affine", "perspective"])
+def test_rotating_cube_culls_rear_faces_and_keeps_black_fill_white_edges(projection):
+    from types import SimpleNamespace
+
+    from drift_with_me.july_week3 import draw_cube
+    from drift_with_me.math3d import Vec3
+    from test_affine_projection import make_affine_camera
+
+    _, _, perspective, _, affine = make_affine_camera()
+    camera = affine if projection == "affine" else perspective
+    calls = []
+    painter = SimpleNamespace(
+        tri=lambda *args: calls.append(("fill", args)),
+        line=lambda *args: calls.append(("edge", args)),
+    )
+    frames = []
+    for spin in (0.0, 2.0, 4.0, 8.0, 16.0):
+        calls.clear()
+        draw_cube(painter, camera, camera.target.x, camera.target.z, spin=spin)
+        fills = [a for kind, a in calls if kind == "fill"]
+        edges = [a for kind, a in calls if kind == "edge"]
+        assert 2 <= len(fills) <= 6 and len(fills) % 2 == 0
+        assert 4 <= len(edges) <= 9  # Never all twelve wireframe edges.
+        assert all(a[-1] == 0 for a in fills) and all(a[-1] == 7 for a in edges)
+        assert [kind for kind, _ in calls] == ["fill"] * len(fills) + ["edge"] * len(edges)
+        for x0, y0, x1, y1, x2, y2, _ in fills:
+            assert (x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0) > 0
+        frames.append(tuple(edges))
+    assert len(set(frames)) == 5
+    # Geometry is presentation only; projecting behind the near plane draws nothing.
+    calls.clear()
+    from dataclasses import replace
+
+    draw_cube(painter, replace(perspective, target=Vec3(0, 0, 0)), 0, -10000)
+    assert not calls
+
+
+@pytest.mark.parametrize("ident", [*SMALL, PARENT])
+def test_cube_spin_freezes_at_terminal_stop_without_save_fields(ident):
+    app, _ = app3()
+    p = app.office.week3_progress
+    p.active_scene = ident
+    app.week3_cube_spin_origin = (ident, 12.0)
+    p.scene_step = 0
+    app.week3_scene_elapsed = 0.1
+    moving = app.week3_cube_scene_spin()
+    app.week3_scene_elapsed = 0.2
+    assert app.week3_cube_scene_spin() > moving
+    p.scene_step = 2 if ident == PARENT else 3
+    app.week3_scene_elapsed = 0.0
+    stopped = app.week3_cube_scene_spin()
+    p.scene_step = 3
+    app.week3_scene_elapsed = 0.4
+    assert app.week3_cube_scene_spin() == stopped
+    assert not any("spin" in k for k in p.snapshot())

@@ -228,29 +228,64 @@ def install_week3_world(app):
     app.world = app.model.world = world
 
 
-def draw_cube(p, camera, x, z, height=0, half=5):
-    vertices = [
-        camera.project(Vec3(x + dx, height + dy, z + dz))
-        for dx, dy, dz in [
-            (-half, 0, -half),
-            (half, 0, -half),
-            (half, 0, half),
-            (-half, 0, half),
-            (-half, half * 2, -half),
-            (half, half * 2, -half),
-            (half, half * 2, half),
-            (-half, half * 2, half),
-        ]
-    ]
+def draw_cube(p, camera, x, z, height=0, half=5, spin=0.0):
+    # Eight rigid vertices, six faces: no textures, mesh assets or depth buffer.
+    yaw = spin * 0.35
+    tilt = 0.22 + 0.10 * math.sin(spin * 0.21)
+    cy, sy, ct, st = math.cos(yaw), math.sin(yaw), math.cos(tilt), math.sin(tilt)
+    world = []
+    for dx, dy, dz in (
+        (-1, -1, -1),
+        (1, -1, -1),
+        (1, -1, 1),
+        (-1, -1, 1),
+        (-1, 1, -1),
+        (1, 1, -1),
+        (1, 1, 1),
+        (-1, 1, 1),
+    ):
+        ty, tz = dy * ct - dz * st, dy * st + dz * ct
+        world.append(
+            Vec3(
+                x + half * (dx * cy + tz * sy),
+                height + half * (1.3 + ty),
+                z + half * (-dx * sy + tz * cy),
+            )
+        )
+    vertices = [camera.project(v) for v in world]
     if any(v is None for v in vertices):
         return
-    for face in [(0, 1, 5, 4), (1, 2, 6, 5), (4, 5, 6, 7)]:
+    faces = []
+    for face in (
+        (0, 4, 5, 1),
+        (3, 2, 6, 7),
+        (0, 3, 7, 4),
+        (1, 5, 6, 2),
+        (0, 1, 2, 3),
+        (4, 7, 6, 5),
+    ):
+        # Outward winding; cull in world space for both affine and perspective.
+        a, b, c = (world[i] for i in face[:3])
+        u, v = b - a, c - a
+        normal = Vec3(u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z, u.x * v.y - u.y * v.x)
+        toward = (
+            camera.profile.fixed_forward
+            if isinstance(camera, AffineCameraState)
+            else a - camera.basis[0]
+        )
+        if normal.x * toward.x + normal.y * toward.y + normal.z * toward.z < -1e-9:
+            faces.append(face)
+    edges = set()
+    for face in faces:
         a, b, c, d = [vertices[i] for i in face]
         p.tri(a.x, a.y, b.x, b.y, c.x, c.y, 0)
         p.tri(a.x, a.y, c.x, c.y, d.x, d.y, 0)
         for i, j in zip(face, face[1:] + face[:1], strict=True):
-            a, b = vertices[i], vertices[j]
-            p.line(a.x, a.y, b.x, b.y, 7)
+            edges.add(tuple(sorted((i, j))))
+    # Draw visible edges once, after all opaque faces; no rear wireframe bleed.
+    for i, j in sorted(edges):
+        a, b = vertices[i], vertices[j]
+        p.line(a.x, a.y, b.x, b.y, 7)
 
 
 class JulyWeek3Mixin:
@@ -347,6 +382,8 @@ class JulyWeek3Mixin:
         if last:
             self.week3_dialogue = None
             self.week3_scene_elapsed = 0.0
+            if d.target_id in SMALL:
+                self.week3_cube_spin_origin = (d.target_id, getattr(self, "presentation_time", 0.0))
             if d.target_id == PARENT and p.recovered == set(SMALL):
                 if p.ring_unlocked:
                     return self.begin_parent_disconnect()
@@ -449,7 +486,23 @@ class JulyWeek3Mixin:
                 or ident == p.active_scene
             ):
                 continue
-            draw_cube(self.pyxel, camera, x, z, half=8 if ident == PARENT else 5)
+            draw_cube(
+                self.pyxel,
+                camera,
+                x,
+                z,
+                half=8 if ident == PARENT else 5,
+                spin=self.presentation_time,
+            )
+
+    def week3_cube_scene_spin(self):
+        p = self.office.week3_progress
+        ident, origin = getattr(self, "week3_cube_spin_origin", (None, 0.0))
+        if ident != p.active_scene:
+            origin = 0.0  # Resumed scenes need no new persistent animation fields.
+        elapsed = sum(DURATIONS[: p.scene_step]) + getattr(self, "week3_scene_elapsed", 0.0)
+        stop = sum(DURATIONS[: 2 if p.active_scene == PARENT else 3])
+        return origin + min(elapsed, stop)
 
     def draw_week3_scene(self):
         p = self.office.week3_progress
@@ -505,7 +558,7 @@ class JulyWeek3Mixin:
         else:
             cx, cz, h = player.x, player.z, 8
         if step < 4:
-            draw_cube(self.pyxel, camera, cx, cz, h)
+            draw_cube(self.pyxel, camera, cx, cz, h, spin=self.week3_cube_scene_spin())
         if step == 2:
             a = camera.project(Vec3(view.buddy.x, view.buddy.y + 6, view.buddy.z))
             b = camera.project(Vec3(cx, h + 6, cz))
@@ -588,6 +641,7 @@ class JulyWeek3Mixin:
         if not self.save_week3(before):
             return False
         self.week3_scene_elapsed = 0.0
+        self.week3_cube_spin_origin = (PARENT, getattr(self, "presentation_time", 0.0))
         self.clear_world_input_latches()
         self.model.cancel_auto_move()
         return True
@@ -622,7 +676,7 @@ class JulyWeek3Mixin:
         )
         self.draw_week3_devices(camera)
         if step < 3:
-            draw_cube(self.pyxel, camera, x, z, 0, 8)
+            draw_cube(self.pyxel, camera, x, z, 0, 8, spin=self.week3_cube_scene_spin())
         elif step == 3:
             draw_cube(
                 self.pyxel,
@@ -631,6 +685,7 @@ class JulyWeek3Mixin:
                 z * (1 - t) + view.player.z * t,
                 12 * math.sin(t * math.pi),
                 8,
+                spin=self.week3_cube_scene_spin(),
             )
         # A steady connection lead is disconnected, never an electric short/attack.
         if step == 0 or step == 1 and t < 0.6:
