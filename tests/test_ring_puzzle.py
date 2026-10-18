@@ -602,7 +602,7 @@ def test_intro_two_lines_three_second_delay_and_no_help_or_overlap():
     app.ring_intro_done = False
     app.ring_intro_entry = 0
     before = app.ring_preview.snapshot()
-    assert INTRO_LINES == ("ヘルプ無しでできたら", "ご褒美あげちゃう！")
+    assert INTRO_LINES == ("解けたら、", "ご褒美あげちゃう！")
     assert not app.update_ring_intro(2.99)
     assert app.update_ring_intro(3)
     assert app.update_ring_intro(8.99)

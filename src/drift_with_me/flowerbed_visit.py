@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 from drift_with_me.field_visit import FieldConversation
 
 REQUEST = (
-    ("フジ", "花壇の下地ができた。6月の花を植える順番は任せる"),
+    ("フジ", "花壇の下地ができた。今週中に5区画を仕上げてくれ。6月の花を植える順番は任せる"),
     ("ジャック", "5つの区画に、1種類ずつですね"),
     ("フジ", "この湿地じゃあまり見ん生き物がおるな。あれ、大丈夫なんか？"),
     ("ジャック", "今、調べています。どの辺りで見かけましたか？"),

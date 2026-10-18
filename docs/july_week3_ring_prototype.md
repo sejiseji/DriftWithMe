@@ -55,8 +55,13 @@ Retry resets to the legal start while retaining help facts. Quit (`やめる`) c
 the preview without saving the board. No duplicate Save/Back action remains.
 
 Phase order is idle -> rotating -> idle/solved -> unlocking -> celebrating ->
-unlocked. Completion is durable once solved. This debug preview exposes only
-`unassisted_candidate`; it issues no inventory, ED reward or story completion.
+unlocked. Completion is durable once solved. The debug preview displays the future completion dialogue only; it issues no
+normal-game inventory, ED reward or story completion. `RingRewardLedger` is a
+pure story integration contract: either linked clear earns sunglasses once,
+regardless of help. `special_praise_earned` alone depends on help history.
+Legacy `eligibility_forfeited` is retained for old-save compatibility and
+conservative praise handling, never as a sunglasses restriction. Main-story
+progress serialization and ED wardrobe wiring remain unimplemented.
 
 ## Confirmed story additions (specification only)
 
@@ -145,12 +150,12 @@ confined to the right margin. Fuse's icon bubble is suppressed while text is sho
 ## Opening reward-condition message
 
 Linked entry shows exactly these two lines after about 3 seconds, when idle:
-「ヘルプ無しでできたら」
+「解けたら、」
 「ご褒美あげちゃう！」
 
 The message lasts 6 seconds, uses a compact 54px-high side balloon, and condenses
 long lines horizontally while retaining native glyph height. It hides during
 rotation and is cancelled on solving/unlocking/celebration. It is mutually
 exclusive with the ten-second idle advice. Neither message marks help or changes
-qualification. Phase/name and linkage-description labels are hidden; UNDO remains
+reward eligibility. Phase/name and linkage-description labels are hidden; UNDO remains
 an independent fourth footer action. No later-week story has been added.

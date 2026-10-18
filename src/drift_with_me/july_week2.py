@@ -8,6 +8,7 @@ from drift_with_me.field_visit import FieldConversation
 from drift_with_me.math3d import Vec3
 from drift_with_me.office import (
     CaseState,
+    Classification,
     FieldResult,
     OfficePrototype,
     parse_case_definitions,
@@ -25,7 +26,7 @@ SITES = {
 }
 LINES = {
     "jul_w2_obs_fuji": (
-        ("ジャック", "葉の一部が、はっきりマゼンタになってる。周りの緑とは違うね"),
+        ("ジャック", "周りには緑の葉もあるけど、ここの一部ははっきりマゼンタになってるね"),
         ("ヒューズ", "花ではなく、葉そのものね。位置と色を記録しましょう"),
     ),
     "jul_w2_obs_giant": (
@@ -57,6 +58,7 @@ class Week2Progress:
     positions: dict[str, int] = field(default_factory=dict)
     phase: str = "counter"
     report_index: int = 0
+    return_prompt_seen: bool = False
 
     def snapshot(self):
         return dict(
@@ -64,15 +66,19 @@ class Week2Progress:
             positions=dict(self.positions),
             phase=self.phase,
             report_index=self.report_index,
+            return_prompt_seen=self.return_prompt_seen,
         )
 
     @classmethod
     def restore(cls, raw):
+        if isinstance(raw, dict):
+            raw = {"return_prompt_seen": False, **raw}
         if not isinstance(raw, dict) or set(raw) != {
             "checked",
             "positions",
             "phase",
             "report_index",
+            "return_prompt_seen",
         }:
             raise ValueError("invalid July W2 progress")
         checked, positions = raw["checked"], raw["positions"]
@@ -87,13 +93,20 @@ class Week2Progress:
             )
             or not isinstance(raw["phase"], str)
             or raw["phase"] not in {"counter", "field", "office", "report", "done"}
+            or type(raw["return_prompt_seen"]) is not bool
             or type(raw["report_index"]) is not int
             or not 0 <= raw["report_index"] < len(REPORT)
         ):
             raise ValueError("invalid July W2 cursor")
         if raw["phase"] in {"report", "done"} and set(checked) != set(SITES):
             raise ValueError("unfinished July W2 observations")
-        return cls(set(checked), dict(positions), raw["phase"], raw["report_index"])
+        return cls(
+            set(checked),
+            dict(positions),
+            raw["phase"],
+            raw["report_index"],
+            raw["return_prompt_seen"],
+        )
 
 
 def office_data():
@@ -151,7 +164,7 @@ def office_data():
             [
                 ("ミヤノ", "植物と同じ影響かは、まだ分かりません。記録はまとめてきました！"),
                 ("ユメサキ", "げ、原因も、今は特定できていなくて……"),
-                ("ジャック", "現地で確認できることを記録します。花壇と、周辺の四か所を見てきます"),
+                ("ジャック", "今週の仕事として花壇を仕上げ、周辺の四か所も確認して記録します"),
             ],
         ),
     ]
@@ -169,7 +182,9 @@ def office_data():
                 dict(
                     id="talk",
                     label=label,
-                    jack="詳しく伺ってもよろしいですか",
+                    jack="植物とマウスで確認された変化と、まだ分からない点を教えてください"
+                    if ident == TASK
+                    else "詳しく伺ってもよろしいですか",
                     reply=reply,
                     jack_speaker="ジャック",
                     reply_speaker="ミヤノ" if ident == TASK else name,
@@ -221,6 +236,26 @@ class JulyWeek2Office(OfficePrototype):
         cases = parse_case_definitions(raw)
         super().__init__(cases, parse_counter_script_definitions(raw["counter_scripts"], cases))
         self.week2_progress = Week2Progress()
+
+    @property
+    def requires_classification(self):
+        return self.current_case is None or self.current_case.case_id == TASK
+
+    def complete_pending_question(self):
+        completed = super().complete_pending_question()
+        session = self.current_session
+        if (
+            not self.requires_classification
+            and session is not None
+            and session.state in {CaseState.HEARING, CaseState.READY_TO_CLASSIFY}
+            and "talk" in session.asked_question_ids
+            and not session.pending_dialogue_steps
+            and session.pending_question_id is None
+        ):
+            session.selected_classification = Classification.COUNTER_COMPLETE
+            session.state = CaseState.CLOSED_COUNTER
+            session.feedback = "相談とご案内を終えました"
+        return completed
 
     def prepare_debug_field_task(self):
         from drift_with_me.office import Classification
@@ -408,6 +443,16 @@ class JulyWeek2Mixin:
             return True
         if dialogue is not None:
             self.clear_world_input_latches()
+            if dialogue.target_id == "week2_return_choice":
+                go, stay = self.week2_return_choice_rects()
+                if self.key_pressed("KEY_ESCAPE", "KEY_X") or self.mouse_pressed_in(stay):
+                    self.week2_dialogue = None
+                    self.week2_wait_release = True
+                elif self.key_pressed("KEY_RETURN", "KEY_Z") or self.mouse_pressed_in(go):
+                    self.week2_dialogue = None
+                    if not self.return_week2():
+                        self.week2_dialogue = dialogue
+                return True
             if (
                 self.key_pressed("KEY_ESCAPE", "KEY_X")
                 or self.mouse_pressed_in(self.site_cancel_rect())
@@ -430,14 +475,27 @@ class JulyWeek2Mixin:
             self.screen == AppScreen.PLAY
             and p.phase == "field"
             and self.week2_ready()
+            and not p.return_prompt_seen
             and self.model.combat_session is None
             and not self.model.world_paused
             and not getattr(self, "flowerbed_dialogue", None)
             and not getattr(self, "flowerbed_editor", None)
             and not self.travel_input_held()
         ):
-            return self.return_week2()
+            before = deepcopy(p)
+            p.return_prompt_seen = True
+            if not self.save_week2(before):
+                return False
+            self.week2_dialogue = FieldConversation(
+                "week2_return_choice", (("ジャック", "今日の用事は済んだね。帰ろうか？"),)
+            )
+            self.week2_wait_release = True
+            self.model.cancel_auto_move()
+            return True
         return False
+
+    def week2_return_choice_rects(self):
+        return self.office_rect(64, 190, 176, 30), self.office_rect(264, 190, 184, 30)
 
 
 def draw_week2_ground(renderer, model, camera):

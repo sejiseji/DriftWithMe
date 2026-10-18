@@ -9,7 +9,7 @@ from drift_with_me.field_visit import FieldConversation
 from drift_with_me.flowerbed import FLOWER_IDS
 from drift_with_me.flowerbed_visit import FlowerbedVisit
 from drift_with_me.july_week2 import LINES, REPORT, SITES, TASK, Week2Progress
-from drift_with_me.office import Classification
+from drift_with_me.office import CaseState, Classification
 from drift_with_me.save_state import ProgressStore, decode, encode, snapshot
 from drift_with_me.week_cycle import WorkWeek, load_week_office
 from field_transition_helpers import finish_travel
@@ -52,9 +52,11 @@ def test_counter_three_cases_normal_classification_and_exact_mid_dialogue_save()
         app.start_game()
         assert snapshot(app) == saved
         drain(app.office)
-        assert app.office.classify(
-            Classification.FIELD_CHECK if i == 2 else Classification.COUNTER_COMPLETE
-        )
+        if i == 2:
+            assert app.office.classify(Classification.FIELD_CHECK)
+        else:
+            assert app.office.current_session.state == CaseState.CLOSED_COUNTER
+            assert not app.office_classification_choices()
         drain(app.office)
         if i < 2:
             assert app.office.advance_case()
@@ -90,6 +92,11 @@ def test_order_independence_partial_return_resume_final_report_and_no_next_week(
         app.east_site_progress.flowerbed_order = FLOWER_IDS
         app.east_site_progress.flowerbed_visit = FlowerbedVisit("complete").snapshot()
     assert app.week2_ready() and app.update_week2()
+    assert app.week2_dialogue.target_id == "week2_return_choice"
+    app.week2_wait_release = False
+    app.key_pressed = lambda *keys: "KEY_RETURN" in keys
+    assert app.update_week2()
+    app.key_pressed = lambda *keys: False
     finish_travel(app)
     assert app.update_week2()
     assert app.week2_dialogue.target_id == "week2_report"
@@ -222,3 +229,41 @@ def test_magenta_palette_preserves_existing_colors_and_uses_leaf_triangles():
     assert px.colors[:16] == colors and px.colors[16:20] == list(SHADES)
     assert px.colors[20:22] == [0xFF00FF, 0xFF65F0]
     assert len(triangles) == 24 and set(triangles) == {20, 21}
+
+
+def test_stay_after_completion_does_not_repeat_even_after_save_reload():
+    app, _ = app2(True)
+    app.east_site_progress.flowerbed_order = FLOWER_IDS
+    app.east_site_progress.flowerbed_visit = FlowerbedVisit("complete").snapshot()
+    app.office.week2_progress.checked = set(SITES)
+    assert app.update_week2()
+    assert app.field_transition is None
+    app.week2_wait_release = False
+    app.key_pressed = lambda *keys: "KEY_ESCAPE" in keys
+    assert app.update_week2()
+    app.key_pressed = lambda *keys: False
+    app.week2_wait_release = False
+    assert not app.update_week2()
+    assert app.week2_dialogue is None and app.screen == AppScreen.PLAY
+    app.saved_progress = decode(encode(snapshot(app)))
+    app.start_game()
+    assert app.office.week2_progress.return_prompt_seen
+    app.week2_wait_release = False
+    assert not app.update_week2()
+    assert app.return_week2()  # existing return control remains available
+
+
+def test_old_week2_cursor_and_counter_after_hearing_migrate_without_classification():
+    old = dict(checked=[], positions={}, phase="field", report_index=0)
+    assert not Week2Progress.restore(old).return_prompt_seen
+    app, _ = app2()
+    drain(app.office)
+    assert app.office.ask_question("talk")
+    drain(app.office)
+    app.office.current_session.state = CaseState.READY_TO_CLASSIFY
+    app.office.current_session.selected_classification = None
+    app.saved_progress = decode(encode(snapshot(app)))
+    app.start_game()
+    app.office.complete_pending_question()
+    assert app.office.current_session.state == CaseState.CLOSED_COUNTER
+    assert app.office.advance_case()

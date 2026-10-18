@@ -843,6 +843,10 @@ class DriftWithMeApp(
             return
 
         self.update_office_dialogue_playback(elapsed)
+        if not getattr(self.office, "requires_classification", True):
+            if not self.office_dialogue_requires_advance():
+                self.office.complete_pending_question()
+            self.office_focus = "questions"
         confirm_pressed = self.key_pressed("KEY_RETURN", "KEY_Z")
         if self.mouse_pressed_in(self.office_dialog_rect()):
             self.advance_office_dialogue_page()
@@ -873,7 +877,7 @@ class DriftWithMeApp(
 
         if self.key_pressed("KEY_LEFT", "KEY_A"):
             self.office_focus = "questions"
-        elif self.key_pressed("KEY_RIGHT", "KEY_D"):
+        elif self.key_pressed("KEY_RIGHT", "KEY_D") and self.office_classification_choices():
             self.office_focus = "classifications"
 
         visible_question_count = self.office_visible_question_count()
@@ -918,12 +922,15 @@ class DriftWithMeApp(
                 self.office_question_index = index
                 self.ask_or_select_office_question(question)
                 return
-        for index, classification in enumerate(CLASSIFICATION_ORDER):
+        for index, classification in enumerate(self.office_classification_choices()):
             if self.mouse_pressed_in(self.office_classification_rect(index)):
                 self.office_focus = "classifications"
                 self.office_classification_index = index
                 self.office.classify(classification)
                 return
+
+    def office_classification_choices(self):
+        return CLASSIFICATION_ORDER if getattr(self.office, "requires_classification", True) else ()
 
     def office_visible_question_count(self) -> int:
         if getattr(self, "office_consultation", None) is not None:
@@ -3171,7 +3178,7 @@ class DriftWithMeApp(
                     )
                     rects.extend(
                         self.office_classification_rect(index)
-                        for index in range(len(CLASSIFICATION_ORDER))
+                        for index in range(len(self.office_classification_choices()))
                     )
                 else:
                     rects.append(self.office_footer_action_rect())
@@ -3555,7 +3562,11 @@ class DriftWithMeApp(
                 self.draw_office_text_in_rect(
                     self.office_rect(48, 106, 416, 18), self.week2_save_error, 8
                 )
-            if self.week2_dialogue.target_id != "week2_report":
+            if self.week2_dialogue.target_id == "week2_return_choice":
+                go, stay = self.week2_return_choice_rects()
+                self.draw_office_button(go, "帰庁する", 11)
+                self.draw_office_button(stay, "もう少し見る", 5, text_color=7)
+            elif self.week2_dialogue.target_id != "week2_report":
                 self.draw_office_text_in_rect(self.site_cancel_rect(), "やめる", 13)
             return
         if getattr(self, "park_preview_week", None) is not None:
@@ -3839,8 +3850,11 @@ class DriftWithMeApp(
                 question.question_id == selected_answer_id,
             )
 
-        self.draw_office_section_title(classification_rect, "処理区分")
-        for index, classification in enumerate(CLASSIFICATION_ORDER):
+        self.draw_office_section_title(
+            classification_rect,
+            "処理区分" if self.office_classification_choices() else "会話で対応",
+        )
+        for index, classification in enumerate(self.office_classification_choices()):
             rect = self.office_classification_rect(index)
             selected = (
                 self.office_focus == "classifications" and index == self.office_classification_index

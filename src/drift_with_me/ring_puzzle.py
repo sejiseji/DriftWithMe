@@ -27,7 +27,7 @@ GRID_PERIOD_SECONDS = 6.0
 IDLE_HINT_TEXT = "外側から順に計7回転で解けそうな初期配置ね"
 IDLE_HINT_LINES = ("外側から順に", "計7回転で", "解けそうな", "初期配置ね")
 IDLE_HINT_SECONDS = 10.0
-INTRO_LINES = ("ヘルプ無しでできたら", "ご褒美あげちゃう！")
+INTRO_LINES = ("解けたら、", "ご褒美あげちゃう！")
 INTRO_DELAY = 3.0
 INTRO_READING_SECONDS = 6.0
 SAVE_KEY = "drift_with_me.debug.independent_rings.v1"
@@ -66,6 +66,22 @@ class RingPuzzle:
             and not self.help_history
             and not any(self.angles)
             and self.phase in {"solved", "unlocking", "celebrating", "unlocked"}
+        )
+
+    @property
+    def clear_reward_available(self):
+        return self.mode == "linked" and self.phase == "unlocked" and not any(self.angles)
+
+    @property
+    def special_praise_earned(self):
+        # Historical forfeiture is retained solely for conservative old-save praise handling.
+        return self.unassisted_candidate
+
+    @property
+    def completion_lines(self):
+        return (
+            "サングラスをどうぞ！",
+            "一人で解けたね、すごい！" if self.special_praise_earned else "一緒に解けたね！",
         )
 
     def rotate(self, direction: int) -> bool:
@@ -835,7 +851,14 @@ class RingPuzzlePreviewMixin:
                 self.ring_preview.phase == "solved" and self.ring_preview.elapsed < index * 0.18
             )
             mode = "bulb" if ready else "bang" if 0 <= age < 0.65 else "thinking"
-            if not (index == 1 and (self.ring_idle_hint_visible() or self.ring_intro_visible())):
+            if not (
+                index == 1
+                and (
+                    self.ring_idle_hint_visible()
+                    or self.ring_intro_visible()
+                    or self.ring_preview.clear_reward_available
+                )
+            ):
                 self.draw_ring_thought_bubble(x + 18, 108 - index * 2, mode, now + index * 0.8)
             if celebration:
                 self.draw_ring_celebration_particles(x, self.ring_preview.elapsed, index)
@@ -1015,18 +1038,18 @@ class RingPuzzlePreviewMixin:
             and self.ring_preview.phase == "idle"
         )
 
-    def draw_ring_intro_lines(self):
+    def draw_ring_intro_lines(self, lines=INTRO_LINES):
         # Condense only horizontally when needed; retain the native 12px glyph height.
         # The side balloon stays clear of both the board and every input target.
         p = self.pyxel
         area = self.office_rect(387, 80, 114, 40)
         width = max(1, int(area.width))
         cache = getattr(self, "ring_intro_text_cache", {})
-        key = width
+        key = (width, lines)
         if key not in cache:
             font = self.ui_renderer.styles["office_japanese"].font
             images = []
-            for line in INTRO_LINES:
+            for line in lines:
                 source_width = self.ui_renderer.text_width(line, "office_japanese")
                 source = p.Image(source_width, 16)
                 source.cls(7)
@@ -1063,16 +1086,27 @@ class RingPuzzlePreviewMixin:
 
     def draw_ring_idle_hint(self):
         intro = self.ring_intro_visible()
-        if not intro and not self.ring_idle_hint_visible():
+        completed = self.ring_preview.clear_reward_available
+        if not intro and not completed and not self.ring_idle_hint_visible():
             return
         p = self.pyxel
-        box = self.office_rect(382, 72, 122, 54) if intro else self.ring_idle_hint_rect()
+        box = (
+            self.office_rect(382, 72, 122, 54)
+            if (intro or completed)
+            else self.ring_idle_hint_rect()
+        )
         p.rect(round(box.x), round(box.y), round(box.width), round(box.height), 13)
-        inside = self.office_rect(383, 73, 120, 52) if intro else self.office_rect(383, 45, 120, 80)
+        inside = (
+            self.office_rect(383, 73, 120, 52)
+            if (intro or completed)
+            else self.office_rect(383, 45, 120, 80)
+        )
         p.rect(round(inside.x), round(inside.y), round(inside.width), round(inside.height), 7)
         a, b, c = (self.office_rect(x, y, 0, 0) for x, y in ((438, 124), (454, 124), (446, 133)))
         p.tri(round(a.x), round(a.y), round(b.x), round(b.y), round(c.x), round(c.y), 7)
-        if intro:
-            self.draw_ring_intro_lines()
+        if intro or completed:
+            self.draw_ring_intro_lines(
+                self.ring_preview.completion_lines if completed else INTRO_LINES
+            )
         else:
             self.draw_office_wrapped_lines(self.office_rect(390, 54, 106, 62), IDLE_HINT_LINES, 1)
