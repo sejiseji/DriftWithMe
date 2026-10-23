@@ -66,6 +66,7 @@ from drift_with_me.office import (
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.render import Renderer, jack_blink_closed, jack_idle_hover
 from drift_with_me.save_state import ProgressStore, snapshot
+from drift_with_me.swarm_app import SwarmAppMixin
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
 from drift_with_me.water_study_assets import (
     APPROVED_LOOK04_PLUS_SPARKLE_FPS,
@@ -417,6 +418,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
+    SwarmAppMixin,
     FlowerbedVisitMixin,
     FlowerbedMixin,
     WeekDebugMixin,
@@ -431,10 +433,13 @@ class DriftWithMeApp(
         headless: bool = False,
         smoke_frames: int | None = None,
         week_debug: bool | None = None,
+        swarm_field: bool = False,
     ) -> None:
         import pyxel
 
         self.pyxel = pyxel
+        self.swarm_field_enabled = swarm_field
+        self.swarm_test_field_active = False
         self.runtime = config.load_runtime_config(profile)
         self.world = load_world_data()
         self.model = GameModel(self.runtime.raw, self.world)
@@ -547,6 +552,7 @@ class DriftWithMeApp(
             quit_key=None,
             display_scale=self.runtime.desktop_scale,
             headless=headless,
+            capture_sec=20 if swarm_field else 10,
         )
         pyxel.mouse(True)
         self.ui_text = load_ui_text_renderer(pyxel, self.runtime)
@@ -607,6 +613,9 @@ class DriftWithMeApp(
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.update_swarm_frame(elapsed):
+            self.checkpoint_progress()
+            return
         if self.update_july_week3(elapsed):
             return
         if self.update_week2():
@@ -679,6 +688,10 @@ class DriftWithMeApp(
                 )
             )
             or self.model.combat_session is not None
+            or (
+                getattr(self.model, "swarm_field", None) is not None
+                and self.model.swarm_field.battle is not None
+            )
             or getattr(self, "first_sight_conversation", None) is not None
         ):
             return False
@@ -2372,6 +2385,8 @@ class DriftWithMeApp(
         return y >= self.office_rect(0, 48, 0, 0).y and y + h < panel.y
 
     def update_first_sight(self, elapsed: float) -> bool:
+        if getattr(self, "swarm_test_field_active", False):
+            return False
         if self.july_active():
             self.first_sight_conversation = None
             return False
@@ -2615,6 +2630,8 @@ class DriftWithMeApp(
         if not events:
             return
         for event in events:
+            if event.kind.startswith("swarm_"):
+                self.process_swarm_event(event)
             if event.kind == "combat_started":
                 self.combat_camera_restore = None
                 self.combat_camera_snapshot_zoom = self.camera_zoom(self.camera())
@@ -3615,6 +3632,14 @@ class DriftWithMeApp(
         )
 
     def draw(self) -> None:
+        if getattr(self, "swarm_test_field_active", False) and self.screen in (
+            AppScreen.PLAY,
+            AppScreen.PAUSE,
+        ):
+            self.draw_play()
+            if self.screen == AppScreen.PAUSE:
+                self.draw_pause()
+            return
         if self.week3_active():
             if self.week3_office_report_active():
                 self.draw_office()
@@ -3825,6 +3850,8 @@ class DriftWithMeApp(
             self.office_rect(32, 180, 448, 34), self.progress_store.message, 10, align="center"
         )
         self.draw_system_button(self.sound_button_rect(), self.sound_visual_rect(), "sound")
+        if getattr(self, "swarm_field_enabled", False):
+            self.pyxel.text(8, self.runtime.screen_height - 10, "F5: SWARM FIELD TEST", 10)
 
     def draw_office(self) -> None:
         pyxel = self.pyxel
@@ -5051,6 +5078,8 @@ class DriftWithMeApp(
             pyxel.text(x, y + index * 8, line, 7)
 
     def draw_play(self) -> None:
+        if self.draw_swarm_battle():
+            return
         assert self.renderer is not None
         scene_camera = self.scene_camera(self.camera())
         self.renderer.draw_scene(
@@ -5074,6 +5103,8 @@ class DriftWithMeApp(
             self.draw_field_conversation(self.first_sight_conversation)
         self.draw_july_story()
         self.draw_flowerbed_entry()
+        self.draw_swarm_sites(scene_camera)
+        self.draw_swarm_return_fade()
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
         camera = self.combat_scene_camera(camera)
@@ -5086,10 +5117,22 @@ class DriftWithMeApp(
         session = self.model.combat_session
         if session is None:
             return camera
+        enemy = self.model.enemy_by_id(session.enemy_id)
+        if enemy is None:
+            enemy_x, enemy_z = session.snapshot.enemy.x, session.snapshot.enemy.z
+        else:
+            enemy_x, enemy_z = self.model.enemy_presentation_position(enemy)
+        target = Vec3(
+            (self.model.player.x + enemy_x) * 0.5, 0, (self.model.player.z + enemy_z) * 0.5
+        )
+        return self.combat_camera_for_session(camera, session, target)
+
+    def combat_camera_for_session(self, camera, session, target):
+        """Shared individual/swarm combat push, hold, pulse and restore framing."""
         combat = self.runtime.raw.get("combat_v1", {})
         entry = combat.get("entry", {}) if isinstance(combat, dict) else {}
         multiplier = self.combat_camera_zoom_multiplier(session)
-        if multiplier <= 0.0:
+        if multiplier <= 0:
             return camera
         transition = max(
             1e-6,
@@ -5101,29 +5144,15 @@ class DriftWithMeApp(
                 )
             ),
         )
-        progress = _smoothstep(min(1.0, max(session.elapsed_sec, 1.0 / 60.0) / transition))
-        enemy = self.model.enemy_by_id(session.enemy_id)
-        if enemy is None:
-            enemy_x = session.snapshot.enemy.x
-            enemy_z = session.snapshot.enemy.z
-        else:
-            enemy_x, enemy_z = self.model.enemy_presentation_position(enemy)
-        combat_target = Vec3(
-            (self.model.player.x + enemy_x) * 0.5,
-            0.0,
-            (self.model.player.z + enemy_z) * 0.5,
-        )
-        camera_config = self.runtime.raw["camera"]
-        base_distance = float(camera_config["base_distance"])
+        progress = _smoothstep(min(1, max(session.elapsed_sec, 1 / 60) / transition))
         snapshot_zoom = self.combat_snapshot_zoom(camera)
-        target_zoom = snapshot_zoom * multiplier
-        next_zoom = self.clamp_combat_zoom(target_zoom, snapshot_zoom)
-        combat_camera = CameraState(
-            target=_lerp_vec3(camera.target, combat_target, progress),
+        zoom = self.clamp_combat_zoom(snapshot_zoom * multiplier, snapshot_zoom)
+        result = CameraState(
+            target=_lerp_vec3(camera.target, target, progress),
             yaw_deg=camera.yaw_deg,
             pitch_deg=camera.pitch_deg,
             horizontal_fov_deg=camera.horizontal_fov_deg,
-            distance=base_distance / next_zoom,
+            distance=float(self.runtime.raw["camera"]["base_distance"]) / zoom,
             near=camera.near,
             far=camera.far,
             anchor_x=camera.anchor_x,
@@ -5131,8 +5160,8 @@ class DriftWithMeApp(
             viewport_width=camera.viewport_width,
             viewport_height=camera.viewport_height,
         )
-        self.last_combat_scene_camera = combat_camera
-        return combat_camera
+        self.last_combat_scene_camera = result
+        return result
 
     def camera_zoom(self, camera: CameraState) -> float:
         base_distance = float(self.runtime.raw["camera"]["base_distance"])
@@ -5568,6 +5597,9 @@ class DriftWithMeApp(
         return self.ui_token(self.action_button_mode())
 
     def action_button_mode(self) -> str:
+        swarm = getattr(self.model, "swarm_field", None)
+        if swarm is not None and swarm.battle is not None:
+            return swarm.action_mode
         session = self.model.combat_session
         if session is not None:
             counter_mode = self.model.combat_counter_action_mode()
@@ -5611,8 +5643,8 @@ class DriftWithMeApp(
             float(raw_rect[3]) * scale_y,
         )
 
-    def draw_combat_timing_bar(self) -> None:
-        session = self.model.combat_session
+    def draw_combat_timing_bar(self, session=None) -> None:
+        session = self.model.combat_session if session is None else session
         if session is None or session.phase not in {
             "COMBAT_READY",
             "PARRY_TIMING",
@@ -6521,7 +6553,10 @@ def _lerp_vec3(origin: Vec3, target: Vec3, amount: float) -> Vec3:
 def main() -> None:
     import sys
 
-    DriftWithMeApp(week_debug=True if "--week-debug" in sys.argv else None)
+    DriftWithMeApp(
+        week_debug=True if "--week-debug" in sys.argv else None,
+        swarm_field="--swarm-field" in sys.argv,
+    )
 
 
 if __name__ == "__main__":

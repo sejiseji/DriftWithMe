@@ -1,0 +1,303 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "schema_version": 1,
+      "id": "water_tornado_v3",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 48,
+      "hex_height": 80,
+      "colkey": 0,
+      "anchor_px": [
+        24,
+        72
+      ],
+      "world_size": [
+        24,
+        40
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "source_hash": "e93477bc4145030d834533a64359753e74c2e3f4829350c87f3ed209b8fc637e",
+      "frames": [
+        {
+          "id": "f00",
+          "path": "frames/tornado_00.hex",
+          "source_hash": "e78ad58188cd9a464b3a1ff7e7a777e828d83bcbf8323b221f6c67c97a2dfd30"
+        },
+        {
+          "id": "f01",
+          "path": "frames/tornado_01.hex",
+          "source_hash": "6950517cbb9095fcbe8ca1853b190359602e776d19af2eca6d12688b0b2f4587"
+        },
+        {
+          "id": "f02",
+          "path": "frames/tornado_02.hex",
+          "source_hash": "d11b77ca5e649e6fe1cc68259326e7443bf1a9df707ca8c337da716e6ceaf145"
+        },
+        {
+          "id": "f03",
+          "path": "frames/tornado_03.hex",
+          "source_hash": "479998912d6fcae3d7be47bddc922ee2ea8ba742fa8cf064a1828c6548384c23"
+        },
+        {
+          "id": "f04",
+          "path": "frames/tornado_04.hex",
+          "source_hash": "d6fa8fb4e4b4c33a4fdadbd598a8e8d0c39694294a78f6171770ae011ffe8518"
+        },
+        {
+          "id": "f05",
+          "path": "frames/tornado_05.hex",
+          "source_hash": "8a75495e620ca11c056454a1555e6d75dfae2557c0dc941a77c1ae1552420628"
+        },
+        {
+          "id": "f06",
+          "path": "frames/tornado_06.hex",
+          "source_hash": "701b3fbf097270b05db974470a8cc349038da25eb7951669d5e36660832c6c9f"
+        },
+        {
+          "id": "f07",
+          "path": "frames/tornado_07.hex",
+          "source_hash": "fb6e646470aab083710751f8cfaa607efa9ecf84da81437049b3f78fd0030d19"
+        },
+        {
+          "id": "f08",
+          "path": "frames/tornado_08.hex",
+          "source_hash": "f8a2d68d4357e4b202df548a8646f3725c1f53291664b82d01f8c464a84bd461"
+        },
+        {
+          "id": "f09",
+          "path": "frames/tornado_09.hex",
+          "source_hash": "8ca9f6964480729f2cce3e6b1cfffe7629dfb5c7ef777fa03832bb7c7f9d68b3"
+        },
+        {
+          "id": "f10",
+          "path": "frames/tornado_10.hex",
+          "source_hash": "64957b84a4ad1c3845e76e1f6c88270e440432619d42457f4815ee66788aea03"
+        },
+        {
+          "id": "f11",
+          "path": "frames/tornado_11.hex",
+          "source_hash": "15b023243f6b5f852557a188d4b87333d004fd2b2f8179629191feb67d8b69b3"
+        }
+      ]
+    },
+    {
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "colkey": 2,
+      "schema_version": 1,
+      "id": "fuse_front_squint",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 48,
+      "hex_height": 40,
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "source_hash": "c2f6d5ec66093a2f273683dad2b4111b938624719da5692c7e9e20741e7ee3e2",
+      "frames": [
+        {
+          "id": "f00",
+          "path": "fuse_front_squint.hex",
+          "source_hash": "c2f6d5ec66093a2f273683dad2b4111b938624719da5692c7e9e20741e7ee3e2"
+        }
+      ]
+    },
+    {
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "colkey": 2,
+      "schema_version": 1,
+      "id": "fuse_front_right_squint",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 48,
+      "hex_height": 40,
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "source_hash": "44fd5a7b550cc129db32123ecd1a0334d7880be40ec384d720fe41d112d2703d",
+      "frames": [
+        {
+          "id": "f00",
+          "path": "fuse_front_right_squint.hex",
+          "source_hash": "44fd5a7b550cc129db32123ecd1a0334d7880be40ec384d720fe41d112d2703d"
+        }
+      ]
+    },
+    {
+      "anchor_px": [
+        24,
+        30
+      ],
+      "world_size": [
+        25.2,
+        21.0
+      ],
+      "colkey": 2,
+      "schema_version": 1,
+      "id": "fuse_front_left_squint",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 48,
+      "hex_height": 40,
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "source_hash": "f1649ecdf8d1a4188878c15fa112f038443649fb956541e2e5695fe9e0c776d3",
+      "frames": [
+        {
+          "id": "f00",
+          "path": "fuse_front_left_squint.hex",
+          "source_hash": "f1649ecdf8d1a4188878c15fa112f038443649fb956541e2e5695fe9e0c776d3"
+        }
+      ]
+    },
+    {
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "colkey": 0,
+      "schema_version": 1,
+      "id": "jack_front_squint",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "source_hash": "4461701d79d890926e480eb642b9bcb4c5ccb93405be52e6af1634aff9ef336c",
+      "frames": [
+        {
+          "id": "f00",
+          "path": "jack_front_squint.hex",
+          "source_hash": "4461701d79d890926e480eb642b9bcb4c5ccb93405be52e6af1634aff9ef336c"
+        }
+      ]
+    },
+    {
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "colkey": 0,
+      "schema_version": 1,
+      "id": "jack_front_right_squint",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "source_hash": "0fcbb6ca570eadbccd7418b63b871ec6bb4eb4ff8791fc4fdb66b26f19cf1fcc",
+      "frames": [
+        {
+          "id": "f00",
+          "path": "jack_front_right_squint.hex",
+          "source_hash": "0fcbb6ca570eadbccd7418b63b871ec6bb4eb4ff8791fc4fdb66b26f19cf1fcc"
+        }
+      ]
+    },
+    {
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "colkey": 0,
+      "schema_version": 1,
+      "id": "jack_front_left_squint",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "source_hash": "c4648419e59d599c9aa57c0f89aea6eb402771a88e4ac9197074dca80b6833ce",
+      "frames": [
+        {
+          "id": "f00",
+          "path": "jack_front_left_squint.hex",
+          "source_hash": "c4648419e59d599c9aa57c0f89aea6eb402771a88e4ac9197074dca80b6833ce"
+        }
+      ]
+    },
+    {
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "colkey": 0,
+      "schema_version": 1,
+      "id": "jack_right_squint",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "source_hash": "d86168c6150719f3ded1fead0ee2a667d6cc4289d668dcb34cc1136af923d129",
+      "frames": [
+        {
+          "id": "f00",
+          "path": "jack_right_squint.hex",
+          "source_hash": "d86168c6150719f3ded1fead0ee2a667d6cc4289d668dcb34cc1136af923d129"
+        }
+      ]
+    },
+    {
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        16,
+        16
+      ],
+      "colkey": 0,
+      "schema_version": 1,
+      "id": "jack_left_squint",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "frame_loop",
+      "source_hash": "c484ae7ce9f3e67fd550d23da28063fec25ceaf2ee8a46ddfc2f5a63416cb021",
+      "frames": [
+        {
+          "id": "f00",
+          "path": "jack_left_squint.hex",
+          "source_hash": "c484ae7ce9f3e67fd550d23da28063fec25ceaf2ee8a46ddfc2f5a63416cb021"
+        }
+      ]
+    }
+  ]
+}

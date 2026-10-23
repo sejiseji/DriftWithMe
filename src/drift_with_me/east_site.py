@@ -37,6 +37,7 @@ class EastSiteProgress:
     pending_completion: str | None = None
     flowerbed_order: tuple[str, ...] = ()
     flowerbed_visit: dict[str, object] = field(default_factory=dict)
+    swarm_progress: dict[str, list[str]] = field(default_factory=dict)
 
     def begin(self, target_id: str) -> tuple[tuple[tuple[str, str], ...], int]:
         self.pending_completion = None

@@ -1,0 +1,27 @@
+{
+  "capture_water": null,
+  "finish_water": 12.0,
+  "finish_energy": null,
+  "contact_radius": 36.0,
+  "release_radius": 72.0,
+  "reentry_cooldown": 2.0,
+  "victory_hold": 1.2,
+  "sites": {
+    "northwest": [
+      200.0,
+      800.0
+    ],
+    "northeast": [
+      800.0,
+      800.0
+    ],
+    "southeast": [
+      800.0,
+      200.0
+    ]
+  },
+  "capture_knockback_world": 18.0,
+  "capture_float_height_world": 8.0,
+  "camera_player_anchor_y": 0.7,
+  "formation_radius_y_ratio": 0.14
+}

@@ -370,10 +370,20 @@ class Renderer:
             commands, key=lambda item: (-item.depth, item.layer_bias, item.stable_id)
         ):
             with self.atmosphere_depth_effects(camera, command.depth, command.atmosphere_strength):
-                command.draw()
+                swarm = getattr(model, "swarm_presentation", None)
+                opacity = swarm.command_opacity(self, command) if swarm is not None else 1.0
+                if opacity < 1:
+                    pyxel.dither(opacity)
+                try:
+                    command.draw()
+                finally:
+                    if opacity < 1:
+                        pyxel.dither(1)
         self.draw_barrier(model, camera)
-        if model.combat_session is None and self.player_is_occluded(
-            model, camera, presentation_time
+        if (
+            model.combat_session is None
+            and getattr(model, "swarm_presentation", None) is None
+            and self.player_is_occluded(model, camera, presentation_time)
         ):
             self.draw_player_outline(model, camera, presentation_time)
         if exploration_markers and model.combat_session is None:
@@ -588,7 +598,9 @@ class Renderer:
             if combat_isolated and enemy.id != combat_enemy_id:
                 continue
             enemy_presentation = self.enemy_actor_presentation(model, enemy, camera)
-            anchor = camera.project(Vec3(enemy_presentation.x, 0.0, enemy_presentation.z))
+            anchor = camera.project(
+                Vec3(enemy_presentation.x, getattr(enemy, "capture_y", 0.0), enemy_presentation.z)
+            )
             if anchor is None:
                 continue
             commands.append(
@@ -672,6 +684,9 @@ class Renderer:
                     ),
                 )
             )
+        swarm = getattr(model, "swarm_presentation", None)
+        if swarm is not None:
+            commands.extend(swarm.draw_commands(self, model, camera))
         commands.extend(focus_draw_commands(self, model, camera))
         commands.extend(preview_draw_commands(self, model, camera))
         commands.extend(garden_preview_draw_commands(self, model, camera))
@@ -775,7 +790,7 @@ class Renderer:
         session = model.combat_session
         if session is None or session.enemy_id != enemy.id:
             enemy_x, enemy_z = model.enemy_presentation_position(enemy)
-            return ActorPresentation(enemy_x, enemy_z)
+            return ActorPresentation(enemy_x, enemy_z, getattr(enemy, "capture_y", 0.0))
         target = self.combat_actor_anchor_ground(model, camera, "enemy")
         if target is None:
             target_x = enemy.x
@@ -819,6 +834,9 @@ class Renderer:
     def buddy_actor_presentation(
         self, model: GameModel, camera: CameraState, presentation_time: float
     ) -> ActorPresentation:
+        swarm = getattr(model, "swarm_presentation", None)
+        if swarm is not None:
+            return ActorPresentation(*swarm.guard_ground)
         session = model.combat_session
         if session is None:
             return ActorPresentation(model.buddy.x, model.buddy.z)
@@ -4213,6 +4231,9 @@ class Renderer:
                 else "player_idle_blink_asset"
             )
             asset = self.configured_sprite_asset(model, blink_key) or asset
+        swarm = getattr(model, "swarm_presentation", None)
+        if swarm is not None:
+            asset = swarm.attack_asset(self, model, "player", view_name) or asset
         using_idle_fallback = False
         if asset is None and config_key != "player_idle_asset":
             asset = self.configured_sprite_asset(model, "player_idle_asset")
@@ -4248,6 +4269,14 @@ class Renderer:
         return asset.frame(frames[frame_index].frame_id)
 
     def player_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        swarm = getattr(model, "swarm_presentation", None)
+        if swarm is not None:
+            view = swarm.attack_view("player", self.SPIN_DIRECTION_VIEWS)
+            if view is not None:
+                return view
+            guard_view = swarm.guard_view("player")
+            if guard_view is not None:
+                return guard_view
         preview_view = focus_attack_direction(model) or preview_attack_direction(model)
         if preview_view is not None:
             return preview_view
@@ -4323,12 +4352,25 @@ class Renderer:
         if camera is None:
             return self.configured_sprite_asset(model, "buddy_idle_asset")
         view_name = self.buddy_sprite_direction_view(model, camera)
+        swarm = getattr(model, "swarm_presentation", None)
+        if swarm is not None:
+            attack_asset = swarm.attack_asset(self, model, "buddy", view_name)
+            if attack_asset is not None:
+                return attack_asset
         asset = self.configured_sprite_asset(model, f"buddy_{view_name}_asset")
         if asset is None:
             asset = self.configured_sprite_asset(model, "buddy_idle_asset")
         return asset
 
     def buddy_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        swarm = getattr(model, "swarm_presentation", None)
+        if swarm is not None:
+            view = swarm.attack_view("buddy", self.SPIN_DIRECTION_VIEWS)
+            if view is not None:
+                return view
+            guard_view = swarm.guard_view("buddy")
+            if guard_view is not None:
+                return guard_view
         preview_view = focus_attack_direction(model) or preview_attack_direction(model)
         if preview_view is not None:
             return preview_view

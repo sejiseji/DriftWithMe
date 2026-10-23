@@ -159,9 +159,8 @@ def draw_sprite(renderer, model, enemy, camera, x, z, y):
     angle = math.atan2(toward.x - origin.x, -(toward.y - origin.y)) if origin and toward else 0.0
     name = DIRECTIONS[int(round(angle / (math.pi / 4))) % 8]
     action = getattr(enemy, "focus_action", None)
-    frame = asset.frame(
-        action.frame_id if action else f"{name}_{int(model.world_tick / 30 * 6) % 4:02d}"
-    )
+    animation_time = getattr(enemy, "animation_time", model.world_tick / 30)
+    frame = asset.frame(action.frame_id if action else f"{name}_{int(animation_time * 6) % 4:02d}")
     if action and action.burn_progress > 0:
         frame = action.ensure_burn_frames(renderer.pyxel, frame, asset.definition.colkey)[
             int(action.burn_progress * BURN_STEPS)

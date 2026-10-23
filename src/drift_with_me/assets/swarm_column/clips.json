@@ -1,0 +1,68 @@
+{
+  "asset_id": "water_tornado_v3",
+  "version": 1,
+  "authoritative_source": "frames/*.hex",
+  "anchor_px": [
+    24,
+    72
+  ],
+  "colkey": 0,
+  "palette_indices": [
+    1,
+    6,
+    12,
+    7
+  ],
+  "growth": {
+    "frames": [
+      "f00",
+      "f01",
+      "f02",
+      "f03"
+    ],
+    "frame_ms": 100,
+    "loop": false
+  },
+  "rotation": {
+    "frames": [
+      "f04",
+      "f05",
+      "f06",
+      "f07"
+    ],
+    "frame_ms": 67.5,
+    "gif_frame_ms": [
+      70,
+      60,
+      70,
+      70
+    ],
+    "loop": true
+  },
+  "dissolve": {
+    "frames": [
+      "f08",
+      "f09",
+      "f10",
+      "f11"
+    ],
+    "frame_ms": 100,
+    "loop": false,
+    "on_complete": "clear"
+  },
+  "atlas": {
+    "file": "WaterColumn_sprite_sheet.png",
+    "columns": 4,
+    "rows": 3,
+    "cell_px": [
+      48,
+      80
+    ],
+    "compatible_bank_size": [
+      256,
+      256
+    ],
+    "suggested_future_bank": 1,
+    "written_to_game": false
+  }
+}

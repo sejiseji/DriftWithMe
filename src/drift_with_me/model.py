@@ -225,6 +225,7 @@ class GameModel:
         self.manual_velocity_x = 0.0
         self.manual_velocity_z = 0.0
         self.combat_session: CombatSession | None = None
+        self.swarm_field = None
         self.combat_reentry_cooldowns: dict[str, float] = {}
         self.last_zap_visual_route: str | None = None
         self.buddy_hard_follow_suppressed_remaining = 0.0
@@ -297,6 +298,7 @@ class GameModel:
         self.auto_move_path = []
         self.auto_move_stuck_elapsed = 0.0
         self.combat_session = None
+        self.swarm_field = None
         self.combat_reentry_cooldowns = {}
         self.last_zap_visual_route = None
         self.buddy_hard_follow_suppressed_remaining = 0.0
@@ -407,6 +409,12 @@ class GameModel:
         events: list[GameEvent] = []
         if self.world_paused:
             self.cancel_auto_move()
+            self.player.barrier_active = False
+            self.last_events = events
+            return events
+
+        swarm = getattr(self, "swarm_field", None)
+        if swarm is not None and swarm.step(intent, camera, dt, events):
             self.player.barrier_active = False
             self.last_events = events
             return events
@@ -2776,6 +2784,9 @@ class GameModel:
         return route == "focus" or self.energy + 1e-9 >= cost
 
     def combat_counter_action_mode(self) -> str:
+        swarm = getattr(self, "swarm_field", None)
+        if swarm is not None and swarm.battle is not None:
+            return swarm.action_mode
         session = self.combat_session
         if session is None:
             return "NONE"
@@ -2933,6 +2944,9 @@ class GameModel:
         return self.combat_reentry_cooldowns.get(enemy.id, 0.0) > 0.0
 
     def can_start_contact_combat(self, enemy: EnemyState) -> bool:
+        swarm = getattr(self, "swarm_field", None)
+        if swarm is not None and swarm.battle is not None:
+            return False
         if not self.combat_v1_enabled():
             return False
         if self.combat_session is not None:

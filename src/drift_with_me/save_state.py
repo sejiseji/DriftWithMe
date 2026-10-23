@@ -20,6 +20,7 @@ from drift_with_me.office import (
     FieldTask,
     OfficePrototype,
 )
+from drift_with_me.swarm_field import validate_progress
 from drift_with_me.week_cycle import WorkWeek, load_week_office
 
 SAVE_VERSION = 2
@@ -247,6 +248,11 @@ def snapshot(app):
     offices[app.work_week] = app.office
     return {
         "version": SAVE_VERSION,
+        **(
+            {"swarm": validate_progress(app.east_site_progress.swarm_progress)}
+            if getattr(app.east_site_progress, "swarm_progress", {})
+            else {}
+        ),
         **(
             {"flowerbed": list(app.east_site_progress.flowerbed_order)}
             if getattr(app.east_site_progress, "flowerbed_order", ())
@@ -656,6 +662,7 @@ def decode(text):
     if not expected_keys <= set(payload) or set(payload) - expected_keys - {
         "flowerbed",
         "flowerbed_visit",
+        "swarm",
     }:
         raise ValueError("unknown schema")
     w = payload["week"]
@@ -739,6 +746,7 @@ def decode(text):
         dict(positions),
         flowerbed_order=validate_order(payload.get("flowerbed", [])),
         flowerbed_visit=visit.snapshot() if "flowerbed_visit" in payload else {},
+        swarm_progress=validate_progress(payload.get("swarm", {})),
     )
     return week, offices, sites, seen, resources, defeated
 
