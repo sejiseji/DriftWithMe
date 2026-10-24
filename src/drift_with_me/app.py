@@ -7,6 +7,7 @@ from enum import Enum, auto
 
 from drift_with_me import config
 from drift_with_me.audio import AudioEngine
+from drift_with_me.august import AugustMixin
 from drift_with_me.build_info import BUILD_LABEL
 from drift_with_me.camera import CameraController
 from drift_with_me.document_reading import reading_pose_pixels
@@ -40,6 +41,7 @@ from drift_with_me.july_week1 import (
 )
 from drift_with_me.july_week2 import JulyWeek2Mixin
 from drift_with_me.july_week3 import JulyWeek3Mixin
+from drift_with_me.july_week4 import JulyWeek4Mixin
 from drift_with_me.map_objectives import MapObjectivesMixin
 from drift_with_me.math3d import (
     AffineCameraState,
@@ -360,6 +362,7 @@ OFFICE_PORTRAIT_SMILE_BLINK_OVERLAY_IDS = {
     },
 }
 OFFICE_PORTRAIT_SMILE_IDS = {
+    "iwama_bust_normal": "iwama_bust_smug",
     "succubus_green": "succubus_green_smile",
     "tired_gray_oldman": "tired_gray_oldman_smile",
     "nervous_elf_woodsman": "nervous_elf_woodsman_smile",
@@ -418,6 +421,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
+    AugustMixin,
     SwarmAppMixin,
     FlowerbedVisitMixin,
     FlowerbedMixin,
@@ -426,6 +430,7 @@ class DriftWithMeApp(
     MapObjectivesMixin,
     JulyWeek2Mixin,
     JulyWeek3Mixin,
+    JulyWeek4Mixin,
 ):
     def __init__(
         self,
@@ -616,6 +621,14 @@ class DriftWithMeApp(
         if self.update_swarm_frame(elapsed):
             self.checkpoint_progress()
             return
+        if self.update_august_sightings(elapsed):
+            self.checkpoint_progress()
+            return
+        if self.update_august(elapsed):
+            self.checkpoint_progress()
+            return
+        if self.update_july_week4(elapsed):
+            return
         if self.update_july_week3(elapsed):
             return
         if self.update_week2():
@@ -695,6 +708,8 @@ class DriftWithMeApp(
             or getattr(self, "first_sight_conversation", None) is not None
         ):
             return False
+        if getattr(self, "august_sync_failed", False):
+            return False
         self.sync_july_progress()
         data = snapshot(self)
         if data == self.last_checkpoint:
@@ -751,6 +766,9 @@ class DriftWithMeApp(
             self.audio.toggle_mute()
 
     def start_game(self, *, new_game: bool = False) -> None:
+        self.august_crossing = None
+        self.august_sync_failed = False
+        self.august_sighting_wait_release = True
         if getattr(self, "ring_preview", None) is not None:
             self.restore_ring_grid_palette()
         self.ring_preview = None
@@ -832,6 +850,8 @@ class DriftWithMeApp(
             self.screen = AppScreen.OFFICE
         self.week2_dialogue = None
         self.week2_wait_release = False
+        self.week4_dialogue = None
+        self.week4_wait_release = False
         self.week3_dialogue = None
         self.week3_wait_release = False
         self.week3_scene_elapsed = 0.0
@@ -843,6 +863,15 @@ class DriftWithMeApp(
                 self.model.player.x, self.model.player.z = 330, 424
                 self.camera_controller.reset(Vec3(330, 0, 424))
                 self.model.snap_buddy(self.camera())
+
+        if self.august_active():
+            self.screen = (
+                AppScreen.PLAY if self.office.august_progress.phase == "field" else AppScreen.OFFICE
+            )
+        if self.week4_active():
+            self.screen = (
+                AppScreen.PLAY if self.office.week4_progress.phase == "field" else AppScreen.OFFICE
+            )
 
     def update_office_screen(self, elapsed: float) -> None:
         if self.week2_active() and self.office.week2_progress.phase == "done":
@@ -1069,11 +1098,10 @@ class DriftWithMeApp(
             playback.revealed_chars = 0.0
             return playback
 
-        reporting = self.week3_office_report_active()
+        reporting = self.office_story_report_active()
         if reporting:
-            from drift_with_me.july_week3 import REPORT
-
-            speaker, text = REPORT[self.office.week3_progress.report_index]
+            lines, index = self.office_story_report()
+            speaker, text = lines[index]
             recent = ((speaker, text, None),)
         else:
             active_lines = self.office.active_dialogue_lines()
@@ -1116,6 +1144,8 @@ class DriftWithMeApp(
             return False
         if self.office_dialogue_requires_advance():
             return False
+        if self.week4_follow_available():
+            return self.begin_week4_follow()
         advice = self.office.supervisor_advice()
         if advice is None:
             return False
@@ -1155,6 +1185,13 @@ class DriftWithMeApp(
         return "normal"
 
     def end_office_consultation(self) -> None:
+        if (
+            self.week4_active()
+            and self.office.week4_progress.follow_index is not None
+            and getattr(self, "office_consultation", None) is not None
+        ):
+            self.advance_week4_follow(close=True)
+            return
         self.office_consultation = None
 
     def wrap_office_dialogue_text(
@@ -1239,7 +1276,7 @@ class DriftWithMeApp(
         )
         if (
             getattr(self, "office_consultation", None) is not None
-            or self.week3_office_report_active()
+            or self.office_story_report_active()
         ):
             return
         if (
@@ -1275,8 +1312,16 @@ class DriftWithMeApp(
             playback.revealed_chars = float(character_count)
             return True
         if playback.page_index + 1 >= len(playback.pages):
-            if self.week3_office_report_active():
-                return self.advance_week3_dialogue()
+            if self.office_story_report_active():
+                if self.august_active():
+                    return self.advance_august_report()
+                return (
+                    self.advance_week4_dialogue()
+                    if self.week4_active()
+                    else self.advance_week3_dialogue()
+                )
+            if self.week4_active() and self.office.week4_progress.follow_index is not None:
+                return self.advance_week4_follow()
             if getattr(self, "office_consultation", None) is not None:
                 self.end_office_consultation()
                 return True
@@ -1284,6 +1329,8 @@ class DriftWithMeApp(
                 return False
             self.sync_office_dialogue_playback()
             return True
+        if self.week4_active() and self.office.week4_progress.follow_index is not None:
+            return self.advance_week4_follow()
         playback.page_index += 1
         playback.revealed_chars = 0.0
         return True
@@ -1295,7 +1342,7 @@ class DriftWithMeApp(
             return False
         character_count = sum(len(line.text) for line in page)
         return (
-            self.week3_office_report_active()
+            self.office_story_report_active()
             or int(playback.revealed_chars) < character_count
             or playback.page_index + 1 < len(playback.pages)
             or (
@@ -1324,6 +1371,9 @@ class DriftWithMeApp(
         session = self.office.current_session
         if session is None:
             self.enter_exploration_from_office()
+            return
+        if self.week4_active() and session.state == CaseState.CLOSED_COUNTER:
+            self.advance_week4_case()
             return
         if session.state == CaseState.FIELD_ACTIVE:
             self.enter_exploration_from_office()
@@ -1385,11 +1435,15 @@ class DriftWithMeApp(
         )
 
     def enter_exploration_from_office(self) -> None:
+        if self.august_active():
+            self.office.august_progress.phase = "field"
         if self.july_active():
             install_july_world(self, combat=True)
         from drift_with_me.northeast_park import install_park_world
 
         install_park_world(self)
+        if self.week4_active():
+            self.office.week4_progress.phase = "field"
         if self.week3_active():
             self.office.week3_progress.phase = "field"
         if self.week2_active():
@@ -1440,6 +1494,10 @@ class DriftWithMeApp(
             )
 
     def complete_office_field_task(self) -> bool:
+        if self.august_active():
+            return self.return_august()
+        if self.week4_active():
+            return self.return_week4()
         if self.week3_active():
             return self.return_week3()
         if self.week2_active():
@@ -1577,6 +1635,15 @@ class DriftWithMeApp(
                 self.key_pressed("KEY_ESCAPE", "KEY_X")
                 or self.mouse_pressed_in(self.field_travel_cancel_rect())
             ):
+                if self.august_active():
+                    from copy import deepcopy
+
+                    before = deepcopy(self.office)
+                    self.office.august_progress.phase = "field"
+                    if not self.save_august(before):
+                        return True
+                if self.week4_active() and not self.cancel_week4_return():
+                    return True
                 if self.week3_active() and not self.cancel_week3_return():
                     return True
                 self.field_transition = None
@@ -2673,6 +2740,16 @@ class DriftWithMeApp(
             elif event.kind == "interaction_started" and event.target_id is not None:
                 from drift_with_me.july_week2 import SITES
 
+                if self.week4_active() and event.target_id in {
+                    "jul_w4_park_check",
+                    FLOWERBED_FUJI_ID,
+                    FLOWERBED_ID,
+                }:
+                    self.process_events(self.model.cancel_interaction())
+                    self.begin_week4_target(
+                        "jul_w4_park_check" if event.target_id == "jul_w4_park_check" else "fuji"
+                    )
+                    continue
                 if self.week3_active() and event.target_id in {
                     "jul_w3_small_fuji",
                     "jul_w3_small_nw",
@@ -3632,6 +3709,8 @@ class DriftWithMeApp(
         )
 
     def draw(self) -> None:
+        if self.draw_august_overlay():
+            return
         if getattr(self, "swarm_test_field_active", False) and self.screen in (
             AppScreen.PLAY,
             AppScreen.PAUSE,
@@ -3640,8 +3719,10 @@ class DriftWithMeApp(
             if self.screen == AppScreen.PAUSE:
                 self.draw_pause()
             return
+        if self.draw_week4_overlay():
+            return
         if self.week3_active():
-            if self.week3_office_report_active():
+            if self.office_story_report_active():
                 self.draw_office()
                 return
             if self.screen == AppScreen.OFFICE and self.office.week3_progress.phase == "office":
@@ -3794,7 +3875,8 @@ class DriftWithMeApp(
             text = "捕縛チャンス！"
             color = 12
         else:
-            text = "電撃チャンス！"
+            swarm = getattr(self.model, "swarm_field", None)
+            text = "トドメチャンス！" if swarm is not None and swarm.battle else "電撃チャンス！"
             color = 10
         progress = cue.progress
         style_name = self.ui_text_style_name(text, "tooltip")
@@ -3866,9 +3948,10 @@ class DriftWithMeApp(
 
         debug_rect = self.office_field_debug_rect()
         field_enabled = self.week2_field_header_enabled()
-        reporting = self.week3_office_report_active()
+        reporting = self.office_story_report_active()
         if not reporting and not (
-            self.week3_active() and self.office.week3_progress.phase == "done"
+            (self.week3_active() and self.office.week3_progress.phase == "done")
+            or (self.week4_active() and self.office.week4_progress.phase == "done")
         ):
             self.draw_office_button(
                 debug_rect,
@@ -3915,9 +3998,8 @@ class DriftWithMeApp(
         status = self.office_state_label(session.state)
         count_text = f"案件 {office.current_index + 1}/{len(office.cases)}  {status}"
         if reporting:
-            from drift_with_me.july_week3 import REPORT
-
-            count_text = f"報告 {office.week3_progress.report_index + 1}/{len(REPORT)}"
+            report_lines, report_index = self.office_story_report()
+            count_text = f"報告 {report_index + 1}/{len(report_lines)}"
         status_x = debug_rect.x + debug_rect.width + header_pad
         self.draw_office_text_in_rect(
             Rect(
@@ -3978,22 +4060,34 @@ class DriftWithMeApp(
             self.draw_office_section_title(questions_rect, "調査の成果")
             self.draw_office_wrapped_lines(
                 self.office_rect(144, 160, 216, 42),
-                ("装置3台を停止・回収", "原因や葉への影響は未確認"),
+                ("北西・北東・南東の確認を記録",)
+                if self.august_active()
+                else ("フジと公園を確認", "花の保存済みの並びを保持")
+                if self.week4_active()
+                else ("装置3台を停止・回収", "原因や葉への影響は未確認"),
                 7,
             )
-            self.draw_office_section_title(classification_rect, "次週への引継ぎ")
+            self.draw_office_section_title(
+                classification_rect, "記録" if self.august_active() else "次週への引継ぎ"
+            )
             self.draw_office_wrapped_lines(
                 self.office_rect(386, 62, 112, 114),
-                ("ユメサキ先生に回収した実物を渡す予定です",),
+                (
+                    (
+                        "確認した異変の記録を保管します"
+                        if self.august_active()
+                        else "ユメサキ先生へ引渡し済み。機械の構造や影響は未解明です"
+                        if self.week4_active()
+                        else "ユメサキ先生に回収した実物を渡す予定です"
+                    ),
+                ),
                 7,
             )
             if getattr(self, "week3_error", ""):
                 self.draw_office_text_in_rect(
                     self.office_rect(144, 187, 216, 16), self.week3_error, 8
                 )
-            label = (
-                "勤務を終える" if office.week3_progress.report_index + 1 == len(REPORT) else "次へ"
-            )
+            label = "勤務を終える" if report_index + 1 == len(report_lines) else "次へ"
             self.draw_office_button(self.office_footer_action_rect(), label, 11, text_color=0)
             return
 
@@ -4106,12 +4200,14 @@ class DriftWithMeApp(
         partial_week = getattr(self, "work_week", WorkWeek()) != WorkWeek()
         self.draw_office_text_in_rect(
             self.office_rect(116, 78, 280, 34),
-            "7月第3週の勤務終了"
+            "7月第4週の勤務終了"
+            if self.week4_active()
+            else "7月第3週の勤務終了"
             if self.week3_active()
             else "7月第2週の勤務終了"
             if self.week2_active()
             else "今週の用件はここまでです"
-            if partial_week
+            if partial_week or self.august_active()
             else "本日の試行案件は完了しました",
             7,
             preferred_styles=("office_japanese", "office_japanese_button"),
@@ -4120,7 +4216,7 @@ class DriftWithMeApp(
         self.draw_office_text_in_rect(
             self.office_rect(116, 116, 280, 24),
             "今週の確認を終えました"
-            if partial_week
+            if partial_week or self.august_active()
             else f"{len(self.office.cases)}件の処理結果を記録しました",
             13,
             preferred_styles=("office_japanese_button", "office_japanese"),
@@ -4128,7 +4224,12 @@ class DriftWithMeApp(
         )
         self.draw_office_button(
             self.office_footer_action_rect(),
-            "勤務終了・記録済み" if self.week2_active() or self.week3_active() else "探索へ",
+            "勤務終了・記録済み"
+            if self.week2_active()
+            or self.week3_active()
+            or self.week4_active()
+            or self.august_active()
+            else "探索へ",
             11,
             text_color=0,
         )
@@ -4155,7 +4256,18 @@ class DriftWithMeApp(
         week = getattr(self, "work_week", WorkWeek())
         return (
             self.screen == AppScreen.OFFICE
-            and week in {WorkWeek(), WorkWeek(6, 2), WorkWeek(6, 3), WorkWeek(7, 1), WorkWeek(7, 2)}
+            and week
+            in {
+                WorkWeek(),
+                WorkWeek(6, 2),
+                WorkWeek(6, 3),
+                WorkWeek(7, 1),
+                WorkWeek(7, 2),
+                WorkWeek(7, 3),
+                WorkWeek(7, 4),
+                WorkWeek(8, 1),
+                WorkWeek(8, 2),
+            }
             and getattr(self, "week_transition", None) is None
             and not getattr(self, "week_input_wait_for_release", False)
             and getattr(self, "office_consultation", None) is None
@@ -4279,7 +4391,7 @@ class DriftWithMeApp(
 
         character_count = sum(len(line.text) for line in page)
         has_next_page = (
-            self.week3_office_report_active()
+            self.office_story_report_active()
             or playback.page_index + 1 < len(playback.pages)
             or self.office.has_pending_dialogue_step()
             or getattr(self, "office_consultation", None) is not None
@@ -5078,10 +5190,14 @@ class DriftWithMeApp(
             pyxel.text(x, y + index * 8, line, 7)
 
     def draw_play(self) -> None:
+        from drift_with_me.august_scenery import environment
+
+        self.model.august_rain, self.model.august_recovered = environment(self)
         if self.draw_swarm_battle():
             return
         assert self.renderer is not None
         scene_camera = self.scene_camera(self.camera())
+        self.model.august_sighting_view = self.august_sighting_view()
         self.renderer.draw_scene(
             self.model,
             scene_camera,
@@ -5094,6 +5210,7 @@ class DriftWithMeApp(
         draw_week3_key(self, scene_camera)
         self.draw_july_markers()
         self.draw_week3_devices(scene_camera)
+        self.draw_week4_marker(scene_camera)
         self.draw_hud()
         self.draw_map_objectives()
         if self.model.interaction is not None:
@@ -5105,6 +5222,7 @@ class DriftWithMeApp(
         self.draw_flowerbed_entry()
         self.draw_swarm_sites(scene_camera)
         self.draw_swarm_return_fade()
+        self.draw_august_sighting_dialogue()
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
         camera = self.combat_scene_camera(camera)

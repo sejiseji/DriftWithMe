@@ -57,7 +57,7 @@ def test_july_defeated_ids_do_not_pollute_legacy_general_enemy_record():
     }
 
 
-@pytest.mark.parametrize("week", [[7, 2], [7, 4], [8, 1], [True, 1]])
+@pytest.mark.parametrize("week", [[7, 2], [8, 2], [8, 1], [True, 1]])
 def test_unauthored_or_invalid_week_cannot_be_loaded(week):
     _, p = july_payload()
     p["week"] = week

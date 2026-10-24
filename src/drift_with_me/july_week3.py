@@ -71,6 +71,7 @@ class Week3Progress:
     report_index: int = 0
     return_prompt_seen: bool = False
     professor_handoff_pending: bool = False
+    professor_handoff_completed: bool = False
 
     def snapshot(self):
         return {
@@ -88,6 +89,7 @@ class Week3Progress:
                 "report_index": 0,
                 "return_prompt_seen": False,
                 "professor_handoff_pending": False,
+                "professor_handoff_completed": False,
                 **raw,
             }
         if not isinstance(raw, dict) or set(raw) != set(cls().snapshot()):
@@ -120,6 +122,7 @@ class Week3Progress:
                     "ring_forfeited",
                     "return_prompt_seen",
                     "professor_handoff_pending",
+                    "professor_handoff_completed",
                 )
             )
             or not p.recovered <= p.found
@@ -157,7 +160,9 @@ class Week3Progress:
             or type(p.report_index) is not int
             or not 0 <= p.report_index < len(REPORT)
             or (p.phase in {"report", "done"} and not p.parent_recovered)
-            or p.professor_handoff_pending != (p.phase == "done")
+            or p.professor_handoff_pending
+            != (p.phase == "done" and not p.professor_handoff_completed)
+            or (p.professor_handoff_completed and p.phase != "done")
             or (p.return_prompt_seen and not p.parent_recovered)
             or (
                 p.phase != "field" and (p.active_scene is not None or p.dialogue_target is not None)
@@ -286,7 +291,12 @@ def install_week3_world(app):
                 title="白枠の装置" if ident != PARENT else "大きな白枠の装置",
                 lines=["様子を確かめる"],
             )
-    world = WorldData(raw)
+    world = WorldData(
+        raw,
+        app.world.chunk_size,
+        app.world.static_visual_max_height,
+        app.world.visual_detail_per_chunk,
+    )
     world.east_site_access_ready = app.world.east_site_access_ready
     app.world = app.model.world = world
 
@@ -540,6 +550,11 @@ class JulyWeek3Mixin:
             return False
         if self.screen == AppScreen.OFFICE and p.phase == "done":
             self.clear_world_input_latches()
+            if self.can_begin_next_week() and (
+                self.key_pressed("KEY_RETURN", "KEY_Z")
+                or self.mouse_pressed_in(self.office_next_week_rect())
+            ):
+                self.begin_next_week()
             return True
         if self.screen == AppScreen.OFFICE and p.phase == "office" and p.parent_recovered:
             before = deepcopy(p)

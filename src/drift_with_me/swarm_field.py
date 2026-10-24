@@ -11,7 +11,7 @@ from drift_with_me.effects import COMBAT_CHANCE_CUE_SEC
 from drift_with_me.swarm_battle import Settings, SwarmBattle
 
 SITE_IDS = frozenset({"northwest", "northeast", "southeast"})
-WEEK_KEYS = {f"{m}:{w}" for m in (6, 7) for w in range(1, 5)}
+WEEK_KEYS = {f"{m}:{w}" for m in (6, 7) for w in range(1, 5)} | {"8:1", "8:2", "8:3"}
 
 
 def validate_progress(raw):
@@ -145,7 +145,11 @@ class SwarmField:
             return False
         self.site_id = site_id
         self.battle = SwarmBattle(
-            m.water, m.energy, self.settings, (m.world.spawn_x, m.world.spawn_z)
+            m.water,
+            m.energy,
+            self.settings,
+            (m.world.spawn_x, m.world.spawn_z),
+            self.config.get("compositions", {}).get(site_id),
         )
         m.cancel_auto_move()
         m.reset_manual_velocity()
@@ -186,7 +190,8 @@ class SwarmField:
                 events,
                 "combat_zap_chance_started",
                 window_sec=b.settings.finish_wait,
-                energy_cost=b.settings.finish_energy,
+                energy_cost=b.settings.finish_energy if "urchin" in b.kinds else 0,
+                swarm_kinds=list(b.kinds),
             )
         m.player.barrier_active = False
         if b.phase == "field" or (

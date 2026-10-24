@@ -6213,6 +6213,76 @@
         "source_png_sha256": "ed760af003d5a6365cb9ac0f8451262393ff838d522cc39d3a81e5fd0ee15026",
         "derived_png_sha256": "80ec1716044f5a43993b5c1fd51a950d2f4ba35e151fac8feec9d1231f8edaad"
       }
+    },
+    {
+      "schema_version": 1,
+      "id": "iwama_bust_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "543277523653880db566f3b72b6c5e93a82b006671946ceb11c89dfb2f9457fe",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Iwama_bust_normal_116.hex",
+          "source_hash": "543277523653880db566f3b72b6c5e93a82b006671946ceb11c89dfb2f9457fe"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "imagegen_iwama_dedicated_bust_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_png_sha256": "091a434d43bc0cab40b9626934b95d0990f12adf6bb685cd1dece7a266dfe2cb",
+        "recipe_sha256": "bfb45e19ce8f702be1aed5c9ec57fdb1eef117039440baad4a90151d112ad02f",
+        "tool_build_key": "172652609a786bae491f9a63fd85d18a2e32cdbfe1fa39303da14aeee634fccb"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "iwama_bust_smug",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 116,
+      "hex_height": 116,
+      "colkey": 8,
+      "anchor_px": [
+        58,
+        58
+      ],
+      "world_size": [
+        116,
+        116
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "4c17f7b532e4a139adab88eff67ed02ed1bf1653146dbbe0f4775ba84a109a01",
+      "frames": [
+        {
+          "id": "idle_00",
+          "path": "Iwama_bust_smug_116.hex",
+          "source_hash": "4c17f7b532e4a139adab88eff67ed02ed1bf1653146dbbe0f4775ba84a109a01"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "imagegen_iwama_dedicated_bust_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "source_png_sha256": "6f62c66a59f5bde975bfc72487d701ee904e0dbfe5a36e2568f66fb084206ca0",
+        "recipe_sha256": "3d3475dff712c2e1a33e9047740e7543bfb86a2f698b285f071143ad09077093",
+        "tool_build_key": "2cfedc5ed7653fa9857c01768b19d95ad3c9fed8073852e1494714ba86b3a824"
+      }
     }
   ],
   "notes": [

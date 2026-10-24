@@ -253,7 +253,10 @@ def test_off001_portrait_smiles_preserve_asset_contract() -> None:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assets = {asset["id"]: asset for asset in manifest["source_assets"]}
 
-    assert set(OFFICE_PORTRAIT_SMILE_IDS.values()) == set(OFFICE_PORTRAIT_SMILE_HASHES)
+    # The dedicated July W4 bust contract is checked in test_iwama_portraits.
+    assert set(OFFICE_PORTRAIT_SMILE_IDS.values()) == set(OFFICE_PORTRAIT_SMILE_HASHES) | {
+        "iwama_bust_smug"
+    }
     for asset_id, expected_hash in OFFICE_PORTRAIT_SMILE_HASHES.items():
         asset = assets[asset_id]
         size = 116

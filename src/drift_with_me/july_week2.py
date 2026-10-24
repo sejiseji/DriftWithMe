@@ -306,7 +306,12 @@ def install_week2_world(app):
             )
             raw["texts"][ident] = dict(title=label, lines=["周辺を確認する"])
     app.model.week2_scenery_enabled = any(o["id"] == "jul_w2_obs_fuji" for o in raw["objects"])
-    world = WorldData(raw)
+    world = WorldData(
+        raw,
+        app.world.chunk_size,
+        app.world.static_visual_max_height,
+        app.world.visual_detail_per_chunk,
+    )
     world.east_site_access_ready = app.world.east_site_access_ready
     app.world = app.model.world = world
 

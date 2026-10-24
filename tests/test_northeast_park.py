@@ -130,8 +130,8 @@ def test_debug_scenery_does_not_unlock_future_offices_or_write_storage():
         assert app.work_week == WorkWeek(7, 2)
         assert app.model.northeast_park.stage == park_stage(week)
         assert not app.checkpoint_progress()
-    for week in PREVIEW_WEEKS[3:]:
-        assert load_week_office(week) is None
+    for week in PREVIEW_WEEKS[4:]:
+        assert (load_week_office(week) is None) == (week == WorkWeek(8, 4))
         assert not app.jump_to_debug_week(week)
     assert storage.items == before
     app.jump_to_debug_week(WorkWeek(6, 1))
@@ -148,3 +148,9 @@ def test_park_ground_filter_does_not_cover_magenta_investigation_sites():
     app.east_site_progress = SimpleNamespace(flowerbed_order=FLOWER_IDS)
     install_flowerbed_world(app)
     assert app.model.flowerbed_order == FLOWER_IDS
+
+
+def test_august_construction_finishes_in_week_two_without_replacing_assets():
+    assert park_stage(WorkWeek(8, 1)) == 4
+    assert park_stage(WorkWeek(8, 2)) == 5
+    assert park_stage(WorkWeek(8, 3)) == 5

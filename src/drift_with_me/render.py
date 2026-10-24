@@ -359,6 +359,9 @@ class Renderer:
         draw_flowerbed_ground(self, model, camera)
         draw_park_ground(self, model, camera)
         draw_week2_ground(self, model, camera)
+        from drift_with_me.august_scenery import draw_boardwalk
+
+        draw_boardwalk(self, model, camera)
         self.cloud_shadow.draw(pyxel, model, camera)
         self.draw_background_effects(model, camera, effects)
         self.draw_walkable_boundary_overlay(model, camera)
@@ -390,6 +393,9 @@ class Renderer:
             self.draw_interaction_marker(model, camera)
             self.draw_action_marker(model, camera)
         self.draw_effects(model, camera, effects)
+        from drift_with_me.august_scenery import draw_rain
+
+        draw_rain(self, model, camera, presentation_time)
         self.draw_combat_bubble_counter(model, camera)
         self.draw_combat_defeat_special(model, camera)
         self.draw_combat_victory_cue(model, camera)
@@ -687,11 +693,17 @@ class Renderer:
         swarm = getattr(model, "swarm_presentation", None)
         if swarm is not None:
             commands.extend(swarm.draw_commands(self, model, camera))
+        sighting = getattr(model, "august_sighting_view", None)
+        if sighting is not None:
+            commands.extend(sighting.draw_commands(self, model, camera))
         commands.extend(focus_draw_commands(self, model, camera))
         commands.extend(preview_draw_commands(self, model, camera))
         commands.extend(garden_preview_draw_commands(self, model, camera))
         commands.extend(flowerbed_draw_commands(self, model, camera))
         commands.extend(park_draw_commands(self, model, camera))
+        from drift_with_me.august_scenery import flower_commands
+
+        commands.extend(flower_commands(self, model, camera))
         construction = getattr(model, "july_construction", None)
         if construction is not None:
             commands.extend(garden_preview_draw_commands(self, model, camera, construction))

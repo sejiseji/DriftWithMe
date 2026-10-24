@@ -491,17 +491,18 @@ class EffectSystem:
             target_x = enemy.x if enemy is not None else x
             target_z = enemy.z if enemy is not None else z
             self.add_screen_cue("combat_zap_chance", COMBAT_CHANCE_CUE_SEC)
+            water_only = set(event.payload.get("swarm_kinds", ())) == {"slug"}
+            actor = model.player if water_only else model.buddy
+            color = 12 if water_only else 10
             self.spawn_burst_palette(
-                model.buddy.x,
-                model.buddy.y,
-                model.buddy.z,
-                colors=(7, 10),
+                actor.x,
+                8 if water_only else model.buddy.y,
+                actor.z,
+                colors=(7, color),
                 count=4,
                 speed=10.0,
             )
-            self.add_direction_strokes(
-                model.buddy.x, model.buddy.z, target_x, target_z, 14.0, 10, 0.2
-            )
+            self.add_direction_strokes(actor.x, actor.z, target_x, target_z, 14.0, color, 0.2)
         elif cue_id == "DWF_COMBAT_DEFLECT":
             enemy = model.enemy_by_id(event.target_id or "")
             target_x = enemy.x if enemy is not None else x

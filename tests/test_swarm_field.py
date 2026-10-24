@@ -210,7 +210,7 @@ def test_optional_progress_roundtrip_old_save_compatibility_and_native_store(tmp
 
 @pytest.mark.parametrize(
     "raw",
-    [None, [], {"8:1": []}, {"6:2": ["bad"]}, {"6:2": ["northwest", "northwest"]}, {"6:2": [42]}],
+    [None, [], {"8:4": []}, {"6:2": ["bad"]}, {"6:2": ["northwest", "northwest"]}, {"6:2": [42]}],
 )
 def test_malformed_progress_is_rejected(raw):
     with pytest.raises(ValueError):

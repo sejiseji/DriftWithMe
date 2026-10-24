@@ -333,7 +333,7 @@ def source_build_id(app_dir: Path) -> str:
 def build_info_text(build_id: str) -> str:
     return (
         "from __future__ import annotations\n\n"
-        f"BUILD_ID = {build_id!r}\n"
+        f"BUILD_ID = {json.dumps(build_id)}\n"
         'BUILD_LABEL = f"build {BUILD_ID}"\n'
     )
 

@@ -59,7 +59,28 @@ class Settings:
 
 
 class SwarmBattle:
-    def __init__(self, water=100, energy=100, settings=None, spawn=(160.0, 160.0)):
+    def __init__(self, water=100, energy=100, settings=None, spawn=(160.0, 160.0), kinds=None):
+        self.kinds = tuple(KINDS if kinds is None else kinds)
+        if not 6 <= len(self.kinds) <= 8 or set(self.kinds) - {"urchin", "slug"}:
+            raise ValueError("invalid swarm composition")
+        self.angles = (
+            ANGLES
+            if len(self.kinds) == 6
+            else tuple(
+                225 - 90 * i / (len(self.kinds) // 2 - 1) for i in range(len(self.kinds) // 2)
+            )
+            + tuple(
+                315 + 90 * i / (len(self.kinds) - len(self.kinds) // 2 - 1)
+                for i in range(len(self.kinds) - len(self.kinds) // 2)
+            )
+        )
+        self.starts = tuple(
+            (
+                CENTER[0] + RADII[0] * math.cos(math.radians(a)),
+                CENTER[1] + RADII[1] * math.sin(math.radians(a)),
+            )
+            for a in self.angles
+        )
         self.settings = settings or Settings()
         self.water, self.energy = water, energy
         self.spawn = tuple(spawn)
@@ -86,7 +107,7 @@ class SwarmBattle:
         self.events.append(phase)
 
     def enemy_position(self, index):
-        x, y = STARTS[index]
+        x, y = self.starts[index]
         # Every enemy uses the same normalized bar progress from its own home.
         p = self.capture_progress if self.captured else self.progress
         return x + (320 - x) * p * 0.78, y + (CENTER[1] - y) * p * 0.78
@@ -124,14 +145,16 @@ class SwarmBattle:
             return
         s = self.settings
         # Atomic preflight before either species dies; repeated input cannot pay twice.
-        if self.energy < s.finish_energy:
+        water = s.finish_water if "slug" in self.kinds else 0
+        energy = s.finish_energy if "urchin" in self.kinds else 0
+        if self.energy < energy:
             self.retreat(ENERGY_SHORT)
-        elif self.water < s.finish_water:
-            self.retreat(MIXED_SHORT)
+        elif self.water < water:
+            self.retreat(MIXED_SHORT if "urchin" in self.kinds else NORMAL_SHORT)
         else:
-            self.water -= s.finish_water
-            self.energy -= s.finish_energy
-            self.enter("electric", "ヒューズ：電撃！")
+            self.water -= water
+            self.energy -= energy
+            self.enter("electric" if energy else "circle")
 
     def tick(self, dt):
         if dt < 0:
@@ -189,16 +212,16 @@ class SwarmBattle:
             self.position = self.spawn
             self.enter("field", "南西の初期位置へ撤退。資源はそのまま。R：再戦")
         elif self.phase == "electric":
-            self.defeated.update(i for i, kind in enumerate(KINDS) if kind == "urchin")
-            self.enter("circle", "ジャック：水流を集めて・・・")
+            self.defeated.update(i for i, kind in enumerate(self.kinds) if kind == "urchin")
+            self.enter("circle" if "slug" in self.kinds else "victory")
         elif self.phase == "circle":
             self.enter("converge")
         elif self.phase == "converge":
             self.enter("spear", "ジャック：水柱！")
         elif self.phase == "spear":
-            self.defeated.update(range(6))
+            self.defeated.update(range(len(self.kinds)))
             self.enter("victory", "6体撃退！ 電撃 → 水槍、追加入力なし。R：再戦")
 
     def rematch(self):
         if self.phase in ("field", "victory"):
-            self.__init__(self.water, self.energy, self.settings, self.spawn)
+            self.__init__(self.water, self.energy, self.settings, self.spawn, self.kinds)

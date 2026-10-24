@@ -47,7 +47,7 @@ def test_web_build_info_uses_source_content_digest(tmp_path: Path) -> None:
 
     first_id = build_web.write_build_info(app_dir)
     assert len(first_id) == build_web.WEB_HASH_LENGTH
-    assert f"BUILD_ID = {first_id!r}" in (package_dir / "build_info.py").read_text(encoding="utf-8")
+    assert f'BUILD_ID = "{first_id}"' in (package_dir / "build_info.py").read_text(encoding="utf-8")
 
     (package_dir / "build_info.py").write_text("BUILD_ID = 'other'\n", encoding="utf-8")
     assert build_web.write_build_info(app_dir) == first_id

@@ -22,6 +22,12 @@ def map_goals(app):
     if task is None or office.current_session is None:
         return None, ()
     session = office.current_session
+    if task.case_id == "OFF-JUL-W4-PARK":
+        p = office.week4_progress
+        return Goal("公園の整備状況を確認して報告", p.ready), (
+            Goal("フジと話す", p.fuji_seen),
+            Goal("北東公園を確認", p.park_seen),
+        )
     if task.case_id == "OFF-JUL-W3-SURVEY":
         p = office.week3_progress
         small = (

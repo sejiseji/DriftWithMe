@@ -181,7 +181,12 @@ def install_flowerbed_world(app):
                 },
             ]
         )
-    app.world = WorldData(raw)
+    app.world = WorldData(
+        raw,
+        app.world.chunk_size,
+        app.world.static_visual_max_height,
+        app.world.visual_detail_per_chunk,
+    )
     app.model.world = app.world
     from drift_with_me.northeast_park import install_park_world
 
@@ -192,6 +197,9 @@ def install_flowerbed_world(app):
     from drift_with_me.july_week3 import install_week3_world
 
     install_week3_world(app)
+    from drift_with_me.july_week4 import install_week4_world
+
+    install_week4_world(app)
 
 
 def draw_flowerbed_ground(renderer, model, camera):
@@ -346,6 +354,9 @@ class FlowerbedMixin:
 
     def update_flowerbed_entry(self):
         if self.flowerbed_entry_available() and self.mouse_pressed_in(self.flowerbed_entry_rect()):
+            if getattr(self, "week4_active", lambda: False)():
+                self.begin_week4_target("fuji")
+                return True
             if getattr(self, "week3_active", lambda: False)():
                 return self.begin_week3_target("fuji")
             return self.start_flowerbed_visit()

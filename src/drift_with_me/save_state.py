@@ -137,8 +137,17 @@ def office_snapshot(office):
             if s
             else None
         )
-    if hasattr(office, "week3_progress"):
-        data["week3"] = office.week3_progress.snapshot()
+    if (
+        hasattr(office, "week3_progress")
+        or hasattr(office, "week4_progress")
+        or hasattr(office, "august_progress")
+    ):
+        if hasattr(office, "august_progress"):
+            data["august"] = office.august_progress.snapshot()
+        elif hasattr(office, "week4_progress"):
+            data["week4"] = office.week4_progress.snapshot()
+        else:
+            data["week3"] = office.week3_progress.snapshot()
         s = office.current_session
         data["counter"] = (
             dict(
@@ -288,6 +297,8 @@ def snapshot(app):
 
 def restore_office(raw, week):
     office = OfficePrototype.load() if week == WorkWeek() else load_week_office(week)
+    august = week.month == 8 and week.number in (1, 2, 3)
+    july4 = week == WorkWeek(7, 4)
     july3 = week == WorkWeek(7, 3)
     week2 = week == WorkWeek(7, 2)
     if week2 and raw == {"index": 0, "sessions": {}}:
@@ -309,8 +320,16 @@ def restore_office(raw, week):
         keys = {"index", "sessions", "week2", "counter"}
     if july3:
         keys = {"index", "sessions", "week3", "counter"}
+    if july4:
+        keys = {"index", "sessions", "week4", "counter"}
+    if august:
+        keys = {"index", "sessions", "august", "counter"}
     if office is None or not isinstance(raw, dict) or set(raw) != keys:
         raise ValueError("unsupported office")
+    if august:
+        from drift_with_me.august import AugustProgress
+
+        office.august_progress = AugustProgress.restore(raw["august"], week.number)
     if july:
         from drift_with_me.july_week1 import JulyWeek1Progress
 
@@ -323,6 +342,10 @@ def restore_office(raw, week):
         from drift_with_me.july_week3 import Week3Progress
 
         office.week3_progress = Week3Progress.restore(raw["week3"])
+    if july4:
+        from drift_with_me.july_week4 import Week4Progress
+
+        office.week4_progress = Week4Progress.restore(raw["week4"])
     if week3:
         from drift_with_me.week3 import FACTS as W3_FACTS
         from drift_with_me.week3 import KEY_ID, Week3Progress
@@ -485,10 +508,33 @@ def restore_office(raw, week):
                     result["code"] != "JULY3_COMPLETED"
                     or string_set(result["facts"], completed) != completed
                     or office.week3_progress.phase != "done"
-                    or not office.week3_progress.professor_handoff_pending
+                    or not (
+                        office.week3_progress.professor_handoff_pending
+                        or office.week3_progress.professor_handoff_completed
+                    )
                 ):
                     raise ValueError("incomplete July W3 report")
                 code, facts, lines = "JULY3_COMPLETED", tuple(sorted(completed)), ()
+            elif case.case_id.startswith("OFF-AUG-"):
+                from drift_with_me.august import SITES
+
+                if (
+                    result["code"] != "AUGUST_COMPLETED"
+                    or string_set(result["facts"], SITES) != SITES
+                    or office.august_progress.phase != "done"
+                ):
+                    raise ValueError("incomplete August report")
+                code, facts, lines = "AUGUST_COMPLETED", tuple(sorted(SITES)), ()
+            elif case.case_id == "OFF-JUL-W4-PARK":
+                from drift_with_me.july_week4 import PARK
+
+                if (
+                    result["code"] != "JULY4_COMPLETED"
+                    or string_set(result["facts"], {"fuji", PARK}) != {"fuji", PARK}
+                    or office.week4_progress.phase != "done"
+                ):
+                    raise ValueError("incomplete July W4 report")
+                code, facts, lines = "JULY4_COMPLETED", ("fuji", PARK), ()
             elif case.case_id == "OFF-JUL-W2-RESEARCH":
                 from drift_with_me.july_week2 import SITES
 
@@ -637,6 +683,34 @@ def restore_office(raw, week):
         if office.week3_progress.phase == "report" and session.state != CaseState.FIELD_ACTIVE:
             raise ValueError("July W3 report before field dispatch")
         restore_counter(office, raw["counter"])
+    if july4:
+        from drift_with_me.july_week4 import SENIOR, TASK
+
+        p = office.week4_progress
+        if p.handoff_received != (index >= 1):
+            raise ValueError("inconsistent July W4 handoff")
+        if (p.phase == "done") != (index == len(office.cases)) or (p.phase == "done") != (
+            office.sessions[TASK].field_result is not None
+        ):
+            raise ValueError("inconsistent July W4 boundary")
+        if p.phase != "counter" and index != len(office.cases) and index != 2:
+            raise ValueError("premature July W4 field")
+        if p.follow_index is not None and (
+            index != 1 or office.sessions[SENIOR].state != CaseState.CLOSED_COUNTER
+        ):
+            raise ValueError("invalid optional follow timing")
+        restore_counter(office, raw["counter"])
+    if august:
+        p = office.august_progress
+        session = office.sessions[office.cases[0].case_id]
+        done = p.phase == "done"
+        if done != (index == len(office.cases)) or done != (session.field_result is not None):
+            raise ValueError("inconsistent August boundary")
+        if p.phase in {"field", "office", "report"} and session.state != CaseState.FIELD_ACTIVE:
+            raise ValueError("August field before dispatch")
+        if p.phase == "counter" and session.state == CaseState.FIELD_ACTIVE:
+            raise ValueError("August counter after dispatch")
+        restore_counter(office, raw["counter"])
     return office
 
 
@@ -670,10 +744,14 @@ def decode(text):
         WorkWeek(7, 1),
         WorkWeek(7, 2),
         WorkWeek(7, 3),
+        WorkWeek(7, 4),
+        WorkWeek(8, 1),
+        WorkWeek(8, 2),
+        WorkWeek(8, 3),
     }
     if not isinstance(w, list) or len(w) != 2:
         raise ValueError("unsupported week")
-    week = WorkWeek(integer(w[0], 6, 7), integer(w[1], 1, 4))
+    week = WorkWeek(integer(w[0], 6, 8), integer(w[1], 1, 4))
     if week not in authored_weeks:
         raise ValueError("unsupported week")
     if (
@@ -686,6 +764,26 @@ def decode(text):
         WorkWeek(*map(int, k.split(":"))): restore_office(v, WorkWeek(*map(int, k.split(":"))))
         for k, v in payload["offices"].items()
     }
+    previous3, next4 = offices.get(WorkWeek(7, 3)), offices.get(WorkWeek(7, 4))
+    if next4 is not None:
+        if previous3 is None or previous3.week3_progress.phase != "done":
+            raise ValueError("July W4 without completed W3")
+        if (
+            next4.week4_progress.handoff_received
+            != previous3.week3_progress.professor_handoff_completed
+        ):
+            raise ValueError("handoff history mismatch")
+    elif previous3 is not None and previous3.week3_progress.professor_handoff_completed:
+        raise ValueError("missing handoff recipient")
+    for number in (1, 2, 3):
+        current = offices.get(WorkWeek(8, number))
+        if current is not None:
+            previous = offices.get(WorkWeek(7, 4) if number == 1 else WorkWeek(8, number - 1))
+            progress = getattr(
+                previous, "week4_progress" if number == 1 else "august_progress", None
+            )
+            if progress is None or progress.phase != "done":
+                raise ValueError("August without completed previous week")
     facts = string_set(payload["facts"], FACTS)
     positions = payload["positions"]
     if not isinstance(positions, dict) or any(

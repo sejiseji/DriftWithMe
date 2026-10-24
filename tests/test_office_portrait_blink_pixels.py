@@ -232,7 +232,7 @@ def test_every_person_expression_pose_transition_clears_previous_pixels():
     app.sprite_assets = SimpleNamespace(get=assets.get)
     app.runtime = runtime
     targets = []
-    for name in OFFICE_PORTRAIT_SMILE_IDS:
+    for name in OFFICE_PORTRAIT_SMILE_BLINK_OVERLAY_IDS:
         intervals = tuple(runtime.raw["ui"]["office_portrait_blink_interval_frames"][name])
         for smile in (False, True):
             for pose in (None, "half", "closed"):

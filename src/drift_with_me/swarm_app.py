@@ -13,12 +13,29 @@ from drift_with_me.swarm_render import SwarmScene
 
 class SwarmAppMixin:
     def ensure_swarm_field(self):
-        if not getattr(self, "swarm_field_enabled", False):
+        story = self.august_swarm_active()
+        if not getattr(self, "swarm_field_enabled", False) and not story:
+            if (
+                getattr(getattr(self, "model", None), "swarm_field", None) is not None
+                and self.model.swarm_field.battle is None
+            ):
+                self.model.swarm_field = None
             return None
         key = f"{self.work_week.month}:{self.work_week.number}"
         field = getattr(self.model, "swarm_field", None)
         if field is None or field.week_key != key:
-            field = SwarmField(self.model, key, self.east_site_progress.swarm_progress)
+            config = None
+            if story:
+                from drift_with_me.config import load_data_json
+
+                config = load_data_json("swarm_config.json")
+                config.update(capture_water=12, finish_water=12, finish_energy=20)
+                config["compositions"] = {
+                    "northwest": ["urchin"] * 6,
+                    "northeast": ["slug"] * 6,
+                    "southeast": ["urchin", "slug"] * 3,
+                }
+            field = SwarmField(self.model, key, self.east_site_progress.swarm_progress, config)
             self.model.swarm_field = field
         return field
 
@@ -43,7 +60,14 @@ class SwarmAppMixin:
     def update_swarm_frame(self, elapsed):
         from drift_with_me.app import AppScreen
 
-        if not getattr(self, "swarm_field_enabled", False):
+        if self.august_swarm_active() and (
+            getattr(self, "field_transition", None) is not None
+            or getattr(self, "week_transition", None) is not None
+        ):
+            return False
+
+        if not getattr(self, "swarm_field_enabled", False) and not self.august_swarm_active():
+            self.ensure_swarm_field()
             return False
         if self.key_pressed("KEY_F5") and self.enter_swarm_test_field():
             return True
@@ -97,6 +121,10 @@ class SwarmAppMixin:
             if not self.travel_input_held():
                 self.swarm_wait_release = False
             return True
+        if self.august_swarm_active():
+            self.sync_august_swarm_sites()
+            self.update_play_screen(elapsed)
+            return True
         if not getattr(self, "swarm_test_field_active", False):
             return False
         # Explicit shortcuts move the real player, then normal proximity starts combat.
@@ -117,6 +145,8 @@ class SwarmAppMixin:
         return True
 
     def process_swarm_event(self, event):
+        if event.kind == "swarm_site_cleared" and self.august_swarm_active():
+            self.sync_august_swarm_sites()
         if event.kind not in {"swarm_started", "swarm_restored"}:
             return
         self.clear_world_input_latches()
@@ -178,6 +208,8 @@ class SwarmAppMixin:
         )
 
     def draw_swarm_sites(self, camera):
+        if self.august_active():
+            return
         field = getattr(self.model, "swarm_field", None)
         if field is None:
             return

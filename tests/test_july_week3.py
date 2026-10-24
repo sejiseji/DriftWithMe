@@ -395,7 +395,7 @@ def test_each_report_page_and_week_boundary_roundtrip_keep_inventory_and_do_not_
     assert app.office.sessions[TASK].field_result.result_code == "JULY3_COMPLETED"
     assert app.week3_dialogue is None and app.update_july_week3(0)
     assert not app.return_week3() and not app.begin_week3_target("fuji")
-    assert not app.office.finish_week() and not app.can_begin_next_week()
+    assert not app.office.finish_week() and app.can_begin_next_week()
     assert not app.advance_week3_dialogue()
 
 

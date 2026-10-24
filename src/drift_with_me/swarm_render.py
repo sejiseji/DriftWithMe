@@ -17,7 +17,6 @@ from drift_with_me.math3d import (
 )
 from drift_with_me.model import EnemyState
 from drift_with_me.nudibranch_preview import preview_assets
-from drift_with_me.swarm_battle import ANGLES, KINDS
 from drift_with_me.swarm_column import WINDUP, attack_view, column_frame, load_column_assets
 from drift_with_me.swarm_guard import follow, guard_sample
 
@@ -43,7 +42,7 @@ class SwarmScene:
         model = field.model
         self.enemies = []
         self.model_view = SwarmModelView(model, self)
-        for index, kind in enumerate(KINDS):
+        for index, kind in enumerate(self.battle.kinds):
             enemy = EnemyState(
                 f"swarm:{index}",
                 "normal",
@@ -78,7 +77,7 @@ class SwarmScene:
         if self.anchor is None:
             raise RuntimeError("Swarm player anchor is outside the main camera")
         self.starts = []
-        for angle in ANGLES:
+        for angle in self.battle.angles:
             a = math.radians(angle)
             self.starts.append(
                 self.ground(
@@ -317,7 +316,7 @@ class SwarmScene:
                 source = camera.project(Vec3(model.player.x, 12, model.player.z))
                 renderer.draw_combat_bubble_spray(source, target, progress, b.elapsed)
             renderer.draw_combat_bubble_wrap(target, progress, 1, self.elapsed)
-        if b.phase == "electric" and KINDS[index] == "urchin":
+        if b.phase == "electric" and b.kinds[index] == "urchin":
             source = camera.project(
                 Vec3(self.guard_ground[0], model.buddy.y + 5, self.guard_ground[1])
             )
@@ -325,7 +324,7 @@ class SwarmScene:
             if b.elapsed >= WINDUP:
                 renderer.draw_combat_homing_zaps(source, target, t)
             renderer.draw_combat_enemy_disappear(target, t, enemy.kind)
-        if KINDS[index] != "slug" or b.phase not in {"circle", "converge", "spear"}:
+        if b.kinds[index] != "slug" or b.phase not in {"circle", "converge", "spear"}:
             return
         renderer.draw_world_circle(camera, enemy.x, enemy.z, 12, 12)
         renderer.draw_world_circle(camera, enemy.x, enemy.z, 10, 6)

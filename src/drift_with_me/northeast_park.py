@@ -22,11 +22,15 @@ EDGES = (
     ((904, 912), (800, 912)),
     ((800, 912), (800, 840)),
 )
-PREVIEW_WEEKS = tuple(WorkWeek(7, n) for n in range(1, 5)) + (WorkWeek(8, 1),)
+PREVIEW_WEEKS = tuple(WorkWeek(7, n) for n in range(1, 5)) + (WorkWeek(8, 2),)
 
 
 def park_stage(week):
-    return 0 if week.month < 7 else min(week.number, 4) if week.month == 7 else 5
+    if week.month < 7:
+        return 0
+    if week.month == 7:
+        return min(week.number, 4)
+    return 4 if week.number == 1 else 5
 
 
 @dataclass(frozen=True)

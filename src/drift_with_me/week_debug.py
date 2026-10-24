@@ -78,7 +78,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
     def jump_to_debug_week(self, week: WorkWeek) -> bool:
         if not getattr(self, "week_debug_active", False) or week not in {
             WorkWeek(6, n) for n in range(1, 5)
-        } | {WorkWeek(7, 1), WorkWeek(7, 2), WorkWeek(7, 3)}:
+        } | {WorkWeek(7, 1), WorkWeek(7, 2), WorkWeek(7, 3), WorkWeek(7, 4)}:
             return False
         from drift_with_me.app import (
             CameraController,
