@@ -227,6 +227,8 @@ class GameModel:
         self.combat_session: CombatSession | None = None
         self.swarm_field = None
         self.combat_reentry_cooldowns: dict[str, float] = {}
+        self.sighting_locked = False
+        self.sighting_resume_remaining = 0.0
         self.last_zap_visual_route: str | None = None
         self.buddy_hard_follow_suppressed_remaining = 0.0
         self.refresh_active_enemies()
@@ -300,6 +302,8 @@ class GameModel:
         self.combat_session = None
         self.swarm_field = None
         self.combat_reentry_cooldowns = {}
+        self.sighting_locked = False
+        self.sighting_resume_remaining = 0.0
         self.last_zap_visual_route = None
         self.buddy_hard_follow_suppressed_remaining = 0.0
         self.refresh_active_enemies()
@@ -308,9 +312,28 @@ class GameModel:
     def buddy_cube_size(self) -> float:
         return float(self.config["buddy"]["cube_size"])
 
+    def set_sighting_lock(self, locked: bool) -> None:
+        previous = getattr(self, "sighting_locked", False)
+        self.sighting_locked = locked
+        if previous and not locked:
+            # Reuse combat's safe re-entry window; do not consume or refund resources.
+            grace = self.combat_reentry_cooldown_sec()
+            self.sighting_resume_remaining = grace
+            self.player.invulnerable_remaining = max(self.player.invulnerable_remaining, grace)
+            for enemy in self.enemies:
+                if enemy.state == "DEFEATED":
+                    continue
+                if enemy.state in {"WINDUP", "DASH", "FOCUS"}:
+                    self.cancel_enemy_exploration_action_for_combat(enemy)
+                    enemy.focus_action = None
+                    enemy.zigzag_path = ()
+                self.combat_reentry_cooldowns[enemy.id] = max(
+                    self.combat_reentry_cooldowns.get(enemy.id, 0), grace
+                )
+
     @property
     def world_paused(self) -> bool:
-        return self.interaction is not None
+        return self.interaction is not None or getattr(self, "sighting_locked", False)
 
     @property
     def water_max(self) -> float:
@@ -1656,6 +1679,8 @@ class GameModel:
         )
 
     def update_enemies(self, dt: float, events: list[GameEvent]) -> None:
+        if getattr(self, "sighting_locked", False):
+            return
         for enemy in self.enemies:
             if enemy.state == "DEFEATED":
                 continue
@@ -1927,6 +1952,9 @@ class GameModel:
         return bool(self.config.get(key, default))
 
     def update_combat_reentry_cooldowns(self, dt: float) -> None:
+        self.sighting_resume_remaining = max(
+            0.0, getattr(self, "sighting_resume_remaining", 0.0) - max(0.0, dt)
+        )
         if not self.combat_reentry_cooldowns:
             return
         expired: list[str] = []
@@ -2944,6 +2972,11 @@ class GameModel:
         return self.combat_reentry_cooldowns.get(enemy.id, 0.0) > 0.0
 
     def can_start_contact_combat(self, enemy: EnemyState) -> bool:
+        if (
+            getattr(self, "sighting_locked", False)
+            or getattr(self, "sighting_resume_remaining", 0) > 0
+        ):
+            return False
         swarm = getattr(self, "swarm_field", None)
         if swarm is not None and swarm.battle is not None:
             return False
@@ -2992,6 +3025,11 @@ class GameModel:
         enemy.dash_z = 0.0
 
     def start_contact_combat(self, enemy: EnemyState, events: list[GameEvent]) -> None:
+        if (
+            getattr(self, "sighting_locked", False)
+            or getattr(self, "sighting_resume_remaining", 0) > 0
+        ):
+            return
         snapshot = self.combat_snapshot_for(enemy)
         self.cancel_enemy_exploration_action_for_combat(enemy)
         min_separation = self.combat_min_safe_separation(enemy)
@@ -3352,6 +3390,8 @@ class GameModel:
         return math.hypot(x - player_x, z - player_z) >= min_separation
 
     def resolve_player_contacts(self, events: list[GameEvent]) -> None:
+        if getattr(self, "sighting_locked", False):
+            return
         if self.player.barrier_active or self.player.invulnerable_remaining > 0.0:
             return
         if self.world.point_in_safe_zone(self.player.x, self.player.z):

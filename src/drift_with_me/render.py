@@ -375,6 +375,11 @@ class Renderer:
             with self.atmosphere_depth_effects(camera, command.depth, command.atmosphere_strength):
                 swarm = getattr(model, "swarm_presentation", None)
                 opacity = swarm.command_opacity(self, command) if swarm is not None else 1.0
+                sighting = getattr(model, "august_sighting_view", None)
+                if sighting is not None:
+                    from drift_with_me.august_sightings import sighting_opacity
+
+                    opacity = sighting_opacity(self, model, camera, command, sighting)
                 if opacity < 1:
                     pyxel.dither(opacity)
                 try:
@@ -396,6 +401,9 @@ class Renderer:
         from drift_with_me.august_scenery import draw_rain
 
         draw_rain(self, model, camera, presentation_time)
+        from drift_with_me.august_sightings import draw_notice
+
+        draw_notice(self, model, camera, presentation_time)
         self.draw_combat_bubble_counter(model, camera)
         self.draw_combat_defeat_special(model, camera)
         self.draw_combat_victory_cue(model, camera)
@@ -4281,6 +4289,15 @@ class Renderer:
         return asset.frame(frames[frame_index].frame_id)
 
     def player_sprite_direction_view(self, model: GameModel, camera: CameraState) -> str:
+        sighting = getattr(model, "august_sighting_view", None)
+        if sighting is not None:
+            from drift_with_me.august_sightings import sighting_facing
+
+            delta = sighting_facing(model, camera, sighting)
+            if delta is not None:
+                view = self.screen_direction_view_name(*delta)
+                if view is not None:
+                    return view
         swarm = getattr(model, "swarm_presentation", None)
         if swarm is not None:
             view = swarm.attack_view("player", self.SPIN_DIRECTION_VIEWS)

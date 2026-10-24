@@ -385,6 +385,21 @@ class AugustMixin:
                     )
                 )
 
+    def sync_august_sighting_lock(self):
+        from drift_with_me.app import AppScreen
+
+        locked = (
+            self.august_active()
+            and self.work_week.number == 1
+            and self.office.august_progress.phase == "field"
+            and self.office.august_progress.pending_sighting is not None
+            and self.screen in (AppScreen.PLAY, AppScreen.PAUSE)
+        )
+        model = getattr(self, "model", None)
+        if model is not None and (locked or getattr(model, "sighting_locked", False)):
+            model.set_sighting_lock(locked)
+        return locked
+
     def update_august_sightings(self, elapsed):
         import math
 
@@ -401,6 +416,7 @@ class AugustMixin:
             or self.week_transition
         ):
             return False
+        self.sync_august_sighting_lock()
         p = self.office.august_progress
         if p.pending_sighting is None:
             if (
@@ -419,6 +435,7 @@ class AugustMixin:
                     p.pending_sighting = site
                     p.sighting_index = 0
                     if self.save_august(before):
+                        self.sync_august_sighting_lock()
                         self.august_crossing = (site, 0.0)
                         self.august_sighting_wait_release = True
                         self.model.cancel_auto_move()
@@ -457,6 +474,7 @@ class AugustMixin:
             p.sighting_index = 0
         if not self.save_august(before):
             return False
+        self.sync_august_sighting_lock()
         self.august_sighting_wait_release = True
         self.clear_world_input_latches()
         return True

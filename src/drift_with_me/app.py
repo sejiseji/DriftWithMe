@@ -618,6 +618,7 @@ class DriftWithMeApp(
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        self.sync_august_sighting_lock()
         if self.update_swarm_frame(elapsed):
             self.checkpoint_progress()
             return
@@ -872,6 +873,8 @@ class DriftWithMeApp(
             self.screen = (
                 AppScreen.PLAY if self.office.week4_progress.phase == "field" else AppScreen.OFFICE
             )
+
+        self.sync_august_sighting_lock()
 
     def update_office_screen(self, elapsed: float) -> None:
         if self.week2_active() and self.office.week2_progress.phase == "done":
@@ -2663,9 +2666,11 @@ class DriftWithMeApp(
                 step_intent,
                 model_camera,
                 fixed_dt,
-                before_enemy_update=lambda: self.update_first_sight(0.0),
+                before_enemy_update=lambda: (
+                    self.update_august_sightings(0.0) or self.update_first_sight(0.0)
+                ),
             )
-            if self.renderer is not None:
+            if self.renderer is not None and not self.model.sighting_locked:
                 self.renderer.update_abnormal_urchin_arms(
                     self.model,
                     model_camera,
@@ -5198,6 +5203,9 @@ class DriftWithMeApp(
         assert self.renderer is not None
         scene_camera = self.scene_camera(self.camera())
         self.model.august_sighting_view = self.august_sighting_view()
+        from drift_with_me.august_sightings import sighting_camera
+
+        scene_camera = sighting_camera(self.model, scene_camera, self.model.august_sighting_view)
         self.renderer.draw_scene(
             self.model,
             scene_camera,
