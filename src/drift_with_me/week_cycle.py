@@ -32,7 +32,7 @@ class WorkWeek:
 
 
 def load_week_office(week: WorkWeek) -> OfficePrototype | None:
-    if week.month == 8 and week.number in (1, 2, 3):
+    if week.month == 8 and week.number in (1, 2, 3, 4):
         from drift_with_me.august import AugustOffice
 
         return AugustOffice(week.number)

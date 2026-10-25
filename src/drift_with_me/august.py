@@ -16,6 +16,7 @@ from drift_with_me.week_cycle import WorkWeek
 
 SITES = frozenset({"northwest", "northeast", "southeast"})
 OPENING = {
+    4: (SUPERVISOR_NAME, "保護区の最終巡回を頼む。戻る時刻は任せるよ"),
     1: (
         "フジ",
         "このごろウニやウミウシが荒っぽいんだ。小さいのを見かける数も増えている。現地を見てもらえるか",
@@ -24,6 +25,8 @@ OPENING = {
     3: (SUPERVISOR_NAME, "先週の三か所をもう一度見てきてくれ。群れの様子を確かめてほしい"),
 }
 REPORTS = {
+    # Preview wording only; the vacation/ending script is deliberately unauthored.
+    4: (("ジャック", "最終巡回を終えました"), (SUPERVISOR_NAME, "お疲れさま。報告を受け取ったよ")),
     1: (
         (
             "ジャック",
@@ -94,6 +97,7 @@ class AugustProgress:
         if (
             p.phase in {"report", "done"}
             and not p.ready
+            and number != 4
             or p.phase == "counter"
             and p.sites
             or p.phase not in {"report", "done"}
@@ -102,6 +106,8 @@ class AugustProgress:
             and p.report_index != len(REPORTS[number]) - 1
         ):
             raise ValueError("premature August completion")
+        if number == 4 and p.sites:
+            raise ValueError("final patrol has no required sites")
         if p.pending_sighting is not None and (
             type(p.pending_sighting) is not str
             or number != 1
@@ -151,6 +157,14 @@ class AugustOffice(OfficePrototype):
             objective="北西・北東・南東の様子を確認",
             completion_condition_id=f"august_{number}_sites",
         )
+        if number == 4:
+            case.update(title="保護区の最終巡回", initial_purpose="保護区の最終巡回")
+            case["questions"][0].update(
+                jack="落ち着いた保護区を見て回ります", reply="ああ。好きな順に回ってきてくれ"
+            )
+            case["field_task"].update(
+                title="保護区の最終巡回", objective="自由に巡回し、任意の時点で帰庁"
+            )
         script["case_id"] = ident
         script["opening"] = [
             dict(turn_id=f"{ident}_open", jack=text, reply="", jack_speaker=speaker)
@@ -166,7 +180,7 @@ class AugustOffice(OfficePrototype):
         p = self.august_progress
         if (
             p.phase != "report"
-            or not p.ready
+            or (not p.ready and self.august_number != 4)
             or p.report_index != len(REPORTS[self.august_number]) - 1
         ):
             return False
@@ -174,7 +188,11 @@ class AugustOffice(OfficePrototype):
         s = self.sessions[c.case_id]
         s.state = CaseState.RESOLVED
         s.field_result = FieldResult(
-            c.field_task.task_id, c.case_id, "AUGUST_COMPLETED", tuple(sorted(SITES)), ()
+            c.field_task.task_id,
+            c.case_id,
+            "AUGUST_COMPLETED",
+            tuple(sorted(SITES)) if self.august_number != 4 else (),
+            (),
         )
         self.current_index = 1
         self.active_field_task = None
@@ -184,9 +202,9 @@ class AugustOffice(OfficePrototype):
 
 class AugustMixin:
     def august_active(self):
-        return getattr(self, "work_week", None) in {WorkWeek(8, n) for n in (1, 2, 3)} and hasattr(
-            self.office, "august_progress"
-        )
+        return getattr(self, "work_week", None) in {
+            WorkWeek(8, n) for n in (1, 2, 3, 4)
+        } and hasattr(self.office, "august_progress")
 
     def save_august(self, previous):
         from drift_with_me.save_state import snapshot
@@ -259,7 +277,7 @@ class AugustMixin:
             return False
         before = deepcopy(self.office)
         p = self.office.august_progress
-        p.phase = "report" if p.ready else "office"
+        p.phase = "office" if self.work_week.number == 4 else "report" if p.ready else "office"
         if not self.save_august(before):
             return False
         self.field_transition = FieldTransition(
@@ -291,7 +309,7 @@ class AugustMixin:
         if self.screen != AppScreen.OFFICE:
             return False
         if p.phase == "done":
-            if self.work_week.number < 3 and (
+            if self.work_week.number < 4 and (
                 self.key_pressed("KEY_RETURN", "KEY_Z")
                 or self.mouse_pressed_in(self.office_next_week_rect())
             ):
@@ -336,12 +354,18 @@ class AugustMixin:
                 self.effects,
                 exploration_markers=False,
             )
+            if self.can_begin_next_week():
+                self.draw_office_button(self.office_next_week_rect(), "次の週へ", 11, text_color=0)
             return True
         if self.office.august_progress.phase == "office":
             self.draw_office()
             self.draw_office_button(
                 self.office_footer_action_rect(), "外勤を再開", 11, text_color=0
             )
+            if self.work_week.number == 4:
+                self.draw_office_button(
+                    self.office_next_week_rect(), "巡回を終える", 11, text_color=0
+                )
             return True
         return False
 
@@ -393,6 +417,10 @@ class AugustMixin:
             and self.work_week.number == 1
             and self.office.august_progress.phase == "field"
             and self.office.august_progress.pending_sighting is not None
+            and self.screen in (AppScreen.PLAY, AppScreen.PAUSE)
+        ) or (
+            getattr(self, "work_week", None) == WorkWeek(8, 4)
+            and getattr(self, "patrol_dialogue", None) is not None
             and self.screen in (AppScreen.PLAY, AppScreen.PAUSE)
         )
         model = getattr(self, "model", None)

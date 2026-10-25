@@ -93,6 +93,8 @@ class FlowerbedVisitMixin:
         return saved
 
     def start_flowerbed_visit(self, target="jul_w2_fuji"):
+        if getattr(self, "patrol_active", lambda: False)():
+            return False
         if (
             not getattr(self.model, "flowerbed_visible", False)
             or self.model.combat_session

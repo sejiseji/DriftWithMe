@@ -6283,6 +6283,561 @@
         "recipe_sha256": "3d3475dff712c2e1a33e9047740e7543bfb86a2f698b285f071143ad09077093",
         "tool_build_key": "2cfedc5ed7653fa9857c01768b19d95ad3c9fed8073852e1494714ba86b3a824"
       }
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_mina",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "e98ba2baef013a24e3aa39fd7b5ed5c6328c74003f0e51684925c865315abdbc",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_mina_normal.hex",
+          "source_hash": "f2876a63805699a17eff06b6509f1571409fee835c0ef19d3eb9ffaeb5fa35ab"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_mina_look_left.hex",
+          "source_hash": "dbe76136dde5377f34ea36059126e2d84929ae7cb172e6370442b4a5f44514cf"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_mina_look_right.hex",
+          "source_hash": "5702226036661ca1afbc83032f0424b02b7a895dd312ce84ea4e033ad0ac8f11"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_grow",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "4578a44b7d1d2f5be342486ce5edeef6851d7c556624fb61e97737f1baebabb2",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_grow_normal.hex",
+          "source_hash": "adfb0d038d4641d59b71e68bedc608a519b82afa250b8121c01ada1f42900a0a"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_grow_look_left.hex",
+          "source_hash": "04f0e560753447d34af87ca56871ea853f5ee17cd51c3649124df60712fa00c4"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_grow_look_right.hex",
+          "source_hash": "b3807f564c56105522e473ffd890f2f253702459ac1944d62cac591f917ccc41"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_takanashi",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "25804de0815c8e02c9fbae723e602283cce3705be736ced6a9a182357682d3ac",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_takanashi_normal.hex",
+          "source_hash": "681cc9955e5a48d2b9d23ab1515cc09849b59702e7df590d195f590673788d1f"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_takanashi_look_left.hex",
+          "source_hash": "34083487fe68fbce4315014124a0aa8be09af825d94d529b06a00a434720db5d"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_takanashi_look_right.hex",
+          "source_hash": "8de11c6485db64bd9806e55e8091cf7ff1af5a95e8759ca6505aa2c0eb2a0a4e"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_yoake",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "9fb8c35352ada659192ad3ac61a2f7574e6ac060dbe16de3ac7822fd4902a363",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_yoake_normal.hex",
+          "source_hash": "d44ecf2d83fb15910d8f7b01f6e8d4fed18c859c39f650bafc54a50510549865"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_yoake_look_left.hex",
+          "source_hash": "b8ecae510a23d652663b2c08a23979d39d9e55411ce8aafeef7a757ff2ff907a"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_yoake_look_right.hex",
+          "source_hash": "ea3af2a4d4418f200456d2c9d808a263d49811fb2a79fd547806f3eac41a57a0"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_sagan",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "350b2a2bb063fab9aca06477d95afaadac0fca6b3b04ae707ff88dffca30f827",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_sagan_normal.hex",
+          "source_hash": "51c27ceaac4de4b212fc3b33495afda8ff54b384dd3339458fc75d941d344c56"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_sagan_look_left.hex",
+          "source_hash": "33d9fd1594c6002d8a5824888091ca79cfae443b308387a57a59cab1a4bf25dc"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_sagan_look_right.hex",
+          "source_hash": "c52e321241f5511739f8311e487dfe44d8264d1e7a0c60f21f7dc91e477358fe"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_ura",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "196711b1ea5c0dd5b14e3ad530437bd93b48b2461e4f52a42b133271cd5fc501",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_ura_normal.hex",
+          "source_hash": "338437c4b3bb8bb8b4ebfa4d8b037689221074ded5e862df1abddc193c957beb"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_ura_look_left.hex",
+          "source_hash": "910a6bce18f8f03c97276fe883ea6ebf907924b2dcaa9ad9722a8107e9ded28e"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_ura_look_right.hex",
+          "source_hash": "87c2061fd7bdc3b7dcb448a99466e642e738bc49d4102cc6a162abbbd0183f58"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_ramel",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "c2c7417b486205c44af41503d485e34f2977a22a561b1a9c7f3db6dc07673bb5",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_ramel_normal.hex",
+          "source_hash": "8f0ffab746f5ad835716bbc7b7c76614156b6ba3a805c971001d53ac4d5575f0"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_ramel_look_left.hex",
+          "source_hash": "36c041cfde094d301680d8d4ef5fc99e4261ca77325fc2fb42149fb56a97c063"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_ramel_look_right.hex",
+          "source_hash": "5a584d0ee2c2ca3eb7d31a0ab824da2b427ae9679978c63905e2c0dd1e7a7760"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_hero",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "e2b494d20c4bf95d8c2f5d657baa12dabc9d70991dac81bd2283c99b98603aed",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_hero_normal.hex",
+          "source_hash": "384d61c0facfbd37159f398063e85c0d93b3d3a3d4456aba24f231ff0a07f857"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_hero_look_left.hex",
+          "source_hash": "07be76ba98eaa0ef4eaacc8b681e00ac746c21c634eb639eb8722591c318ef2d"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_hero_look_right.hex",
+          "source_hash": "6d25482a7b02b303c77cc52ce5c3c8ecbdcac9885b850831afda0a23f2a64a97"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_iwama",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 0,
+      "anchor_px": [
+        32,
+        64
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "0bd227de9c5993938a1d1d0f018ee48573d78aaed0d86c380cc17706ad927b36",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_iwama_v2_64.hex",
+          "source_hash": "c19d6a7d2d586064963883840a82f18cc0ddeb50a8d4ad9282d87e128913a3d9"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_iwama_v3_64_look_left.hex",
+          "source_hash": "7ce0a530b4cf40162b154b825bc243fce46e9a24df76bd21da37b7bb625a6766"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_iwama_v3_64_look_right.hex",
+          "source_hash": "5060ab91ff0f7487262397e93ae766aa8a2f8704c932251565695c4f6104d976"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_merrill",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 64,
+      "hex_height": 64,
+      "colkey": 0,
+      "anchor_px": [
+        32,
+        64
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "99d79868b7a4cf8b3161a60919053077d473bcf86fc3c131d957ccb48e1eabdc",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_merrill_v3_64_normal.hex",
+          "source_hash": "30df48c6156b04ce33ca377ac2268cb8c88c4f28edc16f20374a58953ff78de0"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_merrill_v3_64_look_left.hex",
+          "source_hash": "680ca6d67555346d2a12d54f9c5636777efc097a1abb8acaed7320d80dc112c7"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_merrill_v3_64_look_right.hex",
+          "source_hash": "3c04b1ba0f6d22bd32fc87c5d69d63dad263ab2ce0ed7b1e90eba651956304da"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_morris",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "dbfc93ae7812200226c028d1b14edccb6601a0a991cd641f44f41d6bf62de314",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_morris_normal.hex",
+          "source_hash": "43a5d9e4169f2be1fe115156e774a6174ba33e548d66652d6f95c0d308b8ec42"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_morris_look_left.hex",
+          "source_hash": "a234d67c6ad239aa602086e31980370edfaae9a9b6ac3da495d3723f4aa89dc2"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_morris_look_right.hex",
+          "source_hash": "ca939d86460a25f7c2019df0af8bcf4beb18af9f8b67c14bcefbeeb4e681fb32"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_ruby",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "955313330947c86c70a1eefb86f1654d38022e906a457cd9772d44dc8c931ef9",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_ruby_normal.hex",
+          "source_hash": "629af4cbdbdf0007eed4e4e396dfd19962d79d951ecc7f8275ac3c1e5aee6ce0"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_ruby_look_left.hex",
+          "source_hash": "43f0253f8d83c5980a92b23acaac4be5b24ab24124250ba7b0d67e7e92367461"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_ruby_look_right.hex",
+          "source_hash": "5168aa6d047d00537c5bdf80f8cd0ab3d85dc6482dac55133d4b008a0f422d81"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_fuji",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "82b116c42124d3f5a366514ba7835b6e29509ceb124cf26941cbd3cd47c038d8",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_fuji_normal.hex",
+          "source_hash": "9729e461b8d829dbab4bd4c0e9b28351b30ce8e8b68702c8adf627721f4896d3"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_fuji_look_left.hex",
+          "source_hash": "1d16ac58011c1fb5e0412ad3650b07e95f7369484b6df7e78f8636aab26b8cc3"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_fuji_look_right.hex",
+          "source_hash": "e356a512c777f9d016b0393137ede83088ac47fa559184585ff363804c960f0a"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_yumesaki",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "204790f25e5f3b00a4d0238eaa63dd79494cff0d3a0bf5a22bddfad34baedb99",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_yumesaki_normal.hex",
+          "source_hash": "50ecf0bf1940fc35bbeb7b9aa3a2a9288ade9a01fe6781dafc7a00e31527a8c5"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_yumesaki_look_left.hex",
+          "source_hash": "80dee934c7f6019b54ceb79e8b0a7eb5cd16e5cab650191714ba2b6800923524"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_yumesaki_look_right.hex",
+          "source_hash": "8cdfd00a7881562eb4690694eb8c0f3c9687a62e86278f711bebf7070a988e2d"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "aug_npc_miyano",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 32,
+      "hex_height": 32,
+      "colkey": 0,
+      "anchor_px": [
+        16,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "source_hash": "423d6b692297585c291395091785ece2e59f91283a237f270b82b7dbfc5ad997",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "AugustNPC_miyano_normal.hex",
+          "source_hash": "667ccfedb69394d9491c86456aa9fb9d848da511fcc6258411e8fbe36c88ec66"
+        },
+        {
+          "id": "look_left",
+          "path": "AugustNPC_miyano_look_left.hex",
+          "source_hash": "817ab8fd586d10804bda30c9210edc7f74bf2f839c1b01502352c8c401c29213"
+        },
+        {
+          "id": "look_right",
+          "path": "AugustNPC_miyano_look_right.hex",
+          "source_hash": "e2d315bd0a9a4c1970a250fd9a2890a464978f7433e60a0a07b34fd00724d4ca"
+        }
+      ]
     }
   ],
   "notes": [

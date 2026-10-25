@@ -17,6 +17,8 @@ class Goal:
 
 
 def map_goals(app):
+    if getattr(app, "patrol_active", lambda: False)():
+        return None, ()
     office = getattr(app, "office", None)
     task = office.active_field_task if office is not None else None
     if task is None or office.current_session is None:

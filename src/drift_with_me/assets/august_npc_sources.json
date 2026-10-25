@@ -1,0 +1,345 @@
+{
+  "version": 1,
+  "characters": {
+    "Mina": {
+      "reference_file": "Mina_reference.png",
+      "reference_sha256": "4605adba2a4918b0b56e2f0e807296e939d00459c358fa8ec8d50529ad0c234c",
+      "generated_source_sha256": "bc6ee6c35010a83582305e8ba87bcdb0b4c25c3980d8ba5320d217d2c52c54d6",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Grow": {
+      "reference_file": "Grow_reference.png",
+      "reference_sha256": "461efdd349cbbcd867e3145333c28e5b8d872680c254f29f1ba9fe90b338c090",
+      "generated_source_sha256": "1436b6ef7eee377bbe78f0f2c80ce25fcecf0c59cba3b806e70306a40c438d7e",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Takanashi": {
+      "reference_file": "Takanashi_reference.png",
+      "reference_sha256": "8ff22739263bef39e771ee9949e599d90c7ac36a21d379d1bfa9b1a4a674a42f",
+      "generated_source_sha256": "05815d0422f2a6f928f972a9f97c10d2ee64448e1b860ba39aac2593f18451d2",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Yoake": {
+      "reference_file": "Yoake_reference.png",
+      "reference_sha256": "1ee0409d225c7f70253dc48b3ac1eaa45d5431b3a81874f63ddfbec5fdde1f4e",
+      "generated_source_sha256": "9f649b04eafa03b8ff87bc90c4c05096cd05400f21bc66910fc1e7a2a7f34621",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Sagan": {
+      "reference_file": "Sagan_reference.png",
+      "reference_sha256": "21fa942759d10d03f35c9470df8a72acc5891df404b3b2adf70b62e9c4a49053",
+      "generated_source_sha256": "c6031905857f9c3dd9b28ecad45a5fc2932e2ab3bb109068b39c43d483f75b7c",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Ura": {
+      "reference_file": "Ura_reference.png",
+      "reference_sha256": "81c75414198d2aed58a195a6985f0d9933e6525ab4e6902ec1f1c129cefe70e8",
+      "generated_source_sha256": "053a4aed72ba5a319ad60b43e3b59ebfc5be9f55816875cc2f3d6311a7f47567",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Ramel": {
+      "reference_file": "Ramel_reference.png",
+      "reference_sha256": "8d37e92b43d17692e999e266fd8b680f85dc193957578214b409457319f8a8bf",
+      "generated_source_sha256": "656d983fef7d431ac86fee5c20f288c271e3ae60b2944332011a2041f9999726",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Hero": {
+      "reference_file": "Hero_reference.png",
+      "reference_sha256": "cdbe154ccdfeb8ec11b190a009318511c60f7a6b229f9a08d40cd2c4c4efa184",
+      "generated_source_sha256": "08d07f236f06b58483a837c188ee0b3fd13c7470d5615c2091f0a37c3087d9ee",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Iwama": {
+      "reference_file": "Iwama_reference.png",
+      "reference_sha256": "bb27bbb5507f3fcfe262ff3f0df89ff40be9afe101d813587bc2658d579f6409",
+      "generated_source_sha256": "3a90f80f41d2a96a5048215d57be4a1a75892605e34da8b4907ef0a759f5c70a",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Merrill": {
+      "reference_file": "Merrill_reference.png",
+      "reference_sha256": "4174cfd0269180bc7192d1a05637bda5dd2bab733ca85963e7392f71b13d99c3",
+      "generated_source_sha256": "69acb3b455822c288d33dca04e40c41b07654e5d9117eb5dd8ab194bd7998bdc",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Morris": {
+      "reference_file": "Morris_reference.png",
+      "reference_sha256": "a79be3efeb9ac0737259172c910fb7f970450fb779ea11c94706b121a8ff334a",
+      "generated_source_sha256": "a176b3af93c8381399716c428b066f5d24bf23c9805b722685a99a6c1087f6e6",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    },
+    "Ruby": {
+      "reference_file": "Ruby_reference.png",
+      "reference_sha256": "f83469453513ec877da16b4dc790f18db43bab569a7ef1c4fe5d7660328d5c19",
+      "generated_source_sha256": "0430953bb4d4345d76ab74987f245c17da40648e039072dcc6e7a49b3a6cda06",
+      "method": "Full-body imagegen from existing character + Fuji32 style; nearest palette ingestion; not resized office portrait"
+    }
+  },
+  "map_contract": {
+    "canvas": [
+      32,
+      32
+    ],
+    "anchor": [
+      16,
+      32
+    ],
+    "transparent_index": 0,
+    "palette": "pyxel_default_16",
+    "world_size": [
+      32,
+      32
+    ]
+  },
+  "reuse": [
+    "Fuji_32_normal.hex",
+    "Yumesaki_32_normal.hex",
+    "Miyano_32_normal.hex"
+  ],
+  "glances": "Native HEX one-pixel head shifts; feet and lower body unchanged. These are slight head poses, not full eight-direction turn art.",
+  "runtime_versions": {
+    "aug_npc_mina": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "e98ba2baef013a24e3aa39fd7b5ed5c6328c74003f0e51684925c865315abdbc",
+      "frames": [
+        "AugustNPC_mina_normal.hex",
+        "AugustNPC_mina_look_left.hex",
+        "AugustNPC_mina_look_right.hex"
+      ]
+    },
+    "aug_npc_grow": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "4578a44b7d1d2f5be342486ce5edeef6851d7c556624fb61e97737f1baebabb2",
+      "frames": [
+        "AugustNPC_grow_normal.hex",
+        "AugustNPC_grow_look_left.hex",
+        "AugustNPC_grow_look_right.hex"
+      ]
+    },
+    "aug_npc_takanashi": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "25804de0815c8e02c9fbae723e602283cce3705be736ced6a9a182357682d3ac",
+      "frames": [
+        "AugustNPC_takanashi_normal.hex",
+        "AugustNPC_takanashi_look_left.hex",
+        "AugustNPC_takanashi_look_right.hex"
+      ]
+    },
+    "aug_npc_yoake": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "9fb8c35352ada659192ad3ac61a2f7574e6ac060dbe16de3ac7822fd4902a363",
+      "frames": [
+        "AugustNPC_yoake_normal.hex",
+        "AugustNPC_yoake_look_left.hex",
+        "AugustNPC_yoake_look_right.hex"
+      ]
+    },
+    "aug_npc_sagan": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "350b2a2bb063fab9aca06477d95afaadac0fca6b3b04ae707ff88dffca30f827",
+      "frames": [
+        "AugustNPC_sagan_normal.hex",
+        "AugustNPC_sagan_look_left.hex",
+        "AugustNPC_sagan_look_right.hex"
+      ]
+    },
+    "aug_npc_ura": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "196711b1ea5c0dd5b14e3ad530437bd93b48b2461e4f52a42b133271cd5fc501",
+      "frames": [
+        "AugustNPC_ura_normal.hex",
+        "AugustNPC_ura_look_left.hex",
+        "AugustNPC_ura_look_right.hex"
+      ]
+    },
+    "aug_npc_ramel": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "c2c7417b486205c44af41503d485e34f2977a22a561b1a9c7f3db6dc07673bb5",
+      "frames": [
+        "AugustNPC_ramel_normal.hex",
+        "AugustNPC_ramel_look_left.hex",
+        "AugustNPC_ramel_look_right.hex"
+      ]
+    },
+    "aug_npc_hero": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "e2b494d20c4bf95d8c2f5d657baa12dabc9d70991dac81bd2283c99b98603aed",
+      "frames": [
+        "AugustNPC_hero_normal.hex",
+        "AugustNPC_hero_look_left.hex",
+        "AugustNPC_hero_look_right.hex"
+      ]
+    },
+    "aug_npc_iwama": {
+      "canvas": [
+        64,
+        64
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "0bd227de9c5993938a1d1d0f018ee48573d78aaed0d86c380cc17706ad927b36",
+      "frames": [
+        "AugustNPC_iwama_v2_64.hex",
+        "AugustNPC_iwama_v3_64_look_left.hex",
+        "AugustNPC_iwama_v3_64_look_right.hex"
+      ]
+    },
+    "aug_npc_merrill": {
+      "canvas": [
+        64,
+        64
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "99d79868b7a4cf8b3161a60919053077d473bcf86fc3c131d957ccb48e1eabdc",
+      "frames": [
+        "AugustNPC_merrill_v3_64_normal.hex",
+        "AugustNPC_merrill_v3_64_look_left.hex",
+        "AugustNPC_merrill_v3_64_look_right.hex"
+      ]
+    },
+    "aug_npc_morris": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "dbfc93ae7812200226c028d1b14edccb6601a0a991cd641f44f41d6bf62de314",
+      "frames": [
+        "AugustNPC_morris_normal.hex",
+        "AugustNPC_morris_look_left.hex",
+        "AugustNPC_morris_look_right.hex"
+      ]
+    },
+    "aug_npc_ruby": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "955313330947c86c70a1eefb86f1654d38022e906a457cd9772d44dc8c931ef9",
+      "frames": [
+        "AugustNPC_ruby_normal.hex",
+        "AugustNPC_ruby_look_left.hex",
+        "AugustNPC_ruby_look_right.hex"
+      ]
+    },
+    "aug_npc_fuji": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "82b116c42124d3f5a366514ba7835b6e29509ceb124cf26941cbd3cd47c038d8",
+      "frames": [
+        "AugustNPC_fuji_normal.hex",
+        "AugustNPC_fuji_look_left.hex",
+        "AugustNPC_fuji_look_right.hex"
+      ]
+    },
+    "aug_npc_yumesaki": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "204790f25e5f3b00a4d0238eaa63dd79494cff0d3a0bf5a22bddfad34baedb99",
+      "frames": [
+        "AugustNPC_yumesaki_normal.hex",
+        "AugustNPC_yumesaki_look_left.hex",
+        "AugustNPC_yumesaki_look_right.hex"
+      ]
+    },
+    "aug_npc_miyano": {
+      "canvas": [
+        32,
+        32
+      ],
+      "world_size": [
+        32,
+        32
+      ],
+      "source_hash": "423d6b692297585c291395091785ece2e59f91283a237f270b82b7dbfc5ad997",
+      "frames": [
+        "AugustNPC_miyano_normal.hex",
+        "AugustNPC_miyano_look_left.hex",
+        "AugustNPC_miyano_look_right.hex"
+      ]
+    }
+  },
+  "superseded_initial_generations": [
+    "iwama",
+    "merrill"
+  ]
+}

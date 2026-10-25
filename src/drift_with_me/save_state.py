@@ -297,7 +297,7 @@ def snapshot(app):
 
 def restore_office(raw, week):
     office = OfficePrototype.load() if week == WorkWeek() else load_week_office(week)
-    august = week.month == 8 and week.number in (1, 2, 3)
+    august = week.month == 8 and week.number in (1, 2, 3, 4)
     july4 = week == WorkWeek(7, 4)
     july3 = week == WorkWeek(7, 3)
     week2 = week == WorkWeek(7, 2)
@@ -518,13 +518,14 @@ def restore_office(raw, week):
             elif case.case_id.startswith("OFF-AUG-"):
                 from drift_with_me.august import SITES
 
+                expected_sites = SITES if week.number != 4 else frozenset()
                 if (
                     result["code"] != "AUGUST_COMPLETED"
-                    or string_set(result["facts"], SITES) != SITES
+                    or string_set(result["facts"], expected_sites) != expected_sites
                     or office.august_progress.phase != "done"
                 ):
                     raise ValueError("incomplete August report")
-                code, facts, lines = "AUGUST_COMPLETED", tuple(sorted(SITES)), ()
+                code, facts, lines = "AUGUST_COMPLETED", tuple(sorted(expected_sites)), ()
             elif case.case_id == "OFF-JUL-W4-PARK":
                 from drift_with_me.july_week4 import PARK
 
@@ -748,6 +749,7 @@ def decode(text):
         WorkWeek(8, 1),
         WorkWeek(8, 2),
         WorkWeek(8, 3),
+        WorkWeek(8, 4),
     }
     if not isinstance(w, list) or len(w) != 2:
         raise ValueError("unsupported week")
@@ -775,7 +777,7 @@ def decode(text):
             raise ValueError("handoff history mismatch")
     elif previous3 is not None and previous3.week3_progress.professor_handoff_completed:
         raise ValueError("missing handoff recipient")
-    for number in (1, 2, 3):
+    for number in (1, 2, 3, 4):
         current = offices.get(WorkWeek(8, number))
         if current is not None:
             previous = offices.get(WorkWeek(7, 4) if number == 1 else WorkWeek(8, number - 1))

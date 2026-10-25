@@ -3250,7 +3250,15 @@ class Renderer:
             return False
         if self.draw_tree_layered_sprite(model, obj, placement):
             return True
-        self.draw_atmospheric_scaled_sprite(asset, placement)
+        if obj.id.startswith("aug_patrol_"):
+            from drift_with_me.august_patrol import patrol_pose
+
+            pose = patrol_pose(model, obj.id)
+            self.draw_atmospheric_scaled_sprite(
+                asset, placement, asset.frame(pose) if pose in asset.frames else asset.frame()
+            )
+        else:
+            self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
 
     def draw_tree_layered_sprite(

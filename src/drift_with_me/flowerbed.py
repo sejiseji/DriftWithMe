@@ -251,6 +251,8 @@ class FlowerbedMixin:
         return self.office_rect(8, 120, 144, 54)
 
     def flowerbed_entry_available(self):
+        if getattr(self, "patrol_active", lambda: False)():
+            return False
         from drift_with_me.app import AppScreen
 
         return (

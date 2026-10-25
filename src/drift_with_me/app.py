@@ -8,6 +8,7 @@ from enum import Enum, auto
 from drift_with_me import config
 from drift_with_me.audio import AudioEngine
 from drift_with_me.august import AugustMixin
+from drift_with_me.august_patrol import PatrolMixin
 from drift_with_me.build_info import BUILD_LABEL
 from drift_with_me.camera import CameraController
 from drift_with_me.document_reading import reading_pose_pixels
@@ -421,6 +422,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
+    PatrolMixin,
     AugustMixin,
     SwarmAppMixin,
     FlowerbedVisitMixin,
@@ -619,6 +621,8 @@ class DriftWithMeApp(
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
         self.sync_august_sighting_lock()
+        if self.update_patrol(elapsed):
+            return
         if self.update_swarm_frame(elapsed):
             self.checkpoint_progress()
             return
@@ -874,6 +878,7 @@ class DriftWithMeApp(
                 AppScreen.PLAY if self.office.week4_progress.phase == "field" else AppScreen.OFFICE
             )
 
+        self.install_patrol()
         self.sync_august_sighting_lock()
 
     def update_office_screen(self, elapsed: float) -> None:
@@ -1445,6 +1450,7 @@ class DriftWithMeApp(
         from drift_with_me.northeast_park import install_park_world
 
         install_park_world(self)
+        self.install_patrol()
         if self.week4_active():
             self.office.week4_progress.phase = "field"
         if self.week3_active():
@@ -1610,6 +1616,7 @@ class DriftWithMeApp(
             self.office_question_index = self.office_classification_index = 0
             self.office_dialogue_playback = OfficeDialoguePlayback()
             self.office_answer_case_id = self.office_answer_question_id = None
+        self.install_patrol()
         transition.applied = True
         self.previous_time = None
 
@@ -2744,6 +2751,9 @@ class DriftWithMeApp(
                 self.field_conversation = None
             elif event.kind == "interaction_started" and event.target_id is not None:
                 from drift_with_me.july_week2 import SITES
+
+                if self.begin_patrol_target(event.target_id):
+                    continue
 
                 if self.week4_active() and event.target_id in {
                     "jul_w4_park_check",
@@ -4272,6 +4282,7 @@ class DriftWithMeApp(
                 WorkWeek(7, 4),
                 WorkWeek(8, 1),
                 WorkWeek(8, 2),
+                WorkWeek(8, 3),
             }
             and getattr(self, "week_transition", None) is None
             and not getattr(self, "week_input_wait_for_release", False)
@@ -4318,6 +4329,7 @@ class DriftWithMeApp(
             install_july_world(self, enabled=self.july_active())
             if self.work_week.month >= 7:
                 install_flowerbed_world(self)
+        self.install_patrol()
         self.week_office_history[self.work_week] = self.office
         self.pending_week_office = None
         self.end_office_consultation()
@@ -5219,8 +5231,9 @@ class DriftWithMeApp(
         self.draw_july_markers()
         self.draw_week3_devices(scene_camera)
         self.draw_week4_marker(scene_camera)
-        self.draw_hud()
-        self.draw_map_objectives()
+        if not (self.patrol_active() and getattr(self, "patrol_dialogue", None)):
+            self.draw_hud()
+            self.draw_map_objectives()
         if self.model.interaction is not None:
             self.draw_interaction_chip()
         self.draw_combat_chance_cues()
@@ -5231,6 +5244,7 @@ class DriftWithMeApp(
         self.draw_swarm_sites(scene_camera)
         self.draw_swarm_return_fade()
         self.draw_august_sighting_dialogue()
+        self.draw_patrol_dialogue()
 
     def scene_camera(self, camera: CameraState) -> CameraState | AffineCameraState:
         camera = self.combat_scene_camera(camera)

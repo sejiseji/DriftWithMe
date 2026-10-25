@@ -21,6 +21,8 @@ MAX_SPLASHES = 16
 
 
 def environment(app):
+    if app.august_active() and app.work_week.number == 4:
+        return False, True
     if not app.august_active() or app.work_week.number != 3:
         return False, False
     done = app.office.august_progress.phase == "done"

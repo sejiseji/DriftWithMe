@@ -61,7 +61,7 @@ def complete_week(app):
         assert app.advance_august_report()
 
 
-def test_native_july_bridge_and_three_august_weeks_end_without_w4():
+def test_native_july_bridge_and_three_august_weeks_offer_optional_w4():
     app, storage = august_app()
     for n in (1, 2, 3):
         assert app.work_week == WorkWeek(8, n)
@@ -75,9 +75,8 @@ def test_native_july_bridge_and_three_august_weeks_end_without_w4():
             app.week_input_wait_for_release = False
             app.office.begin_current_case()
         else:
-            assert not app.can_begin_next_week()
-            assert not app.begin_next_week()
-            assert load_week_office(WorkWeek(8, 4)) is None
+            assert app.can_begin_next_week()
+            assert load_week_office(WorkWeek(8, 4)) is not None
             assert app.last_checkpoint == snapshot(app)
             stored = decode(storage.items[SAVE_KEY])
             assert stored[0] == WorkWeek(8, 3)
