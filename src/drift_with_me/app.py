@@ -371,6 +371,24 @@ OFFICE_PORTRAIT_SMILE_IDS = {
 }
 OFFICE_STATIC_PORTRAIT_IDS = frozenset(
     {
+        # Detailed conversation assets share the existing portrait sizing/centering path.
+        "w4_iwama_dialogue_normal",
+        "w4_iwama_dialogue_smug",
+        "w4_merrill_dialogue_normal",
+        "w4_morris_dialogue_normal",
+        "w4_ruby_dialogue_normal",
+        "w4_ramel_dialogue_normal",
+        "w4_ramel_dialogue_smile",
+        "w4_hero_dialogue_normal",
+        "w4_hero_dialogue_smile",
+        "w4_mina_dialogue_normal",
+        "w4_mina_dialogue_smile",
+        "w4_grow_dialogue_normal",
+        "w4_grow_dialogue_smile",
+        "w4_takanashi_dialogue_normal",
+        "w4_yoake_dialogue_normal",
+        "w4_sagan_dialogue_normal",
+        "w4_ura_dialogue_normal",
         "ura_matte",
         "takanashi_matte",
         "fuji_matte",
@@ -385,6 +403,35 @@ OFFICE_STATIC_PORTRAIT_IDS = frozenset(
         "merrill_matte",
     }
 )
+# Preserve original speaker/expression selection while sharing the detailed conversation art.
+COUNTER_REFINED_PORTRAITS = {
+    "iwama_bust_normal": "w4_iwama_dialogue_normal",
+    "iwama_bust_smug": "w4_iwama_dialogue_smug",
+    "merrill_matte": "w4_merrill_dialogue_normal",
+    "morris_matte": "w4_morris_dialogue_normal",
+    "ruby_matte": "w4_ruby_dialogue_normal",
+    "nervous_elf_woodsman": "w4_ramel_dialogue_normal",
+    "nervous_elf_woodsman_smile": "w4_ramel_dialogue_smile",
+    "smug_blond_hero": "w4_hero_dialogue_normal",
+    "smug_blond_hero_smile": "w4_hero_dialogue_smile",
+    "succubus_green": "w4_mina_dialogue_normal",
+    "succubus_green_smile": "w4_mina_dialogue_smile",
+    "tired_gray_oldman": "w4_grow_dialogue_normal",
+    "tired_gray_oldman_smile": "w4_grow_dialogue_smile",
+    "takanashi_matte": "w4_takanashi_dialogue_normal",
+    "yoake_matte": "w4_yoake_dialogue_normal",
+    "sagan_matte": "w4_sagan_dialogue_normal",
+    "ura_matte": "w4_ura_dialogue_normal",
+} | {
+    "fuji_matte": "refined_fuji_counter_normal",
+    "miyano_bust_normal": "refined_miyano_counter_normal",
+    "yumesaki_bust_normal": "refined_yumesaki_counter_normal",
+    "yumesaki_bust_smile": "refined_yumesaki_counter_smile",
+    "yumesaki_bust_worried": "refined_yumesaki_counter_worried",
+    "yumesaki_bust_surprised": "refined_yumesaki_counter_surprised",
+    "yumesaki_bust_thinking": "refined_yumesaki_counter_thinking",
+}
+
 FUSE_OFFICE_PORTRAIT_IDS = {
     "normal": "fuse_matte",
     "smile": "fuse_matte_smile",
@@ -4747,7 +4794,9 @@ class DriftWithMeApp(
         seconds = float(getattr(self, "presentation_time", 0.0))
         return round(2 * math.sin(math.tau * seconds / 4.8))
 
-    def draw_office_portrait(self, rect: Rect, portrait_id: str, *, smile: bool = False) -> None:
+    def draw_office_portrait(
+        self, rect: Rect, portrait_id: str, *, smile: bool = False, frame_id: str | None = None
+    ) -> None:
         if not portrait_id:
             return
         pyxel = self.pyxel
@@ -4763,6 +4812,22 @@ class DriftWithMeApp(
         asset_id = smile_asset_id if using_smile else portrait_id
         if portrait_id == "fuse_matte":
             asset_id = FUSE_OFFICE_PORTRAIT_IDS[self.office_fuse_portrait_expression()]
+        refined_counter = asset_id in COUNTER_REFINED_PORTRAITS
+        asset_id = COUNTER_REFINED_PORTRAITS.get(asset_id, asset_id)
+        if refined_counter and portrait_id in OFFICE_PORTRAIT_BLINK_OVERLAY_IDS:
+            intervals = (
+                self.runtime.raw.get("ui", {})
+                .get("office_portrait_blink_interval_frames", {})
+                .get(portrait_id, OFFICE_PORTRAIT_BLINK_INTERVAL_FRAMES)
+            )
+            pose = self.office_portrait_blink_pose(
+                getattr(self, "frame", 0), portrait_id, intervals=tuple(intervals)
+            )
+            frame_id = (
+                {None: "open", "half": "half", "closed": "normal"}[pose]
+                if using_smile
+                else ("normal" if pose is None else pose)
+            )
         asset = sprite_assets.get(asset_id) if sprite_assets is not None else None
         if (
             asset is None
@@ -4778,7 +4843,7 @@ class DriftWithMeApp(
             ):
                 frame = asset.frame(self.office_supervisor_blink_frame())
             else:
-                frame = asset.frame()
+                frame = asset.frame(frame_id) if frame_id is not None else asset.frame()
             scale = min(width / frame.width, height / frame.height)
             if portrait_id in OFFICE_VISITOR_PORTRAIT_IDS:
                 scale = self.office_visitor_portrait_scale(frame.width, frame.height, rect)
@@ -4821,7 +4886,7 @@ class DriftWithMeApp(
             else:
                 blink_overlays = OFFICE_PORTRAIT_BLINK_OVERLAY_IDS.get(portrait_id, {})
                 overlay_id = blink_overlays.get(blink_pose)
-            if overlay_id is not None:
+            if overlay_id is not None and not refined_counter:
                 overlay = sprite_assets.get(overlay_id)
                 if overlay is not None:
                     overlay_frame = overlay.frame()

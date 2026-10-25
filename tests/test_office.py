@@ -344,7 +344,9 @@ def test_off001_portrait_blink_schedule_is_short_and_irregular() -> None:
     assert DriftWithMeApp.office_portrait_blink_pose(200, "unknown_portrait") is None
 
 
-def test_off001_portrait_draw_uses_asset_colkey_and_fits_panel() -> None:
+def test_off001_portrait_draw_uses_asset_colkey_and_fits_panel(monkeypatch) -> None:
+    # Legacy sources remain valid; production aliases are covered by the refined counter tests.
+    monkeypatch.setattr("drift_with_me.app.COUNTER_REFINED_PORTRAITS", {})
     calls: list[tuple[tuple, dict]] = []
 
     class FakePyxel:
@@ -379,7 +381,9 @@ def test_off001_portrait_draw_uses_asset_colkey_and_fits_panel() -> None:
     assert kwargs == {"colkey": 8, "scale": 0.75}
 
 
-def test_off001_portrait_draw_overlays_closed_eyes_without_shifting() -> None:
+def test_off001_portrait_draw_overlays_closed_eyes_without_shifting(monkeypatch) -> None:
+    # Legacy sources remain valid; production aliases are covered by the refined counter tests.
+    monkeypatch.setattr("drift_with_me.app.COUNTER_REFINED_PORTRAITS", {})
     calls: list[tuple[tuple, dict]] = []
 
     class FakePyxel:
@@ -437,7 +441,9 @@ def test_off001_portrait_draw_overlays_closed_eyes_without_shifting() -> None:
         assert overlay_kwargs == portrait_kwargs
 
 
-def test_off001_portrait_draw_uses_smile_without_blink_overlay() -> None:
+def test_off001_portrait_draw_uses_smile_without_blink_overlay(monkeypatch) -> None:
+    # Legacy sources remain valid; production aliases are covered by the refined counter tests.
+    monkeypatch.setattr("drift_with_me.app.COUNTER_REFINED_PORTRAITS", {})
     calls: list[tuple[tuple, dict]] = []
 
     class FakePyxel:
@@ -1549,7 +1555,9 @@ def test_office_blink_intervals_configured_per_portrait_preserve_defaults() -> N
         ) == DriftWithMeApp.office_portrait_blink_pose(100, portrait_id)
 
 
-def test_lamel_smile_blink_and_transitions_never_mix_eye_assets() -> None:
+def test_lamel_smile_blink_and_transitions_never_mix_eye_assets(monkeypatch) -> None:
+    # Legacy sources remain valid; production aliases are covered by the refined counter tests.
+    monkeypatch.setattr("drift_with_me.app.COUNTER_REFINED_PORTRAITS", {})
     from drift_with_me.app import OFFICE_PORTRAIT_SMILE_BLINK_OVERLAY_IDS
 
     calls = []

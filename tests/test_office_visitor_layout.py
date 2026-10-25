@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from drift_with_me.app import OFFICE_PORTRAIT_SMILE_IDS
+from drift_with_me.app import COUNTER_REFINED_PORTRAITS, OFFICE_PORTRAIT_SMILE_IDS
 from drift_with_me.office import OfficePrototype
 from test_office_supervisor import app_for, finish
 
@@ -22,7 +22,7 @@ def test_every_visitor_expression_and_blink_stays_inside_large_name_only_layout(
     for case in office.cases:
         assert app.office_visitor_info_lines(case) == (case.visitor.name,)
         assert app.ui_text.text_width(case.visitor.name, "office_japanese") <= name.width
-        size = 116
+        size = 232
         scale = target_width / size
         if scale >= 2:
             scale = float(int(scale))
@@ -35,7 +35,7 @@ def test_every_visitor_expression_and_blink_stays_inside_large_name_only_layout(
                     loaded.append(asset_id)
                     frame = SimpleNamespace(width=size, height=size, image=asset_id, u=0, v=0)
                     return SimpleNamespace(
-                        frame=lambda: frame, definition=SimpleNamespace(colkey=8)
+                        frame=lambda *_: frame, definition=SimpleNamespace(colkey=8)
                     )
 
                 app.sprite_assets = SimpleNamespace(get=asset)
@@ -53,7 +53,7 @@ def test_every_visitor_expression_and_blink_stays_inside_large_name_only_layout(
                     if smile
                     else case.visitor.portrait_id
                 )
-                assert loaded[0] == expected
+                assert loaded == [COUNTER_REFINED_PORTRAITS[expected]]
                 for args, kw in calls:
                     assert kw["scale"] == scale
                     x = args[0] + size * (1 - scale) / 2

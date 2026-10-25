@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from drift_with_me.app import OFFICE_PORTRAIT_SMILE_IDS
+from drift_with_me.app import COUNTER_REFINED_PORTRAITS, OFFICE_PORTRAIT_SMILE_IDS
 from drift_with_me.save_state import decode, encode, snapshot
 from drift_with_me.week_cycle import WorkWeek
 from test_july_week4 import app4, close_case
@@ -47,7 +47,7 @@ def test_iwama_existing_expression_mapping_and_frame_fit(profile):
     app, calls = make_app(profile)
     app.pyxel.rect = lambda *args: None
     app.pyxel.rectb = lambda *args: None
-    frame = SimpleNamespace(image="iwama", u=0, v=0, width=116, height=116)
+    frame = SimpleNamespace(image="iwama", u=0, v=0, width=232, height=232)
     requested = []
 
     def get(key):
@@ -59,12 +59,15 @@ def test_iwama_existing_expression_mapping_and_frame_fit(profile):
     for smile in (False, True):
         calls.clear()
         app.draw_office_portrait(rect, "iwama_bust_normal", smile=smile)
-        assert requested[-1] == ("iwama_bust_smug" if smile else "iwama_bust_normal")
+        assert (
+            requested[-1]
+            == COUNTER_REFINED_PORTRAITS["iwama_bust_smug" if smile else "iwama_bust_normal"]
+        )
         args, kwargs = calls[0]
         scale = kwargs["scale"]
-        left, top = args[0] + 116 * (1 - scale) / 2, args[1] + 116 * (1 - scale) / 2
-        assert left >= rect.x - 1 and left + 116 * scale <= rect.x + rect.width + 1
-        assert top >= rect.y - 1 and top + 116 * scale <= rect.y + rect.height + 1
+        left, top = args[0] + 232 * (1 - scale) / 2, args[1] + 232 * (1 - scale) / 2
+        assert left >= rect.x - 1 and left + 232 * scale <= rect.x + rect.width + 1
+        assert top >= rect.y - 1 and top + 232 * scale <= rect.y + rect.height + 1
         assert kwargs["colkey"] == 8
 
 

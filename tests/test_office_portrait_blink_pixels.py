@@ -192,7 +192,8 @@ def test_approved_blink_poses_only_change_eye_pixels():
                 )
 
 
-def test_every_person_expression_pose_transition_clears_previous_pixels():
+def test_every_person_expression_pose_transition_clears_previous_pixels(monkeypatch):
+    monkeypatch.setattr("drift_with_me.app.COUNTER_REFINED_PORTRAITS", {})
     pixels = sources()
     canvas = [1] * 4096
 

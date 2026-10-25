@@ -6288,12 +6288,12 @@
       "schema_version": 1,
       "id": "aug_npc_mina",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6302,22 +6302,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "e98ba2baef013a24e3aa39fd7b5ed5c6328c74003f0e51684925c865315abdbc",
+      "source_hash": "50acb1729e65d897fa4e3ce728632fac1874626a30b08ce40abf6fb3d74d9da6",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_mina_normal.hex",
-          "source_hash": "f2876a63805699a17eff06b6509f1571409fee835c0ef19d3eb9ffaeb5fa35ab"
+          "path": "AugustNPC_mina_v2_64_normal.hex",
+          "source_hash": "fe8e35c3c879fe59e182184b6e493c417e3c774c0aa65d20993a1bc36417b722"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_mina_look_left.hex",
-          "source_hash": "dbe76136dde5377f34ea36059126e2d84929ae7cb172e6370442b4a5f44514cf"
+          "path": "AugustNPC_mina_v2_64_look_left.hex",
+          "source_hash": "3d819e6b4c451fafa434d3b0da8faa2daa172d8327118d15cf8368e1bdbcdc96"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_mina_look_right.hex",
-          "source_hash": "5702226036661ca1afbc83032f0424b02b7a895dd312ce84ea4e033ad0ac8f11"
+          "path": "AugustNPC_mina_v2_64_look_right.hex",
+          "source_hash": "4c968908aefe2a4d1076975fea18dd90d7d5011035140f9f30ec6311dcd75d21"
         }
       ]
     },
@@ -6325,12 +6325,12 @@
       "schema_version": 1,
       "id": "aug_npc_grow",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6339,22 +6339,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "4578a44b7d1d2f5be342486ce5edeef6851d7c556624fb61e97737f1baebabb2",
+      "source_hash": "f899900e154f5ca6d412cae05e7f0165fae1ea0665c367c9bef3b92dd8021ce4",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_grow_normal.hex",
-          "source_hash": "adfb0d038d4641d59b71e68bedc608a519b82afa250b8121c01ada1f42900a0a"
+          "path": "AugustNPC_grow_v2_64_normal.hex",
+          "source_hash": "6d1e5eea5b18b4115a7b03298bbb9702c5c79df7020b135ab10952d061c0c7a6"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_grow_look_left.hex",
-          "source_hash": "04f0e560753447d34af87ca56871ea853f5ee17cd51c3649124df60712fa00c4"
+          "path": "AugustNPC_grow_v2_64_look_left.hex",
+          "source_hash": "8592a6d0315bfa3a512b4d588ee1c4e873fdc1034c249ef633312fab9d242992"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_grow_look_right.hex",
-          "source_hash": "b3807f564c56105522e473ffd890f2f253702459ac1944d62cac591f917ccc41"
+          "path": "AugustNPC_grow_v2_64_look_right.hex",
+          "source_hash": "287c5d76770bc02ddf77cba79f175a0a82cf31ce11c68afbf5b1c4d3e777e639"
         }
       ]
     },
@@ -6362,12 +6362,12 @@
       "schema_version": 1,
       "id": "aug_npc_takanashi",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6376,22 +6376,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "25804de0815c8e02c9fbae723e602283cce3705be736ced6a9a182357682d3ac",
+      "source_hash": "b8365ecba11c190a7b56b706ca94ab09415971e2a5f74071cad5879eb66b77cb",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_takanashi_normal.hex",
-          "source_hash": "681cc9955e5a48d2b9d23ab1515cc09849b59702e7df590d195f590673788d1f"
+          "path": "AugustNPC_takanashi_v2_64_normal.hex",
+          "source_hash": "ab7e020d961688440549d573607e3fc54c765fb70aa55ebacd9fa919d56f5bf5"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_takanashi_look_left.hex",
-          "source_hash": "34083487fe68fbce4315014124a0aa8be09af825d94d529b06a00a434720db5d"
+          "path": "AugustNPC_takanashi_v2_64_look_left.hex",
+          "source_hash": "67bed108b1d185b1f1f466706255c9c6a8bda77123a3476b251b40bfee4e022c"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_takanashi_look_right.hex",
-          "source_hash": "8de11c6485db64bd9806e55e8091cf7ff1af5a95e8759ca6505aa2c0eb2a0a4e"
+          "path": "AugustNPC_takanashi_v2_64_look_right.hex",
+          "source_hash": "1ec41e6420cdeb955481edda30d86d228ea9184a7514ae6f4fa3f0293a6cf91c"
         }
       ]
     },
@@ -6399,12 +6399,12 @@
       "schema_version": 1,
       "id": "aug_npc_yoake",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6413,22 +6413,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "9fb8c35352ada659192ad3ac61a2f7574e6ac060dbe16de3ac7822fd4902a363",
+      "source_hash": "df6c0c92a95439526fc2a624738fdf2d1a42fffca11f0084d18cb55a5b1b417f",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_yoake_normal.hex",
-          "source_hash": "d44ecf2d83fb15910d8f7b01f6e8d4fed18c859c39f650bafc54a50510549865"
+          "path": "AugustNPC_yoake_v2_64_normal.hex",
+          "source_hash": "218d8466d46487f40678642b5c2e1740d7b0b71806438aee26a60268c168d2e7"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_yoake_look_left.hex",
-          "source_hash": "b8ecae510a23d652663b2c08a23979d39d9e55411ce8aafeef7a757ff2ff907a"
+          "path": "AugustNPC_yoake_v2_64_look_left.hex",
+          "source_hash": "d1dfc347f20c3c8d1848c4212fa823fc0ceaa8983a823373bbb76562b86ad925"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_yoake_look_right.hex",
-          "source_hash": "ea3af2a4d4418f200456d2c9d808a263d49811fb2a79fd547806f3eac41a57a0"
+          "path": "AugustNPC_yoake_v2_64_look_right.hex",
+          "source_hash": "9fe38ffd3ce2f900dcef078219a10206d9cf22f83bfdf8fe00c15fd464795024"
         }
       ]
     },
@@ -6436,12 +6436,12 @@
       "schema_version": 1,
       "id": "aug_npc_sagan",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6450,22 +6450,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "350b2a2bb063fab9aca06477d95afaadac0fca6b3b04ae707ff88dffca30f827",
+      "source_hash": "5ab32bdeff9163efd7d2613883aeb7401d420eaa72a4c352f03c65c9aa13ffa5",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_sagan_normal.hex",
-          "source_hash": "51c27ceaac4de4b212fc3b33495afda8ff54b384dd3339458fc75d941d344c56"
+          "path": "AugustNPC_sagan_v2_64_normal.hex",
+          "source_hash": "f6890a3dddc6ec5b84682139dcb6762a7585fea4e28d791bc46d8992d21d8ae1"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_sagan_look_left.hex",
-          "source_hash": "33d9fd1594c6002d8a5824888091ca79cfae443b308387a57a59cab1a4bf25dc"
+          "path": "AugustNPC_sagan_v2_64_look_left.hex",
+          "source_hash": "3c03a900445e99056a24052655866cc0cda1da25e40ae018d4b9b3871174c112"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_sagan_look_right.hex",
-          "source_hash": "c52e321241f5511739f8311e487dfe44d8264d1e7a0c60f21f7dc91e477358fe"
+          "path": "AugustNPC_sagan_v2_64_look_right.hex",
+          "source_hash": "3bb3e3be2976541eacae4751225fcad51de01a0372cf2911bf4a1e832e147b07"
         }
       ]
     },
@@ -6473,12 +6473,12 @@
       "schema_version": 1,
       "id": "aug_npc_ura",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6487,22 +6487,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "196711b1ea5c0dd5b14e3ad530437bd93b48b2461e4f52a42b133271cd5fc501",
+      "source_hash": "f2fc22c60f945a3c0932f0bfe80dbe504b3064a4b8566e8282df63b3e78cbf95",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_ura_normal.hex",
-          "source_hash": "338437c4b3bb8bb8b4ebfa4d8b037689221074ded5e862df1abddc193c957beb"
+          "path": "AugustNPC_ura_v2_64_normal.hex",
+          "source_hash": "c2ce4b5bfc0626fdf53606608d04900085219bca810e64cd6da219764c113334"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_ura_look_left.hex",
-          "source_hash": "910a6bce18f8f03c97276fe883ea6ebf907924b2dcaa9ad9722a8107e9ded28e"
+          "path": "AugustNPC_ura_v2_64_look_left.hex",
+          "source_hash": "3ff7da466436e4494beab3d3a7631bd7f8bb303b1836762a8dae523afc6c34a4"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_ura_look_right.hex",
-          "source_hash": "87c2061fd7bdc3b7dcb448a99466e642e738bc49d4102cc6a162abbbd0183f58"
+          "path": "AugustNPC_ura_v2_64_look_right.hex",
+          "source_hash": "bd91ca56c816f352c13ab37a5f5a87bc4ff8f38e1c2139764d1d52dc6bd84061"
         }
       ]
     },
@@ -6510,12 +6510,12 @@
       "schema_version": 1,
       "id": "aug_npc_ramel",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6524,22 +6524,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "c2c7417b486205c44af41503d485e34f2977a22a561b1a9c7f3db6dc07673bb5",
+      "source_hash": "3d2d4abbf0eb451730078f41619289572604ecf8af0200384e72895a628a2f42",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_ramel_normal.hex",
-          "source_hash": "8f0ffab746f5ad835716bbc7b7c76614156b6ba3a805c971001d53ac4d5575f0"
+          "path": "AugustNPC_ramel_v2_64_normal.hex",
+          "source_hash": "553a40e77c2eae0252878e343673997ab1b3b61199fafa7c9f644c23a633fd7e"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_ramel_look_left.hex",
-          "source_hash": "36c041cfde094d301680d8d4ef5fc99e4261ca77325fc2fb42149fb56a97c063"
+          "path": "AugustNPC_ramel_v2_64_look_left.hex",
+          "source_hash": "51e3463d548e505517dcdd80a6809ed6868e69cbb0618600c6bc7ee5d4703764"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_ramel_look_right.hex",
-          "source_hash": "5a584d0ee2c2ca3eb7d31a0ab824da2b427ae9679978c63905e2c0dd1e7a7760"
+          "path": "AugustNPC_ramel_v2_64_look_right.hex",
+          "source_hash": "d085046adb535d6318bdc0b4da35db627974efba62ef89532a48197eb0fcfa61"
         }
       ]
     },
@@ -6547,12 +6547,12 @@
       "schema_version": 1,
       "id": "aug_npc_hero",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6561,22 +6561,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "e2b494d20c4bf95d8c2f5d657baa12dabc9d70991dac81bd2283c99b98603aed",
+      "source_hash": "a0b74b45ce96cf46997deb6f702a4bb66d9c50b4cac3f2b34bd32cb0006c1c12",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_hero_normal.hex",
-          "source_hash": "384d61c0facfbd37159f398063e85c0d93b3d3a3d4456aba24f231ff0a07f857"
+          "path": "AugustNPC_hero_v2_64_normal.hex",
+          "source_hash": "986236375dfbd67c2ff516ce328d164d4a2451c05171432fc571d1450db82f94"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_hero_look_left.hex",
-          "source_hash": "07be76ba98eaa0ef4eaacc8b681e00ac746c21c634eb639eb8722591c318ef2d"
+          "path": "AugustNPC_hero_v2_64_look_left.hex",
+          "source_hash": "951be5535b6d641733b0296126a789753e8aba8822337b9ec09fad2dd1d7baed"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_hero_look_right.hex",
-          "source_hash": "6d25482a7b02b303c77cc52ce5c3c8ecbdcac9885b850831afda0a23f2a64a97"
+          "path": "AugustNPC_hero_v2_64_look_right.hex",
+          "source_hash": "f855044d3de73d5a29a13829abd5cd230a0d03cf36a852969624d14f180cb18d"
         }
       ]
     },
@@ -6658,36 +6658,36 @@
       "schema_version": 1,
       "id": "aug_npc_morris",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 56,
+      "hex_height": 56,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        28,
+        56
       ],
       "world_size": [
-        32,
-        32
+        28,
+        28
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "dbfc93ae7812200226c028d1b14edccb6601a0a991cd641f44f41d6bf62de314",
+      "source_hash": "fbd2c53079c8f740a7660c0688f1e05c6db2cad8f0c9fb29a87e80c1a16cdf55",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_morris_normal.hex",
-          "source_hash": "43a5d9e4169f2be1fe115156e774a6174ba33e548d66652d6f95c0d308b8ec42"
+          "path": "AugustNPC_morris_v2_56_normal.hex",
+          "source_hash": "0250ac8ba9252858ce6b352188395f5b97de999601d9a94341373f4735e7ad5c"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_morris_look_left.hex",
-          "source_hash": "a234d67c6ad239aa602086e31980370edfaae9a9b6ac3da495d3723f4aa89dc2"
+          "path": "AugustNPC_morris_v2_56_look_left.hex",
+          "source_hash": "f6e53d961950bb413c70f72f4ebe39056667ed294289cc8efeca969d9a7dfb65"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_morris_look_right.hex",
-          "source_hash": "ca939d86460a25f7c2019df0af8bcf4beb18af9f8b67c14bcefbeeb4e681fb32"
+          "path": "AugustNPC_morris_v2_56_look_right.hex",
+          "source_hash": "11845ab0f6c07bcc7fd84c538e2f13fdd2f19b6c44e8d35069c5283c296d074e"
         }
       ]
     },
@@ -6695,36 +6695,36 @@
       "schema_version": 1,
       "id": "aug_npc_ruby",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 48,
+      "hex_height": 48,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        24,
+        48
       ],
       "world_size": [
-        32,
-        32
+        24,
+        24
       ],
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "955313330947c86c70a1eefb86f1654d38022e906a457cd9772d44dc8c931ef9",
+      "source_hash": "fd7667eaa2af5298b04901f3da9db818a87d3b4f04234b129a4ee152829fac1f",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_ruby_normal.hex",
-          "source_hash": "629af4cbdbdf0007eed4e4e396dfd19962d79d951ecc7f8275ac3c1e5aee6ce0"
+          "path": "AugustNPC_ruby_v2_48_normal.hex",
+          "source_hash": "d0fc334c53084061a2f84ac453e61a6c781afc27d7cf9ccfc6ee8d56a7c51d34"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_ruby_look_left.hex",
-          "source_hash": "43f0253f8d83c5980a92b23acaac4be5b24ab24124250ba7b0d67e7e92367461"
+          "path": "AugustNPC_ruby_v2_48_look_left.hex",
+          "source_hash": "4fc3b3204be3de1c1fa3b641e05982632e4fdde56cdebb2577cac7b022127072"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_ruby_look_right.hex",
-          "source_hash": "5168aa6d047d00537c5bdf80f8cd0ab3d85dc6482dac55133d4b008a0f422d81"
+          "path": "AugustNPC_ruby_v2_48_look_right.hex",
+          "source_hash": "1edfa8b01fb8804bd6f1512d65267ec918eceaec6fc361df9e06da9516b61281"
         }
       ]
     },
@@ -6732,12 +6732,12 @@
       "schema_version": 1,
       "id": "aug_npc_fuji",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6746,22 +6746,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "82b116c42124d3f5a366514ba7835b6e29509ceb124cf26941cbd3cd47c038d8",
+      "source_hash": "b2c175c273b6c52a82c04c0ac352bb585364ea23ebef2ffa5ce2b83e4af8846d",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_fuji_normal.hex",
-          "source_hash": "9729e461b8d829dbab4bd4c0e9b28351b30ce8e8b68702c8adf627721f4896d3"
+          "path": "AugustNPC_fuji_v2_64_normal.hex",
+          "source_hash": "7fb75eeb1456bdc5b2375f99a01270102985e9727f29a32e139b6aec3ccc75e1"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_fuji_look_left.hex",
-          "source_hash": "1d16ac58011c1fb5e0412ad3650b07e95f7369484b6df7e78f8636aab26b8cc3"
+          "path": "AugustNPC_fuji_v2_64_look_left.hex",
+          "source_hash": "785fa9c5c42fc8de999517322734d5f31e744ae5fac2894d5a94139334dc88e9"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_fuji_look_right.hex",
-          "source_hash": "e356a512c777f9d016b0393137ede83088ac47fa559184585ff363804c960f0a"
+          "path": "AugustNPC_fuji_v2_64_look_right.hex",
+          "source_hash": "98c38e269fbec8c12cfd6b657f90e8f23201399e6bbb9da98aaa076e8e11f3a6"
         }
       ]
     },
@@ -6769,12 +6769,12 @@
       "schema_version": 1,
       "id": "aug_npc_yumesaki",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6783,22 +6783,22 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "204790f25e5f3b00a4d0238eaa63dd79494cff0d3a0bf5a22bddfad34baedb99",
+      "source_hash": "6e4865c8446d18df9ec34736ada1bd820cf79d21813a708b55c8128b1ebdf105",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_yumesaki_normal.hex",
-          "source_hash": "50ecf0bf1940fc35bbeb7b9aa3a2a9288ade9a01fe6781dafc7a00e31527a8c5"
+          "path": "AugustNPC_yumesaki_v2_64_normal.hex",
+          "source_hash": "da0e6822904fd4c74f64c61b7b08a1803d34f775a708a8d4bc4ac99a400acfe8"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_yumesaki_look_left.hex",
-          "source_hash": "80dee934c7f6019b54ceb79e8b0a7eb5cd16e5cab650191714ba2b6800923524"
+          "path": "AugustNPC_yumesaki_v2_64_look_left.hex",
+          "source_hash": "6ac1de058a9f3589c575d0171116abe34eee3e6718063322d95178666d34556f"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_yumesaki_look_right.hex",
-          "source_hash": "8cdfd00a7881562eb4690694eb8c0f3c9687a62e86278f711bebf7070a988e2d"
+          "path": "AugustNPC_yumesaki_v2_64_look_right.hex",
+          "source_hash": "7891c8e477713a656886a184965c93bb63bbc57abb505bc338b7371451ce6a81"
         }
       ]
     },
@@ -6806,12 +6806,12 @@
       "schema_version": 1,
       "id": "aug_npc_miyano",
       "palette_id": "pyxel_default_16",
-      "hex_width": 32,
-      "hex_height": 32,
+      "hex_width": 64,
+      "hex_height": 64,
       "colkey": 0,
       "anchor_px": [
-        16,
-        32
+        32,
+        64
       ],
       "world_size": [
         32,
@@ -6820,24 +6820,1185 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "reactive_pose_set",
-      "source_hash": "423d6b692297585c291395091785ece2e59f91283a237f270b82b7dbfc5ad997",
+      "source_hash": "143220b78b18f29f2d4c22e22c7024cb893cfe92b14a21870e3f61ed90361e7f",
       "frames": [
         {
           "id": "normal",
-          "path": "AugustNPC_miyano_normal.hex",
-          "source_hash": "667ccfedb69394d9491c86456aa9fb9d848da511fcc6258411e8fbe36c88ec66"
+          "path": "AugustNPC_miyano_v2_64_normal_facefix.hex",
+          "source_hash": "d7361b16c400cc797e6ca3e32cd27e70d97c673ebf16f400f2bd8f402368ccc1"
         },
         {
           "id": "look_left",
-          "path": "AugustNPC_miyano_look_left.hex",
-          "source_hash": "817ab8fd586d10804bda30c9210edc7f74bf2f839c1b01502352c8c401c29213"
+          "path": "AugustNPC_miyano_v2_64_look_left_facefix.hex",
+          "source_hash": "0d91055c404223dab1c9cf40c2fbfefc1dd6b8d8284761154499bba239f0d102"
         },
         {
           "id": "look_right",
-          "path": "AugustNPC_miyano_look_right.hex",
-          "source_hash": "e2d315bd0a9a4c1970a250fd9a2890a464978f7433e60a0a07b34fd00724d4ca"
+          "path": "AugustNPC_miyano_v2_64_look_right_facefix.hex",
+          "source_hash": "683f6161c7f5d8d77830beccd1c0f12b5ffb6395c2c8459f7c67703010024ded"
         }
-      ]
+      ],
+      "face_refinement": "local_eyes_or_teeth_only_v1"
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_iwama_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "6521fdca579bae1f079d5fc28ed44d6085c7064cfb3b726f73cf9dc37bc1a70d",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_iwama_dialogue_normal_232.hex",
+          "source_hash": "6521fdca579bae1f079d5fc28ed44d6085c7064cfb3b726f73cf9dc37bc1a70d"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_candidate_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "iwama_bust_normal",
+        "generated_source": "exec-6210dcc0-d948-4c5f-97e2-c680bdf079a4.png",
+        "source_sha256": "969f88fed3586c83ef5a26e67275549acc8a5a6d29ef124504bb7fd71bc7c86b"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_iwama_dialogue_smug",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "dd5f8163d41457e2d34668b8094dc1bfd20e731f89061165827d4d32aaf565ff",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_iwama_dialogue_smug_232.hex",
+          "source_hash": "dd5f8163d41457e2d34668b8094dc1bfd20e731f89061165827d4d32aaf565ff"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_candidate_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "iwama_bust_smug",
+        "generated_source": "exec-6210dcc0-d948-4c5f-97e2-c680bdf079a4.png",
+        "source_sha256": "969f88fed3586c83ef5a26e67275549acc8a5a6d29ef124504bb7fd71bc7c86b"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_merrill_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "a3cf66bae501ba6f455e737551a8423a9ea39add65e9c91738863410b8b27f71",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_merrill_dialogue_normal_232.hex",
+          "source_hash": "a3cf66bae501ba6f455e737551a8423a9ea39add65e9c91738863410b8b27f71"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_candidate_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "merrill_matte",
+        "generated_source": "exec-87dd07dc-cf1e-4a18-a62e-b9d2ffb6fb3d.png",
+        "source_sha256": "1d542de32f5980dddb26fd13df5da8d9c0b9ad8d5e27088c5a7628cdb4d83951"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_morris_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "bd39e8319331c21495c16a37578897c57eacb785c9629f4df1ec6a419094a976",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_morris_dialogue_normal_232.hex",
+          "source_hash": "bd39e8319331c21495c16a37578897c57eacb785c9629f4df1ec6a419094a976"
+        }
+      ],
+      "source_policy": "w4_dialogue_detail_candidate_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "morris_matte",
+        "generated_source": "exec-6b6852c2-5138-4bc0-9008-f9568f7db4be.png",
+        "source_sha256": "76b12ad1e330310b144549579a91b5d71d644904ac6e970218b3a37359b223e3"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_ruby_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "c3cb5706ee74cd6dc03cddbdac971234419349419a2c08eb43dd1505e590c400",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_ruby_dialogue_normal_232.hex",
+          "source_hash": "c3cb5706ee74cd6dc03cddbdac971234419349419a2c08eb43dd1505e590c400"
+        }
+      ],
+      "source_policy": "w4_dialogue_detail_candidate_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "ruby_matte",
+        "generated_source": "exec-f5c49de6-d2c6-4509-9f3d-9b90c24c1df2.png",
+        "source_sha256": "93a3e6513d5526a3c0ac5720d76ad16e05dbbb69bd6a58999a8c31769b00757f"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_ramel_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_ramel_dialogue_normal_232.hex",
+          "source_hash": "22e9f56f035f5a559cf4d6f1e062ab3455dc71e8a3ad826ab3e565d211c31864"
+        },
+        {
+          "id": "half",
+          "path": "w4_ramel_dialogue_normal_232_half.hex",
+          "source_hash": "1942e5e3ee9c3b8e14c0882809d6f5b5b6659d00590b54550ece15043cf00a1a"
+        },
+        {
+          "id": "closed",
+          "path": "w4_ramel_dialogue_normal_232_closed.hex",
+          "source_hash": "ec9adfdceb308d04dc2e377fea5cd7a8917beb3cfc84922f9d66e90ecf50af39"
+        }
+      ],
+      "source_hash": "2c01ee24d12a1d15f0d78ae5cdf119afc26f7ba999355e3940350513c19a0d65",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_blink_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "nervous_elf_woodsman",
+        "generated_sheet": "exec-fa715747-5531-4b84-b0e6-51b4cd6f4ae8.png",
+        "generated_sha256": "26f5e9510f3e155fcc7a8f5362d0ac9bf5afc4544f784a4679edb404083e4d17",
+        "eye_regions": [
+          [
+            78,
+            98,
+            112,
+            118
+          ],
+          [
+            125,
+            94,
+            160,
+            113
+          ]
+        ],
+        "original_base_retained": true
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_ramel_dialogue_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_ramel_dialogue_smile_232.hex",
+          "source_hash": "3bf3e961fbfd258b66719b4b87e3462d9c0ab5fab6c128f230305632afcbace9"
+        },
+        {
+          "id": "open",
+          "path": "w4_ramel_dialogue_smile_232_open.hex",
+          "source_hash": "c8a324d4043ffd9b48027478a453df62d869ad237258d506a7c2cc180b067795"
+        },
+        {
+          "id": "half",
+          "path": "w4_ramel_dialogue_smile_232_half.hex",
+          "source_hash": "6ffcffd40feb4149e0cde443b560eeb742a7163b5783ae38e318c913c8f98cdc"
+        }
+      ],
+      "source_hash": "b3c3fc25bb5a9d1534be2190364fe534f5c4fa99e48d8bddaeae5cdf03297b9d",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_blink_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "nervous_elf_woodsman",
+        "generated_sheet": "exec-fa715747-5531-4b84-b0e6-51b4cd6f4ae8.png",
+        "generated_sha256": "26f5e9510f3e155fcc7a8f5362d0ac9bf5afc4544f784a4679edb404083e4d17",
+        "eye_regions": [
+          [
+            78,
+            98,
+            112,
+            118
+          ],
+          [
+            125,
+            94,
+            160,
+            113
+          ]
+        ],
+        "original_base_retained": true
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_hero_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_hero_dialogue_normal_232.hex",
+          "source_hash": "9b538a6dd269bb3651cdd1824edf7f4833b156e2aa79a3e8ba6bd5c55f7fc877"
+        },
+        {
+          "id": "half",
+          "path": "w4_hero_dialogue_normal_232_half.hex",
+          "source_hash": "7be70ca6dd179449673b3a114c10f0628d2689f5dfe55b6084aa2d24ab93c4e3"
+        },
+        {
+          "id": "closed",
+          "path": "w4_hero_dialogue_normal_232_closed.hex",
+          "source_hash": "2132ec11902eecb972bf20e82c06ad87d07a05710fc02f34836a3d418a300a4d"
+        }
+      ],
+      "source_hash": "d18cc8e34c998ad8b99b4229e57d16265c67757b29f454fd77cbb5fb96997c5d",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_blink_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "smug_blond_hero",
+        "generated_sheet": "exec-ad60dea1-19e9-4aca-a407-4877b43f32a9.png",
+        "generated_sha256": "b79b9f26d9f29a37f1bb93f004d3274e26d4d9fefff611c8a8f129c87c671a49",
+        "eye_regions": [
+          [
+            96,
+            73,
+            135,
+            96
+          ],
+          [
+            140,
+            89,
+            166,
+            110
+          ]
+        ],
+        "original_base_retained": true
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_hero_dialogue_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_hero_dialogue_smile_232.hex",
+          "source_hash": "bccbf5b804d2e68723fe63984c99e3acdd5019d21e3d96fb6c0d84c5d53b28eb"
+        },
+        {
+          "id": "open",
+          "path": "w4_hero_dialogue_smile_232_open.hex",
+          "source_hash": "36e10e0c99d97639f86b0a753d6fa9563ffc293342a941347c8f9cd9726c266a"
+        },
+        {
+          "id": "half",
+          "path": "w4_hero_dialogue_smile_232_half.hex",
+          "source_hash": "b72575b61cb4d9830fc8a15dad091209632284b4ebb7f6772ac0b9f36ca37374"
+        }
+      ],
+      "source_hash": "6d12a4326acc9d8b289d2a3409c928d2fcff31f7e91087219199aa1c26d8c9b0",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_blink_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "smug_blond_hero",
+        "generated_sheet": "exec-ad60dea1-19e9-4aca-a407-4877b43f32a9.png",
+        "generated_sha256": "b79b9f26d9f29a37f1bb93f004d3274e26d4d9fefff611c8a8f129c87c671a49",
+        "eye_regions": [
+          [
+            96,
+            73,
+            135,
+            96
+          ],
+          [
+            140,
+            89,
+            166,
+            110
+          ]
+        ],
+        "original_base_retained": true
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_mina_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_mina_dialogue_normal_232.hex",
+          "source_hash": "bbe5cca43b93b69cfab0704700d9e53447b133bac8fb1a389bd5014d3f019d52"
+        },
+        {
+          "id": "half",
+          "path": "w4_mina_dialogue_normal_232_half.hex",
+          "source_hash": "0138ec73b232398901fb97d57571ebb2fc87aeca6f5a3d9e91f419e2fc8c6ca4"
+        },
+        {
+          "id": "closed",
+          "path": "w4_mina_dialogue_normal_232_closed.hex",
+          "source_hash": "b95bd8d9c71ef25b4d123e5200f07ddbcfbd4cec8aa4035ead5608bcc359cd5b"
+        }
+      ],
+      "source_hash": "63bcce0a4f59a866d9c0fa9ba33aade4f5d91e8363abaa72cb3b3748a39ffb79",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_blink_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "succubus_green",
+        "generated_sheet": "exec-955a9c72-52e3-4bdd-ab9a-7fb648b3d0c6.png",
+        "generated_sha256": "668f67e9d8f78576a9f1f2364bbcb5876af76cad8a22b5aaea2d09d9aaaf207d",
+        "eye_regions": [
+          [
+            80,
+            89,
+            117,
+            113
+          ],
+          [
+            125,
+            96,
+            157,
+            121
+          ]
+        ],
+        "original_base_retained": false
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_mina_dialogue_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_mina_dialogue_smile_232.hex",
+          "source_hash": "9c32774bd4a8e92632d2f02e05864c3c29b73ee8030c407bbfbcc16bd1fab1b2"
+        },
+        {
+          "id": "open",
+          "path": "w4_mina_dialogue_smile_232_open.hex",
+          "source_hash": "47be4838a74c22b55ad7e01b30b074596b28eb8470223ebf57ee995ed433ac02"
+        },
+        {
+          "id": "half",
+          "path": "w4_mina_dialogue_smile_232_half.hex",
+          "source_hash": "591cbbb98cb73af3156d079d9db51dddb6c018a59e5ef386668fba663f3980e2"
+        }
+      ],
+      "source_hash": "58f86822833b179ed89fb6499111f09f2f693bb2356cfc313176cf605e8be997",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_blink_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "succubus_green",
+        "generated_sheet": "exec-955a9c72-52e3-4bdd-ab9a-7fb648b3d0c6.png",
+        "generated_sha256": "668f67e9d8f78576a9f1f2364bbcb5876af76cad8a22b5aaea2d09d9aaaf207d",
+        "eye_regions": [
+          [
+            80,
+            89,
+            117,
+            113
+          ],
+          [
+            125,
+            96,
+            157,
+            121
+          ]
+        ],
+        "original_base_retained": false
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_grow_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_grow_dialogue_normal_232.hex",
+          "source_hash": "caabfa62bb02fb732bd7fecf6fd1d5bbd1a604f16c63ed39fe95fe56ae0ca983"
+        },
+        {
+          "id": "half",
+          "path": "w4_grow_dialogue_normal_232_half.hex",
+          "source_hash": "ce4478add19b2df2216d6ae1f6acec1fddbe6521998a5f7cdf8d7467e5c7d9e5"
+        },
+        {
+          "id": "closed",
+          "path": "w4_grow_dialogue_normal_232_closed.hex",
+          "source_hash": "3ef4fa5dade87eb04f79aaa8cb49179956ca8c968bae71e145054573edb56066"
+        }
+      ],
+      "source_hash": "b97ae3e1dba9d3adade5364fc0f0330304eba09b067fe6212f2f43d62a13059a",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_blink_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "tired_gray_oldman",
+        "generated_sheet": "exec-8d516ca6-e1a0-43e3-8c2e-83dc7f0fd080.png",
+        "generated_sha256": "8626947aff36c76af4e2b185559849104c560ab2f06c761b28bfa7a699f98a9e",
+        "eye_regions": [
+          [
+            72,
+            90,
+            104,
+            110
+          ],
+          [
+            110,
+            90,
+            144,
+            110
+          ]
+        ],
+        "original_base_retained": false
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_grow_dialogue_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "reactive_pose_set",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_grow_dialogue_smile_232.hex",
+          "source_hash": "6c5a967af132822c7034a8edde48a41b655a6b2e81ed95cf24b2c52db712951c"
+        },
+        {
+          "id": "open",
+          "path": "w4_grow_dialogue_smile_232_open.hex",
+          "source_hash": "408e749a2f644d2b2260843b801d3be6132704d8c376c43dbca746530de67bf3"
+        },
+        {
+          "id": "half",
+          "path": "w4_grow_dialogue_smile_232_half.hex",
+          "source_hash": "faad3a631dbf6616b8a5d9fd3085988b3926357a70e9f90b7e0bc24b10e6cc93"
+        }
+      ],
+      "source_hash": "e12a0dd55cf4ab47a6b120400a5e5e70b8fa1c57f1ba97911bebb1e8c31a89fd",
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_blink_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "tired_gray_oldman",
+        "generated_sheet": "exec-8d516ca6-e1a0-43e3-8c2e-83dc7f0fd080.png",
+        "generated_sha256": "8626947aff36c76af4e2b185559849104c560ab2f06c761b28bfa7a699f98a9e",
+        "eye_regions": [
+          [
+            72,
+            90,
+            104,
+            110
+          ],
+          [
+            110,
+            90,
+            144,
+            110
+          ]
+        ],
+        "original_base_retained": false
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_takanashi_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "61028d08ce6351749fd56a134acc5bef4dfc57b1dc7de5b173f9922e50a66616",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_takanashi_dialogue_normal_232.hex",
+          "source_hash": "61028d08ce6351749fd56a134acc5bef4dfc57b1dc7de5b173f9922e50a66616"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_candidate_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "takanashi_matte",
+        "generated_source": "exec-0ca276bb-f767-4656-ab59-d9e1a40ba2ae.png",
+        "source_sha256": "6036196471b74e5fe288150c722bfa9124792959a8685282da1be6e6f1e76773"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_yoake_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "9893fa252546dad48a496d639bf3641a5e7bcf2b20e0ad038e48eb4563849ee3",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_yoake_dialogue_normal_232.hex",
+          "source_hash": "9893fa252546dad48a496d639bf3641a5e7bcf2b20e0ad038e48eb4563849ee3"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_candidate_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "yoake_matte",
+        "generated_source": "exec-7c668e01-9497-4d5f-a54f-e6ec25bac706.png",
+        "source_sha256": "6369350e91eb8d7fe09369258be00f1162bd8ef940a0e38234f158c9f7d77287"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_sagan_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "425628a9b0433fbee048d6f1f0018e60c86ede4c86c353f77a23a58fc8e294fc",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_sagan_dialogue_normal_232.hex",
+          "source_hash": "425628a9b0433fbee048d6f1f0018e60c86ede4c86c353f77a23a58fc8e294fc"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_candidate_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "sagan_matte",
+        "generated_source": "exec-63618c31-22d1-46f0-9736-ed23d756518b.png",
+        "source_sha256": "6f3d07bf97ea0c594be06098f60b73a9521879e1671c864a3d3da8abc8f12c7f"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_ura_dialogue_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "7e5913b02c5f85df4a4224307253da70bd97b799b0086f382518aed486cb2d73",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_ura_dialogue_normal_232.hex",
+          "source_hash": "7e5913b02c5f85df4a4224307253da70bd97b799b0086f382518aed486cb2d73"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "w4_dialogue_detail_candidate_v1",
+      "ui_role": "w4_patrol_portrait",
+      "provenance": {
+        "reference_asset": "ura_matte",
+        "generated_source": "exec-dd787859-a0d0-4c12-9043-bc90fcce9329.png",
+        "source_sha256": "8db4a082d638243cab725059b7ca0a8cbf00db4662ecfaeb707e2b9b2c372aae"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_fuji_dialogue_identity_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 200,
+      "hex_height": 432,
+      "colkey": 8,
+      "anchor_px": [
+        100,
+        216
+      ],
+      "world_size": [
+        200,
+        432
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "4d05775be536c4709ffc0bb9b3b8c64475512e4a2b33983e04d89299884f5228",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_fuji_dialogue_identity_normal.hex",
+          "source_hash": "4d05775be536c4709ffc0bb9b3b8c64475512e4a2b33983e04d89299884f5228"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "reference_asset": "fuji_map_knees",
+        "generated_source": "exec-b030f16b-bb54-4b28-943c-c569d1fd7259.png",
+        "source_sha256": "5f33c317cd4b4a09a32ac88cf552797c0a9940a1b507a08f9e3eb2eb3662ef10",
+        "cell": null
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_yumesaki_dialogue_identity_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 200,
+      "hex_height": 432,
+      "colkey": 8,
+      "anchor_px": [
+        100,
+        216
+      ],
+      "world_size": [
+        200,
+        432
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "ec9ee1501ba14133b94c060f724ef4f8d53fc6fea978cba171d14ad63bb7daa6",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_yumesaki_dialogue_identity_normal_facefix.hex",
+          "source_hash": "ec9ee1501ba14133b94c060f724ef4f8d53fc6fea978cba171d14ad63bb7daa6"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "field_conversation_portrait",
+      "provenance": {
+        "reference_asset": "yumesaki_map_knees",
+        "generated_source": "exec-ba1f253b-5dc6-485f-8456-4315b8e34072.png",
+        "source_sha256": "d6177410b20440b3cb2738c07ba418f72b897ac28ce7debabaf3e37031dc7743",
+        "cell": null
+      },
+      "face_refinement": "local_eyes_or_teeth_only_v1"
+    },
+    {
+      "schema_version": 1,
+      "id": "w4_miyano_dialogue_identity_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 200,
+      "hex_height": 432,
+      "colkey": 8,
+      "anchor_px": [
+        100,
+        216
+      ],
+      "world_size": [
+        200,
+        432
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "c0599f65f7a2662989ce2996d71b80be93fc58e466bd65fa2db9970211b38008",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "w4_miyano_dialogue_identity_normal_facefix.hex",
+          "source_hash": "c0599f65f7a2662989ce2996d71b80be93fc58e466bd65fa2db9970211b38008"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "field_conversation_portrait",
+      "provenance": {
+        "reference_asset": "miyano_map_knees",
+        "generated_source": "exec-43abf256-6b0b-4b6d-be92-f049b741b05c.png",
+        "source_sha256": "98d6b893811be52df23e33ee6d650233bf6a9753d020bcae4cf07b3d40660744",
+        "cell": null
+      },
+      "face_refinement": "local_eyes_or_teeth_only_v1"
+    },
+    {
+      "schema_version": 1,
+      "id": "refined_fuji_counter_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "69bc7a2362512ba36e3fc4c6ac438dc0c09e565fa133a5e9afd17e4af33021f2",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "refined_fuji_counter_normal.hex",
+          "source_hash": "69bc7a2362512ba36e3fc4c6ac438dc0c09e565fa133a5e9afd17e4af33021f2"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "reference_asset": "fuji_matte",
+        "generated_source": "exec-8c77d34b-13d6-4ad5-b8a4-5220565b12c2.png",
+        "source_sha256": "eee14f541c2c0638328a043fa430f22cfe9dec7c91bc4ecabbdf281077d96415",
+        "cell": null
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "refined_miyano_counter_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "ffe3e3e8b69fd853e79dc69bbd3a602175044db9eb6341634eb66068cbd0d0b2",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "refined_miyano_counter_normal.hex",
+          "source_hash": "ffe3e3e8b69fd853e79dc69bbd3a602175044db9eb6341634eb66068cbd0d0b2"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "reference_asset": "miyano_bust_normal",
+        "generated_source": "exec-6bcf5cea-b2dc-4841-a05f-7439fde374db.png",
+        "source_sha256": "b79a2112fcd9104b3a2775cdc47fbd888659bd4f96377fb64d2d7c630ecc281a",
+        "cell": null
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "refined_yumesaki_counter_normal",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "49ca9e0dc2eb995b4c2d5889ffc1dea4bd4bc65294b6c244f4aea29c40254797",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "refined_yumesaki_counter_normal_facefix.hex",
+          "source_hash": "49ca9e0dc2eb995b4c2d5889ffc1dea4bd4bc65294b6c244f4aea29c40254797"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "reference_asset": "yumesaki_bust_normal",
+        "generated_source": "exec-1c4d4a9a-7e7f-4d39-b40b-3e56d8ec2e99.png",
+        "source_sha256": "d9df016b0701faa1f67acff46a86c9f97428f62c0c23379a259bf998e0ca1b8b",
+        "cell": 0
+      },
+      "face_refinement": "local_eyes_or_teeth_only_v1"
+    },
+    {
+      "schema_version": 1,
+      "id": "refined_yumesaki_counter_smile",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "2627c3b049df486ef57701c2832eebda6a6deafbe1eb2ecbfabbea61bb815af4",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "refined_yumesaki_counter_smile_facefix.hex",
+          "source_hash": "2627c3b049df486ef57701c2832eebda6a6deafbe1eb2ecbfabbea61bb815af4"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "reference_asset": "yumesaki_bust_smile",
+        "generated_source": "exec-1c4d4a9a-7e7f-4d39-b40b-3e56d8ec2e99.png",
+        "source_sha256": "d9df016b0701faa1f67acff46a86c9f97428f62c0c23379a259bf998e0ca1b8b",
+        "cell": 1
+      },
+      "face_refinement": "local_eyes_or_teeth_only_v1"
+    },
+    {
+      "schema_version": 1,
+      "id": "refined_yumesaki_counter_worried",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "42b6d4b0de3e865b4909bcab626acfec1c83c4c226dfaa1212cf8b68931b1f01",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "refined_yumesaki_counter_worried_facefix.hex",
+          "source_hash": "42b6d4b0de3e865b4909bcab626acfec1c83c4c226dfaa1212cf8b68931b1f01"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "reference_asset": "yumesaki_bust_worried",
+        "generated_source": "exec-1c4d4a9a-7e7f-4d39-b40b-3e56d8ec2e99.png",
+        "source_sha256": "d9df016b0701faa1f67acff46a86c9f97428f62c0c23379a259bf998e0ca1b8b",
+        "cell": 2
+      },
+      "face_refinement": "local_eyes_or_teeth_only_v1"
+    },
+    {
+      "schema_version": 1,
+      "id": "refined_yumesaki_counter_surprised",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "552c762490d31a960736025984567848e635abf07854053471146e53bfcb660c",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "refined_yumesaki_counter_surprised_facefix.hex",
+          "source_hash": "552c762490d31a960736025984567848e635abf07854053471146e53bfcb660c"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "reference_asset": "yumesaki_bust_surprised",
+        "generated_source": "exec-1c4d4a9a-7e7f-4d39-b40b-3e56d8ec2e99.png",
+        "source_sha256": "d9df016b0701faa1f67acff46a86c9f97428f62c0c23379a259bf998e0ca1b8b",
+        "cell": 3
+      },
+      "face_refinement": "local_eyes_or_teeth_only_v1"
+    },
+    {
+      "schema_version": 1,
+      "id": "refined_yumesaki_counter_thinking",
+      "palette_id": "pyxel_default_16",
+      "hex_width": 232,
+      "hex_height": 232,
+      "colkey": 8,
+      "anchor_px": [
+        116,
+        116
+      ],
+      "world_size": [
+        232,
+        232
+      ],
+      "projection_mode": "upright_height_billboard_v1",
+      "flip_policy": "none",
+      "animation": "static",
+      "source_hash": "174fdb0325b29afd30e45db1d3c87fc05607afba52cbcac59891182ab5319d5d",
+      "frames": [
+        {
+          "id": "normal",
+          "path": "refined_yumesaki_counter_thinking_facefix.hex",
+          "source_hash": "174fdb0325b29afd30e45db1d3c87fc05607afba52cbcac59891182ab5319d5d"
+        }
+      ],
+      "render_mode": "screen_space_portrait",
+      "source_policy": "dialogue_identity_refinement_v1",
+      "ui_role": "office_visitor_portrait",
+      "provenance": {
+        "reference_asset": "yumesaki_bust_thinking",
+        "generated_source": "exec-1c4d4a9a-7e7f-4d39-b40b-3e56d8ec2e99.png",
+        "source_sha256": "d9df016b0701faa1f67acff46a86c9f97428f62c0c23379a259bf998e0ca1b8b",
+        "cell": 4
+      },
+      "face_refinement": "local_eyes_or_teeth_only_v1"
     }
   ],
   "notes": [

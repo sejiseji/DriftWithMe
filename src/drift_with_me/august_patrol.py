@@ -17,6 +17,7 @@ class PatrolNPC:
     portrait: str
     line: str
     large: bool = False
+    map_size: float = 32
 
 
 NPCS = (
@@ -55,9 +56,23 @@ NPCS = (
         "花を眺めていたところなんです",
     ),
     PatrolNPC(
-        "morris", "モリス", (800, 820), "aug_npc_morris", "morris_matte", "今日は二人で来ています"
+        "morris",
+        "モリス",
+        (836, 832),
+        "aug_npc_morris",
+        "morris_matte",
+        "今日は二人で来ています",
+        map_size=28,
     ),
-    PatrolNPC("ruby", "ルビィ", (824, 810), "aug_npc_ruby", "ruby_matte", "お花、いっぱいあるね！"),
+    PatrolNPC(
+        "ruby",
+        "ルビィ",
+        (848, 822),
+        "aug_npc_ruby",
+        "ruby_matte",
+        "お花、いっぱいあるね！",
+        map_size=24,
+    ),
     PatrolNPC(
         "fuji",
         "フジ",
@@ -128,6 +143,65 @@ NPCS = (
     ),
 )
 BY_ID = {"aug_patrol_" + n.key: n for n in NPCS}
+# W4-only art aliases; original counter identities and save/dialogue data stay intact.
+W4_DIALOGUE_PORTRAITS = {
+    "iwama": "w4_iwama_dialogue_normal",
+    "merrill": "w4_merrill_dialogue_normal",
+    "morris": "w4_morris_dialogue_normal",
+    "ruby": "w4_ruby_dialogue_normal",
+    "ramel": "w4_ramel_dialogue_normal",
+    "hero": "w4_hero_dialogue_normal",
+    "mina": "w4_mina_dialogue_normal",
+    "grow": "w4_grow_dialogue_normal",
+    "takanashi": "w4_takanashi_dialogue_normal",
+    "yoake": "w4_yoake_dialogue_normal",
+    "sagan": "w4_sagan_dialogue_normal",
+    "ura": "w4_ura_dialogue_normal",
+}
+
+
+W4_LARGE_DIALOGUE_PORTRAITS = {
+    "fuji": "w4_fuji_dialogue_identity_normal",
+    "yumesaki": "w4_yumesaki_dialogue_identity_normal",
+    "miyano": "w4_miyano_dialogue_identity_normal",
+}
+
+
+# Optional W4 expression assets; never extend the historical counter expression registry.
+W4_DIALOGUE_SMILE_PORTRAITS = {
+    "ramel": "w4_ramel_dialogue_smile",
+    "hero": "w4_hero_dialogue_smile",
+    "mina": "w4_mina_dialogue_smile",
+    "grow": "w4_grow_dialogue_smile",
+}
+
+
+W4_BLINK_ORIGINAL_IDS = {
+    "ramel": "nervous_elf_woodsman",
+    "hero": "smug_blond_hero",
+    "mina": "succubus_green",
+    "grow": "tired_gray_oldman",
+}
+
+
+def patrol_dialogue_frame(app, key, asset_id):
+    original_id = W4_BLINK_ORIGINAL_IDS.get(key)
+    if (
+        original_id is None
+        or asset_id not in {W4_DIALOGUE_PORTRAITS.get(key), W4_DIALOGUE_SMILE_PORTRAITS.get(key)}
+        or not asset_id.startswith("w4_")
+    ):
+        return None
+    intervals = (
+        app.runtime.raw.get("ui", {})
+        .get("office_portrait_blink_interval_frames", {})
+        .get(original_id)
+    )
+    options = {} if intervals is None else {"intervals": tuple(intervals)}
+    pose = app.office_portrait_blink_pose(getattr(app, "frame", 0), original_id, **options)
+    if asset_id == W4_DIALOGUE_SMILE_PORTRAITS[key]:
+        return {None: "open", "half": "half", "closed": "normal"}[pose]
+    return "normal" if pose is None else pose
 
 
 class PatrolMixin:
@@ -163,10 +237,10 @@ class PatrolMixin:
                     kind="sprite_prop",
                     position=[*n.position[:1], 0, n.position[1]],
                     visual=n.map_asset,
-                    sprite_world_size=[32, 32],
+                    sprite_world_size=[n.map_size, n.map_size],
                     solid=False,
                     inspectable=True,
-                    height=30,
+                    height=n.map_size - 2,
                     text_key=ident,
                 )
             )
@@ -242,11 +316,14 @@ class PatrolMixin:
         c = self.patrol_dialogue
         n = BY_ID[c.target_id]
         if n.large:
-            self.draw_field_character_portrait(n.portrait)
+            self.draw_field_character_portrait(W4_LARGE_DIALOGUE_PORTRAITS.get(n.key, n.portrait))
         else:
             rect = self.office_rect(40, 48, 74, 74)
             self.draw_panel_frame(rect, fill=0, inner=12)
-            self.draw_office_portrait(self.office_rect(44, 52, 66, 66), n.portrait)
+            portrait = W4_DIALOGUE_PORTRAITS.get(n.key, n.portrait)
+            frame_id = patrol_dialogue_frame(self, n.key, portrait)
+            options = {} if frame_id is None else {"frame_id": frame_id}
+            self.draw_office_portrait(self.office_rect(44, 52, 66, 66), portrait, **options)
         panel = self.office_rect(40, 126, 432, 100)
         self.draw_panel_frame(panel, fill=0, inner=12)
         self.draw_office_text_in_rect(self.office_rect(50, 133, 300, 18), n.name, 12)

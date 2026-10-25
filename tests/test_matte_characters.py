@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from drift_with_me.app import OFFICE_STATIC_PORTRAIT_IDS
+from drift_with_me.app import COUNTER_REFINED_PORTRAITS, OFFICE_STATIC_PORTRAIT_IDS
 from drift_with_me.office import CaseState
 from drift_with_me.save_state import decode, encode, snapshot
 from drift_with_me.week_cycle import WorkWeek, load_week_office
@@ -34,7 +34,7 @@ def test_static_portrait_footprint_and_no_blink_contamination(profile, portrait)
         for tick in (0, 170, 999):
             app.frame = tick
             app.draw_office_portrait(rect, portrait, smile=smile)
-    assert requests == [portrait] * 6 and len(calls) == 6
+    assert requests == [COUNTER_REFINED_PORTRAITS.get(portrait, portrait)] * 6 and len(calls) == 6
     assert all(c == calls[0] for c in calls)
     args, kw = calls[0]
     scale = kw["scale"]
