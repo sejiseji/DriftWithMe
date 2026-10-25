@@ -43,6 +43,7 @@ class AudioEngine:
         }
         self.muted = not bool(config["audio"]["enabled_by_default"])
         self._pyxel = None
+        self._lifecycle_suspended = False
         self._sound_slots: dict[str, int] = {}
         self._processed_event_ids: set[int] = set()
 
@@ -57,17 +58,32 @@ class AudioEngine:
         self.muted = not self.muted
         return self.muted
 
+    def suspend_for_lifecycle(self) -> None:
+        if self._lifecycle_suspended:
+            return
+        self._lifecycle_suspended = True
+        if self._pyxel is not None:
+            self._pyxel.stop()
+
+    def resume_from_lifecycle(self) -> None:
+        self._lifecycle_suspended = False
+
     def reset_event_history(self) -> None:
         self._processed_event_ids.clear()
 
     def play_preview(self, event_name: str) -> None:
-        if self._pyxel is None or self.muted or event_name not in self.defs:
+        if (
+            self._pyxel is None
+            or self.muted
+            or self._lifecycle_suspended
+            or event_name not in self.defs
+        ):
             return
         definition = self.defs[event_name]
         self._pyxel.play(definition.channel, self._sound_slots[definition.sound_key])
 
     def play_events(self, events: list[GameEvent]) -> None:
-        if self._pyxel is None or self.muted:
+        if self._pyxel is None or self.muted or self._lifecycle_suspended:
             return
         selected: dict[int, tuple[int, int, AudioEventDef]] = {}
         for event in events:

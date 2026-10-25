@@ -46,7 +46,7 @@ def test_miyano_all_map_poses_have_contiguous_white_teeth_and_fixed_body(pose, s
 
 def test_miyano_large_teeth_change_is_white_only_and_fuji_is_not_edited():
     f = ASSETS["w4_miyano_dialogue_identity_normal"]["frames"][0]
-    old = pixels(f["path"].replace("_facefix.hex", ".hex"))
+    old = pixels("w4_miyano_dialogue_identity_normal.hex")
     new = pixels(f["path"])
     changed = [i for i, (a, b) in enumerate(zip(old, new, strict=True)) if a != b]
     assert changed and all(

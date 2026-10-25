@@ -43,6 +43,7 @@ from drift_with_me.july_week1 import (
 from drift_with_me.july_week2 import JulyWeek2Mixin
 from drift_with_me.july_week3 import JulyWeek3Mixin
 from drift_with_me.july_week4 import JulyWeek4Mixin
+from drift_with_me.lifecycle import LifecycleMixin
 from drift_with_me.map_objectives import MapObjectivesMixin
 from drift_with_me.math3d import (
     AffineCameraState,
@@ -469,6 +470,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
+    LifecycleMixin,
     PatrolMixin,
     AugustMixin,
     SwarmAppMixin,
@@ -662,6 +664,8 @@ class DriftWithMeApp(
         self.projection_mode = "affine" if self.projection_mode == "perspective" else "perspective"
 
     def update(self) -> None:
+        if self.lifecycle_update_blocked():
+            return
         pyxel = self.pyxel
         elapsed = self.consume_elapsed()
         self.presentation_time += elapsed
@@ -3771,6 +3775,14 @@ class DriftWithMeApp(
         )
 
     def draw(self) -> None:
+        if not self.lifecycle_draw_allowed():
+            return
+        try:
+            self.draw_active_scene()
+        finally:
+            self.lifecycle_did_draw()
+
+    def draw_active_scene(self) -> None:
         if self.draw_august_overlay():
             return
         if getattr(self, "swarm_test_field_active", False) and self.screen in (

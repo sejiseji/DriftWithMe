@@ -202,6 +202,7 @@ HOST_JS = """(() => {
   };
 
   const onPointerDown = (event) => {
+    if (window.__driftWithMeLifecycle?.active === false) return;
     const position = eventToLogical(event);
     if (!position.inside || activePointerId !== null) {
       return;
@@ -236,6 +237,7 @@ HOST_JS = """(() => {
     }
     const position = eventToLogical(event);
     pointer.down = false;
+    pointer.pressed = false;
     pointer.released = true;
     pointer.x = position.x;
     pointer.y = position.y;
@@ -248,6 +250,7 @@ HOST_JS = """(() => {
   const cancelPointer = () => {
     activePointerId = null;
     pointer.down = false;
+    pointer.pressed = false;
     pointer.released = true;
     pointer.inside = false;
   };
@@ -311,6 +314,24 @@ def copy_runtime_files(root: Path, app_dir: Path) -> None:
             source_root, Path(directory), names
         ),
     )
+
+
+# Install the lifecycle gate after pointer helpers, before the runtime starts.
+HOST_JS = (
+    HOST_JS.replace(
+        '  window.addEventListener("blur", cancelPointer, { passive: true });',
+        Path(__file__).with_name("web_lifecycle.js").read_text(encoding="utf-8"),
+    )
+    .replace(
+        '  document.addEventListener("visibilitychange", () => {\n'
+        "    if (document.hidden) {\n"
+        "      cancelPointer();\n"
+        "    }\n"
+        "  }, { passive: true });\n",
+        "",
+    )
+    .replace("    down: false,", "    down: false,", 1)
+)
 
 
 def runtime_files(app_dir: Path) -> list[Path]:

@@ -5930,12 +5930,12 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "static",
-      "source_hash": "e122170777ee3bc767ad2dd2203bba75b29eb177a3e0f0d35ea9b6b9c2d23232",
+      "source_hash": "3af4de22914089b1e470c8cf9b3c515364a8614362178781abf8a52aaba97d5b",
       "frames": [
         {
           "id": "idle_00",
-          "path": "Miyano_map_knees_normal.hex",
-          "source_hash": "e122170777ee3bc767ad2dd2203bba75b29eb177a3e0f0d35ea9b6b9c2d23232"
+          "path": "Miyano_map_knees_teeth_continuous.hex",
+          "source_hash": "3af4de22914089b1e470c8cf9b3c515364a8614362178781abf8a52aaba97d5b"
         }
       ],
       "render_mode": "screen_space_portrait",
@@ -5947,7 +5947,8 @@
         "hex_file_sha256": "3268f1f6e30d46febfb255d31396f44a10c89342a2c711638f91b59f84834c62"
       },
       "source_library_id": "libfile_53996f844e8c8191b91d029420398969",
-      "source_library_version": 0
+      "source_library_version": 0,
+      "teeth_refinement": "continuous_white_band_for_native_downscale_v1"
     },
     {
       "schema_version": 1,
@@ -7724,12 +7725,12 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "static",
-      "source_hash": "c0599f65f7a2662989ce2996d71b80be93fc58e466bd65fa2db9970211b38008",
+      "source_hash": "d017f1eaa797efee10f309497defd17c2330d10246ccabd22a8973d86a8a7b1d",
       "frames": [
         {
           "id": "normal",
-          "path": "w4_miyano_dialogue_identity_normal_facefix.hex",
-          "source_hash": "c0599f65f7a2662989ce2996d71b80be93fc58e466bd65fa2db9970211b38008"
+          "path": "w4_miyano_dialogue_teeth_continuous.hex",
+          "source_hash": "d017f1eaa797efee10f309497defd17c2330d10246ccabd22a8973d86a8a7b1d"
         }
       ],
       "render_mode": "screen_space_portrait",
@@ -7741,7 +7742,8 @@
         "source_sha256": "98d6b893811be52df23e33ee6d650233bf6a9753d020bcae4cf07b3d40660744",
         "cell": null
       },
-      "face_refinement": "local_eyes_or_teeth_only_v1"
+      "face_refinement": "local_eyes_or_teeth_only_v1",
+      "teeth_refinement": "continuous_white_band_for_native_downscale_v1"
     },
     {
       "schema_version": 1,
@@ -7797,12 +7799,12 @@
       "projection_mode": "upright_height_billboard_v1",
       "flip_policy": "none",
       "animation": "static",
-      "source_hash": "ffe3e3e8b69fd853e79dc69bbd3a602175044db9eb6341634eb66068cbd0d0b2",
+      "source_hash": "445e1abcc093f6af5ba9be9edf5a78d5bb105deedd5c719a12f95721add6b8ae",
       "frames": [
         {
           "id": "normal",
-          "path": "refined_miyano_counter_normal.hex",
-          "source_hash": "ffe3e3e8b69fd853e79dc69bbd3a602175044db9eb6341634eb66068cbd0d0b2"
+          "path": "refined_miyano_counter_teeth_continuous.hex",
+          "source_hash": "445e1abcc093f6af5ba9be9edf5a78d5bb105deedd5c719a12f95721add6b8ae"
         }
       ],
       "render_mode": "screen_space_portrait",
@@ -7813,7 +7815,8 @@
         "generated_source": "exec-6bcf5cea-b2dc-4841-a05f-7439fde374db.png",
         "source_sha256": "b79a2112fcd9104b3a2775cdc47fbd888659bd4f96377fb64d2d7c630ecc281a",
         "cell": null
-      }
+      },
+      "teeth_refinement": "continuous_white_band_for_native_downscale_v1"
     },
     {
       "schema_version": 1,
