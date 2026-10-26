@@ -112,21 +112,6 @@ def test_held_pointer_cannot_retrigger_start_or_return(records):
     assert records.items == before
 
 
-@pytest.mark.parametrize("month,number", [(8, 1), (8, 2)])
-def test_unimplemented_month_cannot_jump_or_write(records, month, number):
-    app = debug_app(records)
-    before = deepcopy(records.items)
-    model = app.model
-    assert not app.jump_to_debug_week(WorkWeek(month, number))
-    app.week_debug_month = month
-    app.week_debug_selection = number
-    start = app.week_debug_rects()["start"]
-    app.mouse_pressed_in = lambda rect: rect == start
-    assert app.update_week_debug()
-    assert app.model is model
-    assert records.items == before
-
-
 def test_normal_launch_keeps_normal_store_and_resume(records):
     app = debug_app(records, enabled=False)
     assert not app.week_debug_active and not app.week_debug_menu_open

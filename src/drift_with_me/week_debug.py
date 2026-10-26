@@ -24,18 +24,54 @@ class TemporaryProgressStore:
     enabled = False
     message = "テスト中の進行は保存されません。"
 
-    def load(self):
-        return None
+    def __init__(self, entry_week=None):
+        self.entry_week = entry_week
+        self.session = None
+        self.has_record = False
 
-    def write(self, _payload) -> bool:
-        return False
+    def load(self):
+        from drift_with_me.save_state import decode
+
+        return (
+            decode(self.session, debug_entry=self.entry_week) if self.session is not None else None
+        )
+
+    def write(self, payload) -> bool:
+        from drift_with_me.save_state import decode, encode
+
+        try:
+            record = encode(payload)
+            decode(record, debug_entry=self.entry_week)
+        except Exception:
+            return False
+        self.session = record
+        self.has_record = True
+        return True
 
     def authorize_new_game(self) -> None:
-        pass
+        self.session = None
+        self.has_record = False
+
+
+class TemporaryBrowserStorage:
+    """A private dictionary, never browser localStorage or a desktop file."""
+
+    def __init__(self):
+        self.items = {}
+
+    def getItem(self, key):
+        return self.items.get(key)
+
+    def setItem(self, key, value):
+        self.items[key] = value
+
+
+IMPLEMENTED_DEBUG_WEEKS = frozenset(WorkWeek(m, n) for m in (6, 7, 8) for n in range(1, 5))
 
 
 class WeekDebugMixin(RingPuzzlePreviewMixin):
     def initialize_week_debug(self, enabled: bool) -> None:
+        self.week_debug_compact = False
         self.week_debug_active = enabled
         self.week_debug_menu_open = enabled
         self.week_debug_wait_release = False
@@ -48,14 +84,85 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         self.garden_props_previous_projection = None
         self.park_preview_week = None
         self.normal_progress_store = self.progress_store
+        self.normal_flowerbed_layout_store = getattr(self, "flowerbed_layout_store", None)
+        self.week_debug_flowerbed_store = None
         if enabled:
-            self.progress_store = TemporaryProgressStore()
-            self.saved_progress = None
+            self.begin_temporary_week_session()
+
+    def begin_temporary_week_session(self):
+        from drift_with_me.flowerbed import FlowerbedLayoutStore
+        from drift_with_me.save_state import ProgressStore
+
+        self.progress_store = TemporaryProgressStore()
+        self.saved_progress = None
+        self.week_debug_active = True
+        self.week_debug_flowerbed_store = FlowerbedLayoutStore(
+            ProgressStore(browser_storage=TemporaryBrowserStorage())
+        )
+        self.attach_temporary_flowerbed_store()
+
+    def attach_temporary_flowerbed_store(self):
+        if getattr(self, "flowerbed_layout_store", None) is not self.week_debug_flowerbed_store:
+            self.normal_flowerbed_layout_store = getattr(self, "flowerbed_layout_store", None)
+            self.flowerbed_layout_store = self.week_debug_flowerbed_store
+
+    def office_calendar_rect(self):
+        return self.office_rect(476, 0, 36, 27)
+
+    def office_calendar_visible(self):
+        from drift_with_me.app import AppScreen
+
+        return (
+            getattr(self, "screen", None) == AppScreen.OFFICE
+            and getattr(self, "week_transition", None) is None
+            and getattr(self, "field_transition", None) is None
+            and not getattr(self, "week_input_wait_for_release", False)
+            and not any(
+                getattr(self, name, None) is not None
+                for name in (
+                    "ring_preview",
+                    "park_preview_week",
+                    "portrait_preview",
+                    "garden_props_preview",
+                    "nudibranch_preview",
+                    "flowerbed_editor",
+                )
+            )
+        )
+
+    def draw_office_calendar(self):
+        rect = self.office_calendar_rect()
+        self.pyxel.rect(int(rect.x), int(rect.y), int(rect.width), int(rect.height), 1)
+        for x, y, w, h, color in (
+            (486, 7, 16, 14, 7),
+            (486, 10, 16, 1, 1),
+            (489, 5, 2, 5, 7),
+            (497, 5, 2, 5, 7),
+            (489, 14, 3, 3, 10),
+            (496, 14, 3, 3, 10),
+        ):
+            part = self.office_rect(x, y, w, h)
+            self.pyxel.rect(int(part.x), int(part.y), int(part.width), int(part.height), color)
 
     def week_debug_badge_rect(self):
         return self.office_rect(8, 32, 112, 24)
 
     def week_debug_rects(self):
+        if getattr(self, "week_debug_compact", False):
+            return {
+                **{
+                    f"month{m}": self.office_rect(48 + (m - 6) * 142, 48, 132, 32)
+                    for m in (6, 7, 8)
+                },
+                **{
+                    f"week{n}": self.office_rect(
+                        48 + ((n - 1) % 2) * 212, 90 + ((n - 1) // 2) * 40, 204, 32
+                    )
+                    for n in range(1, 5)
+                },
+                "start": self.office_rect(260, 184, 204, 36),
+                "cancel": self.office_rect(48, 184, 204, 36),
+            }
         return {
             **{f"month{m}": self.office_rect(32 + (m - 6) * 152, 48, 144, 30) for m in (6, 7, 8)},
             **{
@@ -76,9 +183,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         }
 
     def jump_to_debug_week(self, week: WorkWeek) -> bool:
-        if not getattr(self, "week_debug_active", False) or week not in {
-            WorkWeek(6, n) for n in range(1, 5)
-        } | {WorkWeek(7, 1), WorkWeek(7, 2), WorkWeek(7, 3), WorkWeek(7, 4)}:
+        if not getattr(self, "week_debug_active", False) or week not in IMPLEMENTED_DEBUG_WEEKS:
             return False
         from drift_with_me.app import (
             CameraController,
@@ -90,6 +195,8 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         )
         from drift_with_me.east_site import SITE_FACTS
 
+        self.attach_temporary_flowerbed_store()
+        self.progress_store.entry_week = week
         # A fresh world/model removes map flags, combat, interactions and enemy state.
         self.world = load_world_data()
         self.park_preview_week = None
@@ -112,11 +219,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         self.start_game(new_game=True)
         self.work_week = self.map_work_week = week
         if week == WorkWeek(7, 2):
-            from drift_with_me.flowerbed import FlowerbedLayoutStore
-
             self.office = load_week_office(week)
-            if getattr(self, "flowerbed_layout_store", None) is None:
-                self.flowerbed_layout_store = FlowerbedLayoutStore()
             order, visit = self.flowerbed_layout_store.load_state()
             self.east_site_progress.flowerbed_order = order
             self.east_site_progress.flowerbed_visit = visit.snapshot()
@@ -152,6 +255,10 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             self.model.snap_buddy(self.camera())
             self.week2_dialogue = None
             self.week2_wait_release = False
+        self.patrol_dialogue = None
+        self.patrol_wait_release = False
+        self.install_patrol()
+        self.sync_august_sighting_lock()
         self.july_wait_release = True
         self.july_fade_elapsed = 0.0
         self.week_debug_menu_open = False
@@ -170,6 +277,9 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         self.first_sight_conversation = None
         self.new_game_confirmation = False
         self.last_checkpoint = None
+        self.progress_store.authorize_new_game()
+        self.flowerbed_layout_store = self.normal_flowerbed_layout_store
+        self.week_debug_flowerbed_store = None
         self.progress_store = self.normal_progress_store
         self.saved_progress = self.progress_store.load()
         self.week_debug_active = self.week_debug_menu_open = False
@@ -190,7 +300,21 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             if not self.pointer_snapshot.down:
                 self.week_debug_wait_release = False
             return True
-        if not getattr(self, "week_debug_active", False):
+        if (
+            not getattr(self, "week_debug_menu_open", False)
+            and self.office_calendar_visible()
+            and self.mouse_pressed_in(self.office_calendar_rect())
+        ):
+            self.week_debug_compact = True
+            self.week_debug_month = self.work_week.month
+            self.week_debug_selection = self.work_week.number
+            self.week_debug_menu_open = True
+            self.clear_world_input_latches()
+            self.week_debug_wait_release = True
+            return True
+        if not getattr(self, "week_debug_active", False) and not getattr(
+            self, "week_debug_menu_open", False
+        ):
             return False
         if getattr(self, "ring_preview", None) is not None:
             self.update_ring_preview()
@@ -220,17 +344,19 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
                 self.week_debug_month = int(action[-1])
                 if self.week_debug_month == 7:
                     self.week_debug_selection = 1
-            elif action.startswith("week") and (
-                self.week_debug_month == 6
-                or self.week_debug_month == 7
-                and action in {"week1", "week2", "week3"}
+            elif (
+                action.startswith("week")
+                and WorkWeek(self.week_debug_month, int(action[-1])) in IMPLEMENTED_DEBUG_WEEKS
             ):
                 self.week_debug_selection = int(action[-1])
-            elif action == "start" and (
-                self.week_debug_month == 6
-                or self.week_debug_month == 7
-                and self.week_debug_selection in (1, 2, 3)
+            elif (
+                action == "start"
+                and WorkWeek(self.week_debug_month, self.week_debug_selection)
+                in IMPLEMENTED_DEBUG_WEEKS
             ):
+                if not self.week_debug_active:
+                    self.normal_progress_store = self.progress_store
+                    self.begin_temporary_week_session()
                 self.jump_to_debug_week(WorkWeek(self.week_debug_month, self.week_debug_selection))
             elif action == "portraits":
                 self.start_portrait_preview("ユメサキ")
@@ -263,6 +389,22 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         self.draw_office_text_in_rect(rect, text, 6 if disabled else 7, align="center")
 
     def draw_week_debug_menu(self) -> None:
+        if getattr(self, "week_debug_compact", False):
+            self.pyxel.cls(0)
+            self.draw_office_text_in_rect(
+                self.office_rect(48, 8, 416, 28), "週移動・保存なし", 7, align="center"
+            )
+            for action, rect in self.week_debug_rects().items():
+                if action.startswith("month"):
+                    value = int(action[-1])
+                    label, selected = f"{value}月", value == self.week_debug_month
+                elif action.startswith("week"):
+                    value = int(action[-1])
+                    label, selected = f"第{value}週", value == self.week_debug_selection
+                else:
+                    label, selected = ("移動" if action == "start" else "閉じる"), False
+                self.draw_week_debug_button(rect, label, selected=selected)
+            return
         self.pyxel.cls(0)
         self.draw_office_text_in_rect(
             self.office_rect(32, 4, 448, 20), "週移動テスト", 7, align="center"
@@ -282,17 +424,16 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             self.draw_week_debug_button(
                 rects[f"week{week}"],
                 ("第2週・花壇と調査" if self.week_debug_month == 7 and week == 2 else f"第{week}週")
-                if self.week_debug_month == 6 or (self.week_debug_month == 7 and week in (1, 2, 3))
+                if WorkWeek(self.week_debug_month, week) in IMPLEMENTED_DEBUG_WEEKS
                 else "準備中",
                 selected=week == self.week_debug_selection,
-                disabled=self.week_debug_month != 6
-                and not (self.week_debug_month == 7 and week in (1, 2, 3)),
+                disabled=WorkWeek(self.week_debug_month, week) not in IMPLEMENTED_DEBUG_WEEKS,
             )
         self.draw_week_debug_button(
             rects["start"],
             "選んだ週の最初から始める",
-            disabled=self.week_debug_month != 6
-            and not (self.week_debug_month == 7 and self.week_debug_selection in (1, 2, 3)),
+            disabled=WorkWeek(self.week_debug_month, self.week_debug_selection)
+            not in IMPLEMENTED_DEBUG_WEEKS,
         )
         self.draw_week_debug_button(rects["sprites"], "Sprite test")
         self.draw_week_debug_button(rects["garden"], "Garden test")

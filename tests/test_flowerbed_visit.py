@@ -78,6 +78,7 @@ def test_mid_request_and_pending_completion_reload_exact_cursor():
 
 def test_layout_only_v1_record_migrates_without_marking_new_request_complete():
     app, storage = garden_app()
+    storage = app.flowerbed_layout_store.backend.browser
     storage.items[FlowerbedLayoutStore.key] = json.dumps({"version": 1, "order": FLOWER_IDS})
     order, visit = app.flowerbed_layout_store.load_state()
     assert order == FLOWER_IDS and visit == FlowerbedVisit()

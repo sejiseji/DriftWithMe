@@ -715,7 +715,9 @@ def restore_office(raw, week):
     return office
 
 
-def decode(text):
+def decode(text, *, debug_entry: WorkWeek | None = None):
+    # Only the memory-only debug store supplies an entry week. Normal saves always
+    # require the complete authored predecessor chain; a debug jump starts mid-chain.
     if not isinstance(text, str) or len(text.encode("utf-8")) > MAX_SAVE_BYTES:
         raise ValueError("save too large")
     envelope = json.loads(text)
@@ -767,7 +769,7 @@ def decode(text):
         for k, v in payload["offices"].items()
     }
     previous3, next4 = offices.get(WorkWeek(7, 3)), offices.get(WorkWeek(7, 4))
-    if next4 is not None:
+    if next4 is not None and not (debug_entry == WorkWeek(7, 4) and previous3 is None):
         if previous3 is None or previous3.week3_progress.phase != "done":
             raise ValueError("July W4 without completed W3")
         if (
@@ -784,6 +786,8 @@ def decode(text):
             progress = getattr(
                 previous, "week4_progress" if number == 1 else "august_progress", None
             )
+            if previous is None and debug_entry == WorkWeek(8, number):
+                continue
             if progress is None or progress.phase != "done":
                 raise ValueError("August without completed previous week")
     facts = string_set(payload["facts"], FACTS)

@@ -121,7 +121,7 @@ def test_real_save_resume_reconstructs_week_two_without_new_save_fields():
     assert app.flowerbed_dialogue.index == 1
 
 
-def test_debug_scenery_does_not_unlock_future_offices_or_write_storage():
+def test_debug_scenery_preserves_week_until_explicit_jump_and_never_writes_storage():
     app, storage = garden_app()
     before = deepcopy(storage.items)
     assert app.start_park_preview()
@@ -131,8 +131,9 @@ def test_debug_scenery_does_not_unlock_future_offices_or_write_storage():
         assert app.model.northeast_park.stage == park_stage(week)
         assert not app.checkpoint_progress()
     for week in PREVIEW_WEEKS[4:]:
-        assert (load_week_office(week) is None) == (week == WorkWeek(8, 4))
-        assert not app.jump_to_debug_week(week)
+        assert load_week_office(week) is not None
+        assert app.jump_to_debug_week(week)
+        assert app.work_week == week and app.park_preview_week is None
     assert storage.items == before
     app.jump_to_debug_week(WorkWeek(6, 1))
     assert app.park_preview_week is None and app.model.northeast_park is None

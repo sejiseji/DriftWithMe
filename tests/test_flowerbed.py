@@ -80,12 +80,14 @@ def test_debug_confirmation_separate_store_cancel_and_reload_leave_progress_slot
     assert app.model.flowerbed_order == FLOWER_IDS
     assert all(storage.items[k] == v for k, v in before.items())
     reloaded = FlowerbedLayoutStore(ProgressStore(browser_storage=storage))
-    assert reloaded.load() == FLOWER_IDS
+    assert reloaded.load() == ()
     assert app.start_flowerbed_editor()
     app.flowerbed_editor.choose(FLOWER_IDS[-1])
     app.close_flowerbed_editor()
     assert app.east_site_progress.flowerbed_order == FLOWER_IDS
-    assert reloaded.load() == FLOWER_IDS
+    assert reloaded.load() == ()
+    assert app.flowerbed_layout_store.load() == FLOWER_IDS
+    assert storage.items == before
     assert not app.checkpoint_progress()
     assert all(storage.items[k] == v for k, v in before.items())
 

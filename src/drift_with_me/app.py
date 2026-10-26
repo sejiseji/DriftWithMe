@@ -671,6 +671,8 @@ class DriftWithMeApp(
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.update_week_debug():
+            return
         self.sync_august_sighting_lock()
         if self.update_patrol(elapsed):
             return
@@ -690,8 +692,6 @@ class DriftWithMeApp(
         if self.update_week2():
             return
         if self.update_flowerbed_modal():
-            return
-        if self.update_week_debug():
             return
         if self.screen in (AppScreen.START, AppScreen.PLAY):
             self.prepare_water_study_assets()
@@ -3783,6 +3783,9 @@ class DriftWithMeApp(
             self.lifecycle_did_draw()
 
     def draw_active_scene(self) -> None:
+        if getattr(self, "week_debug_menu_open", False):
+            self.draw_week_debug_menu()
+            return
         if self.draw_august_overlay():
             return
         if getattr(self, "swarm_test_field_active", False) and self.screen in (
@@ -3873,9 +3876,6 @@ class DriftWithMeApp(
         if getattr(self, "nudibranch_preview", None) is not None:
             self.draw_nudibranch_preview()
             return
-        if getattr(self, "week_debug_menu_open", False):
-            self.draw_week_debug_menu()
-            return
         if self.screen != AppScreen.OFFICE or self.office.complete:
             self._office_reading_key = None
         if self.screen == AppScreen.START:
@@ -3898,7 +3898,7 @@ class DriftWithMeApp(
         if self.build_label_visible():
             self.draw_build_label()
         self.draw_field_transition()
-        if getattr(self, "week_debug_active", False):
+        if getattr(self, "week_debug_active", False) and not self.office_calendar_visible():
             self.draw_week_debug_button(self.week_debug_badge_rect(), "週選択・保存なし")
 
     def build_label_visible(self) -> bool:
@@ -4019,6 +4019,8 @@ class DriftWithMeApp(
         pyxel.line(0, header_bottom, self.runtime.screen_width, header_bottom, 12)
         pyxel.rect(0, int(footer.y), self.runtime.screen_width, int(footer.height), 0)
         pyxel.line(0, int(footer.y), self.runtime.screen_width, int(footer.y), 12)
+        if self.office_calendar_visible():
+            self.draw_office_calendar()
 
         debug_rect = self.office_field_debug_rect()
         field_enabled = self.week2_field_header_enabled()
@@ -4079,7 +4081,7 @@ class DriftWithMeApp(
             Rect(
                 status_x,
                 header.y,
-                self.runtime.screen_width - status_x - header_pad,
+                self.office_calendar_rect().x - status_x - header_pad,
                 header.height,
             ),
             count_text,
