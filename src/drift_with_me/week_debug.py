@@ -258,6 +258,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         self.patrol_dialogue = None
         self.patrol_wait_release = False
         self.install_patrol()
+        self.install_collectibles()
         self.sync_august_sighting_lock()
         self.july_wait_release = True
         self.july_fade_elapsed = 0.0

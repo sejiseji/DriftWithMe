@@ -269,7 +269,16 @@ class PatrolMixin:
         self.clear_world_input_latches()
         self.model.cancel_auto_move()
         self.model.face_actor_toward(*n.position)
-        self.patrol_dialogue = FieldConversation(ident, ((n.name, n.line),), target_speaker=n.name)
+        lines = ((n.name, n.line),)
+        from drift_with_me.collectibles import owned_collectibles
+
+        if n.key in {"morris", "ruby"} and "crayon_drawing" not in owned_collectibles(self):
+            lines += (
+                ("モリス", "夏の思い出に、タコの絵を描いたんだ。"),
+                ("ルビィ", "クレパスで描いたの。ジャックさんにあげる！"),
+                ("ジャック", "ありがとう。部屋の低いところに飾ろう。"),
+            )
+        self.patrol_dialogue = FieldConversation(ident, lines, target_speaker=n.name)
         self.patrol_wait_release = True
         self.model.patrol_talking = ident
         self.model.set_sighting_lock(True)
@@ -292,6 +301,19 @@ class PatrolMixin:
             if self.key_pressed(
                 "KEY_RETURN", "KEY_Z", "KEY_ESCAPE", "KEY_X"
             ) or self.mouse_pressed_in(self.office_rect(40, 126, 432, 100)):
+                c = self.patrol_dialogue
+                cancel = self.key_pressed("KEY_ESCAPE", "KEY_X")
+                if not cancel and c.index + 1 < len(c.lines):
+                    c.index += 1
+                    self.patrol_wait_release = True
+                    return True
+                if (
+                    not cancel
+                    and len(c.lines) > 1
+                    and not self.claim_collectible("crayon_drawing", source="gift")
+                ):
+                    self.patrol_wait_release = True
+                    return True
                 self.patrol_dialogue = None
                 self.model.patrol_talking = None
                 self.model.set_sighting_lock(False)
@@ -326,11 +348,13 @@ class PatrolMixin:
             self.draw_office_portrait(self.office_rect(44, 52, 66, 66), portrait, **options)
         panel = self.office_rect(40, 126, 432, 100)
         self.draw_panel_frame(panel, fill=0, inner=12)
-        self.draw_office_text_in_rect(self.office_rect(50, 133, 300, 18), n.name, 12)
+        speaker, text = c.lines[c.index]
+        self.draw_office_text_in_rect(self.office_rect(50, 133, 300, 18), speaker, 12)
         self.draw_office_wrapped_lines(
-            self.office_rect(50, 154, 300 if n.large else 400, 48), (n.line,), 7
+            self.office_rect(50, 154, 300 if n.large else 400, 48), (text,), 7
         )
-        self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), "閉じる →", 10)
+        label = "次へ →" if c.index + 1 < len(c.lines) else "閉じる →"
+        self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label, 10)
 
 
 def patrol_pose(model, ident):

@@ -1,0 +1,2009 @@
+{
+  "canvas": [
+    512,
+    236
+  ],
+  "viewport": [
+    420,
+    236
+  ],
+  "viewport_offset": [
+    46,
+    0
+  ],
+  "palette": [
+    "000000",
+    "2b335f",
+    "7e2072",
+    "19959c",
+    "8b4852",
+    "395c98",
+    "a9c1ff",
+    "eeeeee",
+    "d4186c",
+    "d38441",
+    "e9c35b",
+    "70c6a9",
+    "7696de",
+    "a3a3a3",
+    "ff9798",
+    "edc7b0"
+  ],
+  "transparent_index": 0,
+  "items": [
+    "herb_fine",
+    "stone_marble",
+    "pinecone",
+    "herb_round",
+    "fuji_pot",
+    "stone_lavender",
+    "sunglasses",
+    "winged_seed",
+    "herb_flower",
+    "stone_honey",
+    "driftwood",
+    "crayon_drawing"
+  ],
+  "layers": [
+    {
+      "name": "background",
+      "source": "flat_background.png",
+      "roi": [
+        166,
+        0,
+        1681,
+        851
+      ],
+      "source_alpha_bbox": [
+        0,
+        0,
+        757,
+        425
+      ],
+      "size": [
+        420,
+        236
+      ],
+      "colkey": null,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            757,
+            425
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": null
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            757,
+            425
+          ],
+          "resize": {
+            "size_px": [
+              420,
+              236
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            420,
+            236
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        0,
+        0
+      ],
+      "z": 0,
+      "optional": false
+    },
+    {
+      "name": "bookcase",
+      "source": "flat_furniture.png",
+      "roi": [
+        624,
+        75,
+        1124,
+        481
+      ],
+      "source_alpha_bbox": [
+        8,
+        0,
+        500,
+        406
+      ],
+      "size": [
+        112,
+        87
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            492,
+            406
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            492,
+            406
+          ],
+          "resize": {
+            "size_px": [
+              112,
+              87
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            112,
+            87
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        253,
+        1
+      ],
+      "z": 2,
+      "optional": false
+    },
+    {
+      "name": "floor_plant",
+      "source": "flat_furniture.png",
+      "roi": [
+        684,
+        506,
+        1079,
+        916
+      ],
+      "source_alpha_bbox": [
+        14,
+        0,
+        395,
+        394
+      ],
+      "size": [
+        55,
+        80
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            381,
+            394
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            381,
+            394
+          ],
+          "resize": {
+            "size_px": [
+              55,
+              80
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            55,
+            80
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        365,
+        20
+      ],
+      "z": 3,
+      "optional": false
+    },
+    {
+      "name": "rug",
+      "source": "flat_furniture.png",
+      "roi": [
+        10,
+        606,
+        749,
+        921
+      ],
+      "source_alpha_bbox": [
+        14,
+        0,
+        739,
+        315
+      ],
+      "size": [
+        400,
+        85
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            725,
+            315
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            725,
+            315
+          ],
+          "resize": {
+            "size_px": [
+              400,
+              85
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            400,
+            85
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        -5,
+        153
+      ],
+      "z": 1,
+      "optional": false
+    },
+    {
+      "name": "table",
+      "source": "flat_furniture.png",
+      "roi": [
+        10,
+        210,
+        614,
+        491
+      ],
+      "source_alpha_bbox": [
+        14,
+        6,
+        604,
+        276
+      ],
+      "size": [
+        410,
+        146
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            590,
+            270
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            590,
+            270
+          ],
+          "resize": {
+            "size_px": [
+              410,
+              146
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            410,
+            146
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        40,
+        90
+      ],
+      "z": 5,
+      "optional": false
+    },
+    {
+      "name": "cushion",
+      "source": "flat_furniture.png",
+      "roi": [
+        1154,
+        265,
+        1648,
+        501
+      ],
+      "source_alpha_bbox": [
+        24,
+        11,
+        494,
+        232
+      ],
+      "size": [
+        155,
+        72
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            470,
+            221
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            470,
+            221
+          ],
+          "resize": {
+            "size_px": [
+              155,
+              72
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            155,
+            72
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        -15,
+        204
+      ],
+      "z": 9,
+      "optional": false
+    },
+    {
+      "name": "gift_pot",
+      "source": "memento_atlas.png",
+      "roi": [
+        0,
+        0,
+        545,
+        525
+      ],
+      "source_alpha_bbox": [
+        42,
+        46,
+        521,
+        506
+      ],
+      "size": [
+        76,
+        69
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            479,
+            460
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            479,
+            460
+          ],
+          "resize": {
+            "size_px": [
+              76,
+              69
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            76,
+            69
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        84,
+        70
+      ],
+      "z": 6,
+      "optional": true,
+      "requires": [
+        "fuji_pot"
+      ]
+    },
+    {
+      "name": "sunglasses",
+      "source": "memento_atlas.png",
+      "roi": [
+        1060,
+        635,
+        1525,
+        940
+      ],
+      "source_alpha_bbox": [
+        23,
+        44,
+        431,
+        257
+      ],
+      "size": [
+        54,
+        25
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            408,
+            213
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            408,
+            213
+          ],
+          "resize": {
+            "size_px": [
+              54,
+              25
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            54,
+            25
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        363,
+        122
+      ],
+      "z": 8,
+      "optional": true,
+      "requires": [
+        "sunglasses"
+      ]
+    },
+    {
+      "name": "curtain_0",
+      "source": "flat_curtain.png",
+      "roi": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "source_alpha_bbox": [
+        181,
+        6,
+        512,
+        430
+      ],
+      "size": [
+        76,
+        90
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            331,
+            424
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            331,
+            424
+          ],
+          "resize": {
+            "size_px": [
+              76,
+              90
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            76,
+            90
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        165,
+        -2
+      ],
+      "z": 4,
+      "optional": false
+    },
+    {
+      "name": "curtain_1",
+      "source": "flat_curtain.png",
+      "roi": [
+        512,
+        0,
+        1024,
+        512
+      ],
+      "source_alpha_bbox": [
+        143,
+        6,
+        483,
+        430
+      ],
+      "size": [
+        76,
+        90
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            340,
+            424
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            340,
+            424
+          ],
+          "resize": {
+            "size_px": [
+              76,
+              90
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            76,
+            90
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        165,
+        -2
+      ],
+      "z": 4,
+      "optional": false
+    },
+    {
+      "name": "curtain_2",
+      "source": "flat_curtain.png",
+      "roi": [
+        1024,
+        0,
+        1536,
+        512
+      ],
+      "source_alpha_bbox": [
+        112,
+        6,
+        453,
+        430
+      ],
+      "size": [
+        76,
+        90
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            341,
+            424
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            341,
+            424
+          ],
+          "resize": {
+            "size_px": [
+              76,
+              90
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            76,
+            90
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        165,
+        -2
+      ],
+      "z": 4,
+      "optional": false
+    },
+    {
+      "name": "curtain_3",
+      "source": "flat_curtain.png",
+      "roi": [
+        0,
+        512,
+        512,
+        1024
+      ],
+      "source_alpha_bbox": [
+        181,
+        17,
+        512,
+        444
+      ],
+      "size": [
+        76,
+        90
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            331,
+            427
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            331,
+            427
+          ],
+          "resize": {
+            "size_px": [
+              76,
+              90
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            76,
+            90
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        165,
+        -2
+      ],
+      "z": 4,
+      "optional": false
+    },
+    {
+      "name": "curtain_4",
+      "source": "flat_curtain.png",
+      "roi": [
+        512,
+        512,
+        1024,
+        1024
+      ],
+      "source_alpha_bbox": [
+        143,
+        17,
+        500,
+        443
+      ],
+      "size": [
+        76,
+        90
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            357,
+            426
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            357,
+            426
+          ],
+          "resize": {
+            "size_px": [
+              76,
+              90
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            76,
+            90
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        165,
+        -2
+      ],
+      "z": 4,
+      "optional": false
+    },
+    {
+      "name": "curtain_5",
+      "source": "flat_curtain.png",
+      "roi": [
+        1024,
+        512,
+        1536,
+        1024
+      ],
+      "source_alpha_bbox": [
+        112,
+        17,
+        466,
+        438
+      ],
+      "size": [
+        76,
+        90
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            354,
+            421
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            354,
+            421
+          ],
+          "resize": {
+            "size_px": [
+              76,
+              90
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            76,
+            90
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        165,
+        -2
+      ],
+      "z": 4,
+      "optional": false
+    },
+    {
+      "name": "herb_fine",
+      "source": "herbs_species.png",
+      "roi": [
+        0,
+        0,
+        724,
+        724
+      ],
+      "source_alpha_bbox": [
+        149,
+        13,
+        667,
+        718
+      ],
+      "size": [
+        19,
+        31
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            518,
+            705
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            518,
+            705
+          ],
+          "resize": {
+            "size_px": [
+              19,
+              31
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            19,
+            31
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        293,
+        142
+      ],
+      "z": 8,
+      "optional": true,
+      "requires": [
+        "herb_fine"
+      ],
+      "all_items": false,
+      "botanical_name": "ローズマリー",
+      "botanical_taxon": "Salvia rosmarinus",
+      "display_group": "夏に集めた草花の乾燥束"
+    },
+    {
+      "name": "herb_round",
+      "source": "herbs_species.png",
+      "roi": [
+        724,
+        0,
+        1448,
+        724
+      ],
+      "source_alpha_bbox": [
+        85,
+        24,
+        641,
+        718
+      ],
+      "size": [
+        19,
+        31
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            556,
+            694
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            556,
+            694
+          ],
+          "resize": {
+            "size_px": [
+              19,
+              31
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            19,
+            31
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        298,
+        142
+      ],
+      "z": 8,
+      "optional": true,
+      "requires": [
+        "herb_round"
+      ],
+      "all_items": false,
+      "botanical_name": "スペアミント",
+      "botanical_taxon": "Mentha spicata",
+      "display_group": "夏に集めた草花の乾燥束"
+    },
+    {
+      "name": "herb_flower",
+      "source": "herbs_species.png",
+      "roi": [
+        1448,
+        0,
+        2172,
+        724
+      ],
+      "source_alpha_bbox": [
+        68,
+        14,
+        622,
+        718
+      ],
+      "size": [
+        19,
+        31
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            554,
+            704
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            554,
+            704
+          ],
+          "resize": {
+            "size_px": [
+              19,
+              31
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            19,
+            31
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        302,
+        142
+      ],
+      "z": 8,
+      "optional": true,
+      "requires": [
+        "herb_flower"
+      ],
+      "all_items": false,
+      "botanical_name": "マリーゴールド",
+      "botanical_taxon": "Tagetes spp. (ornamental)",
+      "display_group": "夏に集めた草花の乾燥束"
+    },
+    {
+      "name": "stone_dish",
+      "source": "catalog.png",
+      "roi": [
+        0,
+        1086,
+        362,
+        1448
+      ],
+      "source_alpha_bbox": [
+        45,
+        144,
+        316,
+        301
+      ],
+      "size": [
+        52,
+        22
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            271,
+            157
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            271,
+            157
+          ],
+          "resize": {
+            "size_px": [
+              52,
+              22
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            52,
+            22
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        228,
+        128
+      ],
+      "z": 7,
+      "optional": true,
+      "requires": [
+        "stone_marble",
+        "stone_lavender",
+        "stone_honey"
+      ],
+      "all_items": false
+    },
+    {
+      "name": "stone_marble",
+      "source": "memento_atlas.png",
+      "roi": [
+        620,
+        255,
+        935,
+        480
+      ],
+      "source_alpha_bbox": [
+        24,
+        27,
+        290,
+        202
+      ],
+      "size": [
+        14,
+        10
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            266,
+            175
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            266,
+            175
+          ],
+          "resize": {
+            "size_px": [
+              14,
+              10
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            14,
+            10
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        234,
+        131
+      ],
+      "z": 8,
+      "optional": true,
+      "requires": [
+        "stone_marble"
+      ],
+      "all_items": false
+    },
+    {
+      "name": "stone_lavender",
+      "source": "catalog.png",
+      "roi": [
+        0,
+        362,
+        362,
+        724
+      ],
+      "source_alpha_bbox": [
+        61,
+        0,
+        302,
+        362
+      ],
+      "size": [
+        14,
+        13
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            241,
+            362
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            241,
+            362
+          ],
+          "resize": {
+            "size_px": [
+              14,
+              13
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            14,
+            13
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        249,
+        126
+      ],
+      "z": 8,
+      "optional": true,
+      "requires": [
+        "stone_lavender"
+      ],
+      "all_items": false
+    },
+    {
+      "name": "stone_honey",
+      "source": "catalog.png",
+      "roi": [
+        362,
+        362,
+        724,
+        724
+      ],
+      "source_alpha_bbox": [
+        67,
+        0,
+        305,
+        362
+      ],
+      "size": [
+        14,
+        11
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            238,
+            362
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            238,
+            362
+          ],
+          "resize": {
+            "size_px": [
+              14,
+              11
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            14,
+            11
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        262,
+        130
+      ],
+      "z": 8,
+      "optional": true,
+      "requires": [
+        "stone_honey"
+      ],
+      "all_items": false
+    },
+    {
+      "name": "window_tray",
+      "source": "catalog.png",
+      "roi": [
+        362,
+        1086,
+        724,
+        1448
+      ],
+      "source_alpha_bbox": [
+        6,
+        132,
+        358,
+        321
+      ],
+      "size": [
+        47,
+        17
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            352,
+            189
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            352,
+            189
+          ],
+          "resize": {
+            "size_px": [
+              47,
+              17
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            47,
+            17
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        166,
+        112
+      ],
+      "z": 7,
+      "optional": true,
+      "requires": [
+        "pinecone",
+        "winged_seed"
+      ],
+      "all_items": false
+    },
+    {
+      "name": "pinecone",
+      "source": "catalog.png",
+      "roi": [
+        724,
+        362,
+        1086,
+        724
+      ],
+      "source_alpha_bbox": [
+        52,
+        0,
+        310,
+        362
+      ],
+      "size": [
+        17,
+        23
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            258,
+            362
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            258,
+            362
+          ],
+          "resize": {
+            "size_px": [
+              17,
+              23
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            17,
+            23
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        171,
+        101
+      ],
+      "z": 8,
+      "optional": true,
+      "requires": [
+        "pinecone"
+      ],
+      "all_items": false
+    },
+    {
+      "name": "winged_seed",
+      "source": "seed.png",
+      "roi": null,
+      "source_alpha_bbox": [
+        180,
+        117,
+        666,
+        401
+      ],
+      "size": [
+        20,
+        12
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            486,
+            284
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            486,
+            284
+          ],
+          "resize": {
+            "size_px": [
+              20,
+              12
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            20,
+            12
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        190,
+        111
+      ],
+      "z": 8,
+      "optional": true,
+      "requires": [
+        "winged_seed"
+      ],
+      "all_items": false
+    },
+    {
+      "name": "driftwood",
+      "source": "catalog.png",
+      "roi": [
+        362,
+        724,
+        724,
+        1086
+      ],
+      "source_alpha_bbox": [
+        16,
+        0,
+        346,
+        360
+      ],
+      "size": [
+        33,
+        14
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            330,
+            360
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            330,
+            360
+          ],
+          "resize": {
+            "size_px": [
+              33,
+              14
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            33,
+            14
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        313,
+        33
+      ],
+      "z": 3.1,
+      "optional": true,
+      "requires": [
+        "driftwood"
+      ],
+      "all_items": false
+    },
+    {
+      "name": "crayon_drawing",
+      "source": "catalog.png",
+      "roi": [
+        724,
+        724,
+        1086,
+        1086
+      ],
+      "source_alpha_bbox": [
+        30,
+        0,
+        337,
+        362
+      ],
+      "size": [
+        68,
+        58
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            307,
+            362
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            307,
+            362
+          ],
+          "resize": {
+            "size_px": [
+              68,
+              58
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            68,
+            58
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        287,
+        78
+      ],
+      "z": 6,
+      "optional": true,
+      "requires": [
+        "crayon_drawing"
+      ],
+      "all_items": false
+    },
+    {
+      "name": "sleep_jack",
+      "source": "sleepers.png",
+      "roi": [
+        0,
+        0,
+        982,
+        801
+      ],
+      "source_alpha_bbox": [
+        321,
+        245,
+        968,
+        659
+      ],
+      "size": [
+        122,
+        79
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            647,
+            414
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            647,
+            414
+          ],
+          "resize": {
+            "size_px": [
+              122,
+              79
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            122,
+            79
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        15,
+        152
+      ],
+      "z": 10,
+      "optional": true,
+      "requires": [
+        "herb_fine",
+        "stone_marble",
+        "pinecone",
+        "herb_round",
+        "fuji_pot",
+        "stone_lavender",
+        "sunglasses",
+        "winged_seed",
+        "herb_flower",
+        "stone_honey",
+        "driftwood",
+        "crayon_drawing"
+      ],
+      "all_items": true
+    },
+    {
+      "name": "sleep_fuse",
+      "source": "sleepers.png",
+      "roi": [
+        982,
+        0,
+        1964,
+        801
+      ],
+      "source_alpha_bbox": [
+        295,
+        336,
+        615,
+        644
+      ],
+      "size": [
+        61,
+        66
+      ],
+      "colkey": 0,
+      "recipe": {
+        "source": {
+          "expected_size_px": [
+            320,
+            308
+          ]
+        },
+        "transparency": {
+          "partial_alpha_policy": "binary_alpha_only",
+          "colkey": 0
+        },
+        "geometry": {
+          "crop_rect_px": [
+            0,
+            0,
+            320,
+            308
+          ],
+          "resize": {
+            "size_px": [
+              61,
+              66
+            ],
+            "filter": "nearest"
+          },
+          "canvas_size_px": [
+            61,
+            66
+          ],
+          "placement_offset_px": [
+            0,
+            0
+          ]
+        }
+      },
+      "anchor": [
+        0,
+        0
+      ],
+      "xy": [
+        159,
+        149
+      ],
+      "z": 10,
+      "optional": true,
+      "requires": [
+        "herb_fine",
+        "stone_marble",
+        "pinecone",
+        "herb_round",
+        "fuji_pot",
+        "stone_lavender",
+        "sunglasses",
+        "winged_seed",
+        "herb_flower",
+        "stone_honey",
+        "driftwood",
+        "crayon_drawing"
+      ],
+      "all_items": true
+    }
+  ],
+  "curtain_sequence": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    4,
+    3,
+    2,
+    1
+  ],
+  "period_frames": 96,
+  "fps": 24,
+  "preview_seconds": 12,
+  "source_status": "Adopted 12-item catalog; gifts reuse story reward flags. Sleepers require all12. Independent room preview, no real save access.",
+  "conversion": "asset_tool0.5.4 nearest/binary alpha/quantize/HEX; foliage RGB gate g*100>=r*94 and g*100>=b*118 constrained to1/3/11; immutable source PNGs",
+  "curtain_contract": "fixed top60 rows from pose0; only independently imagegen-drawn lower cloth animates",
+  "curtain_follow_frames": 5,
+  "herb_bundle": "夏に集めた草花の乾燥束。取得した種類だけを既存の机隅で重ねる。",
+  "surface_style": "Approved flat colour planes; separated background, five furniture layers and six cloth poses. Optional objects and ownership unchanged."
+}

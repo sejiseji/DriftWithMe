@@ -309,6 +309,12 @@ class AugustMixin:
         if self.screen != AppScreen.OFFICE:
             return False
         if p.phase == "done":
+            if self.work_week.number == 4 and (
+                self.key_pressed("KEY_RETURN", "KEY_Z")
+                or self.mouse_pressed_in(self.office_footer_action_rect())
+            ):
+                self.begin_ending()
+                return True
             if self.work_week.number < 4 and (
                 self.key_pressed("KEY_RETURN", "KEY_Z")
                 or self.mouse_pressed_in(self.office_next_week_rect())
@@ -328,6 +334,12 @@ class AugustMixin:
 
         if not self.august_active() or self.screen != AppScreen.OFFICE:
             return False
+        if self.work_week.number == 4 and self.office.august_progress.phase == "done":
+            self.draw_office()
+            self.draw_office_button(
+                self.office_footer_action_rect(), "エンディングを見る", 11, text_color=0
+            )
+            return True
         if self.work_week.number == 3 and self.office.august_progress.phase == "done":
             from dataclasses import replace
 

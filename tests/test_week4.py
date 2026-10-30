@@ -216,7 +216,7 @@ def test_malformed_flower_save_rejected(mutation):
         decode(encode(payload))
 
 
-def test_week3_to_four_transition_applies_once_and_stops_at_july():
+def test_week3_to_four_transition_applies_once_and_guards_unfinished_week4():
     from drift_with_me.world import load_world_data
     from test_week_cycle import completed_app
 
@@ -238,10 +238,7 @@ def test_week3_to_four_transition_applies_once_and_stops_at_july():
     app.update_week_transition(10)
     assert app.office is current and app.week_office_history[WorkWeek(6, 3)] is previous
     assert sum(o.id == FUJI_ID for o in app.world.objects) == 1
-    for session in app.office.sessions.values():
-        session.state = CaseState.RESOLVED
-    app.office.current_index = len(app.office.cases)
-    assert not app.begin_next_week()
+    assert not app.begin_next_week()  # New week still has unfinished work.
 
 
 @pytest.mark.parametrize("case_index", range(3))

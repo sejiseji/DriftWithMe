@@ -253,10 +253,13 @@ def restore_counter(office, raw):
 
 
 def snapshot(app):
+    from drift_with_me.collectibles import owned_collectibles
+
     offices = dict(app.week_office_history)
     offices[app.work_week] = app.office
     return {
         "version": SAVE_VERSION,
+        **({"collectibles": sorted(owned_collectibles(app))} if owned_collectibles(app) else {}),
         **(
             {"swarm": validate_progress(app.east_site_progress.swarm_progress)}
             if getattr(app.east_site_progress, "swarm_progress", {})
@@ -740,6 +743,7 @@ def decode(text, *, debug_entry: WorkWeek | None = None):
         "flowerbed",
         "flowerbed_visit",
         "swarm",
+        "collectibles",
     }:
         raise ValueError("unknown schema")
     w = payload["week"]
@@ -845,12 +849,18 @@ def decode(text, *, debug_entry: WorkWeek | None = None):
         and not visit.complete
     ):
         raise ValueError("unfinished July W2 flowerbed")
+    from drift_with_me.collectibles import legacy_gifts, validate_collectibles
+
+    collected = validate_collectibles(payload.get("collectibles", [])) | legacy_gifts(
+        offices.values()
+    )
     sites = EastSiteProgress(
         facts,
         dict(positions),
         flowerbed_order=validate_order(payload.get("flowerbed", [])),
         flowerbed_visit=visit.snapshot() if "flowerbed_visit" in payload else {},
         swarm_progress=validate_progress(payload.get("swarm", {})),
+        collectibles=collected,
     )
     return week, offices, sites, seen, resources, defeated
 

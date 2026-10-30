@@ -11,6 +11,7 @@ from drift_with_me.august import AugustMixin
 from drift_with_me.august_patrol import PatrolMixin
 from drift_with_me.build_info import BUILD_LABEL
 from drift_with_me.camera import CameraController
+from drift_with_me.collectibles import CollectibleMixin, owned_collectibles
 from drift_with_me.document_reading import reading_pose_pixels
 from drift_with_me.east_site import SITE_FACTS, SITE_LABELS, EastSiteProgress
 from drift_with_me.effects import EffectSystem
@@ -112,6 +113,8 @@ class AppScreen(Enum):
     PLAY = auto()
     PAUSE = auto()
     WATER_STUDY = auto()
+    COLLECTION_ROOM = auto()
+    CREDITS = auto()
 
 
 @dataclass(frozen=True)
@@ -470,6 +473,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
+    CollectibleMixin,
     LifecycleMixin,
     PatrolMixin,
     AugustMixin,
@@ -671,6 +675,12 @@ class DriftWithMeApp(
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
+        if self.screen == AppScreen.CREDITS:
+            self.update_ending(elapsed)
+            return
+        if self.screen == AppScreen.COLLECTION_ROOM:
+            self.update_collection_room()
+            return
         if self.update_week_debug():
             return
         self.sync_august_sighting_lock()
@@ -770,8 +780,10 @@ class DriftWithMeApp(
         data = snapshot(self)
         if data == self.last_checkpoint:
             return False
+        if not store.write(data):
+            return False
         self.last_checkpoint = data
-        return store.write(data)
+        return True
 
     def consume_elapsed(self) -> float:
         now = time.monotonic()
@@ -930,6 +942,9 @@ class DriftWithMeApp(
             )
 
         self.install_patrol()
+        self.install_collectibles()
+        self.collection_announced = owned_collectibles(self)
+        self.collection_notice = None
         self.sync_august_sighting_lock()
 
     def update_office_screen(self, elapsed: float) -> None:
@@ -1502,6 +1517,7 @@ class DriftWithMeApp(
 
         install_park_world(self)
         self.install_patrol()
+        self.install_collectibles()
         if self.week4_active():
             self.office.week4_progress.phase = "field"
         if self.week3_active():
@@ -1668,6 +1684,7 @@ class DriftWithMeApp(
             self.office_dialogue_playback = OfficeDialoguePlayback()
             self.office_answer_case_id = self.office_answer_question_id = None
         self.install_patrol()
+        self.install_collectibles()
         transition.applied = True
         self.previous_time = None
 
@@ -2778,6 +2795,9 @@ class DriftWithMeApp(
                 self.set_denied_reason(str(event.payload.get("reason", "denied")))
             elif event.kind == "inspection_completed":
                 self.show_location_label()
+                if (event.target_id or "").startswith("collectible_"):
+                    self.field_conversation = None
+                    continue
                 if event.target_id in W4_TARGETS and getattr(
                     self, "work_week", WorkWeek()
                 ) == WorkWeek(6, 4):
@@ -2887,6 +2907,8 @@ class DriftWithMeApp(
 
     def begin_field_conversation(self, target_id: str) -> None:
         self.field_conversation = None
+        if self.begin_collectible_conversation(target_id):
+            return
         interaction = self.model.interaction
         if self.july_active() and target_id in JULY_TARGETS and interaction is not None:
             lines, index = self.office.july_progress.begin(target_id)
@@ -2952,6 +2974,8 @@ class DriftWithMeApp(
         session = self.office.current_session
         if conversation is None or self.model.interaction is None:
             return False
+        if conversation.target_id.startswith("collectible_"):
+            return self.advance_collectible_conversation()
         if self.july_active() and conversation.target_id in JULY_TARGETS:
             if self.model.interaction.object_id != conversation.target_id:
                 return False
@@ -3779,10 +3803,17 @@ class DriftWithMeApp(
             return
         try:
             self.draw_active_scene()
+            self.draw_collectible_notice()
         finally:
             self.lifecycle_did_draw()
 
     def draw_active_scene(self) -> None:
+        if self.screen == AppScreen.CREDITS:
+            self.draw_ending()
+            return
+        if self.screen == AppScreen.COLLECTION_ROOM:
+            self.draw_collection_room()
+            return
         if getattr(self, "week_debug_menu_open", False):
             self.draw_week_debug_menu()
             return
@@ -4337,6 +4368,7 @@ class DriftWithMeApp(
                 WorkWeek(),
                 WorkWeek(6, 2),
                 WorkWeek(6, 3),
+                WorkWeek(6, 4),
                 WorkWeek(7, 1),
                 WorkWeek(7, 2),
                 WorkWeek(7, 3),
@@ -4378,7 +4410,7 @@ class DriftWithMeApp(
         transition = self.week_transition
         assert transition is not None and transition.darkness == 1.0
         # Prepare first, then bind office, calendar and shared-map week together.
-        # No authored map differences yet: preserve world/model and field results.
+        # Preserve shared progress/resources while installing the next authored map.
         self.work_week, self.office, self.map_work_week = (
             transition.target,
             self.pending_week_office,
@@ -4391,6 +4423,17 @@ class DriftWithMeApp(
             if self.work_week.month >= 7:
                 install_flowerbed_world(self)
         self.install_patrol()
+        self.install_collectibles()
+        player = getattr(getattr(self, "model", None), "player", None)
+        if player is not None and self.world.collides_player(
+            player.x, player.z, self.model.player_solid_half_x, self.model.player_solid_half_z
+        ):
+            # New fences can occupy a previously walkable tile. Do not reset inventory/resources.
+            player.x, player.z = self.world.spawn_x, self.world.spawn_z
+            self.model.cancel_auto_move()
+            self.model.reset_manual_velocity()
+            self.camera_controller.reset(Vec3(player.x, 0, player.z))
+            self.model.snap_buddy(self.camera_controller.current)
         self.week_office_history[self.work_week] = self.office
         self.pending_week_office = None
         self.end_office_consultation()
@@ -4408,6 +4451,7 @@ class DriftWithMeApp(
             if transition.complete:
                 self.week_transition = None
                 self.week_input_wait_for_release = True
+                self.checkpoint_progress()
                 self.pointer.cancel()
                 self.clear_world_input_latches()
             return True

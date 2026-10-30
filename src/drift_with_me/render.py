@@ -12,6 +12,8 @@ from drift_with_me.abnormal_urchin_arms import (
     quantized_arm_points,
 )
 from drift_with_me.cloud_shadow import CloudShadowLayer
+from drift_with_me.collectible_sparkle import EXTENT as COLLECTIBLE_EXTENT
+from drift_with_me.collectible_sparkle import draw as draw_collectible_sparkle
 from drift_with_me.east_site import SITE_FACTS
 from drift_with_me.east_site_render import draw_east_site_ground
 from drift_with_me.effects import EffectSystem, EnemySnapshot, ReactiveEnvironmentState
@@ -2505,6 +2507,20 @@ class Renderer:
         camera: CameraState,
         effects: EffectSystem | None = None,
     ) -> None:
+        if obj.id.startswith("collectible_"):
+            seconds = model.world_tick / float(model.config["simulation"]["fixed_hz"])
+            point = camera.project(Vec3(obj.x, 7 + math.sin(seconds * 1.5) * 1.5, obj.z))
+            if point is not None:
+                draw_collectible_sparkle(
+                    self.pyxel,
+                    round(point.x),
+                    round(point.y),
+                    seconds,
+                    obj.id,
+                    camera.viewport_width,
+                    camera.viewport_height,
+                )
+            return
         if obj.id in SITE_FACTS or obj.id == KEY_ID:
             return
         if obj.id == "maintenance_unit":
@@ -5760,6 +5776,14 @@ class Renderer:
         return ScreenRect(min_x, min_y, max(1, max_x - min_x), max(1, max_y - min_y))
 
     def object_screen_bounds(self, obj: StaticObject, camera: CameraState) -> ScreenRect | None:
+        if obj.id.startswith("collectible_"):
+            point = camera.project(Vec3(obj.x, 7, obj.z))
+            if point is None:
+                return None
+            extent = math.ceil(COLLECTIBLE_EXTENT * camera.viewport_width / 512)
+            return ScreenRect(
+                round(point.x) - extent, round(point.y) - extent, extent * 2 + 1, extent * 2 + 1
+            )
         if obj.kind == "sprite_prop" or (
             obj.sprite_world_width > 0.0 and obj.sprite_world_height > 0.0
         ):
