@@ -3220,6 +3220,12 @@ class DriftWithMeApp(
 
         pressed = pressed_flag and sequence != self.browser_pointer_sequence_seen
         if pressed:
+            # The UI press belongs to pointerdown, not a later move/up position.
+            # Older/native bridges retain the previous coordinate fallback.
+            x = float(getattr(bridge, "pressedX", x))
+            y = float(getattr(bridge, "pressedY", y))
+            if not math.isfinite(x) or not math.isfinite(y):
+                return None
             self.browser_pointer_sequence_seen = sequence
         x, y = self.clamp_pointer_position(x, y)
         return PointerSnapshot(down=down, pressed=pressed, x=x, y=y)

@@ -29,6 +29,8 @@
     y: 0,
     inside: false,
     sequence: 0,
+    pressedX: 0,
+    pressedY: 0,
   };
   window.__driftWithMePointer = pointer;
   let activePointerId = null;
@@ -129,6 +131,8 @@
     pointer.x = position.x;
     pointer.y = position.y;
     pointer.inside = true;
+    pointer.pressedX = position.x;
+    pointer.pressedY = position.y;
     pointer.sequence += 1;
     preventCanvasGesture(event);
   };
@@ -151,7 +155,9 @@
     }
     const position = eventToLogical(event);
     pointer.down = false;
-    pointer.pressed = false;
+    // Keep a short tap pending until Python consumes its sequence.
+    // Cancellation must never turn into a UI activation.
+    if (event.type === "pointercancel") pointer.pressed = false;
     pointer.released = true;
     pointer.x = position.x;
     pointer.y = position.y;
