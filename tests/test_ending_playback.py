@@ -30,16 +30,28 @@ def final_app(complete=False):
     return app, storage
 
 
+def finish_prelude(app):
+    from drift_with_me.ending_prelude import AUTOMATIC_SECONDS, LINES
+
+    prelude = app.ending_playback.prelude
+    for _ in LINES:
+        prelude.next_line()
+    prelude.advance(AUTOMATIC_SECONDS)
+    app.update_ending(0)
+
+
 @pytest.mark.parametrize("complete", [False, True])
 def test_credits_fade_room_freeze_save_and_replay(complete):
     app, storage = final_app(complete)
     before = snapshot(app)
     persistent = deepcopy(storage.items)
     assert app.begin_ending()
+    finish_prelude(app)
     first = app.ending_playback
     assert app.screen == AppScreen.CREDITS and not app.begin_ending()
     assert app.ending_playback is first and first.elapsed == 0
     assert first.owned == frozenset(owned_collectibles(app))
+    assert first.prelude is None and first.elapsed == 0
     for dt in (94, 3.8, 4, 4.5, 3.7):
         app.update_ending(dt)
         assert app.screen == AppScreen.CREDITS
@@ -152,6 +164,7 @@ def test_runtime_draws_both_phases_without_pillow_and_restores_after_room(monkey
     image_for.cache_clear()
     runtime_image.cache_clear()
     assert app.begin_ending()
+    finish_prelude(app)
     draw(app)
     app.update_ending(99.5)
     draw(app)
@@ -178,6 +191,7 @@ def test_playback_has_no_write_path_in_normal_session_or_flowerbed_store():
     app.flowerbed_layout_store.write = forbidden
     before = snapshot(app)
     assert app.begin_ending()
+    finish_prelude(app)
     app.update_ending(112)
     assert app.screen == AppScreen.COLLECTION_ROOM and snapshot(app) == before
 
@@ -188,5 +202,6 @@ def test_final_report_button_enters_credits_then_releases_into_room():
     app.key_pressed = lambda *keys: "KEY_RETURN" in keys
     app.mouse_pressed_in = lambda *_: False
     assert app.update_august(0) and app.screen == AppScreen.CREDITS
+    finish_prelude(app)
     app.update_ending(111.4)
     assert app.screen == AppScreen.COLLECTION_ROOM

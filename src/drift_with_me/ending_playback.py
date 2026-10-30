@@ -17,6 +17,7 @@ ROOM_FADE_SECONDS = 1.3
 class EndingPlayback:
     owned: frozenset[str]
     elapsed: float = 0.0
+    prelude: object = None
 
     def advance(self, elapsed):
         if math.isfinite(elapsed) and elapsed > 0:
@@ -69,7 +70,9 @@ def begin(app):
     ):
         return False
     restore_palette(app)
-    app.ending_playback = EndingPlayback(frozenset(owned_collectibles(app)))
+    from drift_with_me.ending_prelude import Prelude
+
+    app.ending_playback = EndingPlayback(frozenset(owned_collectibles(app)), prelude=Prelude())
     app.screen = AppScreen.CREDITS
     app.clear_world_input_latches()
     return True
@@ -79,6 +82,34 @@ def update(app, elapsed):
     from drift_with_me.app import AppScreen
 
     state = app.ending_playback
+    prelude = state.prelude
+    if prelude is not None:
+        if not prelude.complete:
+            if not app.travel_input_held():
+                prelude.wait_release = False
+            if not prelude.wait_release:
+                if app.key_pressed("KEY_ESCAPE", "KEY_X") or app.mouse_pressed_in(
+                    app.office_rect(46, 0, 64, 44)
+                ):
+                    restore_palette(app)
+                    prelude.scene = None
+                    app.ending_playback = None
+                    app.screen = AppScreen.OFFICE
+                    app.clear_world_input_latches()
+                    return
+                if prelude.phase == "dialogue" and (
+                    app.key_pressed("KEY_RETURN", "KEY_Z")
+                    or app.mouse_pressed_in(app.office_rect(56, 157, 400, 69))
+                ):
+                    prelude.next_line()
+                    prelude.wait_release = True
+            elapsed = prelude.advance(elapsed)
+        if not prelude.complete:
+            app.clear_world_input_latches()
+            return
+        restore_palette(app)
+        prelude.scene = None
+        state.prelude = None
     state.advance(elapsed)
     app.clear_world_input_latches()
     if state.complete:
@@ -110,6 +141,19 @@ def draw(app):
 
     p = app.pyxel
     state = app.ending_playback
+    if state.prelude is not None:
+        from drift_with_me.ending_prelude import Scene
+
+        try:
+            if state.prelude.scene is None:
+                state.prelude.scene = Scene(app, state.prelude)
+            state.prelude.scene.draw(app, state.prelude)
+        except Exception:
+            restore_palette(app)
+            raise
+        finally:
+            p.clip()
+        return
     outer_scale = min(p.width / 512, p.height / 236)
     left = (p.width - 512 * outer_scale) / 2
     top = (p.height - 236 * outer_scale) / 2

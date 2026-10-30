@@ -2741,6 +2741,7 @@ class DriftWithMeApp(
                 step_intent,
                 model_camera,
                 fixed_dt,
+                movement_camera=self.scene_camera(input_camera),
                 before_enemy_update=lambda: (
                     self.update_august_sightings(0.0) or self.update_first_sight(0.0)
                 ),
@@ -3236,6 +3237,7 @@ class DriftWithMeApp(
             y=pointer.y,
             dt=elapsed,
             ui_rects=self.active_ui_rects(),
+            pressed=pointer.pressed,
         )
 
     def ground_pointer_cancel_intent(self) -> InputIntent:
@@ -3260,6 +3262,7 @@ class DriftWithMeApp(
             ui_rects=self.active_ui_rects(),
             camera=camera,
             accepting_world_input=self.hitstop_remaining <= 0.0,
+            pressed=pointer.pressed,
         )
         if request is None:
             return InputIntent()

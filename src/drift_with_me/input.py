@@ -79,8 +79,13 @@ class DoubleTapMoveRecognizer:
         ui_rects: tuple[Rect, ...],
         camera: CameraState | AffineCameraState,
         accepting_world_input: bool = True,
+        pressed: bool = False,
     ) -> DoubleTapMoveRequest | None:
         dt = max(0.0, dt)
+        if down and pressed and self.was_down:
+            # An up/new-down pair may occur between sampled frames.
+            self.cancel()
+            self.was_down = False
         if self.last_tap_active:
             self.last_tap_elapsed += dt
             if self.last_tap_elapsed > self.max_interval_sec:
@@ -199,12 +204,18 @@ class PointerInput:
         y: float,
         dt: float,
         ui_rects: tuple[Rect, ...] = (),
+        pressed: bool = False,
     ) -> InputIntent:
         if not down:
             self.was_down = False
             self.held_sec = 0.0
             self.state = PointerState.IDLE
             return InputIntent()
+
+        if down and pressed and self.was_down:
+            # The DOM observed a release even if Python did not sample it.
+            self.was_down = False
+            self.state = PointerState.IDLE
 
         if self.state == PointerState.WAIT_ALL_RELEASE:
             self.was_down = True

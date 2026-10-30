@@ -169,12 +169,16 @@
     pointer.inside = false;
   };
 
-  updateViewport();
-  window.addEventListener("resize", updateViewport, { passive: true });
-  window.addEventListener("orientationchange", () => {
+  const invalidatePointerGeometry = () => {
     updateViewport();
     cancelPointer();
-  }, { passive: true });
+    // Python must also discard the old logical anchor and wait for release.
+    const lifecycle = window.__driftWithMeLifecycle;
+    if (lifecycle) lifecycle.inputEpoch += 1;
+  };
+  updateViewport();
+  window.addEventListener("resize", invalidatePointerGeometry, { passive: true });
+  window.addEventListener("orientationchange", invalidatePointerGeometry, { passive: true });
   // This hook belongs only to the game iframe, before launchPyxel starts it.
   if (!window.__driftWithMeLifecycle) {
     let pageHidden = false;
@@ -314,7 +318,7 @@
   document.addEventListener("pointercancel", onPointerFinish, { passive: false });
 
   if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", updateViewport, { passive: true });
-    window.visualViewport.addEventListener("scroll", updateViewport, { passive: true });
+    window.visualViewport.addEventListener("resize", invalidatePointerGeometry, { passive: true });
+    window.visualViewport.addEventListener("scroll", invalidatePointerGeometry, { passive: true });
   }
 })();

@@ -504,6 +504,12 @@ def run_all(reload_each_boundary=False):
                 resume(app)
     assert not app.can_begin_next_week()
     assert app.begin_ending()
+    # The new ending dialogue is reading-gated, followed by all three native cuts.
+    from drift_with_me.ending_prelude import AUTOMATIC_SECONDS, LINES
+
+    for _ in LINES:
+        app.ending_playback.prelude.next_line()
+    app.update_ending(AUTOMATIC_SECONDS)
     app.update_ending(111.4)
     assert app.screen == AppScreen.COLLECTION_ROOM
     return app, storage, garden, records

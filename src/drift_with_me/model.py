@@ -428,6 +428,7 @@ class GameModel:
         dt: float,
         *,
         before_enemy_update: Callable[[], bool] | None = None,
+        movement_camera: CameraState | AffineCameraState | None = None,
     ) -> list[GameEvent]:
         events: list[GameEvent] = []
         if self.world_paused:
@@ -501,8 +502,9 @@ class GameModel:
             and self.player.stun_remaining <= 0.0
             and intent.strength > 0.0
         ):
+            direction_camera = movement_camera if movement_camera is not None else camera
             direction = screen_to_world_direction(
-                camera,
+                direction_camera,
                 self.player.x,
                 self.player.z,
                 intent.screen_x,
@@ -510,7 +512,7 @@ class GameModel:
             )
             move_speed = float(self.config["player"]["move_speed"])
             speed = move_speed * max(0.0, min(intent.strength, 1.0))
-            speed *= self.manual_screen_speed_scale(camera, direction)
+            speed *= self.manual_screen_speed_scale(direction_camera, direction)
             delta_x, delta_z = self.manual_inertia_delta(
                 direction.x * speed, direction.y * speed, dt
             )
