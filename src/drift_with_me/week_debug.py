@@ -110,25 +110,9 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         return self.office_rect(476, 0, 36, 27)
 
     def office_calendar_visible(self):
-        from drift_with_me.app import AppScreen
+        from drift_with_me.screen_flow import office_toolbar_visible
 
-        return (
-            getattr(self, "screen", None) == AppScreen.OFFICE
-            and getattr(self, "week_transition", None) is None
-            and getattr(self, "field_transition", None) is None
-            and not getattr(self, "week_input_wait_for_release", False)
-            and not any(
-                getattr(self, name, None) is not None
-                for name in (
-                    "ring_preview",
-                    "park_preview_week",
-                    "portrait_preview",
-                    "garden_props_preview",
-                    "nudibranch_preview",
-                    "flowerbed_editor",
-                )
-            )
-        )
+        return office_toolbar_visible(self)
 
     def draw_office_calendar(self):
         rect = self.office_calendar_rect()
@@ -143,6 +127,11 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         ):
             part = self.office_rect(x, y, w, h)
             self.pyxel.rect(int(part.x), int(part.y), int(part.width), int(part.height), color)
+
+    def week_debug_badge_visible(self):
+        from drift_with_me.screen_flow import debug_badge_visible
+
+        return debug_badge_visible(self)
 
     def week_debug_badge_rect(self):
         return self.office_rect(8, 32, 112, 24)
@@ -333,7 +322,9 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             self.update_nudibranch_preview()
             return True
         if not self.week_debug_menu_open:
-            if self.mouse_pressed_in(self.week_debug_badge_rect()):
+            if self.week_debug_badge_visible() and self.mouse_pressed_in(
+                self.week_debug_badge_rect()
+            ):
                 self.week_debug_menu_open = True
                 self.week_debug_wait_release = True
                 return True

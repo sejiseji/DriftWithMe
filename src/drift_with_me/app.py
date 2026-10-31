@@ -675,33 +675,9 @@ class DriftWithMeApp(
         self.presentation_time += elapsed
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
-        if self.screen == AppScreen.CREDITS:
-            self.update_ending(elapsed)
-            return
-        if self.screen == AppScreen.COLLECTION_ROOM:
-            self.update_collection_room()
-            return
-        if self.update_week_debug():
-            return
-        self.sync_august_sighting_lock()
-        if self.update_patrol(elapsed):
-            return
-        if self.update_swarm_frame(elapsed):
-            self.checkpoint_progress()
-            return
-        if self.update_august_sightings(elapsed):
-            self.checkpoint_progress()
-            return
-        if self.update_august(elapsed):
-            self.checkpoint_progress()
-            return
-        if self.update_july_week4(elapsed):
-            return
-        if self.update_july_week3(elapsed):
-            return
-        if self.update_week2():
-            return
-        if self.update_flowerbed_modal():
+        from drift_with_me.screen_flow import dispatch_early
+
+        if dispatch_early(self, elapsed):
             return
         if self.screen in (AppScreen.START, AppScreen.PLAY):
             self.prepare_water_study_assets()
@@ -947,16 +923,13 @@ class DriftWithMeApp(
         self.collection_notice = None
         self.sync_august_sighting_lock()
 
-    def update_office_screen(self, elapsed: float) -> None:
-        if self.week2_active() and self.office.week2_progress.phase == "done":
-            if self.can_begin_next_week() and (
-                self.mouse_pressed_in(self.office_next_week_rect())
-                or self.key_pressed("KEY_RETURN", "KEY_Z")
-            ):
-                self.begin_next_week()
-            return
-        self.clear_world_input_latches()
+    def update_office_shared_controls(self, elapsed: float) -> bool:
+        from drift_with_me.screen_flow import office_toolbar_visible
+
+        if not office_toolbar_visible(self) or self.office_story_report_active():
+            return False
         if getattr(self, "office_consultation", None) is not None:
+            self.clear_world_input_latches()
             self.update_office_dialogue_playback(elapsed)
             if self.key_pressed("KEY_ESCAPE", "KEY_X") or self.mouse_pressed_in(
                 self.office_consultation_button_rect()
@@ -966,10 +939,24 @@ class DriftWithMeApp(
                 self.office_dialog_rect()
             ):
                 self.advance_office_dialogue_page()
-            return
+            return True
         if self.mouse_pressed_in(self.office_consultation_button_rect()):
+            self.clear_world_input_latches()
             self.begin_office_consultation()
+            return True
+        return False
+
+    def update_office_screen(self, elapsed: float) -> None:
+        if self.update_office_shared_controls(elapsed):
             return
+        if self.week2_active() and self.office.week2_progress.phase == "done":
+            if self.can_begin_next_week() and (
+                self.mouse_pressed_in(self.office_next_week_rect())
+                or self.key_pressed("KEY_RETURN", "KEY_Z")
+            ):
+                self.begin_next_week()
+            return
+        self.clear_world_input_latches()
         if self.mouse_pressed_in(self.office_field_debug_rect()):
             self.activate_office_field_debug()
             return
@@ -3411,6 +3398,15 @@ class DriftWithMeApp(
         if screen == AppScreen.WATER_STUDY:
             return (self.water_study_close_rect(),)
         if screen == AppScreen.OFFICE:
+            from drift_with_me.screen_flow import resolve_state
+
+            state = resolve_state(self)
+            if not state.office_visible or state.transition is not None:
+                return (
+                    (self.office_next_week_rect(),)
+                    if state.surface == "recovered_landscape"
+                    else ()
+                )
             if getattr(self, "office_consultation", None) is not None:
                 return (self.office_consultation_button_rect(), self.office_dialog_rect())
             office = getattr(self, "office", None)
@@ -3812,6 +3808,8 @@ class DriftWithMeApp(
             return
         try:
             self.draw_active_scene()
+            self.draw_week_transition()
+            self.draw_field_transition()
             self.draw_collectible_notice()
         finally:
             self.lifecycle_did_draw()
@@ -3825,6 +3823,18 @@ class DriftWithMeApp(
             return
         if getattr(self, "week_debug_menu_open", False):
             self.draw_week_debug_menu()
+            return
+        from drift_with_me.screen_flow import resolve_state
+
+        state = resolve_state(self)
+        if state.modal == "flowerbed_dialogue":
+            self.draw_flowerbed_visit_dialogue()
+            return
+        if state.modal == "flowerbed_editor":
+            self.draw_flowerbed_editor()
+            return
+        if state.office_visible and getattr(self, "office_consultation", None) is not None:
+            self.draw_office()
             return
         if self.draw_august_overlay():
             return
@@ -3934,11 +3944,9 @@ class DriftWithMeApp(
             not store.available or "できません" in store.message or "前の保存" in store.message
         ):
             self.draw_office_text_in_rect(self.office_rect(8, 32, 496, 15), store.message, 10)
-        self.draw_week_transition()
         if self.build_label_visible():
             self.draw_build_label()
-        self.draw_field_transition()
-        if getattr(self, "week_debug_active", False) and not self.office_calendar_visible():
+        if self.week_debug_badge_visible():
             self.draw_week_debug_button(self.week_debug_badge_rect(), "週選択・保存なし")
 
     def build_label_visible(self) -> bool:

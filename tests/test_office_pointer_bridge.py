@@ -8,6 +8,7 @@ from unittest.mock import Mock
 import pytest
 from scripts.build_web import HOST_JS
 
+from drift_with_me.app import AppScreen
 from drift_with_me.app import DriftWithMeApp as App
 from drift_with_me.config import load_runtime_config
 
@@ -65,6 +66,7 @@ def test_host_to_python_office_arrow_never_becomes_calendar(monkeypatch, geometr
         sys.modules, "js", SimpleNamespace(window=SimpleNamespace(__driftWithMePointer=bridge))
     )
     app = App.__new__(App)
+    app.screen = AppScreen.OFFICE
     app.runtime = load_runtime_config()
     app.browser_pointer_sequence_seen = 0
     app.presentation_time = 0
@@ -103,6 +105,7 @@ def test_host_to_python_week_modal_buttons_consume_press_position(
     from drift_with_me.week_cycle import WorkWeek
 
     app = App.__new__(App)
+    app.screen = AppScreen.OFFICE
     app.runtime = load_runtime_config()
     app.browser_pointer_sequence_seen = 0
     app.presentation_time = 0

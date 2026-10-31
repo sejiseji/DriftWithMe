@@ -4,7 +4,7 @@ from itertools import permutations
 import pytest
 
 from drift_with_me import config
-from drift_with_me.app import DriftWithMeApp
+from drift_with_me.app import AppScreen, DriftWithMeApp
 from drift_with_me.office import SUPERVISOR_NAME, OfficePrototype
 
 
@@ -26,6 +26,7 @@ def finish(office):
 
 def app_for(office, profile="medium"):
     app = DriftWithMeApp.__new__(DriftWithMeApp)
+    app.screen = AppScreen.OFFICE
     app.runtime = config.load_runtime_config(profile)
     app.office = office
     app.ui_text = Font()
