@@ -87,6 +87,73 @@
     };
   };
 
+  // Optional, memory-only evidence. Never changes input ownership or captures.
+  const uiTrace = (() => {
+    try {
+      if (typeof window.URLSearchParams !== "function" ||
+          new window.URLSearchParams(window.location?.search || "").get("trace") !== "ui") {
+        return null;
+      }
+    } catch { return null; }
+    const events = [], taps = [], attempts = [];
+    let bootCount = 0, geometry = null;
+    const viewport = (win) => {
+      const v = win.visualViewport;
+      return { width: v?.width ?? win.innerWidth ?? null,
+        height: v?.height ?? win.innerHeight ?? null,
+        offsetLeft: v?.offsetLeft ?? null, offsetTop: v?.offsetTop ?? null,
+        scale: v?.scale ?? null };
+    };
+    const rectValue = (r) => r ? { left: r.left, top: r.top,
+      width: r.width, height: r.height } : null;
+    const snapshot = () => {
+      const g = { canvas: null, backing: null, logical: logicalSize(),
+        childViewport: null, parentViewport: null, iframeRect: null, iframeTransform: null };
+      try {
+        const c = findCanvas();
+        if (c) { g.canvas = rectValue(c.getBoundingClientRect());
+          g.backing = { width: c.width, height: c.height }; }
+      } catch { /* A missing canvas must not affect a trace-enabled game. */ }
+      try { g.childViewport = viewport(window); } catch { /* Read-only evidence. */ }
+      try {
+        g.parentViewport = viewport(window.parent);
+        const f = window.frameElement;
+        if (f) { g.iframeRect = rectValue(f.getBoundingClientRect());
+          g.iframeTransform = f.style?.transform ?? null; }
+      } catch { /* Parent may not be same-origin. */ }
+      return g;
+    };
+    const record = (kind, event, reason, position) => {
+      try {
+        geometry = snapshot();
+        const contact = event?.changedTouches?.[0] || event;
+        const entry = { kind, reason, time: window.performance?.now?.() ?? Date.now(),
+          sequence: pointer.sequence, seq: pointer.sequence,
+          pointerId: event?.pointerId ?? contact?.identifier ?? null,
+          pointerType: event?.pointerType ?? null, type: event?.type ?? null,
+          isTrusted: event?.isTrusted ?? null,
+          client: [contact?.clientX ?? null, contact?.clientY ?? null],
+          down: [pointer.pressedX, pointer.pressedY], current: [pointer.x, pointer.y],
+          logical: position ? [position.x, position.y] : null,
+          held: pointer.down, epoch: window.__driftWithMeLifecycle?.inputEpoch ?? null };
+        if (kind === "pd") entry.geometry = geometry;
+        events.push(entry); if (events.length > 32) events.shift();
+        if (kind === "pd") {
+          attempts.push(entry); if (attempts.length > 3) attempts.shift();
+        }
+        if (kind === "pd" && reason === "accepted") {
+          taps.push(entry); if (taps.length > 3) taps.shift();
+        }
+      } catch { /* Diagnostics must not change game behavior. */ }
+    };
+    try { geometry = snapshot(); } catch { /* Read-only evidence. */ }
+    const api = { enabled: true,
+      read: () => JSON.stringify({ events, taps, attempts, geometry, boot: bootCount }),
+      boot: () => ++bootCount };
+    window.__driftWithMeUiTrace = api;
+    return { record };
+  })();
+
   const preventCanvasGesture = (event) => {
     if (event.cancelable) {
       event.preventDefault();
@@ -118,9 +185,13 @@
   };
 
   const onPointerDown = (event) => {
-    if (window.__driftWithMeLifecycle?.active === false) return;
+    if (window.__driftWithMeLifecycle?.active === false) {
+      uiTrace?.record("pd", event, "inactive");
+      return;
+    }
     const position = eventToLogical(event);
     if (!position.inside || activePointerId !== null) {
+      uiTrace?.record("pd", event, !position.inside ? "outside" : "active-pointer", position);
       return;
     }
     activePointerId = event.pointerId;
@@ -135,6 +206,7 @@
     pointer.pressedY = position.y;
     pointer.sequence += 1;
     preventCanvasGesture(event);
+    uiTrace?.record("pd", event, "accepted", position);
   };
 
   const onPointerMove = (event) => {
@@ -151,6 +223,7 @@
 
   const onPointerFinish = (event) => {
     if (activePointerId !== event.pointerId) {
+      uiTrace?.record(event.type === "pointercancel" ? "cancel" : "pu", event, "inactive-pointer");
       return;
     }
     const position = eventToLogical(event);
@@ -165,6 +238,7 @@
     activePointerId = null;
     releasePointer(event.pointerId);
     preventCanvasGesture(event);
+    uiTrace?.record(event.type === "pointercancel" ? "cancel" : "pu", event, "accepted", position);
   };
 
   const cancelPointer = () => {
@@ -175,12 +249,13 @@
     pointer.inside = false;
   };
 
-  const invalidatePointerGeometry = () => {
+  const invalidatePointerGeometry = (event) => {
     updateViewport();
     cancelPointer();
     // Python must also discard the old logical anchor and wait for release.
     const lifecycle = window.__driftWithMeLifecycle;
     if (lifecycle) lifecycle.inputEpoch += 1;
+    uiTrace?.record("geometry", event, "invalidated");
   };
   updateViewport();
   window.addEventListener("resize", invalidatePointerGeometry, { passive: true });
@@ -317,6 +392,12 @@
     window.addEventListener("pointerdown", retryAudio, true);
   }
 
+  if (uiTrace) {
+    for (const name of ["mousedown", "touchstart", "touchend"]) {
+      document.addEventListener(name, (event) => uiTrace.record("observer", event, "passive"),
+        { passive: true });
+    }
+  }
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   document.addEventListener("pointerdown", onPointerDown, { passive: false });
   document.addEventListener("pointermove", onPointerMove, { passive: false });

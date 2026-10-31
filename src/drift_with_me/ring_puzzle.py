@@ -17,6 +17,7 @@ from drift_with_me.ring_linkage import (
     RULESET,
     move_deltas,
 )
+from drift_with_me.ui_trace import record_menu_open
 
 STEPS = 12
 INITIAL = (2, 10, 3, 9, 1)
@@ -636,6 +637,7 @@ class RingPuzzlePreviewMixin:
         if action == "quit" and getattr(self, "story_ring_active", False):
             self.close_story_ring()
         elif action == "quit":
+            record_menu_open(self, "ring-quit")
             self.restore_ring_grid_palette()
             self.ring_preview = None
             self.week_debug_menu_open = True

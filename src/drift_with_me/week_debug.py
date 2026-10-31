@@ -7,6 +7,7 @@ from urllib.parse import parse_qs
 
 from drift_with_me.nudibranch_preview import NudibranchPreview
 from drift_with_me.ring_puzzle import RingPuzzlePreviewMixin
+from drift_with_me.ui_trace import record_menu_open
 from drift_with_me.week_cycle import WorkWeek, load_week_office
 
 
@@ -71,6 +72,8 @@ IMPLEMENTED_DEBUG_WEEKS = frozenset(WorkWeek(m, n) for m in (6, 7, 8) for n in r
 
 class WeekDebugMixin(RingPuzzlePreviewMixin):
     def initialize_week_debug(self, enabled: bool) -> None:
+        if enabled:
+            record_menu_open(self, "launch")
         self.week_debug_compact = False
         self.week_debug_active = enabled
         self.week_debug_menu_open = enabled
@@ -290,11 +293,14 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             if not self.pointer_snapshot.down:
                 self.week_debug_wait_release = False
             return True
+        if getattr(self, "update_ui_trace_menu", lambda: False)():
+            return True
         if (
             not getattr(self, "week_debug_menu_open", False)
             and self.office_calendar_visible()
             and self.mouse_pressed_in(self.office_calendar_rect())
         ):
+            record_menu_open(self, "calendar")
             self.week_debug_compact = True
             self.week_debug_month = self.work_week.month
             self.week_debug_selection = self.work_week.number
@@ -325,6 +331,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             if self.week_debug_badge_visible() and self.mouse_pressed_in(
                 self.week_debug_badge_rect()
             ):
+                record_menu_open(self, "badge")
                 self.week_debug_menu_open = True
                 self.week_debug_wait_release = True
                 return True
@@ -381,6 +388,12 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         self.draw_office_text_in_rect(rect, text, 6 if disabled else 7, align="center")
 
     def draw_week_debug_menu(self) -> None:
+        if getattr(self, "draw_ui_trace_sheet", lambda: False)():
+            return
+        self.draw_week_debug_menu_contents()
+        getattr(self, "draw_ui_trace_entry", lambda: None)()
+
+    def draw_week_debug_menu_contents(self) -> None:
         if getattr(self, "week_debug_compact", False):
             self.pyxel.cls(0)
             self.draw_office_text_in_rect(
@@ -467,6 +480,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         from drift_with_me.northeast_park import PREVIEW_WEEKS
 
         if self.key_pressed("KEY_ESCAPE"):
+            record_menu_open(self, "park-escape")
             self.jump_to_debug_week(WorkWeek(7, 2))
             self.flowerbed_dialogue = None
             self.week_debug_menu_open = True
@@ -474,6 +488,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
         for i, (name, rect) in enumerate(self.park_preview_rects().items()):
             if self.mouse_pressed_in(rect):
                 if name == "menu":
+                    record_menu_open(self, "park-menu")
                     self.jump_to_debug_week(WorkWeek(7, 2))
                     self.flowerbed_dialogue = None
                     self.week_debug_menu_open = True
@@ -569,6 +584,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
                 self.model.snap_buddy(self.camera())
                 self.camera_controller.reset(Vec3(x, 0, z))
             elif action == "menu":
+                record_menu_open(self, "garden-menu")
                 self.jump_to_debug_week(WorkWeek(6, self.week_debug_selection))
                 self.week_debug_menu_open = True
             elif action == "normal":
@@ -791,6 +807,7 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
             elif action == "cancel":
                 state.focus_action = None
             elif action == "menu":
+                record_menu_open(self, "slug-menu")
                 self.jump_to_debug_week(WorkWeek(6, self.week_debug_selection))
                 self.week_debug_menu_open = True
             elif action == "normal":
@@ -881,6 +898,8 @@ class WeekDebugMixin(RingPuzzlePreviewMixin):
                 else:
                     self.portrait_preview = None
             else:
+                if action == "menu":
+                    record_menu_open(self, "portrait-menu")
                 self.portrait_preview = None
                 self.week_debug_menu_open = action == "menu"
             self.week_debug_wait_release = True

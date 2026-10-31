@@ -73,6 +73,7 @@ from drift_with_me.render import Renderer, jack_blink_closed, jack_idle_hover
 from drift_with_me.save_state import ProgressStore, snapshot
 from drift_with_me.swarm_app import SwarmAppMixin
 from drift_with_me.ui_text import UITextRenderer, load_ui_text_renderer
+from drift_with_me.ui_trace import UITraceMixin, trace_action
 from drift_with_me.water_study_assets import (
     APPROVED_LOOK04_PLUS_SPARKLE_FPS,
     APPROVED_LOOK04_PLUS_SPARKLE_FRAME_COUNT,
@@ -473,6 +474,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
+    UITraceMixin,
     CollectibleMixin,
     LifecycleMixin,
     PatrolMixin,
@@ -493,6 +495,7 @@ class DriftWithMeApp(
         headless: bool = False,
         smoke_frames: int | None = None,
         week_debug: bool | None = None,
+        ui_trace: bool | None = None,
         swarm_field: bool = False,
     ) -> None:
         import pyxel
@@ -518,6 +521,7 @@ class DriftWithMeApp(
         debug_requested = debug_launch_requested() if week_debug is None else week_debug
         self.progress_store = ProgressStore(enabled=not headless)
         self.saved_progress = None if debug_requested else self.progress_store.load()
+        self.initialize_ui_trace(ui_trace)
         self.initialize_week_debug(debug_requested)
         self.session_started = False
         self.new_game_confirmation = False
@@ -668,6 +672,13 @@ class DriftWithMeApp(
         self.projection_mode = "affine" if self.projection_mode == "perspective" else "perspective"
 
     def update(self) -> None:
+        self.ui_trace_begin_frame()
+        try:
+            self.update_game_frame()
+        finally:
+            self.ui_trace_end_frame()
+
+    def update_game_frame(self) -> None:
         if self.lifecycle_update_blocked():
             return
         pyxel = self.pyxel
@@ -1074,6 +1085,7 @@ class DriftWithMeApp(
             visible_count += 1
         return min(len(case.questions), visible_count)
 
+    @trace_action("question")
     def ask_or_select_office_question(self, question: QuestionDefinition) -> bool:
         session = self.office.current_session
         if session is None:
@@ -1363,6 +1375,7 @@ class DriftWithMeApp(
                         len(case.questions) - 1,
                     )
 
+    @trace_action("dialogue")
     def advance_office_dialogue_page(self) -> bool:
         playback = self.sync_office_dialogue_playback()
         page = self.office_dialogue_current_page(playback)
@@ -3170,30 +3183,27 @@ class DriftWithMeApp(
         browser_pointer = self.read_browser_pointer_snapshot()
         if browser_pointer is not None:
             return browser_pointer
-
         pyxel = self.pyxel
         mouse_button = getattr(pyxel, "MOUSE_BUTTON_LEFT", 0)
         x, y = self.clamp_pointer_position(float(pyxel.mouse_x), float(pyxel.mouse_y))
-        return PointerSnapshot(
-            down=pyxel.btn(mouse_button),
-            pressed=pyxel.btnp(mouse_button),
-            x=x,
-            y=y,
+        pointer = PointerSnapshot(
+            down=pyxel.btn(mouse_button), pressed=pyxel.btnp(mouse_button), x=x, y=y
         )
+        trace = getattr(self, "ui_trace", None)
+        self.ui_trace_pointer("N", trace.failure if trace is not None else "no-js", pointer=pointer)
+        return pointer
 
     def read_browser_pointer_snapshot(self) -> PointerSnapshot | None:
         try:
-            import js  # type: ignore[import-not-found]
+            import js
         except ImportError:
-            return None
-
+            return self.ui_trace_pointer("H", "import")
         try:
             bridge = getattr(js.window, "__driftWithMePointer", None)
         except Exception:
-            return None
+            return self.ui_trace_pointer("H", "window")
         if bridge is None:
-            return None
-
+            return self.ui_trace_pointer("H", "missing")
         try:
             down = bool(bridge.down)
             pressed_flag = bool(bridge.pressed)
@@ -3201,21 +3211,25 @@ class DriftWithMeApp(
             x = float(bridge.x)
             y = float(bridge.y)
         except Exception:
-            return None
+            return self.ui_trace_pointer("H", "fields")
         if not math.isfinite(x) or not math.isfinite(y):
-            return None
-
-        pressed = pressed_flag and sequence != self.browser_pointer_sequence_seen
+            return self.ui_trace_pointer("H", "current-nan")
+        seen = self.browser_pointer_sequence_seen
+        pressed = pressed_flag and sequence != seen
         if pressed:
-            # The UI press belongs to pointerdown, not a later move/up position.
-            # Older/native bridges retain the previous coordinate fallback.
-            x = float(getattr(bridge, "pressedX", x))
-            y = float(getattr(bridge, "pressedY", y))
+            try:
+                x = float(getattr(bridge, "pressedX", x))
+                y = float(getattr(bridge, "pressedY", y))
+            except Exception:
+                self.ui_trace_pointer("H", "down-cast", sequence, seen)
+                raise
             if not math.isfinite(x) or not math.isfinite(y):
-                return None
+                return self.ui_trace_pointer("H", "down-nan", sequence, seen)
             self.browser_pointer_sequence_seen = sequence
         x, y = self.clamp_pointer_position(x, y)
-        return PointerSnapshot(down=down, pressed=pressed, x=x, y=y)
+        pointer = PointerSnapshot(down=down, pressed=pressed, x=x, y=y)
+        self.ui_trace_pointer("H", "ok", sequence, seen, pointer)
+        return pointer
 
     def clamp_pointer_position(self, x: float, y: float) -> tuple[float, float]:
         max_x = float(self.runtime.screen_width - 1)
@@ -3808,9 +3822,12 @@ class DriftWithMeApp(
             return
         try:
             self.draw_active_scene()
-            self.draw_week_transition()
-            self.draw_field_transition()
-            self.draw_collectible_notice()
+            trace = getattr(self, "ui_trace", None)
+            if trace is None or not trace.sheet:
+                self.draw_week_transition()
+                self.draw_field_transition()
+                self.draw_collectible_notice()
+            self.ui_trace_did_draw()
         finally:
             self.lifecycle_did_draw()
 
