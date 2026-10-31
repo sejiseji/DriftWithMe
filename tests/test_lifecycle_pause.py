@@ -19,7 +19,8 @@ def subject():
     app.model = SimpleNamespace(cancel_auto_move=Mock())
     app.audio = SimpleNamespace(suspend_for_lifecycle=Mock(), resume_from_lifecycle=Mock())
     app.pyxel = SimpleNamespace(KEY_RIGHT=1, MOUSE_BUTTON_LEFT=2, btn=lambda _: False)
-    app.read_pointer_snapshot = lambda: app.pointer_snapshot
+    app.read_pointer_snapshot = lambda **_: app.pointer_snapshot
+    app.peek_pointer_snapshot = lambda: app.pointer_snapshot
     return app
 
 

@@ -59,7 +59,13 @@ def run_flow(enabled, screenshot=None):
         host.emit({"kind": "boot"})
         return json.loads(host.pointer["traceJSON"])["boot"]
 
-    trace = SimpleNamespace(enabled=True, boot=boot, read=lambda: host.pointer["traceJSON"])
+    published = []
+    trace = SimpleNamespace(
+        enabled=True,
+        boot=boot,
+        read=lambda: host.pointer["traceJSON"],
+        publish=lambda payload: published.append(json.loads(payload)),
+    )
     window = SimpleNamespace(__driftWithMePointer=pointer, __driftWithMeLifecycle=life)
     if enabled:
         window.__driftWithMeUiTrace = trace
@@ -128,6 +134,7 @@ def run_flow(enabled, screenshot=None):
             from copy import deepcopy
 
             frozen = deepcopy(app.ui_trace.frozen)
+            assert published[-1] == frozen  # Automatic output before any DIAG tap.
             assert frozen["reason"] == "calendar"
             assert frozen["state"]["menu"] is False
             assert frozen["last_draw"]["screen"] == "OFFICE"

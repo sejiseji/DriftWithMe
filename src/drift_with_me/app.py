@@ -69,6 +69,7 @@ from drift_with_me.office import (
     supervisor_speaker_name,
 )
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
+from drift_with_me.pointer_input import PointerInputMixin, PointerSnapshot
 from drift_with_me.render import Renderer, jack_blink_closed, jack_idle_hover
 from drift_with_me.save_state import ProgressStore, snapshot
 from drift_with_me.swarm_app import SwarmAppMixin
@@ -116,14 +117,6 @@ class AppScreen(Enum):
     WATER_STUDY = auto()
     COLLECTION_ROOM = auto()
     CREDITS = auto()
-
-
-@dataclass(frozen=True)
-class PointerSnapshot:
-    down: bool
-    pressed: bool
-    x: float
-    y: float
 
 
 @dataclass
@@ -474,6 +467,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
+    PointerInputMixin,
     UITraceMixin,
     CollectibleMixin,
     LifecycleMixin,
@@ -618,6 +612,7 @@ class DriftWithMeApp(
             headless=headless,
             capture_sec=20 if swarm_field else 10,
         )
+        self._pyxel_input_ready = True
         pyxel.mouse(True)
         self.ui_text = load_ui_text_renderer(pyxel, self.runtime)
         self.sprite_assets = load_runtime_sprite_library(pyxel, self.runtime.raw)
@@ -3178,58 +3173,6 @@ class DriftWithMeApp(
             action_pressed=False if action_mode == "GUARD" else pyxel.btnp(pyxel.KEY_X),
             interact_pressed=pyxel.btnp(pyxel.KEY_E),
         )
-
-    def read_pointer_snapshot(self) -> PointerSnapshot:
-        browser_pointer = self.read_browser_pointer_snapshot()
-        if browser_pointer is not None:
-            return browser_pointer
-        pyxel = self.pyxel
-        mouse_button = getattr(pyxel, "MOUSE_BUTTON_LEFT", 0)
-        x, y = self.clamp_pointer_position(float(pyxel.mouse_x), float(pyxel.mouse_y))
-        pointer = PointerSnapshot(
-            down=pyxel.btn(mouse_button), pressed=pyxel.btnp(mouse_button), x=x, y=y
-        )
-        trace = getattr(self, "ui_trace", None)
-        self.ui_trace_pointer("N", trace.failure if trace is not None else "no-js", pointer=pointer)
-        return pointer
-
-    def read_browser_pointer_snapshot(self) -> PointerSnapshot | None:
-        try:
-            import js
-        except ImportError:
-            return self.ui_trace_pointer("H", "import")
-        try:
-            bridge = getattr(js.window, "__driftWithMePointer", None)
-        except Exception:
-            return self.ui_trace_pointer("H", "window")
-        if bridge is None:
-            return self.ui_trace_pointer("H", "missing")
-        try:
-            down = bool(bridge.down)
-            pressed_flag = bool(bridge.pressed)
-            sequence = int(bridge.sequence)
-            x = float(bridge.x)
-            y = float(bridge.y)
-        except Exception:
-            return self.ui_trace_pointer("H", "fields")
-        if not math.isfinite(x) or not math.isfinite(y):
-            return self.ui_trace_pointer("H", "current-nan")
-        seen = self.browser_pointer_sequence_seen
-        pressed = pressed_flag and sequence != seen
-        if pressed:
-            try:
-                x = float(getattr(bridge, "pressedX", x))
-                y = float(getattr(bridge, "pressedY", y))
-            except Exception:
-                self.ui_trace_pointer("H", "down-cast", sequence, seen)
-                raise
-            if not math.isfinite(x) or not math.isfinite(y):
-                return self.ui_trace_pointer("H", "down-nan", sequence, seen)
-            self.browser_pointer_sequence_seen = sequence
-        x, y = self.clamp_pointer_position(x, y)
-        pointer = PointerSnapshot(down=down, pressed=pressed, x=x, y=y)
-        self.ui_trace_pointer("H", "ok", sequence, seen, pointer)
-        return pointer
 
     def clamp_pointer_position(self, x: float, y: float) -> tuple[float, float]:
         max_x = float(self.runtime.screen_width - 1)

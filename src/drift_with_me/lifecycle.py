@@ -60,12 +60,10 @@ class LifecycleMixin:
         return state
 
     def lifecycle_input_held(self) -> bool:
-        if self.read_pointer_snapshot().down:
+        if self.peek_pointer_snapshot().down:
             return True
         for name in dir(self.pyxel):
-            if (name.startswith("KEY_") or name == "MOUSE_BUTTON_LEFT") and self.pyxel.btn(
-                getattr(self.pyxel, name)
-            ):
+            if name.startswith("KEY_") and self.pyxel.btn(getattr(self.pyxel, name)):
                 return True
         return False
 
@@ -77,6 +75,7 @@ class LifecycleMixin:
             self.previous_time = None
             return True
         if getattr(self, "_lifecycle_wait_release", False):
+            self.discard_pointer_press()  # Explicitly cancel actions owned by this guard.
             if not self.lifecycle_input_held():
                 self._lifecycle_wait_release = False
             self.previous_time = None

@@ -81,7 +81,7 @@ def test_memory_bounded_and_freeze_copies_every_nested_value(monkeypatch):
 
 
 @pytest.mark.parametrize("failure", ["missing", "fields", "current-nan", "down-nan"])
-def test_failed_js_and_native_source_are_distinguishable(monkeypatch, failure):
+def test_failed_js_is_quarantined_without_native_activation(monkeypatch, failure):
     app, _ = subject(monkeypatch)
     b = SimpleNamespace(down=False, pressed=True, sequence=1, x=10, y=10, pressedX=10, pressedY=10)
     if failure == "missing":
@@ -94,8 +94,8 @@ def test_failed_js_and_native_source_are_distinguishable(monkeypatch, failure):
         b.pressedX = float("nan")
     sys.modules["js"].window.__driftWithMePointer = b
     p = app.read_pointer_snapshot()
-    assert p.pressed and (p.x, p.y) == (494, 13)
-    assert app.ui_trace.input["source"] == "N"
+    assert not p.pressed and not p.down
+    assert app.ui_trace.input["source"] == "Q"
     assert app.ui_trace.input["reason"] == failure
 
 
@@ -157,3 +157,18 @@ def test_trace_reader_does_not_acknowledge_pointer(monkeypatch):
     app.ui_trace_menu_open("launch")
     assert app.browser_pointer_sequence_seen == 0
     assert app.ui_trace.frozen["reason"] == "launch"
+
+
+def test_native_diagnostic_never_calls_engine_before_init(monkeypatch):
+    app, _ = subject(monkeypatch)
+
+    def forbidden(*args):
+        raise AssertionError("native engine queried before init")
+
+    app.pyxel.btn = forbidden
+    app.pyxel.btnp = forbidden
+    assert app.ui_trace_native_buttons() == {"down": None, "pressed": None}
+    app._pyxel_input_ready = True
+    app.pyxel.btn = lambda *_: True
+    app.pyxel.btnp = lambda *_: False
+    assert app.ui_trace_native_buttons() == {"down": True, "pressed": False}

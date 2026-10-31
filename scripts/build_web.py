@@ -100,6 +100,86 @@ HOST_JS = """(() => {
       frame.style.height = `${Math.ceil(height / scale)}px`;
       frame.style.transform = `scale(${scale})`;
     };
+    // Diagnosis is owned by the parent DOM, independent of game hit tests/draws.
+    const traceEnabled = (() => {
+      try { return new window.URLSearchParams(window.location.search).get("trace") === "ui"; }
+      catch { return false; }
+    })();
+    if (traceEnabled) {
+      let panel = null, frozenText = "", liveText = "";
+      const compact = (value) => {
+        try { return JSON.stringify(value ?? null).slice(0, 110); } catch { return "?"; }
+      };
+      const render = () => {
+        if (!frozenText) return;
+        if (!panel) {
+          panel = document.createElement("pre");
+          panel.id = "drift-ui-diagnostic";
+          panel.setAttribute("role", "status");
+          panel.style.cssText = "position:fixed;z-index:2147483647;inset:0;margin:0;"
+            + "padding:6px;box-sizing:border-box;background:#080a10;color:#f4f4df;"
+            + "font:clamp(10px,1.65vw,14px)/1.12 monospace;white-space:pre-wrap;"
+            + "overflow:auto;overflow-wrap:anywhere;pointer-events:auto";
+          document.body.appendChild(panel);
+        }
+        panel.textContent = frozenText + "\\nLIVE JS " + liveText;
+      };
+      const format = (f) => {
+        const state = f.state || {}, input = f.input || {}, host = f.host || {};
+        const native = state.native_buttons || f.native_buttons || {};
+        const contract = input.contract || f.inputcontract || state.input_contract || {};
+        const taps = (host.attempts || host.taps || []).slice(-3);
+        const geometry = host.geometry || {};
+        const box = (r) => r ? [r.left,r.top,r.width,r.height] : null;
+        const vp = (r) => r ? [r.width,r.height,r.offsetLeft,r.offsetTop,r.scale] : null;
+        return [
+          "INPUT TRACE / SCREENSHOT / RAM ONLY",
+          "BUILD " + f.build + " WHY " + f.reason + " BOOT " + f.boot,
+          "SOURCE " + input.source + " ERR " + input.reason
+            + " SEQ " + input.sequence + "/" + input.seen_before,
+          "SELECTED down/press/release "
+            + compact([input.down,input.pressed,input.released ?? contract.released])
+            + " HOST " + compact([host.pointer?.down,host.pointer?.pressed,host.pointer?.released]),
+          "NATIVE held/press " + compact([native.down,native.pressed])
+            + " SOURCEGEN " + contract.generation + " CANCELLED " + contract.cancelled,
+          "HOST seq/downxy/currentxy/active " + compact([host.pointer?.sequence,
+            host.pointer?.pressedX,host.pointer?.pressedY,host.pointer?.x,host.pointer?.y,
+            host.pointer?.activePointerId]),
+          "XY selected " + compact(input.point)
+            + " native " + compact(input.native || state.native),
+          "SCREEN " + state.screen + " WEEK " + compact(state.week)
+            + " CASE " + state.case + " Q " + state.question,
+          "PAGE " + state.page + "/" + state.pages + " TEXT " + state.chars + "/" + state.total,
+          "WAIT draw/release/menu/week/field " + compact(Object.values(state.gates || {}))
+            + " LIFE " + compact(state.life),
+          ...taps.map((t,i) => "T" + (i+1) + " " + t.reason + " S" + t.sequence
+            + " C" + compact(t.client) + " L" + compact(t.down || t.logical)
+            + " held " + t.held + " epoch " + t.epoch),
+          "CANVAS xywh " + compact(box(geometry.canvas)) + " BUF " + compact(geometry.backing),
+          "VIEW wh/offset/scale C " + compact(vp(geometry.childViewport))
+            + " P " + compact(vp(geometry.parentViewport)),
+          "FRAME xywh " + compact(box(geometry.iframeRect))
+            + " " + compact(geometry.iframeTransform),
+          "FROZEN: screenshot now; taps blocked. Reload without trace to resume."
+        ].join("\\n");
+      };
+      window.addEventListener("message", (event) => {
+        if (event.source !== frame.contentWindow || event.origin !== window.location.origin) return;
+        const data = event.data;
+        if (!data || data.channel !== "drift-ui-trace-v2" || typeof data.payload !== "string"
+            || data.payload.length > 65536) return;
+        try {
+          const value = JSON.parse(data.payload);
+          if (!value || typeof value !== "object" || Array.isArray(value)) return;
+          if (data.kind === "freeze" && typeof value.reason === "string") {
+            if (!frozenText) frozenText = format(value);
+          }
+          else if (data.kind === "live") liveText = compact(value);
+          else return;
+          render();
+        } catch { /* Malformed diagnostic data never changes the game. */ }
+      });
+    }
     fitFrame();document.body.appendChild(frame);
     window.addEventListener("resize", fitFrame);
     window.visualViewport?.addEventListener("resize", fitFrame);
@@ -224,6 +304,9 @@ HOST_JS = """(() => {
           held: pointer.down, epoch: window.__driftWithMeLifecycle?.inputEpoch ?? null };
         if (kind === "pd") entry.geometry = geometry;
         events.push(entry); if (events.length > 32) events.shift();
+        send("live", JSON.stringify({kind,reason,sequence:pointer.sequence,
+          down:pointer.down,pressed:pointer.pressed,released:pointer.released,
+          activePointerId,epoch:window.__driftWithMeLifecycle?.inputEpoch ?? null}));
         if (kind === "pd") {
           attempts.push(entry); if (attempts.length > 3) attempts.shift();
         }
@@ -233,8 +316,18 @@ HOST_JS = """(() => {
       } catch { /* Diagnostics must not change game behavior. */ }
     };
     try { geometry = snapshot(); } catch { /* Read-only evidence. */ }
+    const send = (kind, payload) => {
+      try {
+        if (typeof payload !== "string" || payload.length > 65536) return false;
+        window.parent.postMessage(
+          {channel:"drift-ui-trace-v2",kind,payload}, window.location.origin);
+        return true;
+      } catch { return false; }
+    };
     const api = { enabled: true,
-      read: () => JSON.stringify({ events, taps, attempts, geometry, boot: bootCount }),
+      publish: (payload) => send("freeze", payload),
+      read: () => JSON.stringify({ events, taps, attempts, geometry, boot: bootCount,
+        pointer: {...pointer, activePointerId} }),
       boot: () => ++bootCount };
     window.__driftWithMeUiTrace = api;
     return { record };

@@ -82,6 +82,16 @@ class UITraceMixin:
                 enabled = False
         self.ui_trace = TraceMemory(bridge) if enabled else None
 
+    def ui_trace_native_buttons(self):
+        if not getattr(self, "_pyxel_input_ready", False):
+            return {"down": None, "pressed": None}
+        p = getattr(self, "pyxel", None)
+        try:
+            button = getattr(p, "MOUSE_BUTTON_LEFT", 0)
+            return {"down": bool(p.btn(button)), "pressed": bool(p.btnp(button))}
+        except Exception:
+            return {"down": None, "pressed": None}
+
     def ui_trace_state(self):
         p = getattr(self, "office_dialogue_playback", None)
         consultation = getattr(self, "office_consultation", None)
@@ -96,6 +106,8 @@ class UITraceMixin:
         week = getattr(self, "work_week", None)
         lifecycle = getattr(self, "_lifecycle_state", None)
         return {
+            "native_buttons": self.ui_trace_native_buttons(),
+            "input_contract": deepcopy(getattr(self, "pointer_input_status", {})),
             "life": {
                 "active": getattr(lifecycle, "active", None),
                 "generation": getattr(lifecycle, "generation", None),
@@ -174,6 +186,8 @@ class UITraceMixin:
         try:
             t.failure = reason
             t.input = {
+                "contract": deepcopy(getattr(self, "pointer_input_status", {})),
+                "native_buttons": self.ui_trace_native_buttons(),
                 "source": source,
                 "reason": reason,
                 "native": [
@@ -248,6 +262,9 @@ class UITraceMixin:
                     "host": host,
                 }
             )
+            if t.bridge is not None:
+                with suppress(Exception):
+                    t.bridge.publish(json.dumps(t.frozen, ensure_ascii=True))
             t.sheet = False
             t.wait_release = False
         except Exception:
