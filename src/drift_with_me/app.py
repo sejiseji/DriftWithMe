@@ -68,6 +68,7 @@ from drift_with_me.office import (
     QuestionDefinition,
     supervisor_speaker_name,
 )
+from drift_with_me.office_header import OfficeHeaderMixin
 from drift_with_me.pixel_font import draw_pixel_text, pixel_text_size
 from drift_with_me.pointer_input import PointerInputMixin, PointerSnapshot
 from drift_with_me.render import Renderer, jack_blink_closed, jack_idle_hover
@@ -467,6 +468,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
+    OfficeHeaderMixin,
     PointerInputMixin,
     UITraceMixin,
     CollectibleMixin,
@@ -679,6 +681,7 @@ class DriftWithMeApp(
         pyxel = self.pyxel
         elapsed = self.consume_elapsed()
         self.presentation_time += elapsed
+        self.sync_office_save_notice()
         self.frame += 1
         self.pointer_snapshot = self.read_pointer_snapshot()
         from drift_with_me.screen_flow import dispatch_early
@@ -946,7 +949,9 @@ class DriftWithMeApp(
             ):
                 self.advance_office_dialogue_page()
             return True
-        if self.mouse_pressed_in(self.office_consultation_button_rect()):
+        if self.office_consultation_available() and self.mouse_pressed_in(
+            self.office_consultation_button_rect()
+        ):
             self.clear_world_input_latches()
             self.begin_office_consultation()
             return True
@@ -3435,10 +3440,10 @@ class DriftWithMeApp(
         return self.office_rect(0, 0, 512, 27)
 
     def office_field_debug_rect(self) -> Rect:
-        return self.office_rect(244, 3, 92, 21)
+        return self.office_rect(330, 3, 92, 21)
 
     def office_consultation_button_rect(self) -> Rect:
-        return self.office_rect(140, 3, 96, 21)
+        return self.office_rect(432, 0, 36, 27)
 
     def office_supervisor_portrait_rect(self) -> Rect:
         panel = self.office_visitor_rect()
@@ -3900,8 +3905,12 @@ class DriftWithMeApp(
         else:
             self.draw_play()
         store = getattr(self, "progress_store", None)
-        if store is not None and (
-            not store.available or "できません" in store.message or "前の保存" in store.message
+        if (
+            self.screen != AppScreen.OFFICE
+            and store is not None
+            and (
+                not store.available or "できません" in store.message or "前の保存" in store.message
+            )
         ):
             self.draw_office_text_in_rect(self.office_rect(8, 32, 496, 15), store.message, 10)
         if self.build_label_visible():
@@ -4048,55 +4057,15 @@ class DriftWithMeApp(
         office = self.office
         case = office.current_case
         session = office.current_session
-        header_pad = self.office_rect(8, 0, 0, 0).x
         if case is None or session is None:
+            self.draw_office_save_notice()
             self.draw_office_complete()
             return
 
-        self.draw_office_text_in_rect(
-            Rect(
-                header_pad,
-                header.y,
-                max(1.0, self.office_consultation_button_rect().x - header_pad * 2),
-                header.height,
-            ),
-            "外勤報告"
-            if reporting
-            else "相談中"
-            if getattr(self, "office_consultation", None) is not None
-            else "質問・処理区分",
-            13,
-            preferred_styles=("office_japanese", "office_japanese_button"),
-        )
-
         consulting = getattr(self, "office_consultation", None) is not None
-        available = consulting or not self.office_dialogue_requires_advance()
         if not reporting:
-            self.draw_office_button(
-                self.office_consultation_button_rect(),
-                "戻る" if consulting else "上司に相談",
-                11 if available else 1,
-                text_color=0 if available else 13,
-                horizontal_padding=2,
-            )
-        status = self.office_state_label(session.state)
-        count_text = f"案件 {office.current_index + 1}/{len(office.cases)}  {status}"
-        if reporting:
-            report_lines, report_index = self.office_story_report()
-            count_text = f"報告 {report_index + 1}/{len(report_lines)}"
-        status_x = debug_rect.x + debug_rect.width + header_pad
-        self.draw_office_text_in_rect(
-            Rect(
-                status_x,
-                header.y,
-                self.office_calendar_rect().x - status_x - header_pad,
-                header.height,
-            ),
-            count_text,
-            7,
-            preferred_styles=("office_japanese_button", "office_japanese"),
-            align="right",
-        )
+            self.draw_office_consultation_icon()
+        self.draw_office_save_notice()
 
         visitor_rect = self.office_visitor_rect()
         dialog_rect = self.office_dialog_rect()
@@ -4171,6 +4140,7 @@ class DriftWithMeApp(
                 self.draw_office_text_in_rect(
                     self.office_rect(144, 187, 216, 16), self.week3_error, 8
                 )
+            report_lines, report_index = self.office_story_report()
             label = "勤務を終える" if report_index + 1 == len(report_lines) else "次へ"
             self.draw_office_button(self.office_footer_action_rect(), label, 11, text_color=0)
             return

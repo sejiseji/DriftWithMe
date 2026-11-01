@@ -44,7 +44,14 @@ class TemporaryProgressStore:
             record = encode(payload)
             decode(record, debug_entry=self.entry_week)
         except Exception:
+            from drift_with_me.office_header import publish_save_notice
+
+            publish_save_notice(self, "temporary_failure")
             return False
+        if self.session != record:
+            from drift_with_me.office_header import publish_save_notice
+
+            publish_save_notice(self, "temporary")
         self.session = record
         self.has_record = True
         return True

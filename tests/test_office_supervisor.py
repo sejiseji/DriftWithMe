@@ -131,8 +131,9 @@ def test_supervisor_rect_and_button_do_not_overlap_ui(profile, size):
     assert image.y + image.height < int(panel.y) + int(panel.height)
     button = app.office_consultation_button_rect()
     debug = app.office_field_debug_rect()
-    assert button.x + button.width < debug.x
-    assert app.ui_text.text_width("上司に相談", "office_japanese") <= int(button.width) - 4
+    assert debug.x + debug.width < button.x
+    assert button.x + button.width < app.office_calendar_rect().x
+    assert button.height == app.office_calendar_rect().height
     assert button.y + button.height < app.office_dialog_rect().y
 
 

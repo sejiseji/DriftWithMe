@@ -936,6 +936,14 @@ class ProgressStore:
             return None
 
     def write(self, payload):
+        result = self._write(payload)
+        if not result and self.enabled:
+            from drift_with_me.office_header import publish_save_notice
+
+            publish_save_notice(self, "failure")
+        return result
+
+    def _write(self, payload):
         text = encode(payload)
         try:
             decode(text)
@@ -988,6 +996,9 @@ class ProgressStore:
                 os.replace(temp, self.path)
             self.new_game_authorized = False
             self.message = "保存しました"
+            from drift_with_me.office_header import publish_save_notice
+
+            publish_save_notice(self, "saved")
             return True
         except Exception:
             self.available = False
