@@ -1227,7 +1227,11 @@
       "combat_marker_miss": 15,
       "combat_perfect_started": 70,
       "combat_deflect_started": 65,
-      "combat_victory_cue_started": 75
+      "combat_victory_cue_started": 75,
+      "interaction_started": 1,
+      "collectible_claimed": 1,
+      "explore_water": 1,
+      "explore_energy": 1
     }
   },
   "grass_wind": {

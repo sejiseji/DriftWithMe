@@ -33,6 +33,11 @@ class LifecycleMixin:
             return LifecycleSnapshot(False, -1, -1)
 
     def reset_lifecycle_input_and_clock(self) -> None:
+        feedback = getattr(self, "_exploration_feedback", None)
+        if feedback is not None:
+            feedback.motion.reset()
+        if effects := getattr(self, "effects", None):
+            getattr(effects, "contact_cues", []).clear()
         self.previous_time = None
         self.clear_world_input_latches()
         self.model.cancel_auto_move()

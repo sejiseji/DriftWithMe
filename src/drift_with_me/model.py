@@ -268,6 +268,8 @@ class GameModel:
         return float(self.config["player"]["cube_size"])
 
     def reset_scene(self) -> None:
+        if feedback := getattr(self, "exploration_feedback", None):
+            feedback.reset()
         self.event_queue.reset()
         self.player = PlayerState(self.world.spawn_x, self.world.spawn_z)
         self.enemies = [self.enemy_from_spawn(spawn) for spawn in self.world.enemies]
@@ -1501,6 +1503,7 @@ class GameModel:
 
         interaction = self.interaction
         if interaction.kind == "water_refill":
+            amount = max(0.0, self.water_max - self.water)
             self.water = self.water_max
             self.debug.completed_refills += 1
             events.append(
@@ -1510,10 +1513,11 @@ class GameModel:
                     actor_id="player",
                     target_id=interaction.object_id,
                     world_position=self.interaction_world_position(interaction),
-                    payload={"resource": "water"},
+                    payload={"resource": "water", "amount": amount},
                 )
             )
         elif interaction.kind == "energy_refill":
+            amount = max(0.0, self.energy_max - self.energy)
             self.energy = self.energy_max
             self.debug.completed_refills += 1
             events.append(
@@ -1523,7 +1527,7 @@ class GameModel:
                     actor_id="buddy",
                     target_id=interaction.object_id,
                     world_position=self.interaction_world_position(interaction),
-                    payload={"resource": "energy"},
+                    payload={"resource": "energy", "amount": amount},
                 )
             )
         elif interaction.kind == "inspect":

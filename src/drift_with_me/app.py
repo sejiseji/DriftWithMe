@@ -15,6 +15,7 @@ from drift_with_me.collectibles import CollectibleMixin, owned_collectibles
 from drift_with_me.document_reading import reading_pose_pixels
 from drift_with_me.east_site import SITE_FACTS, SITE_LABELS, EastSiteProgress
 from drift_with_me.effects import EffectSystem
+from drift_with_me.exploration_feedback import ExplorationFeedback
 from drift_with_me.field_transition import FieldTransition, travel_lines
 from drift_with_me.field_visit import ANOMALY_ID, FieldConversation, observation_conversation
 from drift_with_me.first_sight import FirstSightQueue
@@ -531,6 +532,8 @@ class DriftWithMeApp(
         self.office_answer_case_id: str | None = None
         self.office_answer_question_id: str | None = None
         self.audio = AudioEngine(self.runtime.raw)
+        self._exploration_feedback = ExplorationFeedback()
+        self.model.exploration_feedback = self.exploration_feedback
         self.effects = EffectSystem(self.runtime.raw)
         self.camera_controller = CameraController(
             self.runtime.raw,
@@ -668,11 +671,74 @@ class DriftWithMeApp(
             return
         self.projection_mode = "affine" if self.projection_mode == "perspective" else "perspective"
 
+    @property
+    def exploration_feedback(self):
+        feedback = getattr(self, "_exploration_feedback", None)
+        if feedback is None:
+            feedback = self._exploration_feedback = ExplorationFeedback()
+        if not hasattr(self, "model"):
+            return feedback
+        if getattr(self, "_feedback_model", None) is not self.model:
+            feedback.reset()
+            self._feedback_model = self.model
+            if hasattr(getattr(self, "audio", None), "reset_event_history"):
+                self.audio.reset_event_history()
+        self.model.exploration_feedback = feedback
+        return feedback
+
     def update(self) -> None:
         self.ui_trace_begin_frame()
+        feedback_time = getattr(self, "presentation_time", 0.0)
         try:
             self.update_game_frame()
         finally:
+            elapsed = getattr(self, "presentation_time", 0.0) - feedback_time
+            if elapsed > 0 and self.screen == AppScreen.PLAY:
+                self.exploration_feedback.update(
+                    elapsed,
+                    self.model,
+                    self.scene_camera(self.camera())
+                    if hasattr(self, "projection_mode")
+                    else self.camera(),
+                    active=not self.model.world_paused,
+                )
+                contacts_active = (
+                    not self.model.world_paused
+                    and self.model.combat_session is None
+                    and getattr(self, "hitstop_remaining", 0.0) <= 0
+                    and not any(
+                        getattr(self, name, None)
+                        for name in (
+                            "field_conversation",
+                            "first_sight_conversation",
+                            "patrol_dialogue",
+                            "field_transition",
+                            "week_transition",
+                            "combat_camera_restore",
+                            "august_crossing",
+                            "august_sighting_dialogue",
+                        )
+                    )
+                )
+                motion_active = (
+                    contacts_active
+                    and getattr(self.camera_controller, "base_blend", None) is None
+                    and getattr(self.camera_controller, "mode_name", "FOLLOW") == "FOLLOW"
+                )
+                motion = self.exploration_feedback.motion
+                motion.update(
+                    elapsed,
+                    self.model,
+                    self.scene_camera(self.camera())
+                    if hasattr(self, "projection_mode")
+                    else self.camera(),
+                    self.effects,
+                    active=motion_active,
+                    contacts_active=contacts_active,
+                )
+                motion.consume_contact()
+            if elapsed > 0 and self.screen != AppScreen.PLAY:
+                self.exploration_feedback.reset()
             self.ui_trace_end_frame()
 
     def update_game_frame(self) -> None:
@@ -843,6 +909,8 @@ class DriftWithMeApp(
             install_week3_world(self, enabled=self.work_week == WorkWeek(6, 3))
             install_week4_world(self, enabled=self.work_week == WorkWeek(6, 4))
             self.model.reset_scene()
+            if hasattr(self.audio, "reset_event_history"):
+                self.audio.reset_event_history()
             self.model.water = resources["water"]
             self.model.energy = resources["energy"]
             for enemy in self.model.enemies:
@@ -863,6 +931,8 @@ class DriftWithMeApp(
             install_week3_world(self, enabled=False)
             install_week4_world(self, enabled=False)
             self.model.reset_scene()
+            if hasattr(self.audio, "reset_event_history"):
+                self.audio.reset_event_history()
             self.field_transition = self.week_transition = self.field_conversation = None
         install_july_world(self, enabled=self.july_active(), combat=self.july_active())
         install_flowerbed_world(self)
@@ -2888,13 +2958,25 @@ class DriftWithMeApp(
                             self.enemy_focus_point(enemy), hold_sec=hold_sec
                         )
         camera_reaction_delay = self.request_hitstop_from_events(events)
+        self.exploration_feedback.process(events, self.model)
         self.effects.process_events(
-            events,
+            [
+                e
+                for e in events
+                if not (self.exploration_feedback.enabled and e.kind == "resource_refilled")
+            ],
             self.model,
             camera_reaction_delay=camera_reaction_delay,
             camera_reactions_allowed=self.combat_camera_reactions_allowed(),
         )
-        self.audio.play_events(events)
+        self.audio.play_events(
+            [
+                e
+                for e in events
+                if self.exploration_feedback.enabled
+                or e.kind not in {"collectible_claimed", "resource_refilled", "interaction_started"}
+            ]
+        )
 
     def is_site_target(self, target):
         return target in SITE_FACTS or (
@@ -5297,6 +5379,7 @@ class DriftWithMeApp(
             exploration_markers=self.model.combat_session is None
             and self.combat_camera_restore is None,
         )
+        self.exploration_feedback.draw(getattr(self, "pyxel", None), scene_camera)
         draw_week3_key(self, scene_camera)
         self.draw_july_markers()
         self.draw_week3_devices(scene_camera)
@@ -6478,6 +6561,8 @@ class DriftWithMeApp(
         )
         row_text_height = 22 if profile == "high" else 18
         for index, (label, value, maximum, color, icon) in enumerate(resources):
+            if self.exploration_feedback.enabled and self.exploration_feedback.flashes[icon] > 0:
+                color = 7
             x = int(rect.x)
             y = int(rect.y)
             if compact:

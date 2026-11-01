@@ -313,6 +313,7 @@ class EffectSystem:
         self.reactive_environment_last_query_count = 0
         self.reactive_environment_limit_skipped_count = 0
         self._grass_cooldowns: dict[str, float] = {}
+        self.contact_cues: list[str] = []
         self._reactive_last_player_position: tuple[float, float] | None = None
         self._reactive_last_direction: str = "right"
         self._shallow_water_last_player_position: tuple[float, float] | None = None
@@ -321,6 +322,7 @@ class EffectSystem:
         self._processed_camera_cues: set[tuple[int, str]] = set()
 
     def reset(self) -> None:
+        self.contact_cues.clear()
         self.particles.clear()
         self.rings.clear()
         self.strokes.clear()
@@ -583,6 +585,7 @@ class EffectSystem:
         )
 
     def update(self, dt: float, model) -> None:
+        self.contact_cues.clear()
         dt = max(0.0, dt)
         for particle in self.particles:
             particle.age += dt
@@ -666,13 +669,13 @@ class EffectSystem:
         if previous is None:
             self._shallow_water_last_player_position = current
             return
-        self._shallow_water_last_player_position = current
 
         dx = current[0] - previous[0]
         dz = current[1] - previous[1]
         moved = math.hypot(dx, dz)
         if moved < self.shallow_water_min_move_world:
             return
+        self._shallow_water_last_player_position = current
         previous_inside = self.shallow_water_point_inside(*previous, areas)
         current_inside = self.shallow_water_point_inside(*current, areas)
         if not (
@@ -718,6 +721,7 @@ class EffectSystem:
     def add_shallow_water_ripple(
         self, x: float, z: float, movement_x: float, movement_z: float
     ) -> None:
+        before = len(self.rings)
         self.add_ring(
             x,
             z,
@@ -729,6 +733,8 @@ class EffectSystem:
             layer="background",
             source="shallow_water",
         )
+        if len(self.rings) > before and len(self.contact_cues) < 2:
+            self.contact_cues.append("water")
         movement_length = math.hypot(movement_x, movement_z)
         if movement_length <= 1e-6 or self.shallow_water_wake_length_world <= 0.0:
             return
@@ -1052,6 +1058,9 @@ class EffectSystem:
             recover_near_idle_sec=recover_near_idle_sec,
             redirect_step_sec=redirect_step_sec,
         )
+
+        if len(self.contact_cues) < 2:
+            self.contact_cues.append("grass")
 
     def touch_reactive_environment_state(
         self, model, obj, state: ReactiveEnvironmentState, profile, previous, current

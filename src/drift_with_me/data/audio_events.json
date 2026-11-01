@@ -81,6 +81,38 @@
       "priority": 75,
       "duration_target_sec": 0.12,
       "character": "勝利演出開始を示す短い明るい音。"
+    },
+    {
+      "event": "interaction_started",
+      "sound_key": "explore_inspect",
+      "channel": 2,
+      "priority": 1,
+      "duration_target_sec": 0.14,
+      "character": "Soft exploration prototype. Skip while the shared channel is occupied."
+    },
+    {
+      "event": "collectible_claimed",
+      "sound_key": "explore_pickup",
+      "channel": 2,
+      "priority": 1,
+      "duration_target_sec": 0.14,
+      "character": "Soft exploration prototype. Skip while the shared channel is occupied."
+    },
+    {
+      "event": "explore_water",
+      "sound_key": "explore_water",
+      "channel": 2,
+      "priority": 1,
+      "duration_target_sec": 0.14,
+      "character": "Soft exploration prototype. Skip while the shared channel is occupied."
+    },
+    {
+      "event": "explore_energy",
+      "sound_key": "explore_energy",
+      "channel": 2,
+      "priority": 1,
+      "duration_target_sec": 0.14,
+      "character": "Soft exploration prototype. Skip while the shared channel is occupied."
     }
   ]
 }

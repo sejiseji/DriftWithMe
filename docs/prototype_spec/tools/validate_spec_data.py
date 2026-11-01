@@ -222,6 +222,10 @@ def validate(
                 require(cue["target_object"] in ids, f"{sequence['id']}: missing cue target")
             require(cue["blend_sec"] >= 0 and cue["hold_sec"] >= 0, "negative cue duration")
     expected_events = {
+        "interaction_started",
+        "collectible_claimed",
+        "explore_water",
+        "explore_energy",
         "bubble_fired",
         "enemy_captured",
         "barrier_repelled",

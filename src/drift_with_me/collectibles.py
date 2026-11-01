@@ -235,6 +235,18 @@ class CollectibleMixin:
             return False
         self.last_checkpoint = payload
         self.install_collectibles()
+        self.process_events(
+            [
+                self.model.event_queue.emit(
+                    world_tick=self.model.world_tick,
+                    kind="collectible_claimed",
+                    actor_id="player",
+                    target_id=PREFIX + ident,
+                    world_position=(self.model.player.x, 16.0, self.model.player.z),
+                    payload={},
+                )
+            ]
+        )
         return True
 
     def begin_collectible_conversation(self, target_id):

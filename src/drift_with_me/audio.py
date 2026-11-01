@@ -26,6 +26,10 @@ SOUND_SHAPES = {
     "combat_perfect": ("e3g3c4", "ttt", "776", "nnn", 5),
     "combat_deflect": ("g2c3", "pp", "76", "nf", 5),
     "combat_victory": ("c3e3g3c4", "tttt", "6675", "nnnn", 5),
+    "explore_inspect": ("e2", "t", "2", "f", 3),
+    "explore_pickup": ("e4g4b4g4", "tttt", "2321", "nnvf", 7),
+    "explore_water": ("c4e4b4g4", "ttpt", "1231", "ssnf", 5),
+    "explore_energy": ("g4g4e4d4c4c4", "nntttt", "122211", "nnvvff", 7),
 }
 
 
@@ -87,6 +91,17 @@ class AudioEngine:
             return
         selected: dict[int, tuple[int, int, AudioEventDef]] = {}
         for event in events:
+            if (
+                event.kind == "interaction_started"
+                and event.payload.get("interaction_kind") != "inspect"
+            ):
+                continue
+            if event.kind == "resource_refilled":
+                if event.payload.get("amount", 0) <= 0:
+                    continue
+                from dataclasses import replace
+
+                event = replace(event, kind="explore_" + event.payload["resource"])
             if event.event_id in self._processed_event_ids or event.kind not in self.defs:
                 continue
             self._processed_event_ids.add(event.event_id)
@@ -97,6 +112,11 @@ class AudioEngine:
                 selected[definition.channel] = candidate
 
         for channel, (_priority, _event_id, definition) in selected.items():
+            if (
+                definition.sound_key.startswith("explore_")
+                and self._pyxel.play_pos(channel) is not None
+            ):
+                continue
             self._pyxel.play(channel, self._sound_slots[definition.sound_key])
 
     @property

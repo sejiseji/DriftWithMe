@@ -4611,6 +4611,9 @@ class Renderer:
         placement = self.player_sprite_placement(model, camera, presentation_time, x, z, y)
         if placement is None:
             return False
+        feedback = getattr(model, "exploration_feedback", None)
+        if feedback is not None:
+            placement = feedback.motion.placement(placement, "player", model)
         frame = self.player_sprite_animation_frame(asset, model, presentation_time)
         self.draw_atmospheric_scaled_sprite(asset, placement, frame)
         return True
@@ -4683,6 +4686,9 @@ class Renderer:
         placement = self.buddy_sprite_placement(model, camera, bob, x, z)
         if placement is None:
             return False
+        feedback = getattr(model, "exploration_feedback", None)
+        if feedback is not None:
+            placement = feedback.motion.placement(placement, "buddy", model)
         self.draw_atmospheric_scaled_sprite(asset, placement)
         return True
 
@@ -5581,7 +5587,8 @@ class Renderer:
         if point is None:
             return
         x = int(point.x)
-        y = int(point.y)
+        feedback = getattr(model, "exploration_feedback", None)
+        y = int(point.y) + (feedback.marker_offset(target.id) if feedback else 0)
         color = 8 if model.danger_blocks_interaction() else 7
         self.pyxel.line(x, y - 5, x + 5, y, color)
         self.pyxel.line(x + 5, y, x, y + 5, color)
