@@ -11,6 +11,7 @@ from scripts.build_web import HOST_JS
 from drift_with_me.app import AppScreen
 from drift_with_me.app import DriftWithMeApp as App
 from drift_with_me.config import load_runtime_config
+from pointer_json_fixture import pointer_window
 
 HOST_HARNESS = r"""
 const vm=require('vm'),fs=require('fs');
@@ -34,6 +35,7 @@ events.pointerdown(e(...target));
 if(mode==='drift')events.pointermove(e(494,13,'pointermove'));
 if(mode==='quick_up')events.pointerup(e(494,13,'pointerup'));
 if(mode==='cancel')events.pointercancel(e(494,13,'pointercancel'));
+win.__driftWithMePointer.snapshotJSON=win.__driftWithMeReadPointerSnapshot();
 console.log(JSON.stringify(win.__driftWithMePointer));
 """
 
@@ -62,9 +64,7 @@ def test_host_to_python_office_arrow_never_becomes_calendar(monkeypatch, geometr
         check=True,
     )
     bridge = SimpleNamespace(**json.loads(result.stdout))
-    monkeypatch.setitem(
-        sys.modules, "js", SimpleNamespace(window=SimpleNamespace(__driftWithMePointer=bridge))
-    )
+    monkeypatch.setitem(sys.modules, "js", SimpleNamespace(window=pointer_window(bridge)))
     app = App.__new__(App)
     app.screen = AppScreen.OFFICE
     app.runtime = load_runtime_config()
@@ -127,9 +127,7 @@ def test_host_to_python_week_modal_buttons_consume_press_position(
         check=True,
     )
     bridge = SimpleNamespace(**json.loads(result.stdout))
-    monkeypatch.setitem(
-        sys.modules, "js", SimpleNamespace(window=SimpleNamespace(__driftWithMePointer=bridge))
-    )
+    monkeypatch.setitem(sys.modules, "js", SimpleNamespace(window=pointer_window(bridge)))
     app.pointer_snapshot = app.read_browser_pointer_snapshot()
     assert app.update_week_debug()
     if action.startswith("month"):

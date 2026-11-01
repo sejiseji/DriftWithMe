@@ -18,6 +18,7 @@ from scripts.build_web import HOST_JS
 from drift_with_me.app import AppScreen
 from drift_with_me.app import DriftWithMeApp as App
 from drift_with_me.week_cycle import WorkWeek
+from pointer_json_fixture import pointer_window
 
 HOST_EVENT_SERVER = r"""
 const vm = require('vm');
@@ -56,6 +57,7 @@ function initialize(config) {
   return {
     execute(operations) {
       for (const operation of operations) events[operation.kind](toEvent(operation));
+      win.__driftWithMePointer.snapshotJSON=win.__driftWithMeReadPointerSnapshot();
       return {...win.__driftWithMePointer};
     }
   };
@@ -128,7 +130,7 @@ def run_mina_flow(monkeypatch, geometry):
     monkeypatch.setitem(
         sys.modules,
         "js",
-        SimpleNamespace(window=SimpleNamespace(__driftWithMePointer=bridge)),
+        SimpleNamespace(window=pointer_window(bridge)),
     )
     trace = []
     actions = []

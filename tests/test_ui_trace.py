@@ -10,12 +10,17 @@ from drift_with_me.app import AppScreen, PointerSnapshot
 from drift_with_me.app import DriftWithMeApp as App
 from drift_with_me.config import load_runtime_config
 from drift_with_me.pixel_font import pixel_text_size
+from pointer_json_fixture import attach_pointer_snapshot
 
 
 def subject(monkeypatch, enabled=True, host=None):
     bridge = SimpleNamespace(enabled=True, boot=lambda: 2, read=lambda: json.dumps(host or {}))
     monkeypatch.setitem(
-        sys.modules, "js", SimpleNamespace(window=SimpleNamespace(__driftWithMeUiTrace=bridge))
+        sys.modules,
+        "js",
+        SimpleNamespace(
+            window=attach_pointer_snapshot(SimpleNamespace(__driftWithMeUiTrace=bridge))
+        ),
     )
     app = App.__new__(App)
     app.runtime = load_runtime_config()
@@ -80,8 +85,16 @@ def test_memory_bounded_and_freeze_copies_every_nested_value(monkeypatch):
     assert frozen["taps"][-1]["owner"] == "OPEN"
 
 
-@pytest.mark.parametrize("failure", ["missing", "fields", "current-nan", "down-nan"])
-def test_failed_js_is_quarantined_without_native_activation(monkeypatch, failure):
+@pytest.mark.parametrize(
+    ("failure", "reason"),
+    [
+        ("missing", "snapshot-read"),
+        ("fields", "snapshot-read"),
+        ("current-nan", "snapshot-number"),
+        ("down-nan", "snapshot-number"),
+    ],
+)
+def test_failed_js_is_quarantined_without_native_activation(monkeypatch, failure, reason):
     app, _ = subject(monkeypatch)
     b = SimpleNamespace(down=False, pressed=True, sequence=1, x=10, y=10, pressedX=10, pressedY=10)
     if failure == "missing":
@@ -96,7 +109,7 @@ def test_failed_js_is_quarantined_without_native_activation(monkeypatch, failure
     p = app.read_pointer_snapshot()
     assert not p.pressed and not p.down
     assert app.ui_trace.input["source"] == "Q"
-    assert app.ui_trace.input["reason"] == failure
+    assert app.ui_trace.input["reason"] == reason
 
 
 def test_valid_consumed_host_does_not_fall_back(monkeypatch):

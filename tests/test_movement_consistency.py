@@ -12,6 +12,7 @@ from drift_with_me.app import DriftWithMeApp as App
 from drift_with_me.input import DoubleTapMoveRecognizer, PointerInput, PointerState, Rect
 from drift_with_me.math3d import AffineProjectionProfile, Vec3, affine_camera_from_perspective
 from drift_with_me.model import InputIntent
+from pointer_json_fixture import pointer_window
 from test_movement import make_model
 
 
@@ -45,9 +46,7 @@ def test_dom_new_sequence_resets_drag_anchor_even_without_sampled_up(monkeypatch
     app.pointer = PointerInput(0.22, 8, 8, 48)
     app.active_ui_rects = lambda: rects
     bridge = SimpleNamespace(down=True, pressed=True, sequence=1, x=200, y=120)
-    monkeypatch.setitem(
-        sys.modules, "js", SimpleNamespace(window=SimpleNamespace(__driftWithMePointer=bridge))
-    )
+    monkeypatch.setitem(sys.modules, "js", SimpleNamespace(window=pointer_window(bridge)))
 
     def sample():
         app.pointer_snapshot = app.read_browser_pointer_snapshot()

@@ -8,6 +8,7 @@ from drift_with_me.app import DriftWithMeApp as App
 from drift_with_me.config import load_runtime_config
 from drift_with_me.screen_flow import WEEK_FLOWS, FrameDispatch, dispatch_early, resolve_state
 from drift_with_me.week_cycle import WorkWeek
+from pointer_json_fixture import pointer_window
 
 
 def subject(month=6, number=1, phase="counter", screen=AppScreen.OFFICE):
@@ -323,6 +324,7 @@ for(const [x,y] of targets){
  // Both edges occur before Python gets a sample. Release at a different
  // location also verifies that the owned press position cannot be replaced.
  events.pointerup(event(494,13,'pointerup'));
+ win.__driftWithMePointer.snapshotJSON=win.__driftWithMeReadPointerSnapshot();
  samples.push({...win.__driftWithMePointer});
 }
 console.log(JSON.stringify(samples));
@@ -340,7 +342,7 @@ console.log(JSON.stringify(samples));
     monkeypatch.setitem(
         sys.modules,
         "js",
-        SimpleNamespace(window=SimpleNamespace(__driftWithMePointer=bridge)),
+        SimpleNamespace(window=pointer_window(bridge)),
     )
     App.update(app)
     assert app.week_debug_menu_open

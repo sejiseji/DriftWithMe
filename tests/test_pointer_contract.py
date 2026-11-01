@@ -11,6 +11,7 @@ import pytest
 
 from drift_with_me.app import DriftWithMeApp as App
 from drift_with_me.config import load_runtime_config
+from pointer_json_fixture import attach_pointer_snapshot
 
 
 def subject(monkeypatch, *, host=True, native_down=False, native_pressed=False):
@@ -36,7 +37,7 @@ def subject(monkeypatch, *, host=True, native_down=False, native_pressed=False):
         pressedX=252,
         pressedY=79,
     )
-    window = SimpleNamespace(__driftWithMePointer=bridge)
+    window = attach_pointer_snapshot(SimpleNamespace(__driftWithMePointer=bridge))
     monkeypatch.setitem(sys.modules, "js", SimpleNamespace(window=window) if host else None)
     return app, bridge, window
 

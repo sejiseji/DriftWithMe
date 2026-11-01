@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from pointer_json_fixture import attach_pointer_snapshot
+
 
 def run_flow(enabled, screenshot=None):
     from types import SimpleNamespace
@@ -66,7 +68,9 @@ def run_flow(enabled, screenshot=None):
         read=lambda: host.pointer["traceJSON"],
         publish=lambda payload: published.append(json.loads(payload)),
     )
-    window = SimpleNamespace(__driftWithMePointer=pointer, __driftWithMeLifecycle=life)
+    window = attach_pointer_snapshot(
+        SimpleNamespace(__driftWithMePointer=pointer, __driftWithMeLifecycle=life)
+    )
     if enabled:
         window.__driftWithMeUiTrace = trace
     sys.modules["js"] = SimpleNamespace(window=window)
@@ -134,7 +138,10 @@ def run_flow(enabled, screenshot=None):
             from copy import deepcopy
 
             frozen = deepcopy(app.ui_trace.frozen)
-            assert published[-1] == frozen  # Automatic output before any DIAG tap.
+            assert published[-1]["input"] == frozen["input"]
+            assert published[-1]["state"] == frozen["state"]
+            assert len(json.dumps(published[-1])) < 65536
+            assert "events" not in published[-1]  # Full histories remain in bounded RAM.
             assert frozen["reason"] == "calendar"
             assert frozen["state"]["menu"] is False
             assert frozen["last_draw"]["screen"] == "OFFICE"

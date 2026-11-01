@@ -22,7 +22,9 @@
     if (traceEnabled) {
       let panel = null, frozenText = "", liveText = "";
       const compact = (value) => {
-        try { return JSON.stringify(value ?? null).slice(0, 110); } catch { return "?"; }
+        try { return JSON.stringify(value ?? null, (_key, v) =>
+          typeof v === "number" && Number.isFinite(v) ? Math.round(v * 100) / 100 : v
+        ).slice(0, 110); } catch { return "?"; }
       };
       const render = () => {
         if (!frozenText) return;
@@ -40,6 +42,8 @@
       };
       const format = (f) => {
         const state = f.state || {}, input = f.input || {}, host = f.host || {};
+        const boundary = input.boundary || {}, received = boundary.received || {};
+        const types = boundary.types || {};
         const native = state.native_buttons || f.native_buttons || {};
         const contract = input.contract || f.inputcontract || state.input_contract || {};
         const taps = (host.attempts || host.taps || []).slice(-3);
@@ -59,6 +63,12 @@
           "HOST seq/downxy/currentxy/active " + compact([host.pointer?.sequence,
             host.pointer?.pressedX,host.pointer?.pressedY,host.pointer?.x,host.pointer?.y,
             host.pointer?.activePointerId]),
+          "RAW seq/epoch " + compact([received.sequence,received.epoch])
+            + " C" + compact(received.current) + " P" + compact(received.press),
+          "TYPES C/P/seq/flags " + compact([types.current,types.press,
+            types.sequence,types.flags]),
+          "PY converted " + compact(boundary.converted) + " FINAL " + compact(boundary.final)
+            + " " + boundary.decision,
           "XY selected " + compact(input.point)
             + " native " + compact(input.native || state.native),
           "SCREEN " + state.screen + " WEEK " + compact(state.week)
@@ -111,6 +121,9 @@
     sequence: 0,
     pressedX: 0,
     pressedY: 0,
+    pressedSequence: 0,
+    pressedEpoch: 0,
+    cancelled: false,
   };
   window.__driftWithMePointer = pointer;
   let activePointerId = null;
@@ -133,6 +146,21 @@
       width: Number(configured.width) || (canvas ? canvas.width : 512),
       height: Number(configured.height) || (canvas ? canvas.height : 236),
     };
+  };
+
+  // One synchronous primitive-only read, independent of diagnosis and Python proxies.
+  window.__driftWithMeReadPointerSnapshot = () => {
+    const configured = window.__driftWithMeLogicalSize || {};
+    return JSON.stringify({
+      schema: 1, sequence: pointer.sequence,
+      down: pointer.down, pressed: pointer.pressed, released: pointer.released,
+      cancelled: pointer.cancelled, inside: pointer.inside,
+      current: {x: pointer.x, y: pointer.y},
+      press: {x: pointer.pressedX, y: pointer.pressedY,
+        sequence: pointer.pressedSequence, epoch: pointer.pressedEpoch},
+      logical: {width: configured.width || 512, height: configured.height || 236},
+      epoch: window.__driftWithMeLifecycle?.inputEpoch ?? 0,
+    });
   };
 
   const eventToLogical = (event) => {
@@ -298,6 +326,9 @@
     pointer.pressedX = position.x;
     pointer.pressedY = position.y;
     pointer.sequence += 1;
+    pointer.pressedSequence = pointer.sequence;
+    pointer.pressedEpoch = window.__driftWithMeLifecycle?.inputEpoch ?? 0;
+    pointer.cancelled = false;
     preventCanvasGesture(event);
     uiTrace?.record("pd", event, "accepted", position);
   };
@@ -323,7 +354,10 @@
     pointer.down = false;
     // Keep a short tap pending until Python consumes its sequence.
     // Cancellation must never turn into a UI activation.
-    if (event.type === "pointercancel") pointer.pressed = false;
+    if (event.type === "pointercancel") {
+      pointer.pressed = false;
+      pointer.cancelled = true;
+    }
     pointer.released = true;
     pointer.x = position.x;
     pointer.y = position.y;
@@ -340,6 +374,7 @@
     pointer.pressed = false;
     pointer.released = true;
     pointer.inside = false;
+    pointer.cancelled = true;
   };
 
   const invalidatePointerGeometry = (event) => {

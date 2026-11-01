@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from collections import deque
 from contextlib import suppress
 from copy import deepcopy
@@ -40,6 +41,32 @@ def trace_action(name):
         return wrapped
 
     return decorate
+
+
+def _trace_json_value(value, depth=0):
+    if depth > 16:
+        return "<nested>"
+    if type(value) is float and not math.isfinite(value):
+        return "NaN" if math.isnan(value) else "+Infinity" if value > 0 else "-Infinity"
+    if isinstance(value, dict):
+        return {str(k): _trace_json_value(v, depth + 1) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_trace_json_value(v, depth + 1) for v in value]
+    if value is None or type(value) in (str, int, float, bool):
+        return value
+    return type(value).__name__
+
+
+def ui_trace_publication(frozen):
+    """Send screenshot fields, retaining full bounded event history only in RAM."""
+    out = {k: v for k, v in frozen.items() if k != "events"}
+    host = frozen.get("host", {})
+    out["host"] = {
+        k: host[k]
+        for k in ("attempts", "taps", "geometry", "pointer", "boot", "error")
+        if k in host
+    }
+    return _trace_json_value(out)
 
 
 class TraceMemory:
@@ -186,6 +213,7 @@ class UITraceMixin:
         try:
             t.failure = reason
             t.input = {
+                "boundary": deepcopy(getattr(self, "pointer_boundary", {})),
                 "contract": deepcopy(getattr(self, "pointer_input_status", {})),
                 "native_buttons": self.ui_trace_native_buttons(),
                 "source": source,
@@ -264,7 +292,11 @@ class UITraceMixin:
             )
             if t.bridge is not None:
                 with suppress(Exception):
-                    t.bridge.publish(json.dumps(t.frozen, ensure_ascii=True))
+                    t.bridge.publish(
+                        json.dumps(
+                            ui_trace_publication(t.frozen), ensure_ascii=True, allow_nan=False
+                        )
+                    )
             t.sheet = False
             t.wait_release = False
         except Exception:
