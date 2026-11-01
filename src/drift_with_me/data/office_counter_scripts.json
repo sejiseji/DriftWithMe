@@ -56,7 +56,7 @@
         "identity": [
           {
             "turn_id": "mina_identity_check",
-            "jack": "はい、お名前も住所も登録と合っています。こちらで確認できました。",
+            "jack": "はい、お名前も住所も登録と合っています。",
             "reply": "よかった。古い身分証と取り違えていないか、少し気になっていました。",
             "document_action": {
               "document_id": "photo_id",
@@ -303,7 +303,7 @@
         "place": [
           {
             "turn_id": "lamel_place_check",
-            "jack": "この印の方から聞こえるんですね。音の元は見えましたか？",
+            "jack": "音の元は見えましたか？",
             "reply": "いえ、音だけです。浅瀬の方から聞こえますが、水の中の何が鳴っているかは見ていません。",
             "document_action": {
               "document_id": "area_map",
@@ -318,7 +318,7 @@
         "damage": [
           {
             "turn_id": "lamel_damage_check",
-            "jack": "まだ近くの様子は分からないんですね。無理に確かめなくて大丈夫です。",
+            "jack": "無理に確かめなくて大丈夫です。",
             "reply": "はい。暗い中を見に行くのは怖くて。",
             "requires_completed_questions": [
               "damage"
