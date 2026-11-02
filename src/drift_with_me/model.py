@@ -431,6 +431,7 @@ class GameModel:
         *,
         before_enemy_update: Callable[[], bool] | None = None,
         movement_camera: CameraState | AffineCameraState | None = None,
+        selection_camera: CameraState | AffineCameraState | None = None,
     ) -> list[GameEvent]:
         events: list[GameEvent] = []
         if self.world_paused:
@@ -485,10 +486,16 @@ class GameModel:
             self.request_auto_move_goal(intent.auto_move_goal_x, intent.auto_move_goal_z, events)
 
         if intent.action_pressed:
-            self.try_context_action(events, camera, busy=intent.barrier)
+            self.try_context_action(
+                events, camera, busy=intent.barrier, selection_camera=selection_camera
+            )
 
         if intent.interact_pressed:
-            self.try_start_interaction(events, camera, busy=intent.barrier)
+            self.try_start_interaction(
+                events,
+                selection_camera if selection_camera is not None else camera,
+                busy=intent.barrier,
+            )
             if self.world_paused:
                 self.player.barrier_active = False
                 self.update_buddy(camera, dt)
@@ -1007,17 +1014,20 @@ class GameModel:
         events: list[GameEvent],
         camera: CameraState,
         busy: bool = False,
+        *,
+        selection_camera: CameraState | AffineCameraState | None = None,
     ) -> None:
         if busy or self.player.barrier_active or self.world_paused:
             self.emit_denied(events, "busy", scope="action")
             return
 
-        captured = self.captured_enemy(camera)
+        visible_camera = selection_camera if selection_camera is not None else camera
+        captured = self.captured_enemy(visible_camera)
         if captured is not None:
-            self.try_discharge(captured, events, camera)
+            self.try_discharge(captured, events, camera, selection_camera=visible_camera)
             return
 
-        self.try_fire_bubble(events, camera)
+        self.try_fire_bubble(events, visible_camera)
 
     def try_fire_bubble(self, events: list[GameEvent], camera: CameraState) -> None:
         if self.bubble is not None:
@@ -1077,7 +1087,10 @@ class GameModel:
         enemy: EnemyState,
         events: list[GameEvent],
         camera: CameraState,
+        *,
+        selection_camera: CameraState | AffineCameraState | None = None,
     ) -> None:
+        visible_camera = selection_camera if selection_camera is not None else camera
         if is_nudibranch(enemy):
             if enemy.state != "CAPTURED":
                 return
@@ -1085,7 +1098,7 @@ class GameModel:
             if distance > float(self.config["discharge"]["range_from_player"]):
                 self.emit_denied(events, "out_of_range", target_id=enemy.id, scope="focus")
                 return
-            if not self.enemy_visible(enemy, camera):
+            if not self.enemy_visible(enemy, visible_camera):
                 self.emit_denied(events, "target_changed", target_id=enemy.id, scope="focus")
                 return
             start_focus(self, enemy, camera, events)
@@ -1109,7 +1122,7 @@ class GameModel:
         ):
             self.emit_denied(events, "out_of_range", target_id=enemy.id, scope="buddy")
             return
-        if not self.enemy_visible(enemy, camera):
+        if not self.enemy_visible(enemy, visible_camera):
             self.emit_denied(events, "target_changed", target_id=enemy.id, scope="discharge")
             return
         if not self.has_line_of_sight(self.player.x, self.player.z, enemy.x, enemy.z):

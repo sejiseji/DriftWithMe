@@ -74,6 +74,8 @@ class CameraController:
         self.base_blend: CameraBlend | None = None
         self.sequence: SequenceRuntime | None = None
         self.focus: FocusRuntime | None = None
+        self.stop_settle = None
+        self.stop_settle_mode = "off"
         self.current = self.to_camera_state(self.follow_shot())
 
     @property
@@ -95,6 +97,7 @@ class CameraController:
         return "FOLLOW"
 
     def reset(self, target: Vec3) -> None:
+        self.stop_settle = None
         self.follow_target = Vec3(target.x, 0.0, target.z)
         self.lookahead_offset = Vec2(0.0, 0.0)
         self.last_player_position = Vec2(target.x, target.z)
@@ -145,7 +148,10 @@ class CameraController:
         else:
             shot = base
 
+        from drift_with_me.camera_stop import apply_stop_settle
+
         self.current = self.to_camera_state(shot)
+        apply_stop_settle(self, dt, player_x, player_z, self.stop_settle_mode != "off")
         return self.current
 
     def start_pan_demo(self) -> bool:

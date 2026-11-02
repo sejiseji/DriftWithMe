@@ -33,6 +33,8 @@ class LifecycleMixin:
             return LifecycleSnapshot(False, -1, -1)
 
     def reset_lifecycle_input_and_clock(self) -> None:
+        if controller := getattr(self, "camera_controller", None):
+            controller.stop_settle = None
         feedback = getattr(self, "_exploration_feedback", None)
         if feedback is not None:
             feedback.motion.reset()

@@ -630,7 +630,48 @@ class DriftWithMeApp(
     def camera(self) -> CameraState:
         return self.camera_controller.current
 
+    def selection_camera(self, camera=None):
+        """Visibility-only camera: normal affine actions, HUD and scene agree.
+
+        Simulation/buddy axes keep their model camera; combat retains its authored
+        camera path. HOST/UI coordinates and world interaction distances are unchanged.
+        """
+        camera = self.camera() if camera is None else camera
+        if getattr(self, "projection_mode", None) == "affine" and self.model.combat_session is None:
+            return self.scene_camera(camera)
+        return camera
+
+    def camera_stop_eligible(self) -> bool:
+        from drift_with_me.screen_flow import resolve_state
+
+        state = resolve_state(self)
+        return (
+            self.projection_mode == "affine"
+            and state.screen == "PLAY"
+            and state.modal is None
+            and state.transition is None
+            and not self.model.world_paused
+            and self.model.combat_session is None
+            and self.combat_camera_restore is None
+            and not any(
+                getattr(self, name, None)
+                for name in (
+                    "field_conversation",
+                    "first_sight_conversation",
+                    "patrol_dialogue",
+                    "august_sighting_dialogue",
+                    "august_crossing",
+                )
+            )
+            and not getattr(self.model, "august_sighting_view", None)
+        )
+
     def update_camera_controller(self, elapsed: float) -> CameraState:
+        self.camera_controller.stop_settle_mode = (
+            getattr(self, "prototype_camera_stop_mode", "finite")
+            if self.camera_stop_eligible()
+            else "off"
+        )
         lookahead_x, lookahead_z = self.camera_lookahead_direction()
         return self.camera_controller.update(
             elapsed,
@@ -692,6 +733,8 @@ class DriftWithMeApp(
         try:
             self.update_game_frame()
         finally:
+            if hasattr(self, "projection_mode") and not self.camera_stop_eligible():
+                self.camera_controller.stop_settle = None
             elapsed = getattr(self, "presentation_time", 0.0) - feedback_time
             if elapsed > 0 and self.screen == AppScreen.PLAY:
                 self.exploration_feedback.update(
@@ -2812,6 +2855,9 @@ class DriftWithMeApp(
                 model_camera,
                 fixed_dt,
                 movement_camera=self.scene_camera(input_camera),
+                # Screen visibility/selection must match the displayed scene.
+                # Keep simulation, buddy axes and authored combat camera separate.
+                selection_camera=self.selection_camera(input_camera),
                 before_enemy_update=lambda: (
                     self.update_august_sightings(0.0) or self.update_first_sight(0.0)
                 ),
@@ -5876,7 +5922,9 @@ class DriftWithMeApp(
                 return "CANCEL_CHARGE"
             return "DONE"
         target = (
-            None if self.model.world_paused else self.model.interaction_candidate(self.camera())
+            None
+            if self.model.world_paused
+            else self.model.interaction_candidate(self.selection_camera())
         )
         if target is None:
             return "CHECK"
@@ -5914,7 +5962,7 @@ class DriftWithMeApp(
             return "GUARD"
         if self.model.world_paused:
             return "NONE"
-        camera = self.camera()
+        camera = self.selection_camera()
         if self.model.captured_enemy(camera) is not None:
             return "ZAP"
         if self.model.bubble is not None:
@@ -6668,7 +6716,10 @@ class DriftWithMeApp(
         token = self.action_button_mode()
         if token == "NONE":
             token = self.interact_button_token()
-            if token == "CHECK" and self.model.interaction_candidate(self.camera()) is None:
+            if (
+                token == "CHECK"
+                and self.model.interaction_candidate(self.selection_camera()) is None
+            ):
                 return ""
         return self.tooltip_for_token(token)
 
