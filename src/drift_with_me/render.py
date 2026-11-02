@@ -5,6 +5,7 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 
+from drift_with_me import wind_life
 from drift_with_me.abnormal_urchin_arms import (
     AbnormalUrchinArmSystem,
     UrchinArmRig,
@@ -335,6 +336,12 @@ class Renderer:
             model.config.get("grass_sway", {})
             if self.camera_is_affine(camera) and model.combat_session is None
             else {}
+        )
+        self._wind_life_active = wind_life.allowed(self, model, camera)
+        self.wind_life_shore_drawn = 0
+        self._wind_life_blocked = tuple(
+            (state.x, state.z, state.trigger_radius)
+            for state in getattr(effects, "reactive_environment_states", {}).values()
         )
         self._grass_wind_time = presentation_time
         self._grass_wind_model = model
@@ -1397,6 +1404,9 @@ class Renderer:
         margin = 8.0
         drawn = 0
         sway_config = getattr(self, "_grass_sway_config", {})
+        shore_active = (
+            getattr(self, "_wind_life_active", False) and area.get("id") == "spawn_grassland_micro"
+        )
         for cell_z in range(cell_min_z, cell_max_z):
             origin_z = cell_z * cell_world
             for cell_x in range(cell_min_x, cell_max_x):
@@ -1404,6 +1414,7 @@ class Renderer:
                 blade_count = min_blades + self.grassland_hash(cell_x, cell_z, 0, jitter_seed) % (
                     max_blades - min_blades + 1
                 )
+                shore_cell = shore_active and cell_z == 13 and 14 <= cell_x <= 19
                 for blade_index in range(blade_count):
                     salt = blade_index * 7
                     rel_x = 0.08 + self.grassland_unit(cell_x, cell_z, salt + 1, jitter_seed) * 0.84
@@ -1470,6 +1481,37 @@ class Renderer:
                                 sway_config,
                                 self._grass_sway_gust,
                             )
+                    if (
+                        shore_cell
+                        and blade_index < 4
+                        and sway == 0.0
+                        and wind_life.shore_candidate(
+                            area.get("id"),
+                            cell_x,
+                            cell_z,
+                            blade_index,
+                            world_x,
+                            world_z,
+                            self._grass_wind_model.world,
+                        )
+                        and not self.point_in_active_baked_ground_patch(world_x, world_z)
+                        and not any(
+                            math.hypot(world_x - x, world_z - z) <= radius
+                            for x, z, radius in self._wind_life_blocked
+                        )
+                    ):
+                        # Replace the zero outside the original wind rectangle;
+                        # never add a second sway to an already animated blade.
+                        sway = wind_life.shore_angle(
+                            world_x,
+                            world_z,
+                            self._grass_wind_time,
+                            self.grassland_unit(cell_x, cell_z, salt + 19, jitter_seed),
+                            sway_config,
+                            self._grass_sway_gust,
+                            height,
+                        )
+                        self.wind_life_shore_drawn += 1
                     self.draw_micro_grass_blade(
                         int(round(root.x)),
                         int(round(root.y)),
@@ -3319,7 +3361,16 @@ class Renderer:
         interval = interval_min
         if interval_variation > 0:
             interval += seed % (interval_variation + 1)
-        phase = (int(model.world_tick) + seed * 17) % interval
+        shift = 0
+        if (
+            getattr(self, "_wind_life_active", False)
+            and getattr(self, "wind_life_enabled", True)
+            and getattr(self, "wind_life_context", False)
+        ):
+            shift = wind_life.leaf_phase_shift(
+                obj, self._grass_wind_time, self._grass_sway_config, self._grass_sway_gust
+            )
+        phase = (int(model.world_tick) + seed * 17 + shift) % interval
         if phase < 6:
             return "ripple_000"
         if phase <= 46:

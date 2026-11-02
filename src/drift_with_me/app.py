@@ -5,7 +5,7 @@ import time
 from dataclasses import dataclass, replace
 from enum import Enum, auto
 
-from drift_with_me import config
+from drift_with_me import config, wind_life
 from drift_with_me.audio import AudioEngine
 from drift_with_me.august import AugustMixin
 from drift_with_me.august_patrol import PatrolMixin
@@ -5416,6 +5416,7 @@ class DriftWithMeApp(
         from drift_with_me.august_sightings import sighting_camera
 
         scene_camera = sighting_camera(self.model, scene_camera, self.model.august_sighting_view)
+        self.renderer.wind_life_context = wind_life.normal_context(self)
         self.renderer.draw_scene(
             self.model,
             scene_camera,
