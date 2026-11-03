@@ -612,7 +612,7 @@ class DriftWithMeApp(
             self.runtime.screen_height,
             title=config.APP_TITLE,
             fps=self.runtime.target_fps,
-            quit_key=None,
+            quit_key=pyxel.KEY_NONE,
             display_scale=self.runtime.desktop_scale,
             headless=headless,
             capture_sec=20 if swarm_field else 10,
@@ -733,6 +733,16 @@ class DriftWithMeApp(
         try:
             self.update_game_frame()
         finally:
+            if hasattr(self, "projection_mode") and not (
+                self.camera_stop_eligible() and wind_life.normal_context(self)
+            ):
+                renderer = getattr(self, "renderer", None)
+                if renderer is not None:
+                    renderer.pixel_stability_context = False
+                    renderer._pixel_stability_active = False
+                    if hasattr(renderer, "_stable_nearest"):
+                        renderer._stable_nearest.reset()
+                    renderer._pixel_previous_mode = "BASE"
             if hasattr(self, "projection_mode") and not self.camera_stop_eligible():
                 self.camera_controller.stop_settle = None
             elapsed = getattr(self, "presentation_time", 0.0) - feedback_time
@@ -5416,6 +5426,11 @@ class DriftWithMeApp(
         from drift_with_me.august_sightings import sighting_camera
 
         scene_camera = sighting_camera(self.model, scene_camera, self.model.august_sighting_view)
+        self.renderer.pixel_stability_context = (
+            getattr(self, "projection_mode", None) == "affine"
+            and self.camera_stop_eligible()
+            and wind_life.normal_context(self)
+        )
         self.renderer.wind_life_context = wind_life.normal_context(self)
         self.renderer.draw_scene(
             self.model,

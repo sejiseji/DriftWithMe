@@ -5,7 +5,7 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 
-from drift_with_me import wind_life
+from drift_with_me import pixel_stability, wind_life
 from drift_with_me.abnormal_urchin_arms import (
     AbnormalUrchinArmSystem,
     UrchinArmRig,
@@ -328,6 +328,14 @@ class Renderer:
     ) -> None:
         pyxel = self.pyxel
         self._debug_enabled = debug
+        self._pixel_stability_active = pixel_stability.allowed(self, model, camera)
+        mode = (
+            getattr(self, "pixel_stability_mode", "B") if self._pixel_stability_active else "BASE"
+        )
+        if getattr(self, "_pixel_previous_mode", None) != mode:
+            if hasattr(self, "_stable_nearest"):
+                self._stable_nearest.reset()
+            self._pixel_previous_mode = mode
         self._atmosphere_config = model.config.get("atmosphere", {})
         pyxel.cls(13)
         self.draw_ground(model.world, camera)
@@ -381,6 +389,7 @@ class Renderer:
         for command in sorted(
             commands, key=lambda item: (-item.depth, item.layer_bias, item.stable_id)
         ):
+            self._pixel_draw_instance = command.stable_id
             with self.atmosphere_depth_effects(camera, command.depth, command.atmosphere_strength):
                 swarm = getattr(model, "swarm_presentation", None)
                 opacity = swarm.command_opacity(self, command) if swarm is not None else 1.0
@@ -5418,9 +5427,24 @@ class Renderer:
         self, asset: LoadedSpriteAsset, placement, frame: LoadedSpriteFrame | None = None
     ) -> None:
         base_frame = frame or asset.frame()
+        actual_frame = self.atmospheric_sprite_frame(asset, base_frame)
+        if (
+            getattr(self, "_pixel_stability_active", False)
+            and getattr(self, "pixel_stability_mode", "B") == "B"
+        ):
+            if not hasattr(self, "_stable_nearest"):
+                self._stable_nearest = pixel_stability.StableNearest()
+            if self._stable_nearest.draw(
+                self.pyxel,
+                actual_frame,
+                asset.definition,
+                placement,
+                instance=getattr(self, "_pixel_draw_instance", "direct"),
+            ):
+                return
         draw_scaled_sprite(
             self.pyxel,
-            self.atmospheric_sprite_frame(asset, base_frame),
+            actual_frame,
             asset.definition,
             placement,
         )
