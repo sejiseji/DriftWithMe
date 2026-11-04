@@ -177,6 +177,7 @@ class SwarmField:
             return False
         b = self.battle
         previous_phase = b.phase
+        previous_elapsed = b.elapsed
         b.water, b.energy = m.water, m.energy
         if self.wait_release:
             # Entry input cannot also capture. The app also waits for physical release.
@@ -184,6 +185,11 @@ class SwarmField:
         elif intent.action_pressed:
             b.input()
         b.tick(dt)
+        isolation = max(
+            0.0, float(m.combat_v1_config().get("entry", {}).get("isolation_sec", 0.18))
+        )
+        if previous_phase == "entry" and previous_elapsed <= isolation < previous_elapsed + dt:
+            self.emit(events, "combat_position_settle_started", swarm=True)
         m.water, m.energy = b.water, b.energy
         if b.phase == "finish_wait" and previous_phase != "finish_wait":
             self.emit(

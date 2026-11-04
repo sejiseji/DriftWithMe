@@ -625,6 +625,7 @@ class DriftWithMeApp(
             print(f"asset_error: {error}")
         self.audio.setup(pyxel)
         self.renderer = Renderer(pyxel, self.sprite_assets)
+        self.renderer.wide_grass_lod = True
         pyxel.run(self.update, self.draw)
 
     def camera(self) -> CameraState:
@@ -792,6 +793,8 @@ class DriftWithMeApp(
                 motion.consume_contact()
             if elapsed > 0 and self.screen != AppScreen.PLAY:
                 self.exploration_feedback.reset()
+            if hasattr(getattr(self, "audio", None), "update_music"):
+                self.audio.update_music(self, elapsed)
             self.ui_trace_end_frame()
 
     def update_game_frame(self) -> None:
@@ -938,6 +941,8 @@ class DriftWithMeApp(
             self.audio.toggle_mute()
 
     def start_game(self, *, new_game: bool = False) -> None:
+        if hasattr(getattr(self, "audio", None), "reset_event_history"):
+            self.audio.reset_event_history()
         self.august_crossing = None
         self.august_sync_failed = False
         self.august_sighting_wait_release = True

@@ -5,6 +5,7 @@ from typing import Any
 
 from drift_with_me.config import load_data_json
 from drift_with_me.events import GameEvent
+from drift_with_me.music import MusicController, context_for
 
 
 @dataclass(frozen=True)
@@ -13,6 +14,9 @@ class AudioEventDef:
     sound_key: str
     channel: int
     priority: int
+
+
+SE_CHANNEL = 3  # Channels 0-2 are used for music.
 
 
 SOUND_SHAPES = {
@@ -30,6 +34,8 @@ SOUND_SHAPES = {
     "explore_pickup": ("e4g4b4g4", "tttt", "2321", "nnvf", 7),
     "explore_water": ("c4e4b4g4", "ttpt", "1231", "ssnf", 5),
     "explore_energy": ("g4g4e4d4c4c4", "nntttt", "122211", "nnvvff", 7),
+    "battle_entry_clash": ("c3c4b4f#4c4a3r", "nnppppt", "4322110", "fffffff", 3),
+    "battle_position_zaza": ("c2c2rrd1c1c0rr", "nnnnnnnnn", "210032100", "fffffffff", 3),
 }
 
 
@@ -50,6 +56,8 @@ class AudioEngine:
         self._lifecycle_suspended = False
         self._sound_slots: dict[str, int] = {}
         self._processed_event_ids: set[int] = set()
+        self._active_priority = 0
+        self.music = MusicController(bool(config["audio"].get("bgm_enabled", True)))
 
     def setup(self, pyxel_module) -> None:
         self._pyxel = pyxel_module
@@ -57,15 +65,22 @@ class AudioEngine:
             notes, tones, volumes, effects, speed = SOUND_SHAPES[sound_key]
             pyxel_module.sounds[index].set(notes, tones, volumes, effects, speed)
             self._sound_slots[sound_key] = index
+        self.music.setup(pyxel_module)
 
     def toggle_mute(self) -> bool:
         self.muted = not self.muted
+        if self.muted and self._pyxel is not None:
+            self._pyxel.stop(SE_CHANNEL)
+            self.music.stop_output()
+            self._active_priority = 0
         return self.muted
 
     def suspend_for_lifecycle(self) -> None:
         if self._lifecycle_suspended:
             return
         self._lifecycle_suspended = True
+        self.music.stop_output()
+        self._active_priority = 0
         if self._pyxel is not None:
             self._pyxel.stop()
 
@@ -73,7 +88,9 @@ class AudioEngine:
         self._lifecycle_suspended = False
 
     def reset_event_history(self) -> None:
+        self.music.reset()
         self._processed_event_ids.clear()
+        self._active_priority = 0
 
     def play_preview(self, event_name: str) -> None:
         if (
@@ -84,9 +101,14 @@ class AudioEngine:
         ):
             return
         definition = self.defs[event_name]
-        self._pyxel.play(definition.channel, self._sound_slots[definition.sound_key])
+        busy = self._pyxel.play_pos(SE_CHANNEL) is not None
+        if busy and definition.priority < self._active_priority:
+            return
+        self._pyxel.play(SE_CHANNEL, self._sound_slots[definition.sound_key])
+        self._active_priority = definition.priority
 
     def play_events(self, events: list[GameEvent]) -> None:
+        self.music.observe_events(events)
         if self._pyxel is None or self.muted or self._lifecycle_suspended:
             return
         selected: dict[int, tuple[int, int, AudioEventDef]] = {}
@@ -106,18 +128,31 @@ class AudioEngine:
                 continue
             self._processed_event_ids.add(event.event_id)
             definition = self.defs[event.kind]
+            if self.music.enabled and definition.sound_key == "combat_victory":
+                continue  # The phrase starts after the burst, not at the earlier victory cue.
             previous = selected.get(definition.channel)
             candidate = (definition.priority, event.event_id, definition)
             if previous is None or candidate > previous:
                 selected[definition.channel] = candidate
 
-        for channel, (_priority, _event_id, definition) in selected.items():
-            if (
+        for _channel, (_priority, _event_id, definition) in selected.items():
+            busy = self._pyxel.play_pos(SE_CHANNEL) is not None
+            if not busy:
+                self._active_priority = 0
+            # Quiet exploration never interrupts; other lower-priority cues are dropped.
+            # No queue: late playback would detach an entry cue from the movement.
+            if busy and (
                 definition.sound_key.startswith("explore_")
-                and self._pyxel.play_pos(channel) is not None
+                or definition.priority < self._active_priority
             ):
                 continue
-            self._pyxel.play(channel, self._sound_slots[definition.sound_key])
+            self._pyxel.play(SE_CHANNEL, self._sound_slots[definition.sound_key])
+            self._active_priority = definition.priority
+
+    def update_music(self, app, elapsed: float) -> None:
+        self.music.update(
+            context_for(app), elapsed, muted=self.muted, suspended=self._lifecycle_suspended
+        )
 
     @property
     def preview_events(self) -> tuple[str, ...]:

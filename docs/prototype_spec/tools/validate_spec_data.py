@@ -222,6 +222,9 @@ def validate(
                 require(cue["target_object"] in ids, f"{sequence['id']}: missing cue target")
             require(cue["blend_sec"] >= 0 and cue["hold_sec"] >= 0, "negative cue duration")
     expected_events = {
+        "combat_started",
+        "swarm_started",
+        "combat_position_settle_started",
         "interaction_started",
         "collectible_claimed",
         "explore_water",
@@ -242,16 +245,19 @@ def validate(
         set(actual_events) == expected_events and len(actual_events) == len(expected_events),
         "audio event list mismatch",
     )
+    require(config["audio"]["max_simultaneous_channels"] == 4, "Pyxel total budget must be four channels")
+    require(config["audio"]["bgm_channels"] == [0, 1, 2], "music channel reservation mismatch")
+    require(config["audio"]["se_channel"] == 3, "SE channel reservation mismatch")
     for event in audio["events"]:
         require(
-            0 <= event["channel"] < config["audio"]["max_simultaneous_channels"],
+            event["channel"] == 3 and config["audio"]["channel_roles"]["3"] == "prioritized_sfx",
             "audio channel mismatch",
         )
         require(
             event["priority"] == config["audio"]["event_priority"][event["event"]],
             "audio priority mismatch",
         )
-    require(config["audio"]["bgm_enabled"] is False, "P0 BGM must be disabled")
+    require(config["audio"]["bgm_enabled"] is True, "three-voice BGM must be enabled")
     require(config["effects"]["onomatopoeia_enabled"] is False, "onomatopoeia is deferred")
 
     # Static-only 16-unit sampling. This is not an AI/escape-path simulation.
@@ -325,6 +331,7 @@ def self_test(config: dict[str, Any], world: dict[str, Any], audio: dict[str, An
             ),
         ),
         ("missing audio", lambda c, w, a: a["events"].pop()),
+        ("music channel used for SE", lambda c, w, a: a["events"][0].__setitem__("channel", 0)),
     ]
     for name, mutate in mutations:
         c, w, a = copy.deepcopy((config, world, audio))

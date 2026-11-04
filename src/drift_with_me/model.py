@@ -1998,6 +1998,7 @@ class GameModel:
         if session is None:
             return
         elapsed = max(0.0, dt)
+        previous_phase_elapsed = session.phase_elapsed_sec
         session.elapsed_sec += elapsed
         session.phase_elapsed_sec += elapsed
         session.input_debounce_remaining = max(0.0, session.input_debounce_remaining - elapsed)
@@ -2014,6 +2015,20 @@ class GameModel:
                 self.start_combat_victory_cue(session, events)
             return
         if session.phase == "COMBAT_ENTRY":
+            isolation = max(
+                0.0, float(self.combat_v1_config().get("entry", {}).get("isolation_sec", 0.18))
+            )
+            if previous_phase_elapsed <= isolation < session.phase_elapsed_sec:
+                events.append(
+                    self.event_queue.emit(
+                        world_tick=self.world_tick,
+                        kind="combat_position_settle_started",
+                        actor_id="player",
+                        target_id=session.enemy_id,
+                        world_position=(self.player.x, 0.0, self.player.z),
+                        payload={},
+                    )
+                )
             if session.phase_elapsed_sec >= self.combat_duration_sec():
                 self.advance_combat_phase(session, "COMBAT_READY", events)
             return

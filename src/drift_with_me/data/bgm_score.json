@@ -1,0 +1,83 @@
+{
+  "explore": {
+    "seconds": 19.2,
+    "loop": true,
+    "parts": [
+      {
+        "notes": "d3 d3 d3 d3 f3 f3 e-3 e-3 e-3 e-3 d3 d3 g3 g3 g3 g3 b-3 b-3 a3 a3 a3 a3 g3 g3 c3 c3 c3 c3 e-3 e-3 d3 d3 d3 d3 c3 c3 c3 c3 c3 c3 b-2 b-2 a2 a2 a2 a2 g2 g2 c3 c3 c3 c3 b-2 b-2 a2 a2 a2 a2 b-2 b-2 c3 c3 c3 c3 c3 c3 b-2 b-2 b-2 b-2 a2 a2 e-3 e-3 e-3 e-3 d3 d3 c3 c3 c3 c3 d3 d3 a3 a3 a3 a3 g3 g3 f3 f3 f3 f3 e-3 e-3 d3 d3 d3 d3 f3 f3 e-3 e-3 e-3 e-3 d3 d3 g3 g3 g3 g3 b-3 b-3 a3 a3 a3 a3 g3 g3 c3 c3 c3 c3 e-3 e-3 d3 d3 d3 d3 c3 c3 c3 c3 c3 c3 b-2 b-2 a2 a2 a2 a2 g2 g2 b-2 b-2 b-2 b-2 d3 d3 c3 c3 c3 c3 b-2 b-2 a2 a2 a2 a2 c3 c3 b-2 b-2 b-2 b-2 a2 a2 g2 g2 g2 g2 b-2 b-2 a2 a2 a2 a2 f2 f2 b-2 b-2 b-2 b-2 b-2 b-2 r r r r r r",
+        "tones": "t",
+        "volumes": "222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222",
+        "effects": "nnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnf",
+        "speed": 12
+      },
+      {
+        "notes": "r r r r d2 d2 r r r b-1 b-1 r r r r r e-2 e-2 r r r c2 c2 r r r r r g1 g1 r r r f1 f1 r r r r r d2 d2 r r r c2 c2 r r r r r d2 d2 r r r f2 f2 r r r r r e-2 e-2 r r r f2 f2 r r r r r b-1 b-1 r r r g1 g1 r r r r r b-1 b-1 r r r b-1 b-1 r r r r r d2 d2 r r r b-1 b-1 r r r r r e-2 e-2 r r r c2 c2 r r r r r g1 g1 r r r f1 f1 r r r r r d2 d2 r r r c2 c2 r r r r r b-1 b-1 r r r g1 g1 r r r r r f2 f2 r r r f2 f2 r r r r r g1 g1 r r r c2 c2 r r r r r d2 d2 r r r g2 g2 r",
+        "tones": "t",
+        "volumes": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+        "effects": "nnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnff",
+        "speed": 12
+      },
+      {
+        "notes": "b-1 b-1 b-1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r f1 f1 f1 r r r r r r r r r g1 g1 g1 r r r r r r r r r f1 f1 f1 r r r r r r r r r f1 f1 f1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r f1 f1 f1 r r r r r r r r r b-1 b-1 b-1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r f1 f1 f1 r r r r r r r r r g1 g1 g1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r f1 f1 f1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r b-1 b-1 b-1 r r r r r r r r r",
+        "tones": "t",
+        "volumes": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+        "effects": "nnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnf",
+        "speed": 12
+      }
+    ]
+  },
+  "battle": {
+    "seconds": 13.866666666666667,
+    "loop": true,
+    "parts": [
+      {
+        "notes": "d3 f3 e-3 d3 g3 b-3 a3 g3 c3 e-3 d3 c3 c3 b-2 a2 g2 c3 b-2 a2 b-2 c3 c3 b-2 a2 e-3 d3 c3 d3 a3 g3 f3 e-3 d3 f3 e-3 d3 g3 b-3 a3 g3 c3 e-3 d3 c3 c3 b-2 a2 g2 b-2 d3 c3 b-2 a2 c3 b-2 a2 g2 b-2 a2 f2 b-2 b-2 r r",
+        "tones": "p",
+        "volumes": "2",
+        "effects": "f",
+        "speed": 26
+      },
+      {
+        "notes": "b-1 r f2 r e-1 r b-1 r f1 r c2 r g1 r d2 r f1 r c2 r f1 r c2 r e-1 r b-1 r f1 r c2 r b-1 r f2 r e-1 r b-1 r f1 r c2 r g1 r d2 r e-1 r b-1 r f1 r c2 r e-1 r b-1 r b-1 r f2 r",
+        "tones": "p",
+        "volumes": "1",
+        "effects": "f",
+        "speed": 26
+      },
+      {
+        "notes": "c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3 c0 c3 d1 c3",
+        "tones": "n",
+        "volumes": "2121",
+        "effects": "f",
+        "speed": 26
+      }
+    ]
+  },
+  "fanfare": {
+    "seconds": 2.25,
+    "loop": false,
+    "parts": [
+      {
+        "notes": "b-2 c3 d3 e-3 f3 g3 a3 b-3 r f3 b-3 r g3 f3 d3 b-2 b-2 r",
+        "tones": "t",
+        "volumes": "222233333333322220",
+        "effects": "f",
+        "speed": 15
+      },
+      {
+        "notes": "d2 r f2 g2 r b-2 c3 d3 r d3 f3 r e-3 d3 b-2 f2 d2 r",
+        "tones": "t",
+        "volumes": "1",
+        "effects": "f",
+        "speed": 15
+      },
+      {
+        "notes": "b-1 r r e-1 r r f1 r r b-1 r r e-1 r r b-1 r r",
+        "tones": "t",
+        "volumes": "1",
+        "effects": "f",
+        "speed": 15
+      }
+    ]
+  }
+}

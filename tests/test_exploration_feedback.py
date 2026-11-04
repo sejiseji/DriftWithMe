@@ -65,6 +65,6 @@ def test_soft_audio_never_interrupts_busy_channel_or_full_refill():
     assert not played
     engine._pyxel.play_pos = lambda channel: None
     engine.play_events([event(3, resource="water", amount=1)])
-    assert played == [(2, 12)]
+    assert played == [(3, 12)]
     engine.play_events([event(3, resource="water", amount=1)])
     assert len(played) == 1

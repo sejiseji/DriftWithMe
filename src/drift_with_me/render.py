@@ -1416,9 +1416,25 @@ class Renderer:
         shore_active = (
             getattr(self, "_wind_life_active", False) and area.get("id") == "spawn_grassland_micro"
         )
-        for cell_z in range(cell_min_z, cell_max_z):
+        # Wide-view grass detail LOD. Fixed world parity avoids
+        # redistributing retained clumps when the camera pans. No gameplay state changes.
+        lod_enabled = getattr(self, "wide_grass_lod", False)
+        was_wide = getattr(self, "_wide_grass_lod_active", False)
+        self._wide_grass_lod_active = lod_enabled and camera.zoom < (1.30 if was_wide else 1.20)
+        cell_step = 2 if self._wide_grass_lod_active else 1
+        full_cell_min_x, full_cell_min_z = cell_min_x, cell_min_z
+        cell_min_x += (-cell_min_x) % cell_step
+        cell_min_z += (-cell_min_z) % cell_step
+        rows = range(cell_min_z, cell_max_z, cell_step)
+        if shore_active and cell_step > 1 and full_cell_min_z <= 13 < cell_max_z:
+            # Retain the existing six-cell shoreline wind cohort, including odd cells.
+            rows = sorted((*rows, 13))
+        for cell_z in rows:
             origin_z = cell_z * cell_world
-            for cell_x in range(cell_min_x, cell_max_x):
+            columns = range(cell_min_x, cell_max_x, cell_step)
+            if shore_active and cell_step > 1 and cell_z == 13:
+                columns = range(max(full_cell_min_x, 14), min(cell_max_x, 20))
+            for cell_x in columns:
                 origin_x = cell_x * cell_world
                 blade_count = min_blades + self.grassland_hash(cell_x, cell_z, 0, jitter_seed) % (
                     max_blades - min_blades + 1

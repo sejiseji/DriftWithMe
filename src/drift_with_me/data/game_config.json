@@ -1206,16 +1206,16 @@
   },
   "audio": {
     "enabled_by_default": true,
-    "bgm_enabled": false,
+    "bgm_enabled": true,
     "loop_sfx_enabled": false,
     "denied_min_interval_sec": 0.25,
     "repel_min_interval_sec": 0.1,
-    "max_simultaneous_channels": 3,
+    "max_simultaneous_channels": 4,
     "channel_roles": {
-      "0": "launch",
-      "1": "success_and_hit",
-      "2": "denied",
-      "3": "reserved_unused"
+      "0": "reserved_bgm",
+      "1": "reserved_bgm",
+      "2": "reserved_bgm",
+      "3": "prioritized_sfx"
     },
     "event_priority": {
       "bubble_fired": 10,
@@ -1231,8 +1231,17 @@
       "interaction_started": 1,
       "collectible_claimed": 1,
       "explore_water": 1,
-      "explore_energy": 1
-    }
+      "explore_energy": 1,
+      "combat_started": 40,
+      "swarm_started": 40,
+      "combat_position_settle_started": 41
+    },
+    "bgm_channels": [
+      0,
+      1,
+      2
+    ],
+    "se_channel": 3
   },
   "grass_wind": {
     "enabled": false,

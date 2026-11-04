@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "status": "proposed_sound_shapes_not_listening_tested",
+  "status": "entry_cues_native_timing_checked_listening_pending",
   "events": [
     {
       "event": "bubble_fired",
       "sound_key": "bubble_launch",
-      "channel": 0,
+      "channel": 3,
       "priority": 10,
       "duration_target_sec": 0.06,
       "character": "短く軽い。成功音と混同しない。"
@@ -13,7 +13,7 @@
     {
       "event": "enemy_captured",
       "sound_key": "capture_success",
-      "channel": 1,
+      "channel": 3,
       "priority": 60,
       "duration_target_sec": 0.1,
       "character": "発射より明瞭な上向きの音。"
@@ -21,7 +21,7 @@
     {
       "event": "barrier_repelled",
       "sound_key": "barrier_repel",
-      "channel": 1,
+      "channel": 3,
       "priority": 30,
       "duration_target_sec": 0.1,
       "character": "弾力のある短い音。接触し続けても連打しない。"
@@ -29,7 +29,7 @@
     {
       "event": "discharge_succeeded",
       "sound_key": "discharge_success",
-      "channel": 1,
+      "channel": 3,
       "priority": 80,
       "duration_target_sec": 0.14,
       "character": "短い電気的な音。撃退成立を明確にする。"
@@ -37,7 +37,7 @@
     {
       "event": "action_denied",
       "sound_key": "action_denied",
-      "channel": 2,
+      "channel": 3,
       "priority": 5,
       "duration_target_sec": 0.05,
       "character": "小さく控えめ。成功音とは異なる。"
@@ -45,7 +45,7 @@
     {
       "event": "combat_marker_hit",
       "sound_key": "combat_marker_hit",
-      "channel": 2,
+      "channel": 3,
       "priority": 20,
       "duration_target_sec": 0.04,
       "character": "パリィマーカー命中の短いクリック。連続しても重くならない。"
@@ -53,7 +53,7 @@
     {
       "event": "combat_marker_miss",
       "sound_key": "combat_marker_miss",
-      "channel": 2,
+      "channel": 3,
       "priority": 15,
       "duration_target_sec": 0.06,
       "character": "パリィミスの短い減衰音。拒否音より軽い。"
@@ -61,7 +61,7 @@
     {
       "event": "combat_perfect_started",
       "sound_key": "combat_perfect",
-      "channel": 1,
+      "channel": 3,
       "priority": 70,
       "duration_target_sec": 0.1,
       "character": "PERFECT成立を強調する上向きの短音。"
@@ -69,7 +69,7 @@
     {
       "event": "combat_deflect_started",
       "sound_key": "combat_deflect",
-      "channel": 1,
+      "channel": 3,
       "priority": 65,
       "duration_target_sec": 0.08,
       "character": "防御離脱時の弾く音。"
@@ -77,7 +77,7 @@
     {
       "event": "combat_victory_cue_started",
       "sound_key": "combat_victory",
-      "channel": 1,
+      "channel": 3,
       "priority": 75,
       "duration_target_sec": 0.12,
       "character": "勝利演出開始を示す短い明るい音。"
@@ -85,7 +85,7 @@
     {
       "event": "interaction_started",
       "sound_key": "explore_inspect",
-      "channel": 2,
+      "channel": 3,
       "priority": 1,
       "duration_target_sec": 0.14,
       "character": "Soft exploration prototype. Skip while the shared channel is occupied."
@@ -93,7 +93,7 @@
     {
       "event": "collectible_claimed",
       "sound_key": "explore_pickup",
-      "channel": 2,
+      "channel": 3,
       "priority": 1,
       "duration_target_sec": 0.14,
       "character": "Soft exploration prototype. Skip while the shared channel is occupied."
@@ -101,7 +101,7 @@
     {
       "event": "explore_water",
       "sound_key": "explore_water",
-      "channel": 2,
+      "channel": 3,
       "priority": 1,
       "duration_target_sec": 0.14,
       "character": "Soft exploration prototype. Skip while the shared channel is occupied."
@@ -109,10 +109,34 @@
     {
       "event": "explore_energy",
       "sound_key": "explore_energy",
-      "channel": 2,
+      "channel": 3,
       "priority": 1,
       "duration_target_sec": 0.14,
       "character": "Soft exploration prototype. Skip while the shared channel is occupied."
+    },
+    {
+      "event": "combat_started",
+      "sound_key": "battle_entry_clash",
+      "channel": 3,
+      "priority": 40,
+      "duration_target_sec": 0.175,
+      "character": "One-shot entry cue; no delayed queue."
+    },
+    {
+      "event": "swarm_started",
+      "sound_key": "battle_entry_clash",
+      "channel": 3,
+      "priority": 40,
+      "duration_target_sec": 0.175,
+      "character": "One-shot entry cue; no delayed queue."
+    },
+    {
+      "event": "combat_position_settle_started",
+      "sound_key": "battle_position_zaza",
+      "channel": 3,
+      "priority": 41,
+      "duration_target_sec": 0.225,
+      "character": "One-shot entry cue; no delayed queue."
     }
   ]
 }
