@@ -12,6 +12,7 @@ from drift_with_me.august_patrol import PatrolMixin
 from drift_with_me.build_info import BUILD_LABEL
 from drift_with_me.camera import CameraController
 from drift_with_me.collectibles import CollectibleMixin, owned_collectibles
+from drift_with_me.dialogue_voice import voice_for_speaker
 from drift_with_me.document_reading import reading_pose_pixels
 from drift_with_me.east_site import SITE_FACTS, SITE_LABELS, EastSiteProgress
 from drift_with_me.effects import EffectSystem
@@ -201,6 +202,7 @@ class OfficeDialogueLine:
     indent_px: int = 0
     speaker: str = ""
     visual_action: str | None = None
+    voice_preset: str | None = None
 
 
 @dataclass(frozen=True)
@@ -1325,6 +1327,7 @@ class DriftWithMeApp(
                     indent_px=line.indent_px,
                     speaker=speaker,
                     visual_action=visual_action,
+                    voice_preset=voice_for_speaker(speaker),
                 )
                 for line in self.wrap_office_hanging_text(
                     f"{speaker}: {text}", max(1, int(content_rect.width)), style_name
@@ -1466,15 +1469,21 @@ class DriftWithMeApp(
         )
 
     def update_office_dialogue_playback(self, elapsed: float) -> None:
+        if getattr(self, "screen", None) == AppScreen.PAUSE:
+            return
         playback = self.sync_office_dialogue_playback()
         page = self.office_dialogue_current_page(playback)
         if not page:
             return
         character_count = sum(len(line.text) for line in page)
+        previously_revealed = int(playback.revealed_chars)
         playback.revealed_chars = min(
             float(character_count),
             playback.revealed_chars + max(0.0, elapsed) * OFFICE_DIALOGUE_CHARS_PER_SEC,
         )
+        reveal_audio = getattr(getattr(self, "audio", None), "play_dialogue_reveal", None)
+        if reveal_audio is not None:
+            reveal_audio(page, previously_revealed, int(playback.revealed_chars), elapsed)
         if (
             getattr(self, "office_consultation", None) is not None
             or self.office_story_report_active()

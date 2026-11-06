@@ -1,0 +1,155 @@
+{
+  "casting_policy": "User-requested visual/role-based sound casting, not new demographic canon. All actual runtime portraits were inspected.",
+  "age_groups": {
+    "child": "elementary-school-like design",
+    "adult": "approximately twenties/thirties design",
+    "elder": "older-than-that voice group, including middle-aged designs; not limited to elderly characters"
+  },
+  "default": {
+    "preset": "male_adult",
+    "status": "provisional fallback for a future or unknown speaker"
+  },
+  "aliases": {
+    "ジャック": "Jack",
+    "上司": "エトウ",
+    "清掃業者": "ミズノ"
+  },
+  "silent_speakers": [
+    "確認記録"
+  ],
+  "speakers": {
+    "Jack": {
+      "preset": "male_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "jack_front_32",
+      "source": "assets/jack_sprite.json / jack_front_32",
+      "basis": "Octopus protagonist with no human age cues; adult-male voice retained as a provisional workplace-role casting."
+    },
+    "エトウ": {
+      "preset": "male_elder",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "office_supervisor",
+      "source": "assets/jack_sprite.json / office_supervisor",
+      "basis": "Mature masculine face with gray-streaked hair, glasses and visible facial lines; older-group voice, not a claim of a precise age."
+    },
+    "ヒューズ": {
+      "preset": "female_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "fuse_matte",
+      "source": "assets/jack_sprite.json / fuse_matte",
+      "basis": "Robot has no human age cues; feminine adult voice chosen provisionally from companion dialogue/role, not the robot shape alone."
+    },
+    "ミナ": {
+      "preset": "female_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_mina_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_mina_dialogue_normal",
+      "basis": "Young-adult feminine portrait design."
+    },
+    "グロウ": {
+      "preset": "male_elder",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_grow_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_grow_dialogue_normal",
+      "basis": "White hair, full white beard and aged masculine facial design."
+    },
+    "ラメル": {
+      "preset": "female_adult",
+      "status": "supported by authored character description",
+      "portrait_asset": "w4_ramel_dialogue_normal",
+      "source": "office_counter_scripts.json / OFF-PROT-003 / background",
+      "basis": "The background explicitly describes an adult woman woodcutter."
+    },
+    "旅の勇者": {
+      "preset": "male_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_hero_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_hero_dialogue_normal",
+      "basis": "Young-adult masculine heroic portrait design."
+    },
+    "タカナシ": {
+      "preset": "female_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_takanashi_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_takanashi_dialogue_normal",
+      "basis": "Adult feminine portrait design without older-age styling."
+    },
+    "サガン": {
+      "preset": "male_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_sagan_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_sagan_dialogue_normal",
+      "basis": "Young-adult masculine portrait design."
+    },
+    "ヨアケ": {
+      "preset": "female_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_yoake_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_yoake_dialogue_normal",
+      "basis": "Young-adult feminine portrait design."
+    },
+    "メリル": {
+      "preset": "female_elder",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_merrill_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_merrill_dialogue_normal",
+      "basis": "Gray-white hair, glasses and older feminine facial design."
+    },
+    "ウラ": {
+      "preset": "female_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_ura_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_ura_dialogue_normal",
+      "basis": "Young-adult feminine portrait design."
+    },
+    "ミズノ": {
+      "preset": "male_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "mizuno_matte",
+      "source": "assets/jack_sprite.json / mizuno_matte",
+      "basis": "Adult masculine worker portrait without older-age styling."
+    },
+    "モリス": {
+      "preset": "male_child",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_morris_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_morris_dialogue_normal",
+      "basis": "Small round childlike masculine cat-character design and school-style clothing; provisional visual casting."
+    },
+    "ルビィ": {
+      "preset": "female_child",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "w4_ruby_dialogue_normal",
+      "source": "assets/jack_sprite.json / w4_ruby_dialogue_normal",
+      "basis": "Small round childlike feminine cat-character design and school-style clothing; provisional visual casting."
+    },
+    "フジ": {
+      "preset": "male_elder",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "refined_fuji_counter_normal",
+      "source": "assets/jack_sprite.json / refined_fuji_counter_normal",
+      "basis": "Gray hair, glasses and older masculine facial design."
+    },
+    "ユメサキ": {
+      "preset": "female_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "refined_yumesaki_counter_normal",
+      "source": "assets/jack_sprite.json / refined_yumesaki_counter_normal",
+      "basis": "Adult feminine researcher portrait design."
+    },
+    "ミヤノ": {
+      "preset": "female_adult",
+      "status": "provisional visual/role-based casting",
+      "portrait_asset": "refined_miyano_counter_normal",
+      "source": "assets/jack_sprite.json / refined_miyano_counter_normal",
+      "basis": "Adult feminine muscular researcher portrait design."
+    },
+    "イワマ": {
+      "preset": "male_elder",
+      "status": "supported by authored character description",
+      "portrait_asset": "w4_iwama_dialogue_normal",
+      "source": "docs/july_week4_local.md / approved visitor description",
+      "basis": "The description explicitly states a human man in his seventies."
+    }
+  }
+}

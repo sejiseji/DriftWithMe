@@ -1,4 +1,4 @@
-"""Three-voice music, driven by live presentation state; never writes save data."""
+"""Native two/three-voice music driven by presentation state; never writes saves."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ class MusicContext:
     victory: bool = False
     anchor_target: float | None = None
     phase_elapsed: float = 0.0
+    ambient: str = "explore"
 
 
 def context_for(app: Any) -> MusicContext:
@@ -28,11 +29,13 @@ def context_for(app: Any) -> MusicContext:
         getattr(app, name, False) for name in ("_lifecycle_wait_draw", "_lifecycle_wait_release")
     ):
         return MusicContext(active=True, paused=True)
-    active = screen == "PLAY" and not any(
+    active = screen in {"PLAY", "OFFICE"} and not any(
         getattr(app, name, None) for name in ("field_transition", "week_transition")
     )
     if not active:
         return MusicContext(active=False)
+    if screen == "OFFICE":
+        return MusicContext(True, ambient="office")
     model = app.model
     session = getattr(model, "combat_session", None)
     if session is not None:
@@ -84,6 +87,7 @@ class MusicController:
             name: tuple(range(32 + i * 3, 35 + i * 3))
             for i, name in enumerate(("explore", "battle", "fanfare"))
         }
+        self.slots["office"] = (41, 42)
         self.track: str | None = None
         self.position = 0.0
         self.fade_duration = 0.0
@@ -128,20 +132,24 @@ class MusicController:
         self.celebrated = False
         self.restore_win = False
 
+    @property
+    def active_channels(self) -> tuple[int, ...]:
+        return MUSIC_CHANNELS[: len(self.slots.get(self.track, ()))]
+
     def stop_output(self) -> None:
         if self.pyxel is not None and self.output_running:
             pos = self.pyxel.play_pos(0)
             if pos is not None:
                 self.position = float(pos[1])
         if self.pyxel is not None and self.output_running:
-            for ch in MUSIC_CHANNELS:
+            for ch in self.active_channels:
                 self.pyxel.stop(ch)
         self.output_running = False
         self._gain(1.0)
 
     def _gain(self, factor: float) -> None:
         if self.pyxel is not None and hasattr(self.pyxel, "channels"):
-            for ch in MUSIC_CHANNELS:
+            for ch in self.active_channels:
                 self.pyxel.channels[ch].gain = self.base_gains[ch] * max(0.0, min(1.0, factor))
 
     def _start(self, name: str, fade: float = 0.0) -> None:
@@ -154,7 +162,7 @@ class MusicController:
 
     def _play(self) -> None:
         score = self.scores[self.track]
-        for ch, slot in zip(MUSIC_CHANNELS, self.slots[self.track], strict=True):
+        for ch, slot in zip(self.active_channels, self.slots[self.track], strict=True):
             self.pyxel.play(ch, slot, sec=self.position, loop=score["loop"])
         self.output_running = True
 
@@ -173,6 +181,16 @@ class MusicController:
             self.stop_output()
             return
         dt = max(0.0, float(dt))
+        if context.ambient == "office":
+            if self.track != "office":
+                self._start("office", 1.2)
+            # A return to the counter must not keep a field victory/battle pending.
+            self.battle = None
+            self.phase = ""
+            self.celebrated = False
+            self.restore_win = False
+        elif self.track == "office":
+            self._start("explore", 1.2)
         if context.battle is not None and context.battle is not self.battle:
             self.battle = context.battle
             self.phase = ""

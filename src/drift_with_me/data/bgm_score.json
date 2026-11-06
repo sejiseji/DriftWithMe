@@ -79,5 +79,32 @@
         "speed": 15
       }
     ]
+  },
+  "office": {
+    "seconds": 24,
+    "loop": true,
+    "parts": [
+      {
+        "notes": "g1 g1 g1 g1 g1 g1 c2 c2 c2 c2 c2 c2 e2 e2 e2 e2 e2 e2 c2 c2 c2 c2 c2 c2 a1 a1 a1 a1 a1 a1 d2 d2 d2 d2 d2 d2 f2 f2 f2 f2 f2 f2 d2 d2 d2 d2 d2 d2 g1 g1 g1 g1 g1 g1 b1 b1 b1 b1 b1 b1 d2 d2 d2 d2 d2 d2 b1 b1 b1 b1 b1 b1 g1 g1 g1 g1 g1 g1 c2 c2 c2 c2 c2 c2 e2 e2 e2 e2 e2 e2 c2 c2 c2 c2 c2 c2 a1 a1 a1 a1 a1 a1 c2 c2 c2 c2 c2 c2 e2 e2 e2 e2 e2 e2 c2 c2 c2 c2 c2 c2 a1 a1 a1 a1 a1 a1 d2 d2 d2 d2 d2 d2 f#2 f#2 f#2 f#2 f#2 f#2 d2 d2 d2 d2 d2 d2 g1 g1 g1 g1 g1 g1 b1 b1 b1 b1 b1 b1 d2 d2 d2 d2 d2 d2 b1 b1 b1 b1 b1 b1 g1 g1 g1 g1 g1 g1 e2 e2 e2 e2 e2 e2 c2 c2 c2 c2 c2 c2 c2 c2 c2 c2 r r",
+        "tones": "t",
+        "volumes": "222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222200",
+        "effects": "nnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnfnnnnnnnnnfnn",
+        "speed": 15
+      },
+      {
+        "notes": "e1 e1 e1 e1 e1 e1 e1 e1 e1 r r r g1 g1 g1 g1 g1 g1 g1 g1 g1 r r r f1 f1 f1 f1 f1 f1 f1 f1 f1 r r r a1 a1 a1 a1 a1 a1 a1 a1 a1 r r r d1 d1 d1 d1 d1 d1 d1 d1 d1 r r r g1 g1 g1 g1 g1 g1 g1 g1 g1 r r r e1 e1 e1 e1 e1 e1 e1 e1 e1 r r r g1 g1 g1 g1 g1 g1 g1 g1 g1 r r r e1 e1 e1 e1 e1 e1 e1 e1 e1 r r r a1 a1 a1 a1 a1 a1 a1 a1 a1 r r r f#1 f#1 f#1 f#1 f#1 f#1 f#1 f#1 f#1 r r r a1 a1 a1 a1 a1 a1 a1 a1 a1 r r r d1 d1 d1 d1 d1 d1 d1 d1 d1 r r r g1 g1 g1 g1 g1 g1 g1 g1 g1 r r r e1 e1 e1 e1 e1 e1 e1 e1 e1 r r r g1 g1 g1 g1 g1 g1 g1 g1 g1 r r r",
+        "tones": "t",
+        "volumes": "111111111000111111111000111111111000111111111000111111111000111111111000111111111000111111111000111111111000111111111000111111111000111111111000111111111000111111111000111111111000111111111000",
+        "effects": "nnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnn",
+        "speed": 15
+      }
+    ],
+    "title": "Municipal Lobby - Bach BWV846, two-voice reduction",
+    "bpm": 80,
+    "meter": "4/4",
+    "bars": 8,
+    "source": "BSB bsb11131431, BGA volume14, plate B.W.XIV, printed p3 (image47)",
+    "preview_score_sha256": "0b9ff154f3d7cb303014ebfe820d548bc9345f0c3af89883c2eb1efc10384334",
+    "arrangement": "The approved preview melody and inner voice are unchanged. Its brief third bass voice is omitted. Native triangle synthesis only; no recording, MIDI, samples or source scan is bundled."
   }
 }
