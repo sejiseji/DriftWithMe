@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from drift_with_me.audio_levels import OUTPUT_GAIN
 from drift_with_me.config import load_data_json
 
 MUSIC_CHANNELS = (0, 1, 2)
@@ -150,7 +151,9 @@ class MusicController:
     def _gain(self, factor: float) -> None:
         if self.pyxel is not None and hasattr(self.pyxel, "channels"):
             for ch in self.active_channels:
-                self.pyxel.channels[ch].gain = self.base_gains[ch] * max(0.0, min(1.0, factor))
+                self.pyxel.channels[ch].gain = (
+                    self.base_gains[ch] * OUTPUT_GAIN * max(0.0, min(1.0, factor))
+                )
 
     def _start(self, name: str, fade: float = 0.0) -> None:
         self.stop_output()

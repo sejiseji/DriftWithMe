@@ -1179,7 +1179,7 @@ class DriftWithMeApp(
                 classification = CLASSIFICATION_ORDER[
                     self.office_classification_index % len(CLASSIFICATION_ORDER)
                 ]
-                self.office.classify(classification)
+                self.classify_office_case(classification)
             return
 
         for index, question in enumerate(case.questions[:visible_question_count]):
@@ -1197,7 +1197,7 @@ class DriftWithMeApp(
             if self.mouse_pressed_in(self.office_classification_rect(index)):
                 self.office_focus = "classifications"
                 self.office_classification_index = index
-                self.office.classify(classification)
+                self.classify_office_case(classification)
                 return
 
     def office_classification_choices(self):
@@ -1221,8 +1221,22 @@ class DriftWithMeApp(
         if session is None:
             return False
         if question.question_id in session.asked_question_ids:
-            return self.select_office_answer_reference(question.question_id)
-        return self.office.ask_question(question.question_id)
+            accepted = self.select_office_answer_reference(question.question_id)
+        else:
+            accepted = self.office.ask_question(question.question_id)
+        feedback = getattr(getattr(self, "audio", None), "play_office_feedback", None)
+        if accepted and feedback is not None:
+            feedback("question")
+        return accepted
+
+    def classify_office_case(self, classification: Classification) -> bool:
+        self.office.last_classification_result = None
+        accepted = self.office.classify(classification)
+        verdict = self.office.last_classification_result
+        feedback = getattr(getattr(self, "audio", None), "play_office_feedback", None)
+        if verdict is not None and feedback is not None:
+            feedback("correct" if verdict else "incorrect")
+        return accepted
 
     def sync_office_answer_reference(self) -> str | None:
         if getattr(self, "office_consultation", None) is not None:

@@ -8,7 +8,7 @@ from functools import lru_cache
 from drift_with_me.config import load_data_json
 from drift_with_me.office import supervisor_speaker_name
 
-# Six short native Pyxel sounds. Slots 0-15 belong to SE, 32+ to BGM.
+# Six short native Pyxel sounds. Slots 0-15 and 22-24 belong to SE, 32+ to BGM.
 VOICE_SHAPES = {
     "male_child": ("g3a3", "tt", "21", "nf", 2),
     "male_adult": ("c3d3", "pp", "21", "nf", 2),

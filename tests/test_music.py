@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from drift_with_me.audio_levels import OUTPUT_GAIN
 from drift_with_me.events import GameEvent
 from drift_with_me.music import BATTLE_QUARTER_SEC, MusicContext, MusicController, context_for
 
@@ -63,7 +64,7 @@ def test_phrase_continues_after_map_return_then_exploration_fades():
     assert m.track == "explore"
     for _ in range(80):
         update(m)
-    assert p.channels[0].gain == pytest.approx(0.125)
+    assert p.channels[0].gain == pytest.approx(0.125 * OUTPUT_GAIN)
 
 
 @pytest.mark.parametrize("outcome", ["defeat", "capture", "deflect"])

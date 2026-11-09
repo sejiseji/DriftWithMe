@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from drift_with_me.audio import SE_CHANNEL, SOUND_SHAPES, AudioEngine
+from drift_with_me.audio_levels import OUTPUT_GAIN
 from drift_with_me.config import load_data_json
 from drift_with_me.music import MusicContext, MusicController, context_for
 
@@ -88,7 +89,7 @@ def test_office_uses_two_slots_without_restarting_or_touching_spare_channels():
     assert set(player.playing) == {0, 1}
     assert player.channels[2].gain == 0.21
     assert player.channels[3].gain == 0.37
-    assert player.channels[0].gain == pytest.approx(0.125)
+    assert player.channels[0].gain == pytest.approx(0.125 * OUTPUT_GAIN)
     assert not ({2, 3} & set(player.stops))
     assert all(kwargs["loop"] for _, _, kwargs in player.plays)
 

@@ -4,6 +4,7 @@ import pytest
 
 from drift_with_me.app import AppScreen, OfficeDialogueLine
 from drift_with_me.audio import SOUND_SHAPES, AudioEngine
+from drift_with_me.audio_levels import OUTPUT_GAIN
 from drift_with_me.dialogue_voice import (
     VOICE_GAIN,
     VOICE_SHAPES,
@@ -147,22 +148,22 @@ def test_quiet_voice_gain_restores_for_normal_se_without_touching_music(method):
     audio.setup(player)
     music_gains = [channel.gain for channel in player.channels[:3]]
     audio.play_dialogue_reveal(page(), 0, 1, 1)
-    assert player.channels[3].gain == pytest.approx(0.2 * VOICE_GAIN)
+    assert player.channels[3].gain == pytest.approx(0.2 * OUTPUT_GAIN * VOICE_GAIN)
     assert 0 < VOICE_GAIN < 1
     assert [channel.gain for channel in player.channels[:3]] == music_gains
     if method == "event":
         audio.play_events([event(1, "interaction_started", interaction_kind="inspect")])
     else:
         audio.play_preview("action_denied")
-    assert player.channels[3].gain == pytest.approx(0.2)
+    assert player.channels[3].gain == pytest.approx(0.2 * OUTPUT_GAIN)
     assert player.plays[-1][1] < 16
     before = len(player.plays)
     audio.play_dialogue_reveal(page(), 1, 2, 1)
     assert len(player.plays) == before
-    assert player.channels[3].gain == pytest.approx(0.2)
+    assert player.channels[3].gain == pytest.approx(0.2 * OUTPUT_GAIN)
     player.stop(3)
     audio.play_dialogue_reveal(page(), 2, 3, 1)
-    assert player.channels[3].gain == pytest.approx(0.2 * VOICE_GAIN)
+    assert player.channels[3].gain == pytest.approx(0.2 * OUTPUT_GAIN * VOICE_GAIN)
 
 
 @pytest.mark.parametrize("method", ["toggle_mute", "suspend_for_lifecycle", "reset_event_history"])
@@ -174,10 +175,10 @@ def test_voice_gain_reset_stops_tick_and_preserves_bgm_gain(method):
     audio.setup(player)
     audio.play_dialogue_reveal(page(), 0, 1, 1)
     assert 3 in player.playing
-    assert player.channels[3].gain == pytest.approx(0.125 * VOICE_GAIN)
+    assert player.channels[3].gain == pytest.approx(0.125 * OUTPUT_GAIN * VOICE_GAIN)
     getattr(audio, method)()
     assert 3 not in player.playing
-    assert player.channels[3].gain == pytest.approx(0.125)
+    assert player.channels[3].gain == pytest.approx(0.125 * OUTPUT_GAIN)
     assert all(ch.gain == 0.125 for ch in player.channels[:3])
 
 

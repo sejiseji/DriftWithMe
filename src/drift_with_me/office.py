@@ -228,6 +228,7 @@ class OfficePrototype:
         self.cases = cases
         self.counter_scripts = counter_scripts or {}
         self.sessions = {case.case_id: CaseSession(case.case_id) for case in cases}
+        self.last_classification_result: bool | None = None
         self.current_index = 0
         self.active_field_task: FieldTask | None = None
         self.begin_current_case()
@@ -448,6 +449,8 @@ class OfficePrototype:
         return question_id
 
     def classify(self, classification: Classification | str) -> bool:
+        # None means no verdict (disabled input or missing prerequisites).
+        self.last_classification_result = None
         case = self.current_case
         session = self.current_session
         if case is None or session is None:
@@ -470,6 +473,7 @@ class OfficePrototype:
         session.selected_classification = selected
         script = self.current_counter_script
         if selected != case.expected_classification:
+            self.last_classification_result = False
             session.feedback = (
                 script.feedback.get(
                     selected,
@@ -491,6 +495,7 @@ class OfficePrototype:
                 CaseState.READY_TO_CLASSIFY if session.asked_question_ids else CaseState.HEARING
             )
             return False
+        self.last_classification_result = True
         session.state = CaseState.CLASSIFIED
         session.feedback = (
             script.feedback.get(selected, CLASSIFICATION_SUCCESS_FEEDBACK[selected])

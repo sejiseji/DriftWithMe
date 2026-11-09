@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from drift_with_me.audio_levels import OUTPUT_GAIN
 from drift_with_me.config import load_data_json
 from drift_with_me.dialogue_voice import (
     VOICE_GAIN,
@@ -46,6 +47,15 @@ SOUND_SHAPES = {
 }
 
 
+# Separate from ordinary SE (0-15), dialogue voices (16-21), and music (32+).
+OFFICE_SOUND_SHAPES = {
+    "question": ("e4g4", "tt", "21", "nf", 3),  # 0.05s: light pico.
+    "correct": ("e4g4c4", "ttt", "232", "nnf", 5),  # 0.125s: tirorin.
+    "incorrect": ("c2c2rc2c2", "ppppp", "22021", "fffff", 3),  # 0.125s: bubu.
+}
+OFFICE_SOUND_SLOTS = {key: 22 + index for index, key in enumerate(OFFICE_SOUND_SHAPES)}
+
+
 class AudioEngine:
     def __init__(self, config: dict[str, Any]) -> None:
         audio = load_data_json("audio_events.json")
@@ -78,16 +88,29 @@ class AudioEngine:
             self._sound_slots[sound_key] = index
         for key, shape in VOICE_SHAPES.items():
             pyxel_module.sounds[VOICE_SLOTS[key]].set(*shape)
+        for key, shape in OFFICE_SOUND_SHAPES.items():
+            pyxel_module.sounds[OFFICE_SOUND_SLOTS[key]].set(*shape)
         self.music.setup(pyxel_module)
 
     def _se_gain(self, factor: float) -> None:
         if self._pyxel is not None and hasattr(self._pyxel, "channels"):
-            self._pyxel.channels[SE_CHANNEL].gain = self._se_base_gain * factor
+            self._pyxel.channels[SE_CHANNEL].gain = self._se_base_gain * OUTPUT_GAIN * factor
 
     def _play_effect(self, slot: int) -> None:
         # A quiet dialogue tick must never leave the next ordinary SE attenuated.
         self._se_gain(1.0)
         self._pyxel.play(SE_CHANNEL, slot)
+
+    def play_office_feedback(self, cue: str) -> None:
+        """Immediate UI feedback, with no deferred playback or retrigger while busy."""
+        if self._pyxel is None or self.muted or self._lifecycle_suspended:
+            return
+        priority = {"question": 5, "incorrect": 6, "correct": 7}[cue]
+        if self._pyxel.play_pos(SE_CHANNEL) is not None and self._active_priority >= priority:
+            return
+        self._se_gain(0.5)
+        self._pyxel.play(SE_CHANNEL, OFFICE_SOUND_SLOTS[cue])
+        self._active_priority = priority
 
     def toggle_mute(self) -> bool:
         self.muted = not self.muted
