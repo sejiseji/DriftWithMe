@@ -1,30 +1,21 @@
 {
   "explore": {
-    "seconds": 19.2,
+    "seconds": 64,
     "loop": true,
     "parts": [
       {
-        "notes": "d3 d3 d3 d3 f3 f3 e-3 e-3 e-3 e-3 d3 d3 g3 g3 g3 g3 b-3 b-3 a3 a3 a3 a3 g3 g3 c3 c3 c3 c3 e-3 e-3 d3 d3 d3 d3 c3 c3 c3 c3 c3 c3 b-2 b-2 a2 a2 a2 a2 g2 g2 c3 c3 c3 c3 b-2 b-2 a2 a2 a2 a2 b-2 b-2 c3 c3 c3 c3 c3 c3 b-2 b-2 b-2 b-2 a2 a2 e-3 e-3 e-3 e-3 d3 d3 c3 c3 c3 c3 d3 d3 a3 a3 a3 a3 g3 g3 f3 f3 f3 f3 e-3 e-3 d3 d3 d3 d3 f3 f3 e-3 e-3 e-3 e-3 d3 d3 g3 g3 g3 g3 b-3 b-3 a3 a3 a3 a3 g3 g3 c3 c3 c3 c3 e-3 e-3 d3 d3 d3 d3 c3 c3 c3 c3 c3 c3 b-2 b-2 a2 a2 a2 a2 g2 g2 b-2 b-2 b-2 b-2 d3 d3 c3 c3 c3 c3 b-2 b-2 a2 a2 a2 a2 c3 c3 b-2 b-2 b-2 b-2 a2 a2 g2 g2 g2 g2 b-2 b-2 a2 a2 a2 a2 f2 f2 b-2 b-2 b-2 b-2 b-2 b-2 r r r r r r",
+        "notes": "d3 r r r f3 r r r e-3 r r r d3 r r r g3 r r r b-3 r r r a3 r r r g3 r r r c3 r r r e-3 r r r d3 r r r c3 r r r c3 r r r b-2 r r r a2 r r r g2 r r r c3 r r r b-2 r r r a2 r r r b-2 r r r c3 r r r c3 r r r b-2 r r r a2 r r r e-3 r r r d3 r r r c3 r r r d3 r r r a3 r r r g3 r r r f3 r r r e-3 r r r d3 r r r f3 r r r e-3 r r r d3 r r r g3 r r r b-3 r r r a3 r r r g3 r r r c3 r r r e-3 r r r d3 r r r c3 r r r c3 r r r b-2 r r r a2 r r r g2 r r r b-2 r r r d3 r r r c3 r r r b-2 r r r a2 r r r c3 r r r b-2 r r r a2 r r r g2 r r r b-2 r r r a2 r r r f2 r r r b-2 r r r b-2 r r r r r r r r r r r",
         "tones": "t",
-        "volumes": "222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222",
-        "effects": "nnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnfnnnfnf",
-        "speed": 12
-      },
-      {
-        "notes": "r r r r d2 d2 r r r b-1 b-1 r r r r r e-2 e-2 r r r c2 c2 r r r r r g1 g1 r r r f1 f1 r r r r r d2 d2 r r r c2 c2 r r r r r d2 d2 r r r f2 f2 r r r r r e-2 e-2 r r r f2 f2 r r r r r b-1 b-1 r r r g1 g1 r r r r r b-1 b-1 r r r b-1 b-1 r r r r r d2 d2 r r r b-1 b-1 r r r r r e-2 e-2 r r r c2 c2 r r r r r g1 g1 r r r f1 f1 r r r r r d2 d2 r r r c2 c2 r r r r r b-1 b-1 r r r g1 g1 r r r r r f2 f2 r r r f2 f2 r r r r r g1 g1 r r r c2 c2 r r r r r d2 d2 r r r g2 g2 r",
-        "tones": "t",
-        "volumes": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
-        "effects": "nnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnffnnnfnfnnfnff",
-        "speed": 12
-      },
-      {
-        "notes": "b-1 b-1 b-1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r f1 f1 f1 r r r r r r r r r g1 g1 g1 r r r r r r r r r f1 f1 f1 r r r r r r r r r f1 f1 f1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r f1 f1 f1 r r r r r r r r r b-1 b-1 b-1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r f1 f1 f1 r r r r r r r r r g1 g1 g1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r f1 f1 f1 r r r r r r r r r e-1 e-1 e-1 r r r r r r r r r b-1 b-1 b-1 r r r r r r r r r",
-        "tones": "t",
-        "volumes": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
-        "effects": "nnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnfnnfnnnnnnnnf",
-        "speed": 12
+        "volumes": "2",
+        "effects": "f",
+        "speed": 30
       }
-    ]
+    ],
+    "title": "Forest steps - sparse single-voice exploration",
+    "bpm": 60,
+    "meter": "4/4",
+    "bars": 16,
+    "arrangement": "Existing Schumann melody in one native triangle voice. Each quarter beat has a 0.25-second fading note and 0.75 seconds of rest; the final two beats rest completely. No accompaniment, percussion, streaming or per-note callbacks."
   },
   "battle": {
     "seconds": 13.866666666666667,

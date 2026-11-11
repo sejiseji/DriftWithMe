@@ -94,17 +94,18 @@ def test_office_uses_two_slots_without_restarting_or_touching_spare_channels():
     assert all(kwargs["loop"] for _, _, kwargs in player.plays)
 
 
-def test_field_office_switch_releases_third_voice_and_restores_three_voice_field():
+def test_field_office_switch_releases_harmony_and_restores_single_voice_field():
     music, player = setup()
     update(music, office=False)
-    assert set(player.playing) == {0, 1, 2}
+    assert set(player.playing) == {0}
     update(music)
     assert set(player.playing) == {0, 1}
-    assert 2 in player.stops
+    assert 2 not in player.stops
     update(music, office=False)
     assert music.track == "explore"
-    assert set(player.playing) == {0, 1, 2}
-    assert [slot for _, slot, _ in player.plays[-3:]] == [32, 33, 34]
+    assert set(player.playing) == {0}
+    assert 1 in player.stops
+    assert player.plays[-1][:2] == (0, 32)
     assert 3 not in player.stops
 
 

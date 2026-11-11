@@ -350,10 +350,10 @@ class PatrolMixin:
         self.draw_panel_frame(panel, fill=0, inner=12)
         speaker, text = c.lines[c.index]
         self.draw_office_text_in_rect(self.office_rect(50, 133, 300, 18), speaker, 12)
-        self.draw_office_wrapped_lines(
-            self.office_rect(50, 154, 300 if n.large else 400, 48), (text,), 7
-        )
+        self.draw_field_dialogue_text(self.office_rect(50, 154, 300 if n.large else 400, 48), c, 7)
         label = "次へ →" if c.index + 1 < len(c.lines) else "閉じる →"
+        if self.field_dialogue_is_revealing(c):
+            label = "全文表示 →"
         self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label, 10)
 
 

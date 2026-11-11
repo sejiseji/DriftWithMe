@@ -34,10 +34,10 @@
     },
     "ヒューズ": {
       "preset": "female_adult",
-      "status": "provisional visual/role-based casting",
+      "status": "user-requested young-adult feminine casting",
       "portrait_asset": "fuse_matte",
       "source": "assets/jack_sprite.json / fuse_matte",
-      "basis": "Robot has no human age cues; feminine adult voice chosen provisionally from companion dialogue/role, not the robot shape alone."
+      "basis": "User explicitly requested a young-woman dialogue SE on 2026-11-10; use the existing young-adult feminine preset, not a child voice."
     },
     "ミナ": {
       "preset": "female_adult",

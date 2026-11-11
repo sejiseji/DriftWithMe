@@ -1,4 +1,4 @@
-"""Native two/three-voice music driven by presentation state; never writes saves."""
+"""Native one/two/three-voice music driven by presentation state; never writes saves."""
 
 from __future__ import annotations
 
@@ -84,11 +84,13 @@ class MusicController:
         self.enabled = enabled
         self.scores = load_data_json("bgm_score.json")
         self.pyxel = None
+        # Keep combat/office slot identities stable; exploration leaves 33/34 unused.
         self.slots = {
-            name: tuple(range(32 + i * 3, 35 + i * 3))
-            for i, name in enumerate(("explore", "battle", "fanfare"))
+            "explore": (32,),
+            "battle": (35, 36, 37),
+            "fanfare": (38, 39, 40),
+            "office": (41, 42),
         }
-        self.slots["office"] = (41, 42)
         self.track: str | None = None
         self.position = 0.0
         self.fade_duration = 0.0

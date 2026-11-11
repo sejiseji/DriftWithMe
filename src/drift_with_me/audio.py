@@ -217,6 +217,15 @@ class AudioEngine:
         self._pyxel.play(SE_CHANNEL, VOICE_SLOTS[preset])
         self._active_priority = -1
 
+    def stop_dialogue_reveal(self) -> None:
+        """Drop a speech tick only, without interrupting gameplay or office feedback SE."""
+        self._dialogue_cooldown = 0.0
+        if self._active_priority == -1:
+            if self._pyxel is not None:
+                self._pyxel.stop(SE_CHANNEL)
+            self._se_gain(1.0)
+            self._active_priority = 0
+
     def update_music(self, app, elapsed: float) -> None:
         self.music.update(
             context_for(app), elapsed, muted=self.muted, suspended=self._lifecycle_suspended

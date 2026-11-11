@@ -17,6 +17,7 @@ from drift_with_me.document_reading import reading_pose_pixels
 from drift_with_me.east_site import SITE_FACTS, SITE_LABELS, EastSiteProgress
 from drift_with_me.effects import EffectSystem
 from drift_with_me.exploration_feedback import ExplorationFeedback
+from drift_with_me.field_dialogue import FieldDialogueMixin
 from drift_with_me.field_transition import FieldTransition, travel_lines
 from drift_with_me.field_visit import ANOMALY_ID, FieldConversation, observation_conversation
 from drift_with_me.first_sight import FirstSightQueue
@@ -471,6 +472,7 @@ WATER_STUDY_LAYER_PALETTE_REMAPS: dict[str, tuple[tuple[int, int], ...]] = {
 
 
 class DriftWithMeApp(
+    FieldDialogueMixin,
     OfficeHeaderMixin,
     PointerInputMixin,
     UITraceMixin,
@@ -529,6 +531,7 @@ class DriftWithMeApp(
         self.office_focus = "questions"
         self.office_question_index = 0
         self.office_classification_index = 0
+        self.field_dialogue_playback = None
         self.office_dialogue_playback = OfficeDialoguePlayback()
         self.office_consultation: OfficeDialoguePlayback | None = None
         self.office_answer_case_id: str | None = None
@@ -810,6 +813,8 @@ class DriftWithMeApp(
         self.pointer_snapshot = self.read_pointer_snapshot()
         from drift_with_me.screen_flow import dispatch_early
 
+        if self.update_field_dialogue_playback(elapsed):
+            return
         if dispatch_early(self, elapsed):
             return
         if self.screen in (AppScreen.START, AppScreen.PLAY):
@@ -1003,6 +1008,7 @@ class DriftWithMeApp(
         self.session_started = True
         self.new_game_confirmation = False
         self.last_checkpoint = None
+        self.field_dialogue_playback = None
         self.office_dialogue_playback = OfficeDialoguePlayback()
         self.office_answer_case_id = self.office_answer_question_id = None
         self.end_office_consultation()
@@ -1899,7 +1905,7 @@ class DriftWithMeApp(
             self.draw_panel_frame(panel, fill=0, inner=12)
             speaker, text = transition.lines[transition.index]
             self.draw_office_text_in_rect(self.office_rect(50, 133, 400, 18), speaker, 12)
-            self.draw_office_wrapped_lines(self.office_rect(50, 154, 400, 48), (text,), 7)
+            self.draw_field_dialogue_text(self.office_rect(50, 154, 400, 48), transition, 7)
             self.draw_office_text_in_rect(
                 self.office_rect(50, 204, 50, 16), f"{transition.index + 1}/2", 13
             )
@@ -1910,6 +1916,8 @@ class DriftWithMeApp(
                 if transition.direction == "out"
                 else "帰庁"
             )
+            if self.field_dialogue_is_revealing(transition):
+                label = "全文表示"
             self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
             if transition.direction == "back":
                 self.draw_office_text_in_rect(self.field_travel_cancel_rect(), "やめる", 13)
@@ -6301,7 +6309,9 @@ class DriftWithMeApp(
         text_width = 306 if fuji_portrait or portrait_id is not None else 400
         target_speaker = getattr(conversation, "target_speaker", None)
         color = 10 if target_speaker and speaker == target_speaker else 7
-        self.draw_office_wrapped_lines(self.office_rect(50, 154, text_width, 48), (text,), color)
+        self.draw_field_dialogue_text(
+            self.office_rect(50, 154, text_width, 48), conversation, color
+        )
         self.draw_office_text_in_rect(
             self.office_rect(50, 204, 50, 16),
             f"{conversation.index + 1}/{len(conversation.lines)}",
@@ -6342,6 +6352,8 @@ class DriftWithMeApp(
             and conversation.index + 1 == len(conversation.lines)
         ):
             label = "花を並べる" if conversation.action in {"request", "edit"} else "閉じる"
+        if self.field_dialogue_is_revealing(conversation):
+            label = "全文表示"
         self.draw_office_text_in_rect(self.office_rect(356, 204, 96, 16), label + " →", 10)
 
     def draw_field_fuji_portrait(self) -> None:

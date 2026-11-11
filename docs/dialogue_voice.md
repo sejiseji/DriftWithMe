@@ -1,4 +1,4 @@
-# Office dialogue sound
+# Dialogue sound
 
 Office text naturally revealing letters or numbers makes a quiet native Pyxel tick.
 There are six sound-design presets: male child/adult/elder and female child/adult/elder.
@@ -7,7 +7,7 @@ request, the actual runtime portraits were inspected and all 19 office character
 were assigned explicitly in `data/dialogue_voices.json`. The age groups mean
 school-child-like, approximately twenties/thirties, and older-than-that; the internal
 `elder` key includes middle-aged designs. Human ages are not inferred for the octopus
-Jack or robot Fuse: their adult voices are provisional choices based on their roles.
+Jack or robot Fuse. Jack retains the provisional workplace-role choice. Fuse now uses the young-adult feminine preset explicitly requested on November 10.
 Jack/ジャック, エトウ/上司 and ミズノ/清掃業者 aliases resolve consistently.
 The non-character report label 確認記録 is silent. Future unknown speakers retain an
 explicitly provisional fallback. A line can also provide `voice_preset` directly.
@@ -41,7 +41,31 @@ Mute, lifecycle suspension and reset stop the tick and restore the channel basel
 - Female older group: メリル.
 
 Each entry records the actual portrait asset and a brief casting rationale. ラメル
-and イワマ additionally retain their explicit authored-description sources. All other
+and イワマ additionally retain their explicit authored-description sources. Except for the explicit Fuse request, other
 visual/role-based assignments are provisional sound casting, as requested. Existing
 character/story metadata is unchanged. Portraits use the current counter remaps,
 including the refined researcher busts, rather than obsolete source art.
+
+
+## Field dialogue (November 10 update)
+
+The field-style windows now reveal at the same 72 characters/second as the office.
+This covers ordinary field/collectible conversation, first sightings, travel exchanges,
+flowerbed visits, July week scenes and return choices, August sightings and patrols.
+The portrait debug preview uses the same presentation. Existing office/report playback
+is preserved; the July week-two report uses its existing field-style window.
+
+Speaker names and portraits remain immediately visible. Body wrapping is computed
+from the complete text before revealing, so already visible punctuation does not move.
+A confirm/tap during reveal shows the full current line without a skipped-character
+sound burst or a progress/save/award action. The next press reaches the original
+scene handler. Cancel/Back, input-release gates and pause retain their existing actions.
+Reopening a closed conversation starts its text reveal again; saved dialogue positions
+and all game progress retain their existing schema and semantics.
+
+Natural revealed letters/numbers reuse the quiet office voice engine, including
+speaker changes and Fuse's female_adult preset. Punctuation, unnamed narration and
+confirmation-record labels stay silent. Ticks are throttled, never queued, and never
+interrupt gameplay SE. Pause/background freezes presentation; mute reveals silently.
+The single exploration music channel and dialogue SE channel 3 can coexist; combat,
+results, office music and the existing feedback SE are not disabled by this change.
