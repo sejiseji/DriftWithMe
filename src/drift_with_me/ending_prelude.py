@@ -12,7 +12,7 @@ from drift_with_me.math3d import Vec3, screen_to_ground_affine, screen_to_ground
 from drift_with_me.render import DrawCommand, Renderer
 
 LINES = (
-    ("ジャック", "今日の報告は、少し落ち着いて話せたよ。"),
+    ("ジャック", "今日の報告、少し落ち着いて話せたよ。……ね、そうだったよね？"),
     ("ヒューズ", "ええ。ちゃんと、自分の言葉になってたわ。"),
     ("ジャック", "こうしてると、急に力が抜けるね。"),
     ("ヒューズ", "もう、急いで戻らなくていいもの。"),

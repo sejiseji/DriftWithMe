@@ -16,17 +16,26 @@ from drift_with_me.week_cycle import WorkWeek
 
 SITES = frozenset({"northwest", "northeast", "southeast"})
 OPENING = {
-    4: (SUPERVISOR_NAME, "保護区の最終巡回を頼む。戻る時刻は任せるよ"),
+    4: (SUPERVISOR_NAME, "保護区の最終巡回を頼む。今日は戻る時刻も、お前さんに任せよう"),
     1: (
         "フジ",
-        "このごろウニやウミウシが荒っぽいんだ。小さいのを見かける数も増えている。現地を見てもらえるか",
+        "このごろウニやウミウシが荒っぽくてな。小さいのを見かける数も増えてる。現地を見てもらえるか",
     ),
-    2: ("フジ", "今度は小さいのが群れで囲んでくる。先週の三か所だ。俺も現地で援護する"),
-    3: (SUPERVISOR_NAME, "先週の三か所をもう一度見てきてくれ。群れの様子を確かめてほしい"),
+    2: (
+        "フジ",
+        "今度は小さいのが群れで囲んでくる。先週の三か所だ。俺も出る。現地の援護は任せてくれ",
+    ),
+    3: (
+        SUPERVISOR_NAME,
+        "先週の三か所を、もう一度頼む。群れの様子を、お前さんたちの目で確かめてきてくれ",
+    ),
 }
 REPORTS = {
     # Preview wording only; the vacation/ending script is deliberately unauthored.
-    4: (("ジャック", "最終巡回を終えました"), (SUPERVISOR_NAME, "お疲れさま。報告を受け取ったよ")),
+    4: (
+        ("ジャック", "最終巡回を終えました"),
+        (SUPERVISOR_NAME, "うむ、報告は受け取った。お疲れさんじゃったな"),
+    ),
     1: (
         (
             "ジャック",
@@ -36,7 +45,10 @@ REPORTS = {
             SUPERVISOR_NAME,
             "薬剤を撒いとった機材は、もう撤去したはずじゃが……。まだ、どこかに残っとるんかのう",
         ),
-        (SUPERVISOR_NAME, "原因はまだ分からん。引き続き、異変の様子を確かめていこう"),
+        (
+            SUPERVISOR_NAME,
+            "原因はまだ分からん。そこは急いで決めつけず、引き続き異変の様子を確かめよう",
+        ),
     ),
     2: (
         ("ジャック", "三か所の群れをすべて撃退しました。フジさんにも援護していただきました"),
@@ -160,7 +172,7 @@ class AugustOffice(OfficePrototype):
         if number == 4:
             case.update(title="保護区の最終巡回", initial_purpose="保護区の最終巡回")
             case["questions"][0].update(
-                jack="落ち着いた保護区を見て回ります", reply="ああ。好きな順に回ってきてくれ"
+                jack="落ち着いた保護区を見て回ります", reply="ああ。回る順も任せるよ。行っておいで"
             )
             case["field_task"].update(
                 title="保護区の最終巡回", objective="自由に巡回し、任意の時点で帰庁"

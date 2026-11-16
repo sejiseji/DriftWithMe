@@ -27,7 +27,7 @@ NPCS = (
         (80, 636),
         "aug_npc_yumesaki",
         "yumesaki_map_knees",
-        "今日は木陰の植物を見ています",
+        "あ、こんにちは。今日は木陰の植物を……。つい、見入ってしまって",
         True,
     ),
     PatrolNPC(
@@ -36,7 +36,7 @@ NPCS = (
         (104, 614),
         "aug_npc_miyano",
         "miyano_map_knees",
-        "先生と一緒に、記録を取っています！",
+        "先生と一緒に記録中です！ ここの植物も、ちゃんと残しておきたくて！",
         True,
     ),
     PatrolNPC(
@@ -45,7 +45,7 @@ NPCS = (
         (795, 902),
         "aug_npc_iwama",
         "iwama_bust_normal",
-        "今日はここで少し休んどる",
+        "何じゃ。今日はここで少し休んどるだけじゃ",
     ),
     PatrolNPC(
         "merrill",
@@ -79,7 +79,7 @@ NPCS = (
         (214, 362),
         "aug_npc_fuji",
         "fuji_map_knees",
-        "花壇の様子を見ていたところだ",
+        "花壇を見てたんだ。仕上がってからも、つい足が向いてな",
         True,
     ),
     PatrolNPC(
@@ -88,7 +88,7 @@ NPCS = (
         (480, 280),
         "aug_npc_ramel",
         "nervous_elf_woodsman",
-        "今日は岸から様子を見ています",
+        "今日は岸から見ています。ここからなら、落ち着いて見られます",
     ),
     PatrolNPC(
         "hero",
@@ -96,7 +96,7 @@ NPCS = (
         (950, 286),
         "aug_npc_hero",
         "smug_blond_hero",
-        "今日は水路沿いを歩いていたところだ",
+        "おお、君か。今日は水路沿いを歩いていたところだ",
     ),
     PatrolNPC(
         "mina",
@@ -104,10 +104,15 @@ NPCS = (
         (108, 124),
         "aug_npc_mina",
         "succubus_green",
-        "こんにちは。少し散歩に来たんです",
+        "こんにちは。少し散歩に来たんです。今日は、のんびりと",
     ),
     PatrolNPC(
-        "grow", "グロウ", (202, 256), "aug_npc_grow", "tired_gray_oldman", "ここで少し休んでいくよ"
+        "grow",
+        "グロウ",
+        (202, 256),
+        "aug_npc_grow",
+        "tired_gray_oldman",
+        "ここで少し休んでいくよ。……ああ、そっちもお疲れさん",
     ),
     PatrolNPC(
         "takanashi",

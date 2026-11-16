@@ -127,7 +127,7 @@
           {
             "turn_id": "grow_w2_handover",
             "jack": "拝見しますね。",
-            "reply": "月ごとの明細だ。言われた分をそろえてきた。",
+            "reply": "月ごとの明細だ。一枚ずつ確かめた。言われた分は、そろってるはずだ。",
             "visual_action": "read_document"
           }
         ],
@@ -229,7 +229,7 @@
           {
             "turn_id": "construction_arrival",
             "jack": "サガン、水路沿いを見てきたよ。",
-            "reply": "おう、ジャック！ どうだった？"
+            "reply": "おう、ジャック！ 戻ったか。どうだった？"
           }
         ],
         "resolution": {
@@ -247,7 +247,7 @@
             {
               "turn_id": "construction_close",
               "jack": "よろしく頼む。",
-              "reply": "任せてくれ！ 見てきてくれて助かったよ。"
+              "reply": "任せてくれ！ そこまで見てきてくれりゃ、こっちも動きやすい。"
             }
           ]
         },

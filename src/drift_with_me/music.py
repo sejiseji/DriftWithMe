@@ -37,6 +37,12 @@ def context_for(app: Any) -> MusicContext:
         return MusicContext(active=False)
     if screen == "OFFICE":
         return MusicContext(True, ambient="office")
+    week = getattr(app, "work_week", None)
+    ambient = (
+        "infestation"
+        if getattr(week, "month", None) == 8 and getattr(week, "number", None) in (2, 3)
+        else "explore"
+    )
     model = app.model
     session = getattr(model, "combat_session", None)
     if session is not None:
@@ -55,6 +61,7 @@ def context_for(app: Any) -> MusicContext:
         )
         return MusicContext(
             True,
+            ambient=ambient,
             battle=session,
             phase=session.phase,
             victory=burst_finished,
@@ -70,13 +77,14 @@ def context_for(app: Any) -> MusicContext:
         )
         return MusicContext(
             True,
+            ambient=ambient,
             battle=battle,
             phase=battle.phase,
             victory=battle.phase == "victory",
             anchor_target=target,
             phase_elapsed=battle.elapsed,
         )
-    return MusicContext(True)
+    return MusicContext(True, ambient=ambient)
 
 
 class MusicController:
@@ -90,6 +98,7 @@ class MusicController:
             "battle": (35, 36, 37),
             "fanfare": (38, 39, 40),
             "office": (41, 42),
+            "infestation": (43,),
         }
         self.track: str | None = None
         self.position = 0.0
@@ -186,6 +195,7 @@ class MusicController:
             self.stop_output()
             return
         dt = max(0.0, float(dt))
+        ambient = context.ambient if context.ambient in self.slots else "explore"
         if context.ambient == "office":
             if self.track != "office":
                 self._start("office", 1.2)
@@ -194,8 +204,12 @@ class MusicController:
             self.phase = ""
             self.celebrated = False
             self.restore_win = False
-        elif self.track == "office":
-            self._start("explore", 1.2)
+        elif (
+            context.battle is None
+            and self.track in {"office", "explore", "infestation"}
+            and self.track != ambient
+        ):
+            self._start(ambient, 1.2)
         if context.battle is not None and context.battle is not self.battle:
             self.battle = context.battle
             self.phase = ""
@@ -209,9 +223,9 @@ class MusicController:
             self.celebrated = True
             self._start("fanfare")
         elif context.battle is None and self.track == "battle":
-            self._start("explore", 1.2)  # Retreat/failed encounter: no victory phrase.
+            self._start(ambient, 1.2)  # Retreat/failed encounter: no victory phrase.
         if self.track is None:
-            self._start("explore", 1.2)
+            self._start(ambient, 1.2)
         if (
             self.track == "battle"
             and context.phase != self.phase
@@ -234,7 +248,7 @@ class MusicController:
                 else:
                     self.output_running = False
         if self.track == "fanfare" and self.position >= self.scores["fanfare"]["seconds"]:
-            self._start("explore", 1.2)
+            self._start(ambient, 1.2)
         if muted:
             self.stop_output()
         else:
