@@ -75,3 +75,56 @@ def test_lod_preserves_the_existing_shoreline_wind_cohort(monkeypatch):
     renderer.wide_grass_lod = True
     renderer.draw_grassland_micro_layer(model, camera)
     assert full and set(selected) == full
+
+
+def test_grass_cells_are_reused_and_config_edits_invalidate_layout(monkeypatch):
+    runtime, world, _perspective, _profile, affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+    renderer = Renderer(RecordingPyxel())
+    renderer.wide_grass_lod = True
+    calls = 0
+    blade_shape = renderer.grassland_micro_blade_shape
+
+    def count_shape(*args):
+        nonlocal calls
+        calls += 1
+        return blade_shape(*args)
+
+    monkeypatch.setattr(renderer, "grassland_micro_blade_shape", count_shape)
+    clumps = []
+    monkeypatch.setattr(renderer, "draw_micro_grass_blade", lambda *args: clumps.append(args))
+    camera = replace(affine, zoom=0.7)
+    renderer.draw_grassland_micro_layer(model, camera)
+    first = list(clumps)
+    assert first and calls > 0
+    calls = 0
+    clumps.clear()
+    renderer.draw_grassland_micro_layer(model, camera)
+    assert clumps == first and calls == 0
+
+    config = runtime.raw["grassland_micro"]
+    config.update(blade_primary_weight=1, blade_shadow_weight=0, blade_accent_weight=0)
+    config["areas"][0]["blade_color"] = 8
+    clumps.clear()
+    renderer.draw_grassland_micro_layer(model, camera)
+    assert calls > 0 and clumps != first
+    assert len(clumps) == len(first)
+    assert all(clump[3] == 8 for clump in clumps)
+
+
+def test_grass_cell_cache_is_bounded_without_changing_output(monkeypatch):
+    runtime, world, _perspective, _profile, affine = make_affine_camera()
+    model = GameModel(runtime.raw, world)
+    camera = replace(affine, zoom=0.7)
+
+    def draw(limit):
+        renderer = Renderer(RecordingPyxel())
+        renderer.wide_grass_lod = True
+        monkeypatch.setattr(renderer, "GRASS_CELL_CACHE_LIMIT", limit)
+        clumps = []
+        monkeypatch.setattr(renderer, "draw_micro_grass_blade", lambda *args: clumps.append(args))
+        renderer.draw_grassland_micro_layer(model, camera)
+        assert len(renderer._grass_blade_cache) <= limit
+        return clumps
+
+    assert draw(8) == draw(Renderer.GRASS_CELL_CACHE_LIMIT)

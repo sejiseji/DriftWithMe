@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections import OrderedDict
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
@@ -204,6 +205,18 @@ class ScreenRect:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class GrassBlade:
+    index: int
+    x: float
+    z: float
+    height: int
+    color: int
+    lean: int
+    shape: int
+    wind_phase: float
+
+
 @dataclass(frozen=True)
 class GrasslandTransitionCell:
     x0: float
@@ -265,6 +278,8 @@ class ActorPresentation:
 
 
 class Renderer:
+    GRASS_CELL_CACHE_LIMIT = 4096
+
     SPIN_DIRECTION_VIEWS = (
         "right",
         "front_right",
@@ -293,6 +308,9 @@ class Renderer:
         self._active_atmosphere_dither_cells = 0
         self._active_atmosphere_dither_fog_color = ATMOSPHERE_DITHER_FOG_COLOR
         self._atmosphere_dither_cache: dict[tuple[str, str, str, int, int], LoadedSpriteFrame] = {}
+        self._grass_blade_cache: OrderedDict[
+            tuple[tuple[object, ...], int, int], tuple[GrassBlade, ...]
+        ] = OrderedDict()
         self._grassland_transition_cell_cache: dict[
             tuple[
                 tuple[float, float, float, float],
@@ -1406,6 +1424,71 @@ class Renderer:
         density_inner = self.grassland_micro_density_inner(area, config)
         density_edge = self.grassland_micro_density_edge(area, config)
         transition_world = self.grassland_transition_world(area, config)
+        # Only world-fixed attributes go in the cache. Camera clipping, draw order
+        # and the wind/reactive state are still evaluated below for every frame.
+        # Config comes from JSON, and a value key must also reflect in-place edits.
+        layout_key = (
+            area_rect,
+            repr(area),
+            repr({key: value for key, value in config.items() if key != "areas"}),
+        )
+        cache = self._grass_blade_cache
+
+        def cell_blades(cell_x: int, cell_z: int) -> tuple[GrassBlade, ...]:
+            origin_z = cell_z * cell_world
+            origin_x = cell_x * cell_world
+            blade_count = min_blades + self.grassland_hash(cell_x, cell_z, 0, jitter_seed) % (
+                max_blades - min_blades + 1
+            )
+            blades = []
+            for blade_index in range(blade_count):
+                salt = blade_index * 7
+                rel_x = 0.08 + self.grassland_unit(cell_x, cell_z, salt + 1, jitter_seed) * 0.84
+                rel_z = 0.08 + self.grassland_unit(cell_x, cell_z, salt + 2, jitter_seed) * 0.84
+                height = min_height + int(
+                    self.grassland_unit(cell_x, cell_z, salt + 3, jitter_seed)
+                    * (max_height - min_height + 1)
+                )
+                color = self.grassland_micro_blade_color(
+                    cell_x, cell_z, salt + 4, jitter_seed, colors, area, config
+                )
+                lean = int(self.grassland_unit(cell_x, cell_z, salt + 5, jitter_seed) * 3.0) - 1
+                shape = self.grassland_micro_blade_shape(cell_x, cell_z, salt + 8, jitter_seed)
+                world_x = origin_x + rel_x * cell_world
+                world_z = origin_z + rel_z * cell_world
+                density = self.grassland_micro_density(
+                    area_rect,
+                    world_x,
+                    world_z,
+                    transition_world,
+                    density_inner,
+                    density_edge,
+                    area,
+                    config,
+                )
+                density *= self.grassland_micro_density_variation(world_x, world_z, area, config)
+                density = max(0.0, min(density, 1.0))
+                if density <= 0.0:
+                    continue
+                if (
+                    density < 1.0
+                    and self.grassland_unit(cell_x, cell_z, salt + 6, jitter_seed) > density
+                ):
+                    continue
+                blades.append(
+                    GrassBlade(
+                        blade_index,
+                        world_x,
+                        world_z,
+                        max(min_height, min(max_height, height)),
+                        color,
+                        lean,
+                        shape,
+                        self.grassland_unit(cell_x, cell_z, salt + 19, jitter_seed),
+                    )
+                )
+            return tuple(blades)
+
         cell_min_x = math.floor(x0 / cell_world)
         cell_max_x = math.ceil(x1 / cell_world)
         cell_min_z = math.floor(z0 / cell_world)
@@ -1430,53 +1513,23 @@ class Renderer:
             # Retain the existing six-cell shoreline wind cohort, including odd cells.
             rows = sorted((*rows, 13))
         for cell_z in rows:
-            origin_z = cell_z * cell_world
             columns = range(cell_min_x, cell_max_x, cell_step)
             if shore_active and cell_step > 1 and cell_z == 13:
                 columns = range(max(full_cell_min_x, 14), min(cell_max_x, 20))
             for cell_x in columns:
-                origin_x = cell_x * cell_world
-                blade_count = min_blades + self.grassland_hash(cell_x, cell_z, 0, jitter_seed) % (
-                    max_blades - min_blades + 1
-                )
+                key = (layout_key, cell_x, cell_z)
+                blades = cache.get(key)
+                if blades is None:
+                    blades = cell_blades(cell_x, cell_z)
+                    cache[key] = blades
+                    if len(cache) > self.GRASS_CELL_CACHE_LIMIT:
+                        cache.popitem(last=False)
+                else:
+                    cache.move_to_end(key)
                 shore_cell = shore_active and cell_z == 13 and 14 <= cell_x <= 19
-                for blade_index in range(blade_count):
-                    salt = blade_index * 7
-                    rel_x = 0.08 + self.grassland_unit(cell_x, cell_z, salt + 1, jitter_seed) * 0.84
-                    rel_z = 0.08 + self.grassland_unit(cell_x, cell_z, salt + 2, jitter_seed) * 0.84
-                    height = min_height + int(
-                        self.grassland_unit(cell_x, cell_z, salt + 3, jitter_seed)
-                        * (max_height - min_height + 1)
-                    )
-                    color = self.grassland_micro_blade_color(
-                        cell_x, cell_z, salt + 4, jitter_seed, colors, area, config
-                    )
-                    lean = int(self.grassland_unit(cell_x, cell_z, salt + 5, jitter_seed) * 3.0) - 1
-                    shape = self.grassland_micro_blade_shape(cell_x, cell_z, salt + 8, jitter_seed)
-                    world_x = origin_x + rel_x * cell_world
-                    world_z = origin_z + rel_z * cell_world
+                for blade in blades:
+                    world_x, world_z = blade.x, blade.z
                     if world_x < x0 or world_x > x1 or world_z < z0 or world_z > z1:
-                        continue
-                    density = self.grassland_micro_density(
-                        area_rect,
-                        world_x,
-                        world_z,
-                        transition_world,
-                        density_inner,
-                        density_edge,
-                        area,
-                        config,
-                    )
-                    density *= self.grassland_micro_density_variation(
-                        world_x, world_z, area, config
-                    )
-                    density = max(0.0, min(density, 1.0))
-                    if density <= 0.0:
-                        continue
-                    if (
-                        density < 1.0
-                        and self.grassland_unit(cell_x, cell_z, salt + 6, jitter_seed) > density
-                    ):
                         continue
                     root = camera.project(Vec3(world_x, 0.0, world_z))
                     if root is None:
@@ -1502,19 +1555,19 @@ class Renderer:
                                 world_x,
                                 world_z,
                                 self._grass_wind_time,
-                                self.grassland_unit(cell_x, cell_z, salt + 19, jitter_seed),
+                                blade.wind_phase,
                                 sway_config,
                                 self._grass_sway_gust,
                             )
                     if (
                         shore_cell
-                        and blade_index < 4
+                        and blade.index < 4
                         and sway == 0.0
                         and wind_life.shore_candidate(
                             area.get("id"),
                             cell_x,
                             cell_z,
-                            blade_index,
+                            blade.index,
                             world_x,
                             world_z,
                             self._grass_wind_model.world,
@@ -1531,20 +1584,20 @@ class Renderer:
                             world_x,
                             world_z,
                             self._grass_wind_time,
-                            self.grassland_unit(cell_x, cell_z, salt + 19, jitter_seed),
+                            blade.wind_phase,
                             sway_config,
                             self._grass_sway_gust,
-                            height,
+                            blade.height,
                         )
                         self.wind_life_shore_drawn += 1
                     self.draw_micro_grass_blade(
                         int(round(root.x)),
                         int(round(root.y)),
-                        max(min_height, min(max_height, height)),
-                        color,
+                        blade.height,
+                        blade.color,
                         colors[1],
-                        lean,
-                        shape,
+                        blade.lean,
+                        blade.shape,
                         sway,
                     )
                     drawn += 1
