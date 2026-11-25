@@ -24,7 +24,7 @@ class AudioEventDef:
     priority: int
 
 
-SE_CHANNEL = 3  # Channels 0-2 are used for music.
+SE_CHANNEL = 3  # Also the fourth music voice on the pause screen.
 
 
 SOUND_SHAPES = {
@@ -103,7 +103,12 @@ class AudioEngine:
 
     def play_office_feedback(self, cue: str) -> None:
         """Immediate UI feedback, with no deferred playback or retrigger while busy."""
-        if self._pyxel is None or self.muted or self._lifecycle_suspended:
+        if (
+            self._pyxel is None
+            or self.muted
+            or self._lifecycle_suspended
+            or self.music.blocks_sound_effects
+        ):
             return
         priority = {"question": 5, "incorrect": 6, "correct": 7}[cue]
         if self._pyxel.play_pos(SE_CHANNEL) is not None and self._active_priority >= priority:
@@ -137,9 +142,9 @@ class AudioEngine:
     def reset_event_history(self) -> None:
         if self._active_priority == -1 and self._pyxel is not None:
             self._pyxel.stop(SE_CHANNEL)
+        self.music.reset()
         self._se_gain(1.0)
         self._dialogue_cooldown = 0.0
-        self.music.reset()
         self._processed_event_ids.clear()
         self._active_priority = 0
 
@@ -148,6 +153,7 @@ class AudioEngine:
             self._pyxel is None
             or self.muted
             or self._lifecycle_suspended
+            or self.music.blocks_sound_effects
             or event_name not in self.defs
         ):
             return
@@ -160,7 +166,12 @@ class AudioEngine:
 
     def play_events(self, events: list[GameEvent]) -> None:
         self.music.observe_events(events)
-        if self._pyxel is None or self.muted or self._lifecycle_suspended:
+        if (
+            self._pyxel is None
+            or self.muted
+            or self._lifecycle_suspended
+            or self.music.blocks_sound_effects
+        ):
             return
         selected: dict[int, tuple[int, int, AudioEventDef]] = {}
         for event in events:
@@ -209,7 +220,12 @@ class AudioEngine:
             return
         # Consume this opportunity even if muted/busy. No retry or catch-up queue.
         self._dialogue_cooldown = VOICE_INTERVAL_SEC
-        if self._pyxel is None or self.muted or self._lifecycle_suspended:
+        if (
+            self._pyxel is None
+            or self.muted
+            or self._lifecycle_suspended
+            or self.music.blocks_sound_effects
+        ):
             return
         if self._pyxel.play_pos(SE_CHANNEL) is not None:
             return  # Includes another voice tick: equal priority never interrupts.
@@ -221,15 +237,21 @@ class AudioEngine:
         """Drop a speech tick only, without interrupting gameplay or office feedback SE."""
         self._dialogue_cooldown = 0.0
         if self._active_priority == -1:
+            if self.music.blocks_sound_effects:
+                self._active_priority = 0
+                return
             if self._pyxel is not None:
                 self._pyxel.stop(SE_CHANNEL)
             self._se_gain(1.0)
             self._active_priority = 0
 
     def update_music(self, app, elapsed: float) -> None:
+        was_blocked = self.music.blocks_sound_effects
         self.music.update(
             context_for(app), elapsed, muted=self.muted, suspended=self._lifecycle_suspended
         )
+        if not was_blocked and self.music.blocks_sound_effects:
+            self._active_priority = 0
 
     @property
     def preview_events(self) -> tuple[str, ...]:

@@ -9,6 +9,9 @@ from drift_with_me.audio_levels import OUTPUT_GAIN
 from drift_with_me.config import load_data_json
 
 MUSIC_CHANNELS = (0, 1, 2)
+PAUSE_MUSIC_CHANNELS = (*MUSIC_CHANNELS, 3)
+PAUSE_SILENCE_SEC = 0.18
+PAUSE_FADE_SEC = 0.9
 BATTLE_QUARTER_SEC = 26 / 60
 
 
@@ -22,14 +25,17 @@ class MusicContext:
     anchor_target: float | None = None
     phase_elapsed: float = 0.0
     ambient: str = "explore"
+    pause_menu: bool = False
 
 
 def context_for(app: Any) -> MusicContext:
     screen = getattr(getattr(app, "screen", None), "name", "")
-    if screen == "PAUSE" or any(
+    if any(
         getattr(app, name, False) for name in ("_lifecycle_wait_draw", "_lifecycle_wait_release")
     ):
         return MusicContext(active=True, paused=True)
+    if screen == "PAUSE":
+        return MusicContext(active=True, paused=True, pause_menu=True)
     active = screen in {"PLAY", "OFFICE"} and not any(
         getattr(app, name, None) for name in ("field_transition", "week_transition")
     )
@@ -99,6 +105,7 @@ class MusicController:
             "fanfare": (38, 39, 40),
             "office": (41, 42),
             "infestation": (43,),
+            "pause": (44, 45, 46, 47),
         }
         self.track: str | None = None
         self.position = 0.0
@@ -108,9 +115,15 @@ class MusicController:
         self.phase = ""
         self.celebrated = False
         self.output_running = False
-        self.base_gains = [0.125] * 3
+        self.base_gains = [0.125] * len(PAUSE_MUSIC_CHANNELS)
         self.restore_win = False
         self.seen_native_position = False
+        self.pause_active = False
+        self.pause_running = False
+        self.pause_position = 0.0
+        self.pause_fade_elapsed = 0.0
+        self.pause_silence = 0.0
+        self.resume_silence = 0.0
 
     def setup(self, pyxel) -> None:
         self.pyxel = pyxel
@@ -120,7 +133,7 @@ class MusicController:
                     part["notes"], part["tones"], part["volumes"], part["effects"], part["speed"]
                 )
         if hasattr(pyxel, "channels"):
-            self.base_gains = [pyxel.channels[ch].gain for ch in MUSIC_CHANNELS]
+            self.base_gains = [pyxel.channels[ch].gain for ch in PAUSE_MUSIC_CHANNELS]
 
     def observe_events(self, events) -> None:
         for event in events:
@@ -143,12 +156,18 @@ class MusicController:
         self.phase = ""
         self.celebrated = False
         self.restore_win = False
+        self._clear_pause()
 
     @property
     def active_channels(self) -> tuple[int, ...]:
         return MUSIC_CHANNELS[: len(self.slots.get(self.track, ()))]
 
+    @property
+    def blocks_sound_effects(self) -> bool:
+        return self.pause_active or self.resume_silence > 0.0
+
     def stop_output(self) -> None:
+        self._stop_pause_output()
         if self.pyxel is not None and self.output_running:
             pos = self.pyxel.play_pos(0)
             if pos is not None:
@@ -158,6 +177,60 @@ class MusicController:
                 self.pyxel.stop(ch)
         self.output_running = False
         self._gain(1.0)
+
+    def _pause_gain(self, factor: float) -> None:
+        if hasattr(self.pyxel, "channels"):
+            for ch in PAUSE_MUSIC_CHANNELS:
+                self.pyxel.channels[ch].gain = (
+                    self.base_gains[ch] * OUTPUT_GAIN * min(1.0, max(0.0, factor))
+                )
+
+    def _stop_pause_output(self) -> None:
+        if not self.pause_running:
+            return
+        native = self.pyxel.play_pos(0)
+        if native is not None:
+            self.pause_position = float(native[1])
+        for ch in PAUSE_MUSIC_CHANNELS:
+            self.pyxel.stop(ch)
+        self.pause_running = False
+        self._pause_gain(1.0)
+
+    def _clear_pause(self) -> None:
+        self.pause_active = False
+        self.pause_position = self.pause_fade_elapsed = self.pause_silence = 0.0
+        self.resume_silence = 0.0
+
+    def _update_pause_menu(self, dt: float, muted: bool) -> None:
+        if not self.pause_active:
+            self.stop_output()
+            # An effect from the gameplay frame must not carry into the silent beat.
+            self.pyxel.stop(PAUSE_MUSIC_CHANNELS[-1])
+            self.resume_silence = 0.0
+            self.pause_active = True
+            self.pause_silence = PAUSE_SILENCE_SEC
+            return
+        if self.pause_silence > 0.0:
+            if dt + 1e-9 < self.pause_silence:
+                self.pause_silence -= dt
+                return
+            self.pause_silence = 0.0
+
+        score = self.scores["pause"]
+        if muted:
+            self._stop_pause_output()
+        else:
+            if self.pause_running:
+                native = self.pyxel.play_pos(0)
+                if native is not None:
+                    self.pause_position = float(native[1])
+            self._pause_gain(self.pause_fade_elapsed / PAUSE_FADE_SEC)
+            if not self.pause_running:
+                for ch, slot in zip(PAUSE_MUSIC_CHANNELS, self.slots["pause"], strict=True):
+                    self.pyxel.play(ch, slot, sec=self.pause_position, loop=True)
+                self.pause_running = True
+        self.pause_position = (self.pause_position + dt) % score["seconds"]
+        self.pause_fade_elapsed += dt
 
     def _gain(self, factor: float) -> None:
         if self.pyxel is not None and hasattr(self.pyxel, "channels"):
@@ -190,12 +263,33 @@ class MusicController:
             self.phase = ""
             self.celebrated = False
             self.restore_win = False
+            self._clear_pause()
             return
-        if context.paused or suspended:
+        if suspended or (context.paused and not context.pause_menu):
             self.stop_output()
             return
         dt = max(0.0, float(dt))
-        ambient = context.ambient if context.ambient in self.slots else "explore"
+        if context.pause_menu:
+            self._update_pause_menu(dt, muted)
+            return
+        if self.pause_active:
+            self._stop_pause_output()
+            self._clear_pause()
+            self.resume_silence = PAUSE_SILENCE_SEC
+            return
+        if self.resume_silence > 0.0:
+            if dt + 1e-9 < self.resume_silence:
+                self.resume_silence -= dt
+                return
+            self.resume_silence = 0.0
+            self.fade_elapsed = 0.0
+            self.fade_duration = PAUSE_FADE_SEC
+            self.seen_native_position = False
+        ambient = (
+            context.ambient
+            if context.ambient in self.slots and context.ambient != "pause"
+            else "explore"
+        )
         if context.ambient == "office":
             if self.track != "office":
                 self._start("office", 1.2)
@@ -255,7 +349,8 @@ class MusicController:
             self._gain(self.fade_elapsed / self.fade_duration if self.fade_duration else 1.0)
             if not self.output_running:
                 self._play()
-        # UI music clock advances through hitstop/dialogue/mute, but freezes on pause/background.
+        # Gameplay music time advances through hitstop/dialogue/mute,
+        # but freezes during the pause cue and during lifecycle suspension.
         self.position += dt
         self.fade_elapsed += dt
         score = self.scores[self.track]

@@ -115,5 +115,44 @@
     ],
     "title": "March toward the infestation",
     "arrangement": "D-minor monophonic march: four-bar theme, variation, rising development, return. Dotted-quarter motif with continuous phrasing, not isolated sound effects."
+  },
+  "pause": {
+    "title": "水面のまにまに",
+    "seconds": 48,
+    "loop": true,
+    "bpm": 40,
+    "meter": "6/8",
+    "bars": 16,
+    "arrangement": "Original Pyxel score. BPM is dotted quarter; lead, current, bass and reflected light. No samples or external melody.",
+    "parts": [
+      {
+        "notes": "r r f#4 f#4 f#4 f#4 r r e4 e4 e4 r d4 d4 d4 d4 d4 r r r f#4 f#4 f#4 r r r a4 a4 a4 a4 r b4 b4 b4 r r r a4 a4 a4 r r e4 e4 e4 e4 r r f#4 f#4 f#4 f#4 r r a4 a4 a4 r r r r r r e4 e4 e4 e4 r c#4 c#4 c#4 r r d4 d4 d4 d4 d4 r f#4 f#4 f#4 r r e4 e4 e4 e4 r r b3 b3 b3 b3 r r r r g4 g4 g4 g4 r f#4 f#4 f#4 f#4 r r d4 d4 d4 d4 r a4 a4 a4 a4 r r b4 b4 b4 b4 b4 r r a4 a4 a4 r r r r e4 e4 e4 e4 e4 r d4 d4 d4 r f#4 f#4 f#4 f#4 f#4 r r r e4 e4 e4 r r r d4 d4 d4 d4 d4 r r f#4 f#4 r r e4 e4 e4 e4 r r c#4 c#4 c#4 c#4 r r d4 d4 d4 d4 d4 d4 r r r r r",
+        "tones": "t",
+        "volumes": "002221002210122210002210002221022100022100222100222100221000000222102210012221022100222100222100003331033310033310333100233310033100002333103310122210002210001222100220022210022210012222100000",
+        "effects": "nnnnnfnnnnfnnnnnfnnnnnfnnnnnnfnnnfnnnnnfnnnnnfnnnnnfnnnnfnnnnnnnnnfnnnfnnnnnnfnnnfnnnnnfnnnnnfnnnnnnnfnnnnfnnnnnfnnnnfnnnnnnfnnnnfnnnnnnnnfnnnfnnnnnfnnnnnfnnnnnnnfnnnfnnnnnfnnnnnfnnnnnnnfnnnnn",
+        "speed": 30
+      },
+      {
+        "notes": "r a3 a3 r d4 d4 r f#4 f#4 r e4 e4 r f#3 f#3 r b3 b3 r d4 d4 r a3 a3 r d4 d4 r f#4 f#4 r b3 b3 r a3 a3 r e4 e4 r a3 a3 r d4 d4 r b3 b3 r a3 a3 r d4 d4 r e4 e4 r f#4 f#4 r a3 a3 r c#4 c#4 r e4 e4 r f#4 f#4 r b3 b3 r d4 d4 r a3 a3 r f#4 f#4 r e4 e4 r b3 b3 r d4 d4 r c#4 c#4 r b3 b3 r d4 d4 r f#4 f#4 r g4 g4 r a3 a3 r f#4 f#4 r d4 d4 r a3 a3 r b3 b3 r f#4 f#4 r a4 a4 r d4 d4 r e4 e4 r b3 b3 r d4 d4 r c#4 c#4 r a3 a3 r d4 d4 r f#4 f#4 r e4 e4 r b3 b3 r d4 d4 r f#4 f#4 r a4 a4 r a3 a3 r e4 e4 r d4 d4 r c#4 c#4 r a3 a3 r d4 d4 r e4 e4 r f#4 f#4",
+        "tones": "t",
+        "volumes": "011022011011011022011011011022011011011022011011011022011011011022011011011022011011011022011011011022011011011022011011011022011011011022011011011022011011011022011011011022011011011022011011",
+        "effects": "nnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnfnnf",
+        "speed": 30
+      },
+      {
+        "notes": "d2 d2 d2 d2 d2 d2 d2 d2 d2 d2 r r b1 b1 b1 b1 b1 b1 b1 b1 b1 b1 r r g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 r r a2 a2 a2 a2 a2 a2 a2 a2 a2 a2 r r d2 d2 d2 d2 d2 d2 d2 d2 d2 d2 r r f#2 f#2 f#2 f#2 f#2 f#2 f#2 f#2 f#2 f#2 r r g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 r r a2 a2 a2 a2 a2 a2 a2 a2 a2 a2 r r e2 e2 e2 e2 e2 e2 e2 e2 e2 e2 r r b1 b1 b1 b1 b1 b1 b1 b1 b1 b1 r r g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 r r a2 a2 a2 a2 a2 a2 a2 a2 a2 a2 r r f#2 f#2 f#2 f#2 f#2 f#2 f#2 f#2 f#2 f#2 r r g2 g2 g2 g2 g2 g2 g2 g2 g2 g2 r r a2 a2 a2 a2 a2 a2 a2 a2 a2 a2 r r d2 d2 d2 d2 d2 d2 d2 d2 d2 d2 r r",
+        "tones": "t",
+        "volumes": "122222222100122222222100122222222100122222222100122222222100122222222100122222222100122222222100122222222100122222222100122222222100122222222100122222222100122222222100122222222100122222222100",
+        "effects": "nnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnnnnnnnnnnnfnn",
+        "speed": 30
+      },
+      {
+        "notes": "r r r r r e4 e4 r r r r r r r r f#4 f#4 r r r r r r r r r r r r b4 b4 r r r b4 r r r r a4 a4 r r r r r r r r r r r r a4 a4 r r r r r r r r c#4 c#4 r r r r r r r r r r r r f#4 f#4 r r r f#4 r r r r e4 e4 r r r r r r r r r r r r g4 g4 r r r r r r r r d4 d4 r r r r r r r r r r r r a4 a4 r r r a4 r r r r b4 b4 r r r r r r r r r r r r e4 e4 r r r r r r r r f#4 f#4 r r r r r r r r r r r r e4 e4 r r r e4 r r r r a4 a4 r r r r r r r",
+        "tones": "p",
+        "volumes": "000001100000000110000000000001100010000110000000000001100000000110000000000001100010000110000000000001100000000110000000000001100010000110000000000001100000000110000000000001100010000110000000",
+        "effects": "nnnnnnfnnnnnnnnnfnnnnnnnnnnnnnfnnnfnnnnnfnnnnnnnnnnnnnfnnnnnnnnnfnnnnnnnnnnnnnfnnnfnnnnnfnnnnnnnnnnnnnfnnnnnnnnnfnnnnnnnnnnnnnfnnnfnnnnnfnnnnnnnnnnnnnfnnnnnnnnnfnnnnnnnnnnnnnfnnnfnnnnnfnnnnnnn",
+        "speed": 30
+      }
+    ]
   }
 }
