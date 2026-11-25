@@ -3004,17 +3004,14 @@ class Renderer:
         radius_z = max(1.0, area_rect.depth * 0.5 - ring_inset)
         circumference = math.tau * math.sqrt((radius_x * radius_x + radius_z * radius_z) * 0.5)
         samples = max(limit * 2, int(circumference / max(8.0, edge_grid * 0.55)))
-        for index in range(samples):
-            seed = self._water_symbol_seed(index, int(area_rect.min_x + area_rect.min_z), phase)
-            if seed % 3 == 0:
-                continue
-            if ((seed >> 21) & 255) / 255.0 > density:
-                continue
-            angle = math.tau * ((index + 0.5) / samples)
-            angle += (((seed >> 5) & 7) - 3.5) * 0.018
-            radius_scale = 0.97 + (((seed >> 9) & 7) / 7.0 - 0.5) * 0.04
-            x = center_x + math.cos(angle) * radius_x * radius_scale
-            z = center_z + math.sin(angle) * radius_z * radius_scale
+        phase_seed = int(area_rect.min_x + area_rect.min_z)
+        edge_args = (center_x, center_z, radius_x, radius_z, samples, phase_seed, phase, density)
+        points = (
+            self._cached_shallow_water_edge_points(*edge_args)
+            if samples <= 512
+            else self._shallow_water_edge_points(*edge_args)
+        )
+        for x, z, seed in points:
             if not visible_rect.contains_point(x, z):
                 continue
             if draw_edge_point(x, z, seed):
@@ -3022,6 +3019,46 @@ class Renderer:
             if count >= limit:
                 return count
         return count
+
+    @staticmethod
+    @lru_cache(maxsize=32)
+    def _cached_shallow_water_edge_points(
+        center_x: float,
+        center_z: float,
+        radius_x: float,
+        radius_z: float,
+        samples: int,
+        phase_seed: int,
+        phase: int,
+        density: float,
+    ) -> tuple[tuple[float, float, int], ...]:
+        return tuple(
+            Renderer._shallow_water_edge_points(
+                center_x, center_z, radius_x, radius_z, samples, phase_seed, phase, density
+            )
+        )
+
+    @staticmethod
+    def _shallow_water_edge_points(
+        center_x: float,
+        center_z: float,
+        radius_x: float,
+        radius_z: float,
+        samples: int,
+        phase_seed: int,
+        phase: int,
+        density: float,
+    ) -> Iterator[tuple[float, float, int]]:
+        for index in range(samples):
+            seed = Renderer._water_symbol_seed(index, phase_seed, phase)
+            if seed % 3 == 0 or ((seed >> 21) & 255) / 255.0 > density:
+                continue
+            angle = math.tau * ((index + 0.5) / samples)
+            angle += (((seed >> 5) & 7) - 3.5) * 0.018
+            radius_scale = 0.97 + (((seed >> 9) & 7) / 7.0 - 0.5) * 0.04
+            x = center_x + math.cos(angle) * radius_x * radius_scale
+            z = center_z + math.sin(angle) * radius_z * radius_scale
+            yield x, z, seed
 
     def _point_in_shallow_water_ellipse(
         self, rect: WorldRect, x: float, z: float, inset: float
@@ -3034,7 +3071,8 @@ class Renderer:
         nz = (z - center_z) / radius_z
         return nx * nx + nz * nz <= 1.0
 
-    def _water_symbol_seed(self, x_index: int, z_index: int, phase: int = 0) -> int:
+    @staticmethod
+    def _water_symbol_seed(x_index: int, z_index: int, phase: int = 0) -> int:
         value = (x_index * 73856093) ^ (z_index * 19349663) ^ (phase * 83492791) ^ 0x9E3779B9
         value ^= value >> 13
         value *= 1274126177
@@ -3451,6 +3489,11 @@ class Renderer:
         self.draw_atmospheric_scaled_sprite(leaves, placement, leaves.frame(leaf_frame_id))
         return True
 
+    @staticmethod
+    @lru_cache(maxsize=512)
+    def _tree_foliage_seed(object_id: str) -> int:
+        return sum((index + 1) * ord(char) for index, char in enumerate(object_id))
+
     def tree_foliage_frame_id(
         self,
         model: GameModel,
@@ -3471,7 +3514,7 @@ class Renderer:
         )
         interval_min = max(sequence_frames + 1, int(config.get("interval_min_frames", 240)))
         interval_variation = max(0, int(config.get("interval_variation_frames", 240)))
-        seed = sum((index + 1) * ord(char) for index, char in enumerate(obj.id))
+        seed = self._tree_foliage_seed(obj.id)
         interval = interval_min
         if interval_variation > 0:
             interval += seed % (interval_variation + 1)
