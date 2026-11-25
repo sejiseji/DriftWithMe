@@ -5,6 +5,7 @@ from collections import OrderedDict
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
+from functools import lru_cache
 
 from drift_with_me import pixel_stability, wind_life
 from drift_with_me.abnormal_urchin_arms import (
@@ -1989,13 +1990,9 @@ class Renderer:
             return ()
 
         particles: list[WindFieldParticle] = []
-        for index in range(field_count):
-            seed = self._wind_particle_seed(index, seed_base)
-            variation = self._wind_particle_seed(index, seed_base ^ 0x6D2B79F5)
-            base_x_t = (seed & 0xFFFF) / 0xFFFF
-            base_z_t = ((seed >> 16) & 0xFFFF) / 0xFFFF
-            speed_t = (variation & 0xFFFF) / 0xFFFF
-            phase_t = ((variation >> 16) & 0xFFFF) / 0xFFFF
+        for index, (base_x_t, base_z_t, speed_t, phase_t, variation) in enumerate(
+            self._wind_particle_layout(field_count, seed_base)
+        ):
             speed = speed_min + (speed_max - speed_min) * speed_t
             travel = time_sec * speed
             world_x = area.min_x + (base_x_t * area.width + wind_direction.x * travel) % area.width
@@ -2046,7 +2043,28 @@ class Renderer:
             "walkable": world.walkable_rect,
         }.get(area_ref, world.visual_ground_rect)
 
-    def _wind_particle_seed(self, index: int, seed_base: int) -> int:
+    @staticmethod
+    @lru_cache(maxsize=8)
+    def _wind_particle_layout(
+        count: int, seed_base: int
+    ) -> tuple[tuple[float, float, float, float, int], ...]:
+        layout = []
+        for index in range(count):
+            seed = Renderer._wind_particle_seed(index, seed_base)
+            variation = Renderer._wind_particle_seed(index, seed_base ^ 0x6D2B79F5)
+            layout.append(
+                (
+                    (seed & 0xFFFF) / 0xFFFF,
+                    ((seed >> 16) & 0xFFFF) / 0xFFFF,
+                    (variation & 0xFFFF) / 0xFFFF,
+                    ((variation >> 16) & 0xFFFF) / 0xFFFF,
+                    variation,
+                )
+            )
+        return tuple(layout)
+
+    @staticmethod
+    def _wind_particle_seed(index: int, seed_base: int) -> int:
         value = ((index + 1) * 0x9E3779B1) ^ (seed_base * 0x85EBCA77)
         value ^= value >> 16
         value *= 0x7FEB352D
@@ -2216,7 +2234,9 @@ class Renderer:
         else:
             self.pyxel.pset(x, y, color)
 
-    def _ambient_mote_seed(self, x_index: int, z_index: int, phase: int) -> int:
+    @staticmethod
+    @lru_cache(maxsize=4096)
+    def _ambient_mote_seed(x_index: int, z_index: int, phase: int) -> int:
         value = (x_index * 1597334677) ^ (z_index * 3812015801) ^ (phase * 958689179)
         value ^= value >> 15
         value *= 846930887
