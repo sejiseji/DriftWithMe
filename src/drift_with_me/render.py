@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from collections import OrderedDict
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 
@@ -40,6 +40,7 @@ from drift_with_me.july_combat import (
 from drift_with_me.july_combat import draw_sprite as draw_nudibranch
 from drift_with_me.july_week2 import draw_week2_ground
 from drift_with_me.math3d import (
+    AffineCameraState,
     CameraState,
     ProjectedPoint,
     Vec3,
@@ -3706,16 +3707,24 @@ class Renderer:
         draw_size = self.ground_decal_screen_pixel_size(camera, x, z, step_x, step_z)
         sample_step = 2 if draw_size <= 1 else 1
         pixel_size = max(draw_size, sample_step)
-        for col_index, row_index, char in self.ground_source_visible_pixels(asset, source):
-            if col_index % sample_step != 0 or row_index % sample_step != 0:
-                continue
-            world_z = origin_z + (row_index + 0.5) * step_z
-            world_x = origin_x + (col_index + 0.5) * step_x
-            point = camera.project(Vec3(world_x, 0.0, world_z))
-            if point is None:
-                continue
-            px = int(point.x)
-            py = int(point.y)
+        pixels = self.ground_source_visible_pixels(asset, source)
+        if type(camera) is AffineCameraState:
+            projected = self.affine_ground_source_pixels(
+                camera,
+                pixels,
+                source.width,
+                source.height,
+                origin_x,
+                origin_z,
+                step_x,
+                step_z,
+                sample_step,
+            )
+        else:
+            projected = self.project_ground_source_pixels(
+                camera, pixels, origin_x, origin_z, step_x, step_z, sample_step
+            )
+        for px, py, col_index, row_index, char in projected:
             color = int(char, 16)
             color = self.atmosphere_dither_color(
                 color, col_index, row_index, asset.definition.colkey
@@ -3725,6 +3734,69 @@ class Renderer:
             else:
                 self.pyxel.rect(px, py, pixel_size, pixel_size, color)
         return True
+
+    @staticmethod
+    def project_ground_source_pixels(
+        camera: CameraState | AffineCameraState,
+        pixels: tuple[tuple[int, int, str], ...],
+        origin_x: float,
+        origin_z: float,
+        step_x: float,
+        step_z: float,
+        sample_step: int,
+    ) -> Iterator[tuple[int, int, int, int, str]]:
+        for col, row, char in pixels:
+            if col % sample_step != 0 or row % sample_step != 0:
+                continue
+            world_x = origin_x + (col + 0.5) * step_x
+            world_z = origin_z + (row + 0.5) * step_z
+            point = camera.project(Vec3(world_x, 0.0, world_z))
+            if point is not None:
+                yield int(point.x), int(point.y), col, row, char
+
+    @staticmethod
+    def affine_ground_source_pixels(
+        camera: AffineCameraState,
+        pixels: tuple[tuple[int, int, str], ...],
+        width: int,
+        height: int,
+        origin_x: float,
+        origin_z: float,
+        step_x: float,
+        step_z: float,
+        sample_step: int,
+    ) -> Iterator[tuple[int, int, int, int, str]]:
+        # Reuse the separable terms without regrouping the float operations in
+        # project_affine: regrouping can move a pixel across an integer boundary.
+        bx, by, bz = camera.profile.basis_x, camera.profile.basis_y, camera.profile.basis_z
+        forward = camera.profile.fixed_forward
+        dxs = [origin_x + (col + 0.5) * step_x - camera.target.x for col in range(width)]
+        dzs = [origin_z + (row + 0.5) * step_z - camera.target.z for row in range(height)]
+        dy = 0.0 - camera.target.y
+        xs = [
+            (dx * bx.x + dy * by.x, dx * bx.y + dy * by.y, dx * forward.x + dy * forward.y)
+            for dx in dxs
+        ]
+        zs = [(dz * bz.x, dz * bz.y, dz * forward.z) for dz in dzs]
+        scale = camera.effective_scale
+        anchor_x = camera.anchor_x * camera.viewport_width
+        anchor_y = camera.anchor_y * camera.viewport_height
+        offset_x, offset_y = camera.fx_offset_x, camera.fx_offset_y
+        reference_depth = camera.profile.reference_depth
+        near, far = camera.near, camera.far
+        finite = math.isfinite
+        for col, row, char in pixels:
+            if col % sample_step != 0 or row % sample_step != 0:
+                continue
+            xx, xy, xd = xs[col]
+            zx, zy, zd = zs[row]
+            depth = reference_depth + (xd + zd)
+            if depth < near or depth > far or not finite(depth):
+                continue
+            px = anchor_x + scale * (xx + zx) + offset_x
+            py = anchor_y + scale * (xy + zy) + offset_y
+            if finite(px) and finite(py):
+                yield int(px), int(py), col, row, char
 
     def ground_source_visible_pixels(
         self, asset: LoadedSpriteAsset, source
