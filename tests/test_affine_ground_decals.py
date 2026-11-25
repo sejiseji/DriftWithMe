@@ -86,3 +86,18 @@ def test_affine_decal_keeps_exact_depth_edges_and_skips_nonfinite_points():
     assert clipped == [4, 1, 1, 2]
     camera = replace(affine, fx_offset_x=float("nan"))
     assert not list(Renderer.affine_ground_source_pixels(camera, pixels, 4, 4, *origin, *step, 1))
+
+
+def test_prepared_affine_projection_matches_points_and_cutoffs():
+    from drift_with_me.math3d import prepare_affine_projector
+
+    _, _, _, _, affine = make_affine_camera()
+    for camera in (
+        affine,
+        replace(affine, fx_offset_x=0.3, fx_offset_y=-1.7, zoom=0.7),
+        replace(affine, near=480.0, far=550.0, target=Vec3(160.3, 0.21, 155.9)),
+    ):
+        project = prepare_affine_projector(camera)
+        for x in (-2.0, 1.3, 100.0, 160.4, 900.0, math.inf, math.nan):
+            for y, z in ((0.0, 160.0), (14.3, 175.7), (2.5, 260.4)):
+                assert project(x, y, z) == camera.project(Vec3(x, y, z))

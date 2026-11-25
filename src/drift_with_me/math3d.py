@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 
@@ -282,6 +283,37 @@ def project_affine(camera: AffineCameraState, point: Vec3) -> ProjectedPoint | N
     ):
         return None
     return ProjectedPoint(x, y, depth)
+
+
+def prepare_affine_projector(
+    camera: AffineCameraState,
+) -> Callable[[float, float, float], ProjectedPoint | None]:
+    """Project a batch with one camera, retaining project_affine's operation order."""
+    target_x, target_y, target_z = camera.target.x, camera.target.y, camera.target.z
+    bx, by, bz = camera.profile.basis_x, camera.profile.basis_y, camera.profile.basis_z
+    bxx, bxy, byx, byy, bzx, bzy = bx.x, bx.y, by.x, by.y, bz.x, bz.y
+    forward = camera.profile.fixed_forward
+    fx, fy, fz = forward.x, forward.y, forward.z
+    scale = camera.effective_scale
+    ax = camera.anchor_x * camera.viewport_width
+    ay = camera.anchor_y * camera.viewport_height
+    ox, oy = camera.fx_offset_x, camera.fx_offset_y
+    reference_depth = camera.profile.reference_depth
+    near, far = camera.near, camera.far
+    finite = math.isfinite
+
+    def project(x: float, y: float, z: float) -> ProjectedPoint | None:
+        dx, dy, dz = x - target_x, y - target_y, z - target_z
+        depth = reference_depth + (dx * fx + dy * fy + dz * fz)
+        if depth < near or depth > far or not finite(depth):
+            return None
+        px = ax + scale * (dx * bxx + dy * byx + dz * bzx) + ox
+        py = ay + scale * (dx * bxy + dy * byy + dz * bzy) + oy
+        if not finite(px) or not finite(py):
+            return None
+        return ProjectedPoint(px, py, depth)
+
+    return project
 
 
 def screen_to_ground_affine(

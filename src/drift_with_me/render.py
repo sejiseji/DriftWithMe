@@ -44,6 +44,7 @@ from drift_with_me.math3d import (
     CameraState,
     ProjectedPoint,
     Vec3,
+    prepare_affine_projector,
     screen_to_ground_affine,
     screen_to_ground_point,
     screen_to_world_direction,
@@ -1520,6 +1521,13 @@ class Renderer:
         if shore_active and cell_step > 1 and full_cell_min_z <= 13 < cell_max_z:
             # Retain the existing six-cell shoreline wind cohort, including odd cells.
             rows = sorted((*rows, 13))
+        if type(camera) is AffineCameraState:
+            project = prepare_affine_projector(camera)
+        else:
+
+            def project(x, y, z):
+                return camera.project(Vec3(x, y, z))
+
         for cell_z in rows:
             columns = range(cell_min_x, cell_max_x, cell_step)
             if shore_active and cell_step > 1 and cell_z == 13:
@@ -1539,7 +1547,7 @@ class Renderer:
                     world_x, world_z = blade.x, blade.z
                     if world_x < x0 or world_x > x1 or world_z < z0 or world_z > z1:
                         continue
-                    root = camera.project(Vec3(world_x, 0.0, world_z))
+                    root = project(world_x, 0.0, world_z)
                     if root is None:
                         continue
                     if not bounds.contains(root.x, root.y, margin):
