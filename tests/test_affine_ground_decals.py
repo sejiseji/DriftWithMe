@@ -101,3 +101,33 @@ def test_prepared_affine_projection_matches_points_and_cutoffs():
         for x in (-2.0, 1.3, 100.0, 160.4, 900.0, math.inf, math.nan):
             for y, z in ((0.0, 160.0), (14.3, 175.7), (2.5, 260.4)):
                 assert project(x, y, z) == camera.project(Vec3(x, y, z))
+
+
+def test_optimized_rain_matches_original_projection_and_order():
+    from drift_with_me.august_scenery import MAX_RAIN, rain_segments
+
+    _, _, perspective, _, affine = make_affine_camera()
+    for camera in (
+        perspective,
+        replace(affine, target=Vec3(500.2, 0.3, 499.5), zoom=0.7, fx_offset_x=0.4),
+        replace(affine, target=Vec3(501.4, 0.5, 509.2), zoom=1.45, near=450, far=550),
+    ):
+        for time in (0.1, 0.9, 3.67):
+            expected = []
+            cx, cz = math.floor(camera.target.x / 64), math.floor(camera.target.z / 64)
+            for i in range(MAX_RAIN):
+                gx, gz = cx + i % 12 - 6, cz + i // 12 - 5
+                seed = (gx * 73856093 ^ gz * 19349663) & 0xFFFF
+                x, z = gx * 64 + seed % 57, gz * 64 + (seed // 57) % 57
+                height = (seed % 100 - time * 110) % 100
+                a = camera.project(Vec3(x + height * 0.24, height, z))
+                b = camera.project(Vec3(x + (height + 6) * 0.24, height + 6, z))
+                if (
+                    a
+                    and b
+                    and 0 <= a.x < camera.viewport_width
+                    and 0 <= a.y < camera.viewport_height
+                ):
+                    expected.append((a, b, seed, x, z))
+            assert expected
+            assert list(rain_segments(camera, time)) == expected

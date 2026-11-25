@@ -3,7 +3,7 @@
 import math
 from functools import lru_cache
 
-from drift_with_me.math3d import Vec3
+from drift_with_me.math3d import AffineCameraState, Vec3, prepare_affine_projector
 
 # Ground-space routes, including the actual July garden and eastern water tap.
 ROUTES = (
@@ -106,14 +106,25 @@ def flower_commands(renderer, model, camera):
 def rain_segments(camera, time):
     # A bounded world-space lattice, independent of the gameplay random stream.
     cx, cz = math.floor(camera.target.x / 64), math.floor(camera.target.z / 64)
+    if type(camera) is AffineCameraState:
+        project = prepare_affine_projector(camera)
+    else:
+
+        def project(x, y, z):
+            return camera.project(Vec3(x, y, z))
+
     for i in range(MAX_RAIN):
         gx, gz = cx + i % 12 - 6, cz + i // 12 - 5
         seed = (gx * 73856093 ^ gz * 19349663) & 0xFFFF
         x, z = gx * 64 + seed % 57, gz * 64 + (seed // 57) % 57
         height = (seed % 100 - time * 110) % 100
-        a = camera.project(Vec3(x + height * 0.24, height, z))
-        b = camera.project(Vec3(x + (height + 6) * 0.24, height + 6, z))
-        if a and b and 0 <= a.x < camera.viewport_width and 0 <= a.y < camera.viewport_height:
+        a = project(x + height * 0.24, height, z)
+        if a is None or not (
+            0 <= a.x < camera.viewport_width and 0 <= a.y < camera.viewport_height
+        ):
+            continue
+        b = project(x + (height + 6) * 0.24, height + 6, z)
+        if b is not None:
             yield a, b, seed, x, z
 
 
