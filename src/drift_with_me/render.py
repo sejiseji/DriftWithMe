@@ -554,6 +554,9 @@ class Renderer:
         combat_background_screen_rect = (
             self.combat_background_screen_exclusion_rect(model, camera) if combat_isolated else None
         )
+        needs_combat_bounds = (
+            combat_background_depth_floor is not None and combat_background_screen_rect is not None
+        )
         visible_candidates = list(visible_query.objects)
         robot_anchor = model.world.object_by_id("maintenance_unit")
         if robot_anchor is not None and not any(
@@ -586,7 +589,11 @@ class Renderer:
             anchor = camera.project(Vec3(detail.x, 0.0, detail.z))
             if anchor is None:
                 continue
-            detail_bounds = ScreenRect(int(anchor.x - 4), int(anchor.y - 4), 8, 8)
+            detail_bounds = (
+                ScreenRect(int(anchor.x - 4), int(anchor.y - 4), 8, 8)
+                if needs_combat_bounds
+                else None
+            )
             if not self.combat_background_command_is_visible(
                 combat_background_depth_floor,
                 anchor.depth,
@@ -610,7 +617,7 @@ class Renderer:
         for obj in visible_objects:
             if obj.kind == "construction_collision":
                 continue
-            object_bounds = self.object_screen_bounds(obj, camera)
+            object_bounds = self.object_screen_bounds(obj, camera) if needs_combat_bounds else None
             if self.camera_is_affine(camera) and self.object_uses_box_geometry(obj):
                 box_commands = self.solid_box_face_commands(obj, camera)
                 if combat_background_depth_floor is not None:
